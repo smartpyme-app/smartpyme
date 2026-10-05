@@ -72,6 +72,7 @@ import {
   isImpresionEnFacturacionActiva,
 } from '@helpers/empresa.helper';
 import { aplicarPrefillCredito, prepararVentaParaFacturarCuota } from '@views/ventas/creditos/creditos-facturar';
+import { aplicarCitaEnVenta } from '../cita-venta';
 import {
   aplicarPlanAVenta,
   generarPreviewCuotas,
@@ -1161,7 +1162,41 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       this.sincronizarSucursalDesdeBodega();
       this.cargarDocumentos();
     }
+
+    this.cargarVentaDesdeCita();
   }
+
+  private cargarVentaDesdeCita(): void {
+    const idCita = this.route.snapshot.queryParamMap.get('id_cita');
+    if (!idCita) {
+      return;
+    }
+    this.apiService.read('evento/', +idCita).pipe(this.untilDestroyed()).subscribe({
+      next: (evento) => {
+        this.evento = evento;
+        this.venta = aplicarCitaEnVenta(this.venta, evento);
+        this.sumTotal();
+        this.cdr.markForCheck();
+        if (evento?.id_cliente) {
+          this.apiService.read('cliente/', evento.id_cliente).pipe(this.untilDestroyed()).subscribe({
+            next: (cliente) => {
+              this.setCliente(cliente);
+              this.cdr.markForCheck();
+            },
+            error: (error) => {
+              this.alertService.error(error);
+              this.cdr.markForCheck();
+            },
+          });
+        }
+      },
+      error: (error) => {
+        this.alertService.error(error);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
     // Método para procesar productos de orden de compra
   public procesarProductosOrdenCompra(detalles: any[]) {
     detalles.forEach((detalleCompra: any) => {
@@ -1243,103 +1278,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         this.cdr.markForCheck();
       });
     });
-
-    // Cita a venta
-    if (this.route.snapshot.queryParamMap.get('id_cita')!) {
-      this.loading = true;
-      this.apiService
-        .read('evento/', +this.route.snapshot.queryParamMap.get('id_cita')!)
-        .pipe(this.untilDestroyed())
-        .subscribe(
-          (evento) => {
-            this.evento = evento;
-            this.venta.id_cliente = evento.id_cliente;
-            this.venta.id_evento = evento.id;
-
-            this.evento.productos.forEach((detalleProducto: any) => {
-              this.apiService
-                .read('producto/', detalleProducto.id_producto)
-                .pipe(this.untilDestroyed())
-                .subscribe(
-                  (producto) => {
-                    let detalle: any = {};
-                    detalle.id_producto = producto.id;
-                    detalle.descripcion = producto.nombre;
-                    detalle.img = producto.img;
-                    detalle.precio = parseFloat(producto.precio);
-                    detalle.costo = parseFloat(producto.costo);
-                    detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
-                    copiarImpuestosProductoAlDetalle(
-                      detalle,
-                      producto,
-                      this.apiService.auth_user()?.empresa?.iva ?? 0
-                    );
-                    if (producto.inventarios.length > 0) {
-                      producto.inventarios = producto.inventarios.filter(
-                        (item: any) =>
-                          item.id_sucursal == this.venta.id_sucursal
-                      );
-                      detalle.stock = parseFloat(
-                        this.sumPipe.transform(producto.inventarios, 'stock')
-                      );
-                    } else {
-                      detalle.stock = null;
-                    }
-                    detalle.cantidad = detalleProducto.cantidad;
-                    detalle.descuento = 0;
-                    detalle.descuento_porcentaje = 0;
-                    detalle.total_costo = detalle.costo;
-                    detalle.total = detalle.precio;
-
-                    if (!detalle.exenta) {
-                      detalle.exenta = 0;
-                    }
-                    if (!detalle.no_sujeta) {
-                      detalle.no_sujeta = 0;
-                    }
-                    if (!detalle.cuenta_a_terceros) {
-                      detalle.cuenta_a_terceros = 0;
-                    }
-
-                    detalle.total = (
-                      parseFloat(detalle.cantidad) *
-                      parseFloat(detalle.precio) -
-                      parseFloat(detalle.descuento)
-                    ).toFixed(4);
-
-                    this.venta.detalles.push(detalle);
-                    this.sumTotal();
-                    this.cdr.markForCheck();
-
-                    if (!this.venta.propina) {
-                      this.venta.propina = 0;
-                    }
-
-                    if (!detalle.gravada) {
-                      detalle.gravada = detalle.total;
-                    }
-
-                    this.venta.detalles.push(detalle);
-                    this.sumTotal();
-                    this.loading = false;
-                    this.cdr.markForCheck();
-                  },
-                  (error) => {
-                    this.alertService.error(error);
-                    this.loading = false;
-                    this.cdr.markForCheck();
-                  }
-                );
-            });
-            this.cdr.markForCheck();
-          },
-          (error) => {
-            this.alertService.error(error);
-            this.loading = false;
-            this.cdr.markForCheck();
-          }
-        );
-    }
 
     this.cargarDocumentos();
     this.loadData();
