@@ -1,0 +1,95 @@
+/* Paleta Smart PYME. Nombre y HEX. */
+
+:root {
+  /* Smart Blue */
+  --smart-blue-0: #000000;
+  --smart-blue-10: #001B3F;
+  --smart-blue-20: #002F66;
+  --smart-blue-30: #00458F;
+  --smart-blue-40: #005CB8;
+  --smart-blue-50: #1675E0;
+  --smart-blue-60: #448FFF;
+  --smart-blue-70: #7CABFF;
+  --smart-blue-80: #ABC7FF;
+  --smart-blue-90: #D7E2FF;
+  --smart-blue-95: #ECF0FF;
+  --smart-blue-99: #FDFBFF;
+  --smart-blue-100: #FFFFFF;
+
+  /* Smart Orange */
+  --smart-orange-0: #000000;
+  --smart-orange-10: #2F1500;
+  --smart-orange-20: #4E2600;
+  --smart-orange-30: #6F3900;
+  --smart-orange-40: #914C00;
+  --smart-orange-50: #B26316;
+  --smart-orange-60: #D17C2F;
+  --smart-orange-70: #F19547;
+  --smart-orange-80: #FFB777;
+  --smart-orange-90: #FFDCC4;
+  --smart-orange-95: #FFEDE3;
+  --smart-orange-99: #FFFBFF;
+  --smart-orange-100: #FFFFFF;
+
+  /* Smart Green */
+  --smart-green-0: #000000;
+  --smart-green-10: #14532D;
+  --smart-green-20: #166534;
+  --smart-green-30: #15803D;
+  --smart-green-40: #16A34A;
+  --smart-green-50: #22C55E;
+  --smart-green-60: #4ADE80;
+  --smart-green-70: #86EFAC;
+  --smart-green-80: #BBF7D0;
+  --smart-green-90: #DCFCE7;
+  --smart-green-95: #F0FDF4;
+  --smart-green-99: #FFFBFF;
+  --smart-green-100: #FFFFFF;
+
+  /* Smart Blue Light */
+  --smart-blue-light-0: #000000;
+  --smart-blue-light-10: #001E30;
+  --smart-blue-light-20: #00344F;
+  --smart-blue-light-30: #004B70;
+  --smart-blue-light-40: #006492;
+  --smart-blue-light-50: #007EB8;
+  --smart-blue-light-60: #0099DE;
+  --smart-blue-light-70: #53B4FF;
+  --smart-blue-light-80: #BDCDFF;
+  --smart-blue-light-90: #CAE6FF;
+  --smart-blue-light-95: #E6F2FF;
+  --smart-blue-light-99: #FCFCFF;
+  --smart-blue-light-100: #FFFFFF;
+
+  /* Smart Red */
+  --smart-red-0: #000000;
+  --smart-red-10: #410002;
+  --smart-red-20: #690005;
+  --smart-red-30: #93000A;
+  --smart-red-40: #BA1A1A;
+  --smart-red-50: #DE3730;
+  --smart-red-60: #FF5449;
+  --smart-red-70: #FF897D;
+  --smart-red-80: #FFB4AB;
+  --smart-red-90: #FFDADE;
+  --smart-red-95: #FFEDEA;
+  --smart-red-99: #FFFBFF;
+  --smart-red-100: #FFFFFF;
+
+  /* Smart Grey */
+  --smart-grey-0: #1A1B1F;
+  --smart-grey-1: #202125;
+  --smart-grey-5: #252629;
+  --smart-grey-10: #2D2A2D;
+  --smart-grey-20: #2F3033;
+  --smart-grey-30: #46464A;
+  --smart-grey-40: #5E5E62;
+  --smart-grey-50: #77777A;
+  --smart-grey-60: #919094;
+  --smart-grey-70: #ABABAF;
+  --smart-grey-80: #C7C6CA;
+  --smart-grey-90: #E3E2E6;
+  --smart-grey-95: #F2F0F4;
+  --smart-grey-99: #FDFBFF;
+  --smart-grey-100: #FFFFFF;
+}

@@ -1,5 +1,6 @@
 /* AG Grid Styles */
 @import '@webdatarocks/webdatarocks/webdatarocks.min.css';
+@import './styles/smart-colors.css';
 
 /*Scrool Chrome*/
 
@@ -44,7 +45,7 @@
 .fc-timegrid-slot  { background-color: #ffffff !important; }
 
 .fc-day-today {
-  background-color: white !important;
+  background-color: var(--smart-blue-95) !important;
 }
 
 .fc-disabled, .fc-non-business, .fc .fc-day-disabled {
@@ -107,10 +108,62 @@ a.fc-col-header-cell-cushion{
 }
 
 .fc-event {
-    border: none !important;
-    border-radius: 3px !important;
+    border-radius: 4px !important;
     padding-right: 5px !important;
   }
+
+.fc-event.cita-abierta {
+    background: var(--smart-grey-100) !important;
+    border: 2px solid var(--smart-orange-80) !important;
+    color: var(--smart-orange-10) !important;
+  }
+
+.fc-event.cita-pendiente {
+    background: var(--smart-grey-100) !important;
+    border: 2px solid var(--smart-grey-60) !important;
+    color: var(--smart-grey-60) !important;
+  }
+
+.fc-event.cita-confirmada {
+    background: var(--smart-blue-90) !important;
+    border: 2px solid var(--smart-blue-80) !important;
+    color: var(--smart-blue-10) !important;
+  }
+
+.fc-event.cita-pagada {
+    background: var(--smart-green-80) !important;
+    border: 2px solid var(--smart-green-70) !important;
+    color: var(--smart-green-10) !important;
+  }
+
+.fc-event.cita-cancelada {
+    background: var(--smart-grey-100) !important;
+    border: 1px solid var(--smart-grey-80) !important;
+    color: var(--smart-grey-60) !important;
+  }
+
+.fc-event.cita-cancelada .cita-linea {
+    text-decoration: line-through;
+  }
+
+.cita-evento {
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.cita-linea {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.cita-linea:first-child {
+  font-weight: 600;
+}
 
   .fc-timeGridWeek-view .fc-timegrid-slot {
     height: 40px !important;
@@ -134,7 +187,19 @@ a.fc-col-header-cell-cushion{
 
   .fc-dayGridMonth-view a {
     text-decoration: none !important;
-    color: #000;
+  }
+
+  .fc-dayGridMonth-view .fc-daygrid-day-frame,
+  .fc-dayGridMonth-view .fc-daygrid-event,
+  .fc-dayGridMonth-view .fc-event-main {
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .fc-dayGridMonth-view .cita-linea {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .fc-dayGridMonth-view .fc-col-header-cell-cushion {
@@ -158,14 +223,17 @@ a.fc-col-header-cell-cushion{
     border: none !important;
   }
 
-  .fc-timegrid-event-harness,
   .fc-timegrid-event,
-  .fc-timegrid-event .fc-event-main {
-    overflow: visible !important;
+  .fc-timegrid-event .fc-event-main,
+  .fc-daygrid-event,
+  .fc-daygrid-event .fc-event-main {
+    overflow: hidden !important;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .fc-timegrid-event .fc-event-main {
-    height: auto !important;
+    height: 100% !important;
   }
 
   .fc-timegrid-event .cita-estado {
@@ -176,6 +244,25 @@ a.fc-col-header-cell-cushion{
 
   .cursor-pointer {
     cursor: pointer;
+  }
+
+  .cita-ficha {
+    position: fixed;
+    z-index: 12000;
+    max-width: 280px;
+    padding: 8px 10px;
+    background: #fff;
+    color: #1e293b;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+    font-size: 12px;
+    line-height: 1.45;
+    pointer-events: none;
+  }
+
+  .cita-ficha-titulo {
+    font-size: 13px;
   }
 
   .select-width {
