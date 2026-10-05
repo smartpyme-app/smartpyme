@@ -60,6 +60,31 @@ class ClinicaFase1PermissionSeederTest extends TestCase
             $table->unsignedBigInteger('model_id');
             $table->primary(['permission_id', 'model_id', 'model_type']);
         });
+        Schema::create('modules', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->string('display_name')->nullable();
+            $table->string('description')->nullable();
+            $table->boolean('status')->default(1);
+            $table->timestamps();
+        });
+        Schema::create('submodules', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedBigInteger('module_id');
+            $table->string('name');
+            $table->string('display_name')->nullable();
+            $table->string('description')->nullable();
+            $table->boolean('status')->default(1);
+            $table->timestamps();
+        });
+        Schema::create('module_permissions', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedBigInteger('module_id')->nullable();
+            $table->unsignedBigInteger('submodule_id')->nullable();
+            $table->unsignedBigInteger('permission_id');
+            $table->string('permission_type')->nullable();
+            $table->timestamps();
+        });
 
         foreach (['super_admin', 'admin', 'usuario_supervisor'] as $rol) {
             Role::create(['name' => $rol, 'guard_name' => 'web']);

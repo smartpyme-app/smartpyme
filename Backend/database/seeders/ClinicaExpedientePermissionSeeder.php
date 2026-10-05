@@ -35,5 +35,9 @@ class ClinicaExpedientePermissionSeeder extends Seeder
         }
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $catalogo = new ClinicaModuloPermissionSeeder();
+        $catalogo->registrarCatalogo();
+        $catalogo->asignarRolesBase();
     }
 }
