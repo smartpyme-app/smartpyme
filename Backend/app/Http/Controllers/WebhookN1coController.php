@@ -670,9 +670,10 @@ class WebhookN1coController extends Controller
     private function enviarNotificacionPagoAdmin($user, $suscripcion, $empresa, $ordenPago, $esNuevaSuscripcion)
     {
         $adminEmails = [
-            'jose.e@smartpyme.sv',
-            'jennifer.d@smartpyme.sv',
-            'alejandro.a@smartpyme.sv',
+            'jose.e@smartpyme.app',
+            'jennifer.d@smartpyme.app',
+            'alejandro.a@smartpyme.app',
+            'karla.b@smartpyme.app',
         ];
 
         // $fromAddress = env('MAIL_FROM_ADDRESS');
