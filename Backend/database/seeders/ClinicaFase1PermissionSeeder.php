@@ -68,5 +68,7 @@ class ClinicaFase1PermissionSeeder extends Seeder
         ]);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $this->call(ClinicaModuloPermissionSeeder::class);
     }
 }

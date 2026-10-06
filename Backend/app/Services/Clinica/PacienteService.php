@@ -4,7 +4,6 @@ namespace App\Services\Clinica;
 
 use App\Models\Admin\Sucursal;
 use App\Models\Clinica\Especie;
-use App\Models\Clinica\Expediente;
 use App\Models\Clinica\Paciente;
 use App\Models\Clinica\Raza;
 use Illuminate\Support\Facades\DB;
@@ -12,8 +11,10 @@ use Illuminate\Validation\ValidationException;
 
 class PacienteService
 {
-    public function __construct(private ResponsableService $responsables)
-    {
+    public function __construct(
+        private ResponsableService $responsables,
+        private ExpedienteService $expedientes,
+    ) {
     }
     public function crear(int $idEmpresa, ?int $idUsuario, array $datos): Paciente
     {
@@ -24,7 +25,7 @@ class PacienteService
             $atributos['activo'] = true;
 
             $paciente = Paciente::create($atributos);
-            $this->abrirExpediente($idEmpresa, $paciente->id);
+            $this->expedientes->abrir($idEmpresa, $paciente->id, $atributos['id_sucursal'] ?? null);
 
             return $paciente->fresh(['expediente', 'especie', 'raza', 'sucursal']);
         });
@@ -82,39 +83,14 @@ class PacienteService
                 'nombre' => $paciente->sucursal->nombre,
             ] : null,
             'expediente' => $verExpediente && $paciente->expediente ? [
+                'id' => $paciente->expediente->id,
                 'numero' => $paciente->expediente->numero,
                 'fecha_apertura' => $paciente->expediente->fecha_apertura?->format('Y-m-d'),
                 'estado' => $paciente->expediente->estado,
+                'operativo' => $this->expedientes->operativo($paciente->expediente),
             ] : null,
             'responsables' => $this->responsables->deFicha($paciente),
         ];
-    }
-
-    private function abrirExpediente(int $idEmpresa, int $idPaciente): void
-    {
-        DB::table('clinica_expediente_secuencias')->insertOrIgnore([
-            'id_empresa' => $idEmpresa,
-            'ultimo' => 0,
-        ]);
-
-        $fila = DB::table('clinica_expediente_secuencias')
-            ->where('id_empresa', $idEmpresa)
-            ->lockForUpdate()
-            ->first();
-
-        $numero = ExpedienteNumero::siguiente((int) $fila->ultimo);
-
-        DB::table('clinica_expediente_secuencias')
-            ->where('id_empresa', $idEmpresa)
-            ->update(['ultimo' => $numero]);
-
-        Expediente::create([
-            'id_empresa' => $idEmpresa,
-            'id_paciente' => $idPaciente,
-            'numero' => $numero,
-            'fecha_apertura' => now()->toDateString(),
-            'estado' => 'abierto',
-        ]);
     }
 
     private function atributos(int $idEmpresa, array $datos, ?int $ignorarId = null): array
