@@ -113,6 +113,26 @@ class ConsultasController extends Controller
         return response()->json(['data' => $this->consultas->presentar($consulta, true)]);
     }
 
+    public function addendum(Request $request, int $idPaciente, int $idConsulta)
+    {
+        $consulta = $this->buscar($idPaciente, $idConsulta);
+        if ($consulta === null) {
+            return response()->json(['error' => 'Consulta no encontrada'], 404);
+        }
+
+        try {
+            $consulta = $this->consultas->registrarAddendum($consulta, (string) $request->input('addendum', ''));
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            Log::error('clinica.consultas: no se pudo registrar addendum');
+
+            return response()->json(['message' => 'No se pudo guardar el addendum'], 500);
+        }
+
+        return response()->json(['data' => $this->consultas->presentar($consulta, true)]);
+    }
+
     public function anular(Request $request, int $idPaciente, int $idConsulta)
     {
         $consulta = $this->buscar($idPaciente, $idConsulta);

@@ -30,10 +30,36 @@
             <div class="col-md-3"><label class="fw-medium">Motivo</label><p>{{ consulta.motivo }}</p></div>
             <div class="col-md-3"><label class="fw-medium">Profesional</label><p>{{ consulta.profesional?.nombre || '—' }}</p></div>
             <div class="col-md-3"><label class="fw-medium">Sucursal</label><p>{{ consulta.sucursal?.nombre || '—' }}</p></div>
+            <div class="col-md-6"><label class="fw-medium">Antecedentes</label><p>{{ consulta.antecedentes || '—' }}</p></div>
             <div class="col-md-6"><label class="fw-medium">Anamnesis</label><p>{{ consulta.anamnesis || '—' }}</p></div>
             <div class="col-md-6"><label class="fw-medium">Examen físico</label><p>{{ consulta.examen_fisico || '—' }}</p></div>
             <div class="col-md-6"><label class="fw-medium">Observaciones</label><p>{{ consulta.observaciones || '—' }}</p></div>
             <div class="col-md-6"><label class="fw-medium">Indicaciones</label><p>{{ consulta.indicaciones || '—' }}</p></div>
+            @if (consulta.signos_vitales && (consulta.signos_vitales.peso || consulta.signos_vitales.temperatura || consulta.signos_vitales.frecuencia_cardiaca || consulta.signos_vitales.frecuencia_respiratoria)) {
+                <div class="col-12">
+                    <label class="fw-medium">Signos vitales</label>
+                    <p class="mb-0">
+                        @if (consulta.signos_vitales.peso) { <span class="me-3">Peso: {{ consulta.signos_vitales.peso }}</span> }
+                        @if (consulta.signos_vitales.temperatura) { <span class="me-3">Temp: {{ consulta.signos_vitales.temperatura }}</span> }
+                        @if (consulta.signos_vitales.frecuencia_cardiaca) { <span class="me-3">FC: {{ consulta.signos_vitales.frecuencia_cardiaca }}</span> }
+                        @if (consulta.signos_vitales.frecuencia_respiratoria) { <span class="me-3">FR: {{ consulta.signos_vitales.frecuencia_respiratoria }}</span> }
+                    </p>
+                </div>
+            }
+            @if (consulta.addendum) {
+                <div class="col-12 mt-2">
+                    <label class="fw-medium">Addendum</label>
+                    <pre class="mb-0 text-muted" style="white-space: pre-wrap; font-family: inherit;">{{ consulta.addendum }}</pre>
+                </div>
+            }
         </div>
     </section>
+    @if (consulta.puede_addendum && apiService.hasPermission('clinica.consultas.editar')) {
+        <section class="bg-white p-4 rounded mb-3">
+            <h6 class="pb-2 mb-3">Agregar addendum</h6>
+            <p class="text-muted small">La consulta cerrada no se reescribe; las correcciones se registran aquí.</p>
+            <textarea class="form-control mb-3" rows="3" [(ngModel)]="textoAddendum" placeholder="Texto del addendum"></textarea>
+            <button type="button" class="btn btn-primary" [disabled]="guardandoAddendum || !textoAddendum?.trim()" (click)="guardarAddendum()">Registrar addendum</button>
+        </section>
+    }
 }

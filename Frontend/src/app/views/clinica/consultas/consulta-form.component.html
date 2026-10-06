@@ -41,6 +41,10 @@
                 <input class="form-control" [(ngModel)]="consulta.motivo" name="motivo" placeholder="Motivo de la consulta">
             </div>
             <div class="form-group col-md-6">
+                <label>Antecedentes</label>
+                <textarea class="form-control" rows="2" [(ngModel)]="consulta.antecedentes" name="antecedentes"></textarea>
+            </div>
+            <div class="form-group col-md-6">
                 <label>Anamnesis</label>
                 <textarea class="form-control" rows="3" [(ngModel)]="consulta.anamnesis" name="anamnesis"></textarea>
             </div>
@@ -55,6 +59,25 @@
             <div class="form-group col-md-6">
                 <label>Indicaciones</label>
                 <textarea class="form-control" rows="2" [(ngModel)]="consulta.indicaciones" name="indicaciones"></textarea>
+            </div>
+            <div class="col-12">
+                <h6 class="text-muted mb-2">Signos vitales (opcional)</h6>
+            </div>
+            <div class="form-group col-md-3">
+                <label>Peso</label>
+                <input class="form-control" [(ngModel)]="consulta.signos_vitales.peso" name="signo_peso" placeholder="kg">
+            </div>
+            <div class="form-group col-md-3">
+                <label>Temperatura</label>
+                <input class="form-control" [(ngModel)]="consulta.signos_vitales.temperatura" name="signo_temp" placeholder="°C">
+            </div>
+            <div class="form-group col-md-3">
+                <label>Frec. cardiaca</label>
+                <input class="form-control" [(ngModel)]="consulta.signos_vitales.frecuencia_cardiaca" name="signo_fc" placeholder="lpm">
+            </div>
+            <div class="form-group col-md-3">
+                <label>Frec. respiratoria</label>
+                <input class="form-control" [(ngModel)]="consulta.signos_vitales.frecuencia_respiratoria" name="signo_fr" placeholder="rpm">
             </div>
         </div>
         <div class="d-flex justify-content-end gap-2 mt-3">

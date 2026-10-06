@@ -14,6 +14,7 @@ export class HistorialExpedienteComponent implements OnInit {
   cargando = true;
   idPaciente = 0;
   filtros: any = { tipo: '', fecha_desde: '', fecha_hasta: '', id_usuario_profesional: '' };
+  profesionales: any[] = [];
 
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
@@ -31,7 +32,16 @@ export class HistorialExpedienteComponent implements OnInit {
       return;
     }
     this.idPaciente = Number(this.route.snapshot.paramMap.get('id'));
+    this.cargarProfesionales();
     this.cargar();
+  }
+
+  cargarProfesionales(): void {
+    this.apiService.getAll('clinica/profesionales', { estado: '1' }).pipe(this.untilDestroyed()).subscribe({
+      next: (respuesta) => {
+        this.profesionales = respuesta?.data ?? [];
+      },
+    });
   }
 
   cargar(): void {

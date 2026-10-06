@@ -28,8 +28,13 @@ class ConsultaService
 
         $expediente = $this->expedientes->dePaciente($paciente);
         $atributos = $this->atributos($idEmpresa, $expediente, $paciente, $datos);
+        $idEvento = ! empty($datos['id_evento']) ? (int) $datos['id_evento'] : null;
+        if ($idEvento !== null) {
+            $this->exigirEventoEmpresa($idEmpresa, $idEvento);
+            $atributos['id_evento'] = $idEvento;
+        }
 
-        return DB::transaction(function () use ($idEmpresa, $idUsuarioRegistro, $atributos, $expediente) {
+        return DB::transaction(function () use ($idEmpresa, $idUsuarioRegistro, $atributos) {
             $consulta = Consulta::create($atributos + [
                 'id_empresa' => $idEmpresa,
                 'id_usuario_registro' => $idUsuarioRegistro,
@@ -65,6 +70,24 @@ class ConsultaService
         });
     }
 
+    public function registrarAddendum(Consulta $consulta, string $texto): Consulta
+    {
+        if ($consulta->estado !== 'cerrada') {
+            throw ValidationException::withMessages(['estado' => 'Solo se puede agregar addendum a una consulta cerrada.']);
+        }
+
+        $texto = PacienteReglas::vacio($texto);
+        if ($texto === null) {
+            throw ValidationException::withMessages(['addendum' => 'El texto del addendum es obligatorio.']);
+        }
+
+        $linea = '['.now()->format('Y-m-d H:i').'] '.$texto;
+        $addendum = trim(($consulta->addendum ?? '').($consulta->addendum ? "\n\n" : '').$linea);
+        $consulta->update(['addendum' => $addendum]);
+
+        return $consulta->fresh();
+    }
+
     public function anular(Consulta $consulta, string $motivo): Consulta
     {
         $motivo = PacienteReglas::vacio($motivo);
@@ -97,7 +120,9 @@ class ConsultaService
             'motivo' => $consulta->motivo,
             'estado' => $consulta->estado,
             'motivo_anulacion' => $consulta->motivo_anulacion,
+            'id_evento' => $consulta->id_evento,
             'editable' => $consulta->estado === 'borrador',
+            'puede_addendum' => $consulta->estado === 'cerrada',
             'profesional' => $profesional ? ['id' => $profesional->id, 'nombre' => $profesional->name] : null,
             'sucursal' => $sucursal ? ['id' => $sucursal->id, 'nombre' => $sucursal->nombre] : null,
         ];
@@ -113,6 +138,7 @@ class ConsultaService
             'observaciones' => $consulta->observaciones,
             'indicaciones' => $consulta->indicaciones,
             'signos_vitales' => $consulta->signos_vitales ?? [],
+            'addendum' => $consulta->addendum,
         ];
     }
 
@@ -153,6 +179,10 @@ class ConsultaService
             $decodificado = json_decode($signos, true);
             $signos = json_last_error() === JSON_ERROR_NONE ? $decodificado : null;
         }
+        if (is_array($signos)) {
+            $signos = array_filter($signos, fn ($valor) => PacienteReglas::vacio($valor) !== null);
+            $signos = $signos !== [] ? $signos : null;
+        }
 
         return [
             'id_expediente' => $expediente->id,
@@ -169,6 +199,13 @@ class ConsultaService
             'indicaciones' => PacienteReglas::vacio($datos['indicaciones'] ?? null),
             'signos_vitales' => is_array($signos) ? $signos : null,
         ];
+    }
+
+    private function exigirEventoEmpresa(int $idEmpresa, int $idEvento): void
+    {
+        if (! DB::table('eventos')->where('id', $idEvento)->where('id_empresa', $idEmpresa)->exists()) {
+            throw ValidationException::withMessages(['id_evento' => 'La cita no pertenece a la empresa.']);
+        }
     }
 
     private function exigirProfesionalEnSucursal(int $idEmpresa, int $idUsuario, int $idSucursal): void

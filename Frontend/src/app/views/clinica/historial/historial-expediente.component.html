@@ -23,6 +23,15 @@
             <label class="form-label">Hasta</label>
             <input type="date" class="form-control" [(ngModel)]="filtros.fecha_hasta" (change)="cargar()">
         </div>
+        <div class="col-md-3">
+            <label class="form-label">Profesional</label>
+            <select class="form-select" [(ngModel)]="filtros.id_usuario_profesional" (change)="cargar()">
+                <option value="">Todos</option>
+                @for (p of profesionales; track p.id) {
+                    <option [ngValue]="p.id_usuario">{{ p.nombre }}</option>
+                }
+            </select>
+        </div>
     </div>
 </section>
 
@@ -59,7 +68,7 @@
                             <td>{{ evento.profesional?.nombre || '—' }}</td>
                             <td class="text-end">
                                 @if (evento.enlace?.ruta) {
-                                    <button type="button" class="btn btn-default btn-sm" (click)="abrirEvento(evento)">Ver</button>
+                                    <button type="button" class="btn btn-primary btn-sm" (click)="abrirEvento(evento)">Ver</button>
                                 }
                             </td>
                         </tr>

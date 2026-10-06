@@ -14,6 +14,8 @@ export class ConsultaFichaComponent implements OnInit {
   cargando = true;
   idPaciente = 0;
   idConsulta = 0;
+  textoAddendum = '';
+  guardandoAddendum = false;
 
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
@@ -64,6 +66,28 @@ export class ConsultaFichaComponent implements OnInit {
 
   editar(): void {
     this.router.navigate(['/clinica/pacientes', this.idPaciente, 'consultas', this.idConsulta, 'editar']);
+  }
+
+  guardarAddendum(): void {
+    const texto = this.textoAddendum?.trim();
+    if (!texto) {
+      return;
+    }
+    this.guardandoAddendum = true;
+    this.apiService.patch('clinica/pacientes', this.idPaciente + '/consultas/' + this.idConsulta + '/addendum', { addendum: texto })
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (respuesta) => {
+          this.consulta = respuesta?.data ?? this.consulta;
+          this.textoAddendum = '';
+          this.guardandoAddendum = false;
+          this.alertService.success('Listo', 'Addendum registrado.');
+        },
+        error: (error) => {
+          this.guardandoAddendum = false;
+          this.alertService.error(error);
+        },
+      });
   }
 
   anular(): void {

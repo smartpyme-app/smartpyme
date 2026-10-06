@@ -12,6 +12,7 @@ use App\Services\Clinica\HistorialClinicoService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class ConsultaServiceTest extends TestCase
@@ -51,24 +52,111 @@ class ConsultaServiceTest extends TestCase
         $this->consultas = new ConsultaService($expedientes, $historial);
     }
 
-    public function test_cerrar_consulta_registra_evento_en_historial(): void
+    public function test_crear_solo_con_campos_minimos(): void
+    {
+        [$paciente] = $this->pacienteYExpediente();
+        $consulta = $this->consultas->crear(1, 10, $paciente, [
+            'fecha' => '2026-10-05',
+            'motivo' => 'Control',
+            'id_sucursal' => 1,
+            'id_usuario_profesional' => 10,
+        ]);
+
+        $this->assertSame('borrador', $consulta->estado);
+        $this->assertNull($consulta->anamnesis);
+    }
+
+    public function test_cerrada_no_se_reescribe_pero_acepta_addendum(): void
+    {
+        [$paciente] = $this->pacienteYExpediente();
+        $consulta = $this->consultas->crear(1, 10, $paciente, [
+            'fecha' => '2026-10-05',
+            'motivo' => 'Control',
+            'id_sucursal' => 1,
+            'id_usuario_profesional' => 10,
+        ]);
+        $this->consultas->cerrar($consulta);
+
+        $this->expectException(ValidationException::class);
+        $this->consultas->actualizar($consulta->fresh(), ['motivo' => 'Otro', 'fecha' => '2026-10-05', 'id_sucursal' => 1, 'id_usuario_profesional' => 10]);
+    }
+
+    public function test_addendum_en_consulta_cerrada(): void
+    {
+        [$paciente] = $this->pacienteYExpediente();
+        $consulta = $this->consultas->crear(1, 10, $paciente, [
+            'fecha' => '2026-10-05',
+            'motivo' => 'Control',
+            'id_sucursal' => 1,
+            'id_usuario_profesional' => 10,
+        ]);
+        $this->consultas->cerrar($consulta);
+        $actualizada = $this->consultas->registrarAddendum($consulta->fresh(), 'Corrección menor');
+
+        $this->assertStringContainsString('Corrección menor', (string) $actualizada->addendum);
+    }
+
+    public function test_profesional_fuera_de_sucursal_rechazado(): void
+    {
+        [$paciente] = $this->pacienteYExpediente();
+        DB::table('sucursales')->insert(['id' => 2, 'id_empresa' => 1, 'nombre' => 'Norte']);
+
+        $this->expectException(ValidationException::class);
+        $this->consultas->crear(1, 10, $paciente, [
+            'fecha' => '2026-10-05',
+            'motivo' => 'Control',
+            'id_sucursal' => 2,
+            'id_usuario_profesional' => 10,
+        ]);
+    }
+
+    public function test_paciente_inactivo_no_admite_consulta_nueva(): void
     {
         $paciente = Paciente::create([
             'id_empresa' => 1,
             'tipo' => 'HUMANO',
-            'activo' => true,
+            'activo' => false,
             'alta_cerrada' => false,
-            'nombres' => 'Ana',
+            'nombres' => 'Inactivo',
             'apellidos' => 'Test',
-            'sexo' => 'femenino',
+            'sexo' => 'masculino',
         ]);
-        $expediente = Expediente::create([
+        Expediente::create([
             'id_empresa' => 1,
             'id_paciente' => $paciente->id,
             'numero' => 1,
             'fecha_apertura' => '2026-10-05',
             'estado' => 'abierto',
         ]);
+
+        $this->expectException(ValidationException::class);
+        $this->consultas->crear(1, 10, $paciente, [
+            'fecha' => '2026-10-05',
+            'motivo' => 'Control',
+            'id_sucursal' => 1,
+            'id_usuario_profesional' => 10,
+        ]);
+    }
+
+    public function test_presentar_sin_permiso_clinico_oculta_anamnesis(): void
+    {
+        [$paciente] = $this->pacienteYExpediente();
+        $consulta = $this->consultas->crear(1, 10, $paciente, [
+            'fecha' => '2026-10-05',
+            'motivo' => 'Control',
+            'id_sucursal' => 1,
+            'id_usuario_profesional' => 10,
+            'anamnesis' => 'Secreto',
+        ]);
+
+        $resumen = $this->consultas->presentar($consulta, false);
+        $this->assertArrayNotHasKey('anamnesis', $resumen);
+        $this->assertSame('Control', $resumen['motivo']);
+    }
+
+    public function test_cerrar_consulta_registra_evento_en_historial(): void
+    {
+        [$paciente] = $this->pacienteYExpediente();
 
         $consulta = $this->consultas->crear(1, 10, $paciente, [
             'fecha' => '2026-10-05',
@@ -157,6 +245,8 @@ class ConsultaServiceTest extends TestCase
             $table->text('indicaciones')->nullable();
             $table->json('signos_vitales')->nullable();
             $table->string('motivo_anulacion', 255)->nullable();
+            $table->unsignedBigInteger('id_evento')->nullable();
+            $table->text('addendum')->nullable();
             $table->timestamps();
         });
         Schema::create('clinica_profesionales', function (Blueprint $table): void {
@@ -170,5 +260,28 @@ class ConsultaServiceTest extends TestCase
             $table->unsignedBigInteger('id_profesional');
             $table->integer('id_sucursal');
         });
+    }
+
+    /** @return array{0: Paciente, 1: Expediente} */
+    private function pacienteYExpediente(): array
+    {
+        $paciente = Paciente::create([
+            'id_empresa' => 1,
+            'tipo' => 'HUMANO',
+            'activo' => true,
+            'alta_cerrada' => false,
+            'nombres' => 'Ana',
+            'apellidos' => 'Test',
+            'sexo' => 'femenino',
+        ]);
+        $expediente = Expediente::create([
+            'id_empresa' => 1,
+            'id_paciente' => $paciente->id,
+            'numero' => 1,
+            'fecha_apertura' => '2026-10-05',
+            'estado' => 'abierto',
+        ]);
+
+        return [$paciente, $expediente];
     }
 }

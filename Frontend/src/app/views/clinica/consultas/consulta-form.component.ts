@@ -38,6 +38,10 @@ export class ConsultaFormComponent implements OnInit {
       return;
     }
     this.cargarCatalogos();
+    const idEvento = this.route.snapshot.queryParamMap.get('id_evento');
+    if (idEvento && !this.idConsulta) {
+      this.consulta.id_evento = Number(idEvento);
+    }
     if (this.idConsulta) {
       this.cargarConsulta();
     } else {
@@ -68,7 +72,13 @@ export class ConsultaFormComponent implements OnInit {
       .subscribe({
         next: (respuesta) => {
           const data = respuesta?.data ?? {};
-          this.consulta = { ...this.vacio(), ...data, id_usuario_profesional: data.profesional?.id ?? data.id_usuario_profesional };
+          const base = this.vacio();
+          this.consulta = {
+            ...base,
+            ...data,
+            id_usuario_profesional: data.profesional?.id ?? data.id_usuario_profesional,
+            signos_vitales: { ...base.signos_vitales, ...(data.signos_vitales ?? {}) },
+          };
           this.cargando = false;
         },
         error: (error) => {
@@ -112,6 +122,13 @@ export class ConsultaFormComponent implements OnInit {
       examen_fisico: '',
       observaciones: '',
       indicaciones: '',
+      id_evento: null,
+      signos_vitales: {
+        peso: '',
+        temperatura: '',
+        frecuencia_cardiaca: '',
+        frecuencia_respiratoria: '',
+      },
     };
   }
 }

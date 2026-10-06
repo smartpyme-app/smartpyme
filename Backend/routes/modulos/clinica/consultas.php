@@ -12,6 +12,8 @@ Route::middleware(['verificar.funcionalidad:clinica-pacientes'])->group(function
         ->middleware('permission:clinica.consultas.crear');
     Route::put('clinica/pacientes/{id}/consultas/{idConsulta}', [ConsultasController::class, 'update'])
         ->middleware('permission:clinica.consultas.editar');
+    Route::patch('clinica/pacientes/{id}/consultas/{idConsulta}/addendum', [ConsultasController::class, 'addendum'])
+        ->middleware('permission:clinica.consultas.editar');
     Route::patch('clinica/pacientes/{id}/consultas/{idConsulta}/cerrar', [ConsultasController::class, 'cerrar'])
         ->middleware('permission:clinica.consultas.editar');
     Route::patch('clinica/pacientes/{id}/consultas/{idConsulta}/anular', [ConsultasController::class, 'anular'])

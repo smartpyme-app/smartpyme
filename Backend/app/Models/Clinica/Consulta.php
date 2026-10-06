@@ -18,6 +18,7 @@ class Consulta extends AuditableModel
         'id_sucursal',
         'id_usuario_profesional',
         'id_usuario_registro',
+        'id_evento',
         'fecha',
         'hora',
         'motivo',
@@ -29,6 +30,7 @@ class Consulta extends AuditableModel
         'indicaciones',
         'signos_vitales',
         'motivo_anulacion',
+        'addendum',
     ];
 
     protected $casts = [
