@@ -4,6 +4,27 @@ export function periodoCierrePorDefecto(fecha = new Date()): { mes: number; anio
   return { mes: d.getMonth() + 1, anio: d.getFullYear() };
 }
 
+/** Query ?mes=&anio= o Number('') → 0; normalizar antes de llamar API. */
+export function mesAnioDesdeQuery(
+  mesRaw: string | null,
+  anioRaw: string | null,
+  def = periodoCierrePorDefecto(),
+): { mes: number; anio: number } {
+  const mes =
+    mesRaw != null && mesRaw !== '' && Number.isFinite(Number(mesRaw))
+      ? Number(mesRaw)
+      : def.mes;
+  const anio =
+    anioRaw != null && anioRaw !== '' && Number.isFinite(Number(anioRaw))
+      ? Number(anioRaw)
+      : def.anio;
+
+  return {
+    mes: mes >= 1 && mes <= 12 ? mes : def.mes,
+    anio: anio >= 2000 && anio <= 2100 ? anio : def.anio,
+  };
+}
+
 export function etiquetaMesAnio(mes: number, anio: number): string {
   const raw = new Date(anio, mes - 1, 1).toLocaleDateString('es-SV', { month: 'long', year: 'numeric' });
   return raw.charAt(0).toUpperCase() + raw.slice(1);

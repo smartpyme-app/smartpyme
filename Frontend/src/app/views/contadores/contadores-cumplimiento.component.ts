@@ -12,7 +12,7 @@ import {
   EstadoDocumentoContador,
 } from '@services/contadores-portal.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
-import { opcionesPeriodo, periodoCierrePorDefecto } from './contadores-periodo.util';
+import { mesAnioDesdeQuery, opcionesPeriodo, periodoCierrePorDefecto } from './contadores-periodo.util';
 
 @Component({
   selector: 'app-contadores-cumplimiento',
@@ -58,11 +58,9 @@ export class ContadoresCumplimientoComponent implements OnInit {
     this.usuario = this.api.auth_user();
 
     this.route.queryParamMap.pipe(this.untilDestroyed()).subscribe((params) => {
-      const def = periodoCierrePorDefecto();
-      const mes = Number(params.get('mes'));
-      const anio = Number(params.get('anio'));
-      this.periodoMes = Number.isFinite(mes) ? mes : def.mes;
-      this.periodoAnio = Number.isFinite(anio) ? anio : def.anio;
+      const { mes, anio } = mesAnioDesdeQuery(params.get('mes'), params.get('anio'));
+      this.periodoMes = mes;
+      this.periodoAnio = anio;
 
       const id = Number(params.get('empresa'));
       this.idEmpresa = Number.isFinite(id) ? id : null;

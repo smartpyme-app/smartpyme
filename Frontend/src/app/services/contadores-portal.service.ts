@@ -142,6 +142,44 @@ export interface ContadorContextoEmpresa {
   permisos: string[];
 }
 
+export interface ContadorLibrosIvaResponse {
+  empresa: { id: number; nombre: string; logo: string | null; giro?: string | null; pais?: string | null };
+  modulo_pais?: 'sv' | 'cr' | 'hd' | 'general';
+  informe_default?: string;
+  periodo: { mes: number; anio: number; label: string };
+  resumen: {
+    debito_fiscal: number;
+    credito_fiscal: number;
+    retenciones: number;
+    iva_a_pagar: number;
+  };
+  grupos: {
+    titulo: string;
+    informes: {
+      clave: string;
+      titulo: string;
+      descripcion: string;
+      total_documentos: number;
+      soporta_pdf: boolean;
+      soporta_excel: boolean;
+      soporta_csv: boolean;
+    }[];
+  }[];
+  actualizado_hoy: boolean;
+}
+
+export interface ContadorLibrosIvaInforme {
+  clave: string;
+  titulo: string;
+  descripcion: string;
+  columnas: { key: string; label: string; numeric?: boolean }[];
+  filas: Record<string, unknown>[];
+  total: number;
+  mostrando: number;
+  totales: Record<string, number>;
+  nota?: string;
+}
+
 const KEY_EMPRESA_ACTIVA = 'SP_contador_empresa_activa';
 const KEY_RECIENTES = 'SP_contador_empresas_recientes';
 const KEY_CONTEXTO = 'SP_contador_contexto_empresa';
@@ -207,6 +245,41 @@ export class ContadoresPortalService {
       mes,
       anio,
     });
+  }
+
+  librosIva(
+    idEmpresa: number,
+    params?: { mes?: number; anio?: number },
+  ): Observable<ContadorLibrosIvaResponse> {
+    const q = new URLSearchParams();
+    q.set('id_empresa', String(idEmpresa));
+    if (params?.mes != null) {
+      q.set('mes', String(params.mes));
+    }
+    if (params?.anio != null) {
+      q.set('anio', String(params.anio));
+    }
+    return this.api.get(`contadores/libros-iva?${q.toString()}`);
+  }
+
+  librosIvaInforme(
+    idEmpresa: number,
+    informe: string,
+    params?: { mes?: number; anio?: number; limit?: number },
+  ): Observable<ContadorLibrosIvaInforme> {
+    const q = new URLSearchParams();
+    q.set('id_empresa', String(idEmpresa));
+    q.set('informe', informe);
+    if (params?.mes != null) {
+      q.set('mes', String(params.mes));
+    }
+    if (params?.anio != null) {
+      q.set('anio', String(params.anio));
+    }
+    if (params?.limit != null) {
+      q.set('limit', String(params.limit));
+    }
+    return this.api.get(`contadores/libros-iva/informe?${q.toString()}`);
   }
 
   carteraDetalleEmpresa(

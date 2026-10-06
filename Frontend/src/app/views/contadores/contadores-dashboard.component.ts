@@ -13,6 +13,7 @@ import {
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import {
+  mesAnioDesdeQuery,
   opcionesPeriodo,
   periodoCierrePorDefecto,
   textoVencimientoIva,
@@ -76,11 +77,7 @@ export class ContadoresDashboardComponent implements OnInit {
     let prevAnio = -1;
 
     this.route.queryParamMap.pipe(this.untilDestroyed()).subscribe((params) => {
-      const def = periodoCierrePorDefecto();
-      const mesParam = Number(params.get('mes'));
-      const anioParam = Number(params.get('anio'));
-      const mes = Number.isFinite(mesParam) ? mesParam : def.mes;
-      const anio = Number.isFinite(anioParam) ? anioParam : def.anio;
+      const { mes, anio } = mesAnioDesdeQuery(params.get('mes'), params.get('anio'));
 
       if (mes !== prevMes || anio !== prevAnio) {
         prevMes = mes;

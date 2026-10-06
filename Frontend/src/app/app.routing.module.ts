@@ -14,6 +14,7 @@ import { AuthModule } from './auth/auth.module';
 import { ContadoresPortafolioComponent } from './views/contadores/contadores-portafolio.component';
 import { ContadoresDashboardComponent } from './views/contadores/contadores-dashboard.component';
 import { ContadoresCumplimientoComponent } from './views/contadores/contadores-cumplimiento.component';
+import { ContadoresLibrosIvaComponent } from './views/contadores/contadores-libros-iva.component';
 
 export const GUARD_TYPES = {
   ADMIN: 'admin',
@@ -41,6 +42,12 @@ export const routes: Routes = [
       canActivate: [AuthGuard],
       component: ContadoresCumplimientoComponent,
       title: 'Cumplimiento fiscal',
+    },
+    {
+      path: 'contadores/libros-iva',
+      canActivate: [AuthGuard],
+      component: ContadoresLibrosIvaComponent,
+      title: 'Libros de IVA',
     },
     { path: 'registro', component: RegisterEntryComponent, title: 'Registro' },
     { path: 'pago', component: PagoEntryComponent, title: 'Pago' },

@@ -7,6 +7,7 @@ use App\Models\Contadores\ContadorEmpresaAcceso;
 use App\Services\Contadores\ContadorCarteraMetricasService;
 use App\Services\Contadores\ContadorCumplimientoService;
 use App\Services\Contadores\ContadorEmpresaAccesoPermisos;
+use App\Services\Contadores\ContadorLibrosIvaService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -52,14 +53,7 @@ class ContadorPortalController extends Controller
             return response()->json(['error' => 'Acceso reservado al portal de contadores.', 'code' => 403], 403);
         }
 
-        $request->validate([
-            'mes' => 'sometimes|integer|min:1|max:12',
-            'anio' => 'sometimes|integer|min:2000|max:2100',
-        ]);
-
-        $ref = Carbon::now('America/El_Salvador')->subMonth();
-        $mes = (int) $request->input('mes', $ref->month);
-        $anio = (int) $request->input('anio', $ref->year);
+        [$mes, $anio] = $this->periodoContadorDesdeRequest($request);
 
         $idsEmpresa = ContadorEmpresaAcceso::query()
             ->where('id_usuario_contador', $user->id)
@@ -113,14 +107,10 @@ class ContadorPortalController extends Controller
 
         $request->validate([
             'id_empresa' => 'required|integer|min:1',
-            'mes' => 'sometimes|integer|min:1|max:12',
-            'anio' => 'sometimes|integer|min:2000|max:2100',
         ]);
 
         $idEmpresa = (int) $request->input('id_empresa');
-        $ref = Carbon::now('America/El_Salvador')->subMonth();
-        $mes = (int) $request->input('mes', $ref->month);
-        $anio = (int) $request->input('anio', $ref->year);
+        [$mes, $anio] = $this->periodoContadorDesdeRequest($request);
 
         $acceso = ContadorEmpresaAcceso::query()
             ->where('id_usuario_contador', $user->id)
@@ -236,6 +226,22 @@ class ContadorPortalController extends Controller
             ->first();
     }
 
+    /** @return array{0: int, 1: int} Mes/año del periodo; ignora 0 o query vacía (evita rechazo de validación). */
+    private function periodoContadorDesdeRequest(Request $request): array
+    {
+        $ref = Carbon::now('America/El_Salvador')->subMonth();
+        $mes = filter_var($request->input('mes'), FILTER_VALIDATE_INT);
+        $anio = filter_var($request->input('anio'), FILTER_VALIDATE_INT);
+        if ($mes === false || $mes < 1 || $mes > 12) {
+            $mes = (int) $ref->month;
+        }
+        if ($anio === false || $anio < 2000 || $anio > 2100) {
+            $anio = (int) $ref->year;
+        }
+
+        return [$mes, $anio];
+    }
+
     public function carteraEmpresa(int $idEmpresa, Request $request, ContadorCarteraMetricasService $metricas): JsonResponse
     {
         $user = JWTAuth::parseToken()->authenticate();
@@ -245,14 +251,7 @@ class ContadorPortalController extends Controller
             return response()->json(['error' => 'Acceso reservado al portal de contadores.', 'code' => 403], 403);
         }
 
-        $request->validate([
-            'mes' => 'sometimes|integer|min:1|max:12',
-            'anio' => 'sometimes|integer|min:2000|max:2100',
-        ]);
-
-        $ref = Carbon::now('America/El_Salvador')->subMonth();
-        $mes = (int) $request->input('mes', $ref->month);
-        $anio = (int) $request->input('anio', $ref->year);
+        [$mes, $anio] = $this->periodoContadorDesdeRequest($request);
 
         $tieneAcceso = ContadorEmpresaAcceso::query()
             ->where('id_usuario_contador', $user->id)
@@ -270,6 +269,96 @@ class ContadorPortalController extends Controller
             'periodo' => ['mes' => $mes, 'anio' => $anio],
             'detalle' => $metricas->detalleEmpresa($idEmpresa, $anio, $mes),
         ], 200);
+    }
+
+    public function librosIva(Request $request, ContadorLibrosIvaService $libros): JsonResponse
+    {
+        $user = JWTAuth::parseToken()->authenticate();
+        $user->load('roles');
+
+        if (!$user->hasRole(config('constants.ROL_ADMIN_CONTADOR', 'admin_contador'))) {
+            return response()->json(['error' => 'Acceso reservado al portal de contadores.', 'code' => 403], 403);
+        }
+
+        $request->validate([
+            'id_empresa' => 'required|integer|min:1',
+        ]);
+
+        $idEmpresa = (int) $request->input('id_empresa');
+        if (!$this->accesoContadorEmpresa($user->id, $idEmpresa)) {
+            return response()->json(['error' => 'No tienes acceso activo a esta empresa.', 'code' => 403], 403);
+        }
+
+        [$mes, $anio] = $this->periodoContadorDesdeRequest($request);
+
+        try {
+            return response()->json($libros->vista($idEmpresa, $anio, $mes), 200);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => [$e->getMessage()], 'code' => 422], 422);
+        }
+    }
+
+    public function librosIvaInforme(Request $request, ContadorLibrosIvaService $libros): JsonResponse
+    {
+        $user = JWTAuth::parseToken()->authenticate();
+        $user->load('roles');
+
+        if (!$user->hasRole(config('constants.ROL_ADMIN_CONTADOR', 'admin_contador'))) {
+            return response()->json(['error' => 'Acceso reservado al portal de contadores.', 'code' => 403], 403);
+        }
+
+        $request->validate([
+            'id_empresa' => 'required|integer|min:1',
+            'informe' => 'required|string|max:64',
+            'limit' => 'sometimes|integer|min:1|max:200',
+        ]);
+
+        $idEmpresa = (int) $request->input('id_empresa');
+        if (!$this->accesoContadorEmpresa($user->id, $idEmpresa)) {
+            return response()->json(['error' => 'No tienes acceso activo a esta empresa.', 'code' => 403], 403);
+        }
+
+        [$mes, $anio] = $this->periodoContadorDesdeRequest($request);
+        $limit = (int) $request->input('limit', 50);
+
+        try {
+            return response()->json(
+                $libros->informe($idEmpresa, $anio, $mes, (string) $request->input('informe'), $limit),
+                200
+            );
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => [$e->getMessage()], 'code' => 422], 422);
+        }
+    }
+
+    public function librosIvaExport(Request $request, ContadorLibrosIvaService $libros)
+    {
+        $user = JWTAuth::parseToken()->authenticate();
+        $user->load('roles');
+
+        if (!$user->hasRole(config('constants.ROL_ADMIN_CONTADOR', 'admin_contador'))) {
+            return response()->json(['error' => 'Acceso reservado al portal de contadores.', 'code' => 403], 403);
+        }
+
+        $request->validate([
+            'id_empresa' => 'required|integer|min:1',
+            'informe' => 'required|string|max:64',
+            'formato' => 'required|string|in:pdf,excel,csv',
+        ]);
+
+        $idEmpresa = (int) $request->input('id_empresa');
+        if (!$this->accesoContadorEmpresa($user->id, $idEmpresa)) {
+            return response()->json(['error' => 'No tienes acceso activo a esta empresa.', 'code' => 403], 403);
+        }
+
+        [$mes, $anio] = $this->periodoContadorDesdeRequest($request);
+        $formato = (string) $request->input('formato');
+
+        try {
+            return $libros->exportar($idEmpresa, $anio, $mes, (string) $request->input('informe'), $formato);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => [$e->getMessage()], 'code' => 422], 422);
+        }
     }
 
     public function contexto(int $idEmpresa): JsonResponse
