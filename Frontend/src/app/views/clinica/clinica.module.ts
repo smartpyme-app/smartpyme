@@ -13,9 +13,21 @@ import { PacienteFormComponent } from './pacientes/paciente-form.component';
 import { PacienteFichaComponent } from './pacientes/paciente-ficha.component';
 import { ProfesionalesComponent } from './profesionales/profesionales.component';
 import { ExpedienteFichaComponent } from './expediente/expediente-ficha.component';
+import { HistorialExpedienteComponent } from './historial/historial-expediente.component';
+import { ConsultaFormComponent } from './consultas/consulta-form.component';
+import { ConsultaFichaComponent } from './consultas/consulta-ficha.component';
 
 @NgModule({
-  declarations: [PacientesComponent, PacienteFormComponent, PacienteFichaComponent, ProfesionalesComponent, ExpedienteFichaComponent],
+  declarations: [
+    PacientesComponent,
+    PacienteFormComponent,
+    PacienteFichaComponent,
+    ProfesionalesComponent,
+    ExpedienteFichaComponent,
+    HistorialExpedienteComponent,
+    ConsultaFormComponent,
+    ConsultaFichaComponent,
+  ],
   imports: [
     CommonModule,
     FormsModule,

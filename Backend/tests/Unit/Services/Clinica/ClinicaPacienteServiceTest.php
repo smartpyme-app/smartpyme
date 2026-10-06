@@ -6,6 +6,7 @@ use App\Models\Clinica\Paciente;
 use App\Models\User;
 use App\Services\Clinica\ClinicaPermisos;
 use App\Services\Clinica\ExpedienteService;
+use App\Services\Clinica\HistorialClinicoService;
 use App\Services\Clinica\PacienteService;
 use App\Services\Clinica\ResponsableService;
 use Illuminate\Database\Schema\Blueprint;
@@ -31,6 +32,7 @@ class ClinicaPacienteServiceTest extends TestCase
             'foreign_key_constraints' => true,
         ]);
         DB::purge('sqlite');
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         Schema::create('empresas', function (Blueprint $table): void {
             $table->increments('id');
@@ -135,6 +137,21 @@ class ClinicaPacienteServiceTest extends TestCase
             $table->unsignedInteger('id_empresa')->primary();
             $table->unsignedInteger('ultimo')->default(0);
         });
+        Schema::create('clinica_historial_eventos', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedInteger('id_empresa');
+            $table->unsignedBigInteger('id_expediente');
+            $table->string('tipo', 40);
+            $table->date('fecha_evento');
+            $table->time('hora_evento')->nullable();
+            $table->unsignedBigInteger('id_usuario_profesional')->nullable();
+            $table->string('origen_tipo', 40);
+            $table->unsignedBigInteger('origen_id');
+            $table->string('resumen', 255);
+            $table->string('estado', 20)->default('activo');
+            $table->timestamps();
+            $table->unique(['origen_tipo', 'origen_id']);
+        });
         Schema::create('clinica_responsables', function (Blueprint $table): void {
             $table->id();
             $table->unsignedInteger('id_empresa');
@@ -158,12 +175,18 @@ class ClinicaPacienteServiceTest extends TestCase
         DB::table('empresas')->insert([['id' => 1], ['id' => 2]]);
     }
 
+    protected function tearDown(): void
+    {
+        Auth::logout();
+        parent::tearDown();
+    }
+
     public function test_crear_humano_abre_expediente_unico_y_no_crea_cliente(): void
     {
         $usuario = $this->usuarioEmpresa(1, ['clinica.pacientes.crear', ClinicaPermisos::EXPEDIENTE_VER]);
         Auth::login($usuario);
 
-        $expedientes = new ExpedienteService();
+        $expedientes = new ExpedienteService(new HistorialClinicoService());
         $servicio = new PacienteService(new ResponsableService($expedientes), $expedientes);
         $paciente = $servicio->crear(1, $usuario->id, [
             'tipo' => 'HUMANO',
@@ -185,7 +208,7 @@ class ClinicaPacienteServiceTest extends TestCase
 
     public function test_sin_permiso_expediente_oculta_cabecera_clinica_en_presentacion(): void
     {
-        $expedientes = new ExpedienteService();
+        $expedientes = new ExpedienteService(new HistorialClinicoService());
         $servicio = new PacienteService(new ResponsableService($expedientes), $expedientes);
         Auth::login($this->usuarioEmpresa(1, ['clinica.pacientes.crear', ClinicaPermisos::EXPEDIENTE_VER]));
         $paciente = $servicio->crear(1, 1, [
@@ -206,7 +229,7 @@ class ClinicaPacienteServiceTest extends TestCase
     {
         $usuario = $this->usuarioEmpresa(1, ['clinica.pacientes.crear']);
         Auth::login($usuario);
-        $expedientes = new ExpedienteService();
+        $expedientes = new ExpedienteService(new HistorialClinicoService());
         $servicio = new PacienteService(new ResponsableService($expedientes), $expedientes);
 
         $servicio->crear(1, $usuario->id, [
@@ -243,7 +266,7 @@ class ClinicaPacienteServiceTest extends TestCase
 
     public function test_alcance_por_empresa_no_expone_paciente_ajeno(): void
     {
-        $expedientes = new ExpedienteService();
+        $expedientes = new ExpedienteService(new HistorialClinicoService());
         $servicio = new PacienteService(new ResponsableService($expedientes), $expedientes);
         Auth::login($this->usuarioEmpresa(1, ['clinica.pacientes.crear']));
         $paciente = $servicio->crear(1, 1, [

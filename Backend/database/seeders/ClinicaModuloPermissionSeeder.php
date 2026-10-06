@@ -20,6 +20,7 @@ class ClinicaModuloPermissionSeeder extends Seeder
         'pacientes' => 'Pacientes',
         'expediente' => 'Expediente clínico',
         'profesionales' => 'Profesionales',
+        'consultas' => 'Consultas clínicas',
     ];
 
     /** @return list<string> */

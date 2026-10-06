@@ -15,6 +15,8 @@ Route::middleware(['verificar.funcionalidad:clinica-pacientes'])->group(function
 
     Route::get('clinica/pacientes', [PacientesController::class, 'index'])
         ->middleware('permission:clinica.pacientes.ver');
+    Route::get('clinica/pacientes/{id}/expediente/historial', [ExpedientesController::class, 'historial'])
+        ->middleware('permission:clinica.expediente.ver');
     Route::get('clinica/pacientes/{id}/expediente', [ExpedientesController::class, 'show'])
         ->middleware('permission:clinica.expediente.ver');
     Route::patch('clinica/pacientes/{id}/expediente/estado', [ExpedientesController::class, 'estado'])

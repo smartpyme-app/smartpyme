@@ -10,10 +10,14 @@ use Illuminate\Validation\ValidationException;
 
 class ExpedienteService
 {
+    public function __construct(private HistorialClinicoService $historial)
+    {
+    }
+
     /** @var list<array{slug: string, nombre: string, disponible: bool}> */
     public const SECCIONES = [
-        ['slug' => 'historial', 'nombre' => 'Historial clínico', 'disponible' => false],
-        ['slug' => 'consultas', 'nombre' => 'Consultas', 'disponible' => false],
+        ['slug' => 'historial', 'nombre' => 'Historial clínico', 'disponible' => true],
+        ['slug' => 'consultas', 'nombre' => 'Consultas', 'disponible' => true],
         ['slug' => 'documentos', 'nombre' => 'Documentos', 'disponible' => false],
         ['slug' => 'diagnosticos', 'nombre' => 'Diagnósticos', 'disponible' => false],
         ['slug' => 'tratamientos', 'nombre' => 'Tratamientos', 'disponible' => false],
@@ -121,7 +125,7 @@ class ExpedienteService
                 ->where('id_empresa', $idEmpresa)
                 ->update(['ultimo' => $numero]);
 
-            return Expediente::create([
+            $expediente = Expediente::create([
                 'id_empresa' => $idEmpresa,
                 'id_paciente' => $idPaciente,
                 'id_sucursal_apertura' => $idSucursalApertura,
@@ -129,6 +133,9 @@ class ExpedienteService
                 'fecha_apertura' => now()->toDateString(),
                 'estado' => 'abierto',
             ]);
+            $this->historial->registrarApertura($expediente);
+
+            return $expediente;
         });
     }
 

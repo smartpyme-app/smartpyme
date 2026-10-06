@@ -1,0 +1,71 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading mb-0">Historial clínico</h2>
+    <button type="button" class="btn btn-default" [routerLink]="['/clinica/pacientes', idPaciente, 'expediente']">
+        <i class="fa fa-arrow-left"></i> Regresar al expediente
+    </button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label">Tipo</label>
+            <select class="form-select" [(ngModel)]="filtros.tipo" (change)="cargar()">
+                <option value="">Todos</option>
+                <option value="consulta">Consulta</option>
+                <option value="expediente_apertura">Apertura</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Desde</label>
+            <input type="date" class="form-control" [(ngModel)]="filtros.fecha_desde" (change)="cargar()">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Hasta</label>
+            <input type="date" class="form-control" [(ngModel)]="filtros.fecha_hasta" (change)="cargar()">
+        </div>
+    </div>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    @if (cargando) {
+        <span class="badge bg-primary">Cargando...</span>
+    }
+    @if (!cargando && eventos.length === 0) {
+        <span class="badge bg-secondary">Sin eventos en el historial</span>
+    }
+    @if (!cargando && eventos.length > 0) {
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Resumen</th>
+                        <th>Profesional</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (evento of eventos; track evento.id) {
+                        <tr [class.text-muted]="evento.anulado">
+                            <td>{{ evento.fecha_evento }} {{ evento.hora_evento || '' }}</td>
+                            <td>
+                                {{ evento.tipo_etiqueta }}
+                                @if (evento.anulado) {
+                                    <span class="badge bg-danger ms-1">Anulado</span>
+                                }
+                            </td>
+                            <td>{{ evento.resumen }}</td>
+                            <td>{{ evento.profesional?.nombre || '—' }}</td>
+                            <td class="text-end">
+                                @if (evento.enlace?.ruta) {
+                                    <button type="button" class="btn btn-default btn-sm" (click)="abrirEvento(evento)">Ver</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

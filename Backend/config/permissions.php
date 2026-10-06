@@ -619,6 +619,11 @@ return [
             'ver' => 'clinica.profesionales.ver',
             'editar' => 'clinica.profesionales.editar',
         ],
+        'consultas' => [
+            'ver' => 'clinica.consultas.ver',
+            'crear' => 'clinica.consultas.crear',
+            'editar' => 'clinica.consultas.editar',
+        ],
     ],
 
     /*

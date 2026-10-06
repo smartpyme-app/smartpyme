@@ -1,0 +1,64 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading mb-0">{{ esEdicion ? 'Editar consulta' : 'Nueva consulta' }}</h2>
+    <button type="button" class="btn btn-default" [routerLink]="['/clinica/pacientes', idPaciente, 'expediente']">Regresar</button>
+</section>
+
+@if (cargando) {
+    <section class="bg-white p-4 rounded"><span class="badge bg-primary">Cargando...</span></section>
+}
+
+@if (!cargando) {
+    <section class="bg-white p-4 rounded mb-3">
+        <div class="row">
+            <div class="form-group col-md-3">
+                <label>Fecha</label>
+                <input type="date" class="form-control" [(ngModel)]="consulta.fecha" name="fecha">
+            </div>
+            <div class="form-group col-md-3">
+                <label>Hora</label>
+                <input type="time" class="form-control" [(ngModel)]="consulta.hora" name="hora">
+            </div>
+            <div class="form-group col-md-3">
+                <label>Sucursal</label>
+                <select class="form-select" [(ngModel)]="consulta.id_sucursal" name="id_sucursal">
+                    <option value="">Seleccione</option>
+                    @for (s of sucursales; track s.id) {
+                        <option [ngValue]="s.id">{{ s.nombre }}</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group col-md-3">
+                <label>Profesional</label>
+                <select class="form-select" [(ngModel)]="consulta.id_usuario_profesional" name="id_usuario_profesional">
+                    <option value="">Seleccione</option>
+                    @for (p of profesionales; track p.id) {
+                        <option [ngValue]="p.id_usuario">{{ p.nombre }}</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group col-12">
+                <label>Motivo</label>
+                <input class="form-control" [(ngModel)]="consulta.motivo" name="motivo" placeholder="Motivo de la consulta">
+            </div>
+            <div class="form-group col-md-6">
+                <label>Anamnesis</label>
+                <textarea class="form-control" rows="3" [(ngModel)]="consulta.anamnesis" name="anamnesis"></textarea>
+            </div>
+            <div class="form-group col-md-6">
+                <label>Examen físico</label>
+                <textarea class="form-control" rows="3" [(ngModel)]="consulta.examen_fisico" name="examen_fisico"></textarea>
+            </div>
+            <div class="form-group col-md-6">
+                <label>Observaciones</label>
+                <textarea class="form-control" rows="2" [(ngModel)]="consulta.observaciones" name="observaciones"></textarea>
+            </div>
+            <div class="form-group col-md-6">
+                <label>Indicaciones</label>
+                <textarea class="form-control" rows="2" [(ngModel)]="consulta.indicaciones" name="indicaciones"></textarea>
+            </div>
+        </div>
+        <div class="d-flex justify-content-end gap-2 mt-3">
+            <button type="button" class="btn btn-primary" [disabled]="guardando" (click)="guardar()">Guardar borrador</button>
+        </div>
+    </section>
+}

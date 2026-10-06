@@ -5,6 +5,7 @@ namespace Tests\Unit\Services\Clinica;
 use App\Models\Clinica\Expediente;
 use App\Models\Clinica\Paciente;
 use App\Services\Clinica\ExpedienteService;
+use App\Services\Clinica\HistorialClinicoService;
 use App\Services\Clinica\ResponsableService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +30,7 @@ class ExpedienteServiceTest extends TestCase
         DB::purge('sqlite');
         $this->crearEsquemaMinimo();
         DB::table('empresas')->insert(['id' => 1]);
-        $this->expedientes = new ExpedienteService();
+        $this->expedientes = new ExpedienteService(new HistorialClinicoService());
     }
 
     public function test_archivar_y_reabrir_cambia_estado(): void
@@ -64,7 +65,9 @@ class ExpedienteServiceTest extends TestCase
         $data = $this->expedientes->presentar($expediente);
 
         $this->assertSame(count(ExpedienteService::SECCIONES), count($data['secciones']));
-        $this->assertFalse($data['secciones'][0]['disponible']);
+        $this->assertTrue($data['secciones'][0]['disponible']);
+        $this->assertSame('historial', $data['secciones'][0]['slug']);
+        $this->assertFalse($data['secciones'][2]['disponible']);
     }
 
     private function pacienteConExpediente(string $estado): Paciente

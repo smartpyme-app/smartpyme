@@ -17,9 +17,21 @@ class ClinicaPacientesRoutesTest extends TestCase
             'verificar.funcionalidad:clinica-pacientes',
             'permission:clinica.pacientes.crear',
         ]);
+        $this->assertRoute('api/clinica/pacientes/{id}/expediente/historial', 'GET', [
+            'verificar.funcionalidad:clinica-pacientes',
+            'permission:clinica.expediente.ver',
+        ]);
         $this->assertRoute('api/clinica/pacientes/{id}/expediente', 'GET', [
             'verificar.funcionalidad:clinica-pacientes',
             'permission:clinica.expediente.ver',
+        ]);
+        $this->assertRoute('api/clinica/pacientes/{id}/consultas', 'GET', [
+            'verificar.funcionalidad:clinica-pacientes',
+            'permission:clinica.consultas.ver|clinica.expediente.ver',
+        ]);
+        $this->assertRoute('api/clinica/pacientes/{id}/consultas/{idConsulta}/cerrar', 'PATCH', [
+            'verificar.funcionalidad:clinica-pacientes',
+            'permission:clinica.consultas.editar',
         ]);
         $this->assertRoute('api/clinica/pacientes/{id}/expediente/estado', 'PATCH', [
             'verificar.funcionalidad:clinica-pacientes',
