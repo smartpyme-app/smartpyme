@@ -169,6 +169,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/super-admin/usuarios.php');
 	require base_path('routes/modulos/super-admin/planes.php');
 	require base_path('routes/modulos/super-admin/campanias.php');
+	require base_path('routes/modulos/super-admin/aliados.php');
 	require base_path('routes/modulos/super-admin/pagos.php');
 	require base_path('routes/modulos/super-admin/transacciones.php');
 	require base_path('routes/modulos/super-admin/auditoria.php');

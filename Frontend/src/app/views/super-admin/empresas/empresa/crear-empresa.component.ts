@@ -10,6 +10,7 @@ import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
+import { CrearCatalogoSuperComponent } from '@shared/modals/crear-catalogo-super/crear-catalogo-super.component';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { NgxMaskDirective } from 'ngx-mask';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
@@ -20,7 +21,7 @@ import { aplicarImpuestosDefaultsAEmpresa } from '@views/admin/empresa/impuestos
     selector: 'app-crear-empresa',
     templateUrl: './crear-empresa.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearClienteComponent, FilterPipe, NgxMaskDirective, TranslatePipe],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearClienteComponent, CrearCatalogoSuperComponent, FilterPipe, NgxMaskDirective, TranslatePipe],
 
 })
 
@@ -38,6 +39,7 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
     public municipios:any = [];
     public actividad_economicas:any = [];
     public campanias: any[] = [];
+    public aliados: any[] = [];
 
   override modalRef!: BsModalRef;
 
@@ -71,6 +73,11 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
             this.asegurarCampaniaActual();
         }, (error) => { this.alertService.error(error); });
 
+        this.apiService.getAll('aliados', { list: 1, estado: '1' }).pipe(this.untilDestroyed()).subscribe((aliados) => {
+            this.aliados = Array.isArray(aliados) ? aliados : [];
+            this.asegurarAliadoActual();
+        }, (error) => { this.alertService.error(error); });
+
         this.apiService.getAll('admin-usuarios/list-vendedores').subscribe((response) => {
             let usuarios = [];
             if (response && response.data) {
@@ -93,6 +100,7 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
             this.apiService.read('empresa/', id).pipe(this.untilDestroyed()).subscribe(empresa => {
                 this.empresa = empresa;
                 this.asegurarCampaniaActual();
+                this.asegurarAliadoActual();
                 this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false;});
         }else{
@@ -123,6 +131,28 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
             return;
         }
         this.campanias = [{ id: null, nombre }, ...this.campanias];
+    }
+
+    private asegurarAliadoActual() {
+        const nombre = String(this.empresa?.aliado ?? '').trim();
+        if (!nombre || this.aliados.some((c) => c.nombre === nombre)) {
+            return;
+        }
+        this.aliados = [{ id: null, nombre }, ...this.aliados];
+    }
+
+    public agregarCampania(item: any) {
+        if (!this.campanias.some((c) => c.nombre === item.nombre)) {
+            this.campanias = [...this.campanias, item];
+        }
+        this.empresa.campania = item.nombre;
+    }
+
+    public agregarAliado(item: any) {
+        if (!this.aliados.some((c) => c.nombre === item.nombre)) {
+            this.aliados = [...this.aliados, item];
+        }
+        this.empresa.aliado = item.nombre;
     }
 
     public setCliente(cliente: any) {

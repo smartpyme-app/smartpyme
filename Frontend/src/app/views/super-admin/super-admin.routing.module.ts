@@ -81,6 +81,11 @@ const routes: Routes = [
           title: 'Campañas'
         },
         {
+          path: 'aliados',
+          loadComponent: () => import('./aliados/admin-aliados.component').then(m => m.AdminAliadosComponent),
+          title: 'Aliados'
+        },
+        {
           path: 'pais-configuracion',
           loadComponent: () => import('./pais-configuracion/admin-pais-configuracion.component').then(m => m.AdminPaisConfiguracionComponent),
           title: 'Configuración por país'

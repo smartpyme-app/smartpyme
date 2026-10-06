@@ -225,6 +225,7 @@ class PromocionalesController extends Controller
             $query->where(function($q) use ($buscador) {
                 $q->where('codigo', 'like', "%{$buscador}%")
                   ->orWhere('campania', 'like', "%{$buscador}%")
+                  ->orWhere('aliado', 'like', "%{$buscador}%")
                   ->orWhere('descripcion', 'like', "%{$buscador}%");
             });
         }
@@ -274,6 +275,7 @@ class PromocionalesController extends Controller
             'tipo' => 'required|in:porcentaje,monto_fijo',
             'activo' => 'boolean',
             'campania' => 'nullable|string',
+            'aliado' => 'nullable|string',
             'descripcion' => 'nullable|string',
             'planes_permitidos' => 'nullable|array',
             'opciones' => 'nullable|array',
@@ -285,6 +287,7 @@ class PromocionalesController extends Controller
             'tipo' => $request->tipo,
             'activo' => $request->has('activo') ? $request->activo : true,
             'campania' => $request->campania,
+            'aliado' => $request->aliado,
             'descripcion' => $request->descripcion,
             'planes_permitidos' => $request->planes_permitidos ?? [],
             'opciones' => $request->opciones ?? [],
@@ -320,6 +323,7 @@ class PromocionalesController extends Controller
             'tipo' => 'sometimes|required|in:porcentaje,monto_fijo',
             'activo' => 'boolean',
             'campania' => 'nullable|string',
+            'aliado' => 'nullable|string',
             'descripcion' => 'nullable|string',
             'planes_permitidos' => 'nullable|array',
             'opciones' => 'nullable|array',
@@ -331,6 +335,7 @@ class PromocionalesController extends Controller
             'tipo' => $request->has('tipo') ? $request->tipo : $promocional->tipo,
             'activo' => $request->has('activo') ? $request->activo : $promocional->activo,
             'campania' => $request->has('campania') ? $request->campania : $promocional->campania,
+            'aliado' => $request->has('aliado') ? $request->aliado : $promocional->aliado,
             'descripcion' => $request->has('descripcion') ? $request->descripcion : $promocional->descripcion,
             'planes_permitidos' => $request->has('planes_permitidos') ? $request->planes_permitidos : $promocional->planes_permitidos,
             'opciones' => $request->has('opciones') ? $request->opciones : $promocional->opciones,

@@ -276,10 +276,23 @@
                     </div>
                     <div class="form-group col-md-6 col-lg-4">
                         <label>Campaña</label>
-                        <ng-select name="campania" placeholder="Seleccione campaña" [(ngModel)]="empresa.campania"
-                            class="form-select p-0" [items]="campanias" bindLabel="nombre" bindValue="nombre"
-                            [clearable]="true" notFoundText="No hay campañas">
-                        </ng-select>
+                        <div class="input-group flex-nowrap">
+                            <ng-select name="campania" placeholder="Seleccione campaña" [(ngModel)]="empresa.campania"
+                                class="form-select p-0" [items]="campanias" bindLabel="nombre" bindValue="nombre"
+                                [clearable]="true" notFoundText="No hay campañas">
+                            </ng-select>
+                            <app-crear-catalogo-super endpoint="campania" (update)="agregarCampania($event)"></app-crear-catalogo-super>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-6 col-lg-4">
+                        <label>Aliado</label>
+                        <div class="input-group flex-nowrap">
+                            <ng-select name="aliado" placeholder="Seleccione aliado" [(ngModel)]="empresa.aliado"
+                                class="form-select p-0" [items]="aliados" bindLabel="nombre" bindValue="nombre"
+                                [clearable]="true" notFoundText="No hay aliados">
+                            </ng-select>
+                            <app-crear-catalogo-super endpoint="aliado" (update)="agregarAliado($event)"></app-crear-catalogo-super>
+                        </div>
                     </div>
 
                 </div>

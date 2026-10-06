@@ -77,6 +77,7 @@ class Empresa extends Model
         'pago_recurrente',
         'referido',
         'campania',
+        'aliado',
         'codigo_promocional',
         'wompi_aplicativo',
         'wompi_id',
