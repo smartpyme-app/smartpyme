@@ -111,7 +111,9 @@
               "buildTarget": "Frontend:build:production"
             },
             "development": {
-              "buildTarget": "Frontend:build:development"
+              "buildTarget": "Frontend:build:development",
+              "host": "127.0.0.1",
+              "allowedHosts": ["contadores.smartpyme.test", "localhost", "127.0.0.1"]
             }
           },
           "defaultConfiguration": "development"

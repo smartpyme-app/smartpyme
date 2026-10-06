@@ -79,6 +79,8 @@ class User extends Authenticatable implements JWTSubject
         if ($role) {
             if ($role->name === config('constants.ROL_SUPER_ADMIN', 'super_admin')) {
                 $this->tipo = 'Super Administrador';
+            } elseif ($role->name === config('constants.ROL_ADMIN_CONTADOR', 'admin_contador')) {
+                $this->tipo = 'Admin Contador';
             } elseif ($role->name === config('constants.ROL_ADMIN', 'admin')) {
                 $this->tipo = config('constants.TIPO_USUARIO_ADMINISTRADOR', 'Administrador');
             } elseif (in_array($role->name, [config('constants.ROL_USUARIO_VENDEDOR', 'usuario_vendedor'), 'usuario_ventas', 'vendedor'])) {
@@ -261,6 +263,11 @@ class User extends Authenticatable implements JWTSubject
     public function authorization()
     {
         return $this->belongsTo('App\Models\Authorization\Authorization', 'id_authorization');
+    }
+
+    public function contadorEmpresaAccesos()
+    {
+        return $this->hasMany(\App\Models\Contadores\ContadorEmpresaAcceso::class, 'id_usuario_contador');
     }
 
     public function role()

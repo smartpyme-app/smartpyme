@@ -8,6 +8,7 @@ import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { switchMap } from 'rxjs/operators';
 
 declare let $: any;
 
@@ -47,7 +48,10 @@ export class LoginContadoresComponent implements OnInit {
     this.loading = true;
 
     this.apiService.login(this.user)
-      .pipe(this.untilDestroyed())
+      .pipe(
+        switchMap(() => this.apiService.get('contadores/empresas')),
+        this.untilDestroyed(),
+      )
       .subscribe({
         next: () => {
           this.user = this.apiService.auth_user();
@@ -72,8 +76,18 @@ export class LoginContadoresComponent implements OnInit {
           this.loading = false;
         },
         error: (error) => {
+          if (this.apiService.autenticated()) {
+            localStorage.clear();
+          }
           $('.container').addClass('animated shake');
-          this.alertService.error(error);
+          if (error?.status === 403) {
+            this.alertService.error({
+              status: 403,
+              error: 'Esta cuenta no tiene acceso al portal de contadores.',
+            });
+          } else {
+            this.alertService.error(error);
+          }
           this.loading = false;
         },
       });

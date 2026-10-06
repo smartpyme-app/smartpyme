@@ -91,6 +91,16 @@ const routes: Routes = [
           title: 'Funcionalidades'
         },
         {
+          path: 'contadores',
+          loadComponent: () => import('@views/super-admin/contador-accesos/admin-contador-accesos.component').then(m => m.AdminContadorAccesosComponent),
+          title: 'Contadores'
+        },
+        {
+          path: 'contador-accesos',
+          redirectTo: 'contadores',
+          pathMatch: 'full',
+        },
+        {
           path: 'roles-permisos',
           loadComponent: () => import('@views/admin/roles-permisos/roles-permisos.component').then(m => m.RolesPermisosComponent),
           title: 'Roles y permisos'

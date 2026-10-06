@@ -11,6 +11,7 @@ import { LoginEntryComponent } from './auth/login/login-entry.component';
 import { RegisterEntryComponent } from './auth/register/register-entry.component';
 import { PagoEntryComponent } from './auth/register/pago/pago-entry.component';
 import { AuthModule } from './auth/auth.module';
+import { ContadoresPortafolioComponent } from './views/contadores/contadores-portafolio.component';
 
 export const GUARD_TYPES = {
   ADMIN: 'admin',
@@ -23,7 +24,8 @@ export const routes: Routes = [
     {
       path: 'contadores',
       canActivate: [AuthGuard],
-      loadComponent: () => import('./views/contadores/contadores-portafolio.component').then(m => m.ContadoresPortafolioComponent),
+      // ponytail: sin lazy load — evita ChunkLoadError al entrar por proxy Herd (contadores.*)
+      component: ContadoresPortafolioComponent,
       title: 'Empresas',
     },
     { path: 'registro', component: RegisterEntryComponent, title: 'Registro' },
