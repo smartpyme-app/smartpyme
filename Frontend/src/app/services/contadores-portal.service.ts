@@ -36,6 +36,66 @@ export interface ContadorDesgloseFila {
   con_partida: number;
 }
 
+export type EstadoDocumentoContador = 'vigente' | 'por_vencer' | 'sin_cargar';
+export type EstadoCalendarioContador = 'pendiente' | 'presentado';
+
+export interface ContadorCumplimientoResponse {
+  empresa: {
+    id: number;
+    nombre: string;
+    logo: string | null;
+    giro?: string | null;
+    nit?: string | null;
+  };
+  periodo: { mes: number; anio: number; label: string };
+  kpis: {
+    documentos: {
+      al_dia: number;
+      total: number;
+      por_vencer: number;
+      sin_cargar: number;
+      proximo_vencimiento: { fecha: string; label: string; dias_restantes: number } | null;
+    };
+    fiscal: { iva_a_pagar: number; total_f14: number };
+  };
+  calendario_tributario: {
+    codigo: string;
+    titulo: string;
+    fecha: string;
+    fecha_corta: string;
+    monto: number;
+    estado: EstadoCalendarioContador;
+  }[];
+  renovaciones: {
+    slug: string;
+    nombre: string;
+    fecha_limite: string;
+    monto_estimado: number | null;
+    nota: string | null;
+    estado: string;
+  }[];
+  permisos?: string[];
+  documentos: {
+    id: number | null;
+    slug: string | null;
+    nombre: string;
+    nombre_catalogo?: string | null;
+    subible?: boolean;
+    estado: EstadoDocumentoContador;
+    detalle: string | null;
+    archivo_url: string | null;
+    vence_en?: string | null;
+    es_anexo?: boolean;
+    es_otro?: boolean;
+  }[];
+  capacidades: {
+    subir_archivos: boolean;
+    marcar_presentado: boolean;
+    recordatorios_email: boolean;
+    logo_empresa: boolean;
+  };
+}
+
 export interface ContadorCarteraDetalle {
   desglose: {
     ventas: ContadorDesgloseFila;
@@ -92,6 +152,61 @@ export class ContadoresPortalService {
 
   listarEmpresas(): Observable<{ empresas: ContadorEmpresaPortafolio[] }> {
     return this.api.get('contadores/empresas');
+  }
+
+  cumplimiento(
+    idEmpresa: number,
+    params?: { mes?: number; anio?: number },
+  ): Observable<ContadorCumplimientoResponse> {
+    const q = new URLSearchParams();
+    q.set('id_empresa', String(idEmpresa));
+    if (params?.mes != null) {
+      q.set('mes', String(params.mes));
+    }
+    if (params?.anio != null) {
+      q.set('anio', String(params.anio));
+    }
+    return this.api.get(`contadores/cumplimiento?${q.toString()}`);
+  }
+
+  subirDocumentoCumplimiento(
+    idEmpresa: number,
+    file: File,
+    opts: {
+      idDocumento?: number | null;
+      slug?: string | null;
+      venceEn?: string | null;
+      titulo?: string | null;
+    },
+  ): Observable<{ ok: boolean; id?: number }> {
+    const fd = new FormData();
+    fd.append('id_empresa', String(idEmpresa));
+    fd.append('archivo', file);
+    if (opts.idDocumento) {
+      fd.append('id_documento', String(opts.idDocumento));
+    }
+    const slug = (opts.slug ?? 'libre').trim() || 'libre';
+    fd.append('slug', slug);
+    const venceEn = opts.venceEn?.trim();
+    if (venceEn) {
+      fd.append('vence_en', venceEn);
+    }
+    fd.append('titulo', (opts.titulo ?? '').trim());
+    return this.api.upload('contadores/cumplimiento/documentos', fd);
+  }
+
+  marcarObligacionPresentada(
+    idEmpresa: number,
+    codigo: string,
+    mes: number,
+    anio: number,
+  ): Observable<{ ok: boolean }> {
+    return this.api.store('contadores/cumplimiento/presentado', {
+      id_empresa: idEmpresa,
+      codigo,
+      mes,
+      anio,
+    });
   }
 
   carteraDetalleEmpresa(

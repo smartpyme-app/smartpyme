@@ -11,6 +11,13 @@
       </a>
       <span class="contadores-dash__nav-link contadores-dash__nav-link--disabled">Libros de IVA</span>
     </nav>
+    <p class="contadores-dash__nav-label">Dentro de cada empresa</p>
+    <nav class="contadores-dash__nav">
+      <span class="contadores-dash__nav-link contadores-dash__nav-link--disabled">Ventas y compras</span>
+      <span class="contadores-dash__nav-link contadores-dash__nav-link--disabled">Partidas contables</span>
+      <span class="contadores-dash__nav-link contadores-dash__nav-link--disabled">Planillas</span>
+      <span class="contadores-dash__nav-link contadores-dash__nav-link--disabled">Estados financieros</span>
+    </nav>
     <div class="contadores-dash__sidebar-foot">
       <strong>{{ despachoNombre }}</strong>
       <span>{{ usuario?.name }}</span>
@@ -19,29 +26,325 @@
   </aside>
 
   <div class="contadores-dash__main">
-    <header class="contadores-dash__top">
-      <button type="button" class="contadores-dash__back btn btn-link p-0" (click)="volverCartera()">← Volver a cartera</button>
-      @if (periodoLabel) {
-        <span>{{ periodoLabel }}</span>
-      }
+    <header class="contadores-dash__top contadores-cump__top">
+      <div class="contadores-cump__top-left">
+        <button type="button" class="contadores-dash__back btn btn-link p-0" (click)="volverCartera()">← Cartera</button>
+        @if (empresas.length) {
+          <select
+            class="form-select form-select-sm contadores-cump__empresa-select"
+            [ngModel]="idEmpresa"
+            (ngModelChange)="onEmpresaChange($event)"
+          >
+            @for (e of empresas; track e.id) {
+              <option [ngValue]="e.id">Trabajando en {{ e.nombre }}</option>
+            }
+          </select>
+        }
+      </div>
+      <div class="contadores-cump__top-right">
+        <select
+          class="form-select form-select-sm contadores-dash__periodo-select"
+          [ngModel]="periodoKey"
+          (ngModelChange)="onPeriodoKeyChange($event)"
+        >
+          @for (p of opcionesPeriodo; track p.mes + '-' + p.anio) {
+            <option [value]="p.mes + '-' + p.anio">{{ p.label }}</option>
+          }
+        </select>
+      </div>
     </header>
 
     @if (loading) {
-      <p class="text-muted p-4">Preparando cumplimiento…</p>
+      <p class="text-muted p-4">Cargando cumplimiento…</p>
     }
     @if (!loading && error) {
       <p class="text-danger p-4">{{ error }}</p>
     }
-    @if (!loading && !error) {
-      <div class="p-4">
-        <h1 class="contadores-dash__title">Cumplimiento fiscal</h1>
-        <p class="text-muted">
-          {{ empresaNombre }} · {{ periodoLabel || 'Periodo seleccionado' }}
-        </p>
-        <p class="mt-3 mb-0">
-          Aquí irá la vista 4 del mockup (declaraciones, checklist y cierre). La cartera ya enlaza con este flujo.
-        </p>
+
+    @if (!loading && !error && vista; as v) {
+      <div class="contadores-cump__body">
+        <header class="contadores-cump__hero">
+          <div class="contadores-cump__hero-main">
+            @if (mostrarLogo(v.empresa.id, v.empresa.logo)) {
+              <img
+                class="contadores-cump__hero-logo"
+                [src]="logoUrl(v.empresa.logo)"
+                [alt]="v.empresa.nombre"
+                (error)="onLogoError(v.empresa.id)"
+              />
+            } @else {
+              <span class="contadores-cump__hero-avatar" [style.background]="colorMarca(v.empresa.nombre)">
+                {{ iniciales(v.empresa.nombre) }}
+              </span>
+            }
+            <div>
+              <h1 class="contadores-cump__hero-title">{{ v.empresa.nombre }}</h1>
+              <p class="contadores-cump__hero-sub mb-0">
+                {{ v.empresa.giro || 'Empresa cliente' }} · Cumplimiento y documentos
+              </p>
+            </div>
+          </div>
+        </header>
+
+        <div class="contadores-cump__kpis">
+          <div class="contadores-cump__kpi">
+            <span>Documentos al día</span>
+            <strong>{{ v.kpis.documentos.al_dia }} de {{ v.kpis.documentos.total }}</strong>
+          </div>
+          <div class="contadores-cump__kpi">
+            <span>Documentos por vencer</span>
+            <strong>{{ v.kpis.documentos.por_vencer }}</strong>
+          </div>
+          <div class="contadores-cump__kpi">
+            <span>Documentos sin cargar</span>
+            <strong>{{ v.kpis.documentos.sin_cargar }}</strong>
+          </div>
+          <div class="contadores-cump__kpi">
+            <span>Próximo vencimiento</span>
+            @if (v.kpis.documentos.proximo_vencimiento; as pv) {
+              <strong>{{ pv.label }} en {{ pv.dias_restantes }} días</strong>
+            } @else {
+              <strong>—</strong>
+            }
+          </div>
+        </div>
+
+        <div class="contadores-cump__grid-2">
+          <section class="contadores-cump__panel">
+            <h2 class="contadores-cump__panel-title">Calendario tributario</h2>
+            <p class="contadores-cump__panel-lede">
+              Recordatorios al dueño de la PYME y al contador, 7 y 2 días antes de cada vencimiento.
+            </p>
+            <ul class="contadores-cump__cal-list list-unstyled mb-0">
+              @for (item of v.calendario_tributario; track item.codigo) {
+                <li class="contadores-cump__cal-item">
+                  <div class="contadores-cump__cal-date">{{ item.fecha_corta }}</div>
+                  <div class="contadores-cump__cal-body">
+                    <strong>{{ item.codigo }} · {{ item.titulo }}</strong>
+                    <span class="contadores-cump__cal-monto">{{ formatoMoneda(item.monto) }}</span>
+                  </div>
+                  <div class="contadores-cump__cal-actions">
+                    <span
+                      class="contadores-cump__badge"
+                      [class.contadores-cump__badge--ok]="item.estado === 'presentado'"
+                      [class.contadores-cump__badge--warn]="item.estado === 'pendiente'"
+                    >
+                      @if (item.estado === 'presentado') { ✓ }
+                      {{ etiquetaCalendario(item.estado) }}
+                    </span>
+                    @if (item.estado === 'pendiente' && v.capacidades.marcar_presentado) {
+                      <button type="button" class="btn btn-sm btn-link p-0" (click)="marcarPresentado(item.codigo)">
+                        Marcar presentado
+                      </button>
+                    }
+                  </div>
+                </li>
+              }
+            </ul>
+          </section>
+
+          <section class="contadores-cump__panel">
+            <h2 class="contadores-cump__panel-title">Renovaciones anuales</h2>
+            <p class="contadores-cump__panel-lede">
+              Fecha límite y monto estimado con el balance general del sistema.
+            </p>
+            <ul class="contadores-cump__ren-list list-unstyled mb-0">
+              @for (r of v.renovaciones; track r.slug) {
+                <li class="contadores-cump__ren-item">
+                  <div>
+                    <strong>{{ r.nombre }}</strong>
+                    <p class="mb-0 small text-muted">{{ r.nota }}</p>
+                  </div>
+                  <div class="text-end">
+                    <div class="small text-muted">Vence {{ r.fecha_limite | date: 'd MMM y':'':'es' }}</div>
+                    <div class="fw-semibold">{{ formatoMoneda(r.monto_estimado) }}</div>
+                    <span class="contadores-cump__badge contadores-cump__badge--warn">{{ etiquetaRenovacion(r.estado) }}</span>
+                  </div>
+                </li>
+              }
+            </ul>
+          </section>
+        </div>
+
+        <section class="contadores-cump__panel contadores-cump__docs">
+          <div class="contadores-cump__docs-head">
+            <div>
+              <h2 class="contadores-cump__panel-title mb-1">Documentos de la empresa</h2>
+              <p class="contadores-cump__panel-lede mb-0">Repositorio legal y operativo del cliente.</p>
+            </div>
+            <div
+              class="contadores-cump__dropzone"
+              (dragover)="$event.preventDefault()"
+              (drop)="onDropArchivos($event)"
+            >
+              <p class="mb-2 small text-muted">Arrastre archivos aquí o</p>
+              <button
+                type="button"
+                class="btn btn-sm btn-primary"
+                [disabled]="!puedeSubirArchivos || subiendo"
+                (click)="abrirSelectorArchivoGeneral()"
+              >
+                {{ subiendo ? 'Subiendo…' : 'Seleccionar archivos' }}
+              </button>
+              @if (!puedeSubirArchivos) {
+                <p class="contadores-cump__drop-hint mb-0">Permiso de registro requerido</p>
+              }
+            </div>
+          </div>
+
+          <div class="table-responsive contadores-dash__table-wrap">
+            <table class="table contadores-cump__table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Documento</th>
+                  <th>Estado</th>
+                  <th>Detalle</th>
+                  <th class="text-end">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (doc of v.documentos; track trackDocumento(doc, $index)) {
+                  <tr [class.contadores-cump__row-anexo]="doc.es_anexo">
+                    <td>
+                      <span class="contadores-cump__doc-icon">📄</span>
+                      {{ doc.nombre }}
+                      @if (doc.es_anexo && doc.nombre_catalogo) {
+                        <div class="small text-muted">Adicional · {{ doc.nombre_catalogo }}</div>
+                      }
+                    </td>
+                    <td>
+                      <span
+                        class="contadores-cump__badge"
+                        [class.contadores-cump__badge--ok]="doc.estado === 'vigente'"
+                        [class.contadores-cump__badge--warn]="doc.estado === 'por_vencer'"
+                        [class.contadores-cump__badge--danger]="doc.estado === 'sin_cargar'"
+                      >
+                        {{ etiquetaDocumento(doc.estado) }}
+                      </span>
+                    </td>
+                    <td class="text-muted small">{{ doc.detalle || '—' }}</td>
+                    <td class="text-end contadores-cump__acciones-doc">
+                      @if (doc.archivo_url) {
+                        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="abrirArchivo(doc)">Ver</button>
+                      }
+                      @if (!doc.id && doc.subible !== false && doc.estado === 'sin_cargar') {
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-primary"
+                          [disabled]="!puedeSubirArchivos || subiendo"
+                          (click)="cargarEnSlot(doc)"
+                        >
+                          Cargar
+                        </button>
+                      } @else if (doc.id) {
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-primary"
+                          [disabled]="!puedeSubirArchivos || subiendo"
+                          (click)="editarDocumento(doc)"
+                        >
+                          Actualizar
+                        </button>
+                        @if (!doc.es_anexo && !doc.es_otro && doc.slug && doc.subible !== false) {
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-link p-0 ms-1"
+                            [disabled]="!puedeSubirArchivos || subiendo"
+                            (click)="agregarOtroDelTipo(doc)"
+                          >
+                            + otro
+                          </button>
+                        }
+                      } @else if (!doc.archivo_url && !doc.subible) {
+                        <span class="text-muted small">—</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (puedeSubirArchivos) {
+            <p class="small mb-0 mt-3">
+              <button type="button" class="btn btn-link btn-sm p-0" [disabled]="subiendo" (click)="agregarDocumento()">
+                + Agregar otro documento (personalizado)
+              </button>
+            </p>
+          }
+        </section>
       </div>
     }
   </div>
 </div>
+
+@if (modalCargaAbierto) {
+  <div class="contadores-cump__modal-backdrop" role="presentation"></div>
+  <div class="contadores-cump__modal" role="dialog" aria-labelledby="cump-modal-title" (click)="$event.stopPropagation()">
+    <h3 id="cump-modal-title" class="h6 mb-2">{{ esEdicionDocumento ? 'Actualizar documento' : 'Agregar documento' }}</h3>
+    @if (!esEdicionDocumento) {
+      <label class="form-label small mb-1" for="cump-tipo">Tipo</label>
+      <select
+        id="cump-tipo"
+        class="form-select form-select-sm mb-3"
+        [(ngModel)]="slugCarga"
+        (ngModelChange)="onSlugCargaChange()"
+        [disabled]="subiendo"
+      >
+        <option value="libre">Otro / personalizado</option>
+        @for (t of tiposCatalogoModal; track t.slug) {
+          <option [value]="t.slug">{{ t.nombre }}</option>
+        }
+      </select>
+    } @else {
+      <p class="small text-muted mb-3">Tipo: {{ docCargaNombreCatalogo }}</p>
+    }
+    <label class="form-label small mb-1" for="cump-nombre">Nombre en el repositorio</label>
+    <input
+      id="cump-nombre"
+      type="text"
+      class="form-control form-control-sm mb-3"
+      maxlength="255"
+      [(ngModel)]="nombreCarga"
+      [disabled]="subiendo"
+      placeholder="Ej. Escritura reformada 2024"
+    />
+    <label class="form-label small mb-1" for="cump-vence">Fecha de vencimiento</label>
+    <input
+      id="cump-vence"
+      type="date"
+      class="form-control form-control-sm mb-3"
+      [(ngModel)]="venceEnCarga"
+      [disabled]="subiendo"
+    />
+    <p class="small text-muted mb-2">Opcional. Se usa para alertas de documentos por vencer.</p>
+    <input
+      id="cump-file-input"
+      type="file"
+      class="contadores-cump__file-input"
+      accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+      [disabled]="subiendo"
+      (change)="onArchivoSeleccionado($event)"
+    />
+    @if (archivoPendiente) {
+      <p class="small mb-3"><strong>Archivo:</strong> {{ archivoPendiente.name }}</p>
+    } @else {
+      <p class="small text-warning mb-3">Aún no ha seleccionado un archivo.</p>
+    }
+    <div class="d-flex flex-wrap gap-2 justify-content-end">
+      <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="subiendo" (click)="cerrarModalCarga()">
+        Cancelar
+      </button>
+      <label for="cump-file-input" class="btn btn-sm btn-outline-primary mb-0" [class.disabled]="subiendo" [attr.aria-disabled]="subiendo">
+        {{ archivoPendiente ? 'Cambiar archivo' : 'Elegir archivo' }}
+      </label>
+      <button
+        type="button"
+        class="btn btn-sm btn-primary"
+        [disabled]="subiendo || !archivoPendiente"
+        (click)="confirmarSubidaModal()"
+      >
+        {{ subiendo ? 'Subiendo…' : 'Subir' }}
+      </button>
+    </div>
+  </div>
+}

@@ -1,0 +1,303 @@
+.contadores-cump__row-anexo td:first-child {
+  padding-left: 2rem;
+}
+
+.contadores-cump__acciones-doc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.contadores-cump__modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 1040;
+}
+
+.contadores-cump__file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+label.btn.disabled,
+label.btn[disabled] {
+  pointer-events: none;
+  opacity: 0.65;
+}
+
+.contadores-cump__modal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1050;
+  width: min(420px, calc(100vw - 32px));
+  padding: 20px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.18);
+}
+
+.contadores-cump__top {
+  align-items: center;
+}
+
+.contadores-cump__top-left,
+.contadores-cump__top-right {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.contadores-cump__empresa-select {
+  min-width: 240px;
+  max-width: 360px;
+  font-weight: 600;
+}
+
+.contadores-cump__body {
+  padding: 20px;
+  overflow: auto;
+  flex: 1;
+}
+
+.contadores-cump__hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.contadores-cump__hero-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.contadores-cump__hero-avatar,
+.contadores-cump__hero-logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.contadores-cump__hero-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.contadores-cump__hero-logo {
+  object-fit: cover;
+  background: #fff;
+  border: 1px solid #e5ebf2;
+}
+
+.contadores-cump__hero-title {
+  font-size: 1.65rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: #16324f;
+}
+
+.contadores-cump__hero-sub {
+  color: #5c7190;
+  font-size: 14px;
+}
+
+.contadores-cump__kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.contadores-cump__kpi {
+  background: #fff;
+  border: 1px solid #e5ebf2;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 2px rgba(22, 50, 79, 0.04);
+}
+
+.contadores-cump__kpi span {
+  display: block;
+  font-size: 12px;
+  color: #8a9bb3;
+  margin-bottom: 6px;
+}
+
+.contadores-cump__kpi strong {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #16324f;
+  line-height: 1.2;
+}
+
+.contadores-cump__grid-2 {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.contadores-cump__panel {
+  background: #fff;
+  border: 1px solid #e5ebf2;
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.contadores-cump__panel-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: #16324f;
+}
+
+.contadores-cump__panel-lede {
+  font-size: 13px;
+  color: #8a9bb3;
+  margin: 0 0 14px;
+}
+
+.contadores-cump__cal-item,
+.contadores-cump__ren-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid #eef2f7;
+}
+
+.contadores-cump__cal-item:first-child,
+.contadores-cump__ren-item:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.contadores-cump__cal-date {
+  min-width: 52px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #1775e5;
+  line-height: 1.2;
+}
+
+.contadores-cump__cal-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.contadores-cump__cal-monto {
+  font-weight: 600;
+  color: #16324f;
+}
+
+.contadores-cump__cal-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.contadores-cump__ren-item {
+  justify-content: space-between;
+}
+
+.contadores-cump__badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.contadores-cump__badge--ok {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.contadores-cump__badge--warn {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.contadores-cump__badge--danger {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.contadores-cump__docs-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.contadores-cump__dropzone {
+  border: 2px dashed #c7d8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  text-align: center;
+  background: #f8fbff;
+  min-width: 220px;
+}
+
+.contadores-cump__drop-hint {
+  font-size: 11px;
+  color: #8a9bb3;
+  margin-top: 8px;
+}
+
+.contadores-cump__table thead th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8a9bb3;
+}
+
+.contadores-cump__doc-icon {
+  margin-right: 6px;
+  opacity: 0.7;
+}
+
+@media (max-width: 1199.98px) {
+  .contadores-cump__kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .contadores-cump__grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .contadores-cump__kpis {
+    grid-template-columns: 1fr;
+  }
+}

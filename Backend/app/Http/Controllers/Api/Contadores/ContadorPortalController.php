@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\Contadores;
 use App\Http\Controllers\Controller;
 use App\Models\Contadores\ContadorEmpresaAcceso;
 use App\Services\Contadores\ContadorCarteraMetricasService;
+use App\Services\Contadores\ContadorCumplimientoService;
+use App\Services\Contadores\ContadorEmpresaAccesoPermisos;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -98,6 +100,140 @@ class ContadorPortalController extends Controller
             ],
             'metricas' => $porEmpresa,
         ], 200);
+    }
+
+    public function cumplimiento(Request $request, ContadorCumplimientoService $cumplimiento): JsonResponse
+    {
+        $user = JWTAuth::parseToken()->authenticate();
+        $user->load('roles');
+
+        if (!$user->hasRole(config('constants.ROL_ADMIN_CONTADOR', 'admin_contador'))) {
+            return response()->json(['error' => 'Acceso reservado al portal de contadores.', 'code' => 403], 403);
+        }
+
+        $request->validate([
+            'id_empresa' => 'required|integer|min:1',
+            'mes' => 'sometimes|integer|min:1|max:12',
+            'anio' => 'sometimes|integer|min:2000|max:2100',
+        ]);
+
+        $idEmpresa = (int) $request->input('id_empresa');
+        $ref = Carbon::now('America/El_Salvador')->subMonth();
+        $mes = (int) $request->input('mes', $ref->month);
+        $anio = (int) $request->input('anio', $ref->year);
+
+        $acceso = ContadorEmpresaAcceso::query()
+            ->where('id_usuario_contador', $user->id)
+            ->where('id_empresa', $idEmpresa)
+            ->where('estado', ContadorEmpresaAcceso::ESTADO_ACTIVO)
+            ->whereHas('empresa', fn ($q) => $q->where('activo', true))
+            ->first();
+
+        if (!$acceso) {
+            return response()->json(['error' => 'No tienes acceso activo a esta empresa.', 'code' => 403], 403);
+        }
+
+        $permisos = $acceso->permisos ?? ContadorEmpresaAcceso::permisosPorDefecto();
+
+        return response()->json($cumplimiento->vista($idEmpresa, $anio, $mes, $permisos), 200);
+    }
+
+    public function cumplimientoDocumento(Request $request, ContadorCumplimientoService $cumplimiento): JsonResponse
+    {
+        $user = JWTAuth::parseToken()->authenticate();
+        $user->load('roles');
+
+        if (!$user->hasRole(config('constants.ROL_ADMIN_CONTADOR', 'admin_contador'))) {
+            return response()->json(['error' => 'Acceso reservado al portal de contadores.', 'code' => 403], 403);
+        }
+
+        $request->validate([
+            'id_empresa' => 'required|integer|min:1',
+            'id_documento' => 'nullable|integer|min:1',
+            'slug' => 'nullable|string|max:64',
+            'archivo' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'vence_en' => 'nullable|date',
+            'titulo' => 'nullable|string|max:255',
+        ]);
+
+        $acceso = $this->accesoContadorEmpresa($user->id, (int) $request->input('id_empresa'));
+        if (!$acceso) {
+            return response()->json(['error' => 'No tienes acceso activo a esta empresa.', 'code' => 403], 403);
+        }
+
+        $permisos = $acceso->permisos ?? ContadorEmpresaAcceso::permisosPorDefecto();
+        if (!ContadorEmpresaAccesoPermisos::tiene($permisos, 'registrar')) {
+            return response()->json(['error' => 'Tu permiso es solo de lectura.', 'code' => 403], 403);
+        }
+
+        try {
+            $id = $cumplimiento->guardarDocumento(
+                (int) $request->input('id_empresa'),
+                $request->file('archivo'),
+                $user,
+                $request->filled('id_documento') ? (int) $request->input('id_documento') : null,
+                $request->input('slug'),
+                $request->filled('vence_en') ? (string) $request->input('vence_en') : null,
+                $request->has('titulo') ? trim((string) $request->input('titulo', '')) : null,
+            );
+        } catch (\InvalidArgumentException $e) {
+            $code = $e->getCode() === 404 ? 404 : 422;
+
+            return response()->json(['error' => [$e->getMessage()], 'code' => $code], $code);
+        }
+
+        return response()->json(['ok' => true, 'id' => $id], 200);
+    }
+
+    public function cumplimientoPresentado(Request $request, ContadorCumplimientoService $cumplimiento): JsonResponse
+    {
+        $user = JWTAuth::parseToken()->authenticate();
+        $user->load('roles');
+
+        if (!$user->hasRole(config('constants.ROL_ADMIN_CONTADOR', 'admin_contador'))) {
+            return response()->json(['error' => 'Acceso reservado al portal de contadores.', 'code' => 403], 403);
+        }
+
+        $request->validate([
+            'id_empresa' => 'required|integer|min:1',
+            'codigo' => 'required|string|max:16',
+            'mes' => 'required|integer|min:1|max:12',
+            'anio' => 'required|integer|min:2000|max:2100',
+        ]);
+
+        $acceso = $this->accesoContadorEmpresa($user->id, (int) $request->input('id_empresa'));
+        if (!$acceso) {
+            return response()->json(['error' => 'No tienes acceso activo a esta empresa.', 'code' => 403], 403);
+        }
+
+        $permisos = $acceso->permisos ?? ContadorEmpresaAcceso::permisosPorDefecto();
+        if (!ContadorEmpresaAccesoPermisos::tiene($permisos, 'aprobar')) {
+            return response()->json(['error' => 'Se requiere permiso de aprobar partidas.', 'code' => 403], 403);
+        }
+
+        try {
+            $cumplimiento->marcarPresentado(
+                (int) $request->input('id_empresa'),
+                (string) $request->input('codigo'),
+                (int) $request->input('mes'),
+                (int) $request->input('anio'),
+                $user
+            );
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => [$e->getMessage()], 'code' => 422], 422);
+        }
+
+        return response()->json(['ok' => true], 200);
+    }
+
+    private function accesoContadorEmpresa(int $idUsuarioContador, int $idEmpresa): ?ContadorEmpresaAcceso
+    {
+        return ContadorEmpresaAcceso::query()
+            ->where('id_usuario_contador', $idUsuarioContador)
+            ->where('id_empresa', $idEmpresa)
+            ->where('estado', ContadorEmpresaAcceso::ESTADO_ACTIVO)
+            ->whereHas('empresa', fn ($q) => $q->where('activo', true))
+            ->first();
     }
 
     public function carteraEmpresa(int $idEmpresa, Request $request, ContadorCarteraMetricasService $metricas): JsonResponse

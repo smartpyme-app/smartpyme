@@ -5,5 +5,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/contadores/empresas', [ContadorPortalController::class, 'empresas']);
 Route::get('/contadores/cartera', [ContadorPortalController::class, 'cartera']);
+Route::get('/contadores/cumplimiento', [ContadorPortalController::class, 'cumplimiento']);
+Route::post('/contadores/cumplimiento/documentos', [ContadorPortalController::class, 'cumplimientoDocumento']);
+Route::post('/contadores/cumplimiento/presentado', [ContadorPortalController::class, 'cumplimientoPresentado']);
 Route::get('/contadores/cartera/empresa/{idEmpresa}', [ContadorPortalController::class, 'carteraEmpresa']);
 Route::post('/contadores/empresas/{idEmpresa}/contexto', [ContadorPortalController::class, 'contexto']);
