@@ -1,0 +1,47 @@
+<div class="contadores-dash">
+  <aside class="contadores-dash__sidebar">
+    <a routerLink="/contadores" class="contadores-dash__logo">
+      <img src="assets/img/smartpyme.png" alt="SmartPyme" height="28" />
+    </a>
+    <p class="contadores-dash__nav-label">Despacho</p>
+    <nav class="contadores-dash__nav">
+      <a routerLink="/contadores/cartera" class="contadores-dash__nav-link">Cartera de clientes</a>
+      <a routerLink="/contadores/cumplimiento" routerLinkActive="contadores-dash__nav-link--active" class="contadores-dash__nav-link">
+        Cumplimiento
+      </a>
+      <span class="contadores-dash__nav-link contadores-dash__nav-link--disabled">Libros de IVA</span>
+    </nav>
+    <div class="contadores-dash__sidebar-foot">
+      <strong>{{ despachoNombre }}</strong>
+      <span>{{ usuario?.name }}</span>
+      <button type="button" class="btn btn-link p-0" (click)="cerrarSesion()">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <div class="contadores-dash__main">
+    <header class="contadores-dash__top">
+      <button type="button" class="contadores-dash__back btn btn-link p-0" (click)="volverCartera()">← Volver a cartera</button>
+      @if (periodoLabel) {
+        <span>{{ periodoLabel }}</span>
+      }
+    </header>
+
+    @if (loading) {
+      <p class="text-muted p-4">Preparando cumplimiento…</p>
+    }
+    @if (!loading && error) {
+      <p class="text-danger p-4">{{ error }}</p>
+    }
+    @if (!loading && !error) {
+      <div class="p-4">
+        <h1 class="contadores-dash__title">Cumplimiento fiscal</h1>
+        <p class="text-muted">
+          {{ empresaNombre }} · {{ periodoLabel || 'Periodo seleccionado' }}
+        </p>
+        <p class="mt-3 mb-0">
+          Aquí irá la vista 4 del mockup (declaraciones, checklist y cierre). La cartera ya enlaza con este flujo.
+        </p>
+      </div>
+    }
+  </div>
+</div>

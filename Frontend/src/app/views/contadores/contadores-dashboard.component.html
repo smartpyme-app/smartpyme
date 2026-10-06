@@ -1,0 +1,295 @@
+<div class="contadores-dash">
+  <aside class="contadores-dash__sidebar">
+    <a routerLink="/contadores" class="contadores-dash__logo">
+      <img src="assets/img/smartpyme.png" alt="SmartPyme" height="28" />
+    </a>
+    <p class="contadores-dash__nav-label">Despacho</p>
+    <nav class="contadores-dash__nav">
+      <a routerLink="/contadores/cartera" routerLinkActive="contadores-dash__nav-link--active" class="contadores-dash__nav-link">
+        Cartera de clientes
+      </a>
+      <a routerLink="/contadores/cumplimiento" routerLinkActive="contadores-dash__nav-link--active" class="contadores-dash__nav-link">
+        Cumplimiento
+      </a>
+      <span class="contadores-dash__nav-link contadores-dash__nav-link--disabled">Libros de IVA</span>
+    </nav>
+    <p class="contadores-dash__nav-label">Dentro de cada empresa</p>
+    <nav class="contadores-dash__nav">
+      <span class="contadores-dash__nav-link contadores-dash__nav-link--disabled">Ventas y compras</span>
+      <span class="contadores-dash__nav-link contadores-dash__nav-link--disabled">Partidas contables</span>
+      <span class="contadores-dash__nav-link contadores-dash__nav-link--disabled">Planillas</span>
+      <span class="contadores-dash__nav-link contadores-dash__nav-link--disabled">Estados financieros</span>
+    </nav>
+    <div class="contadores-dash__sidebar-foot">
+      <strong>{{ despachoNombre }}</strong>
+      <span>{{ usuario?.name }}</span>
+      <button type="button" class="btn btn-link p-0" (click)="cerrarSesion()">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <div class="contadores-dash__main">
+    <header class="contadores-dash__top">
+      <a routerLink="/contadores" class="contadores-dash__back">← Todas las empresas ({{ totalEmpresas }})</a>
+      <div class="contadores-dash__top-meta d-flex flex-wrap align-items-center gap-2">
+        <label class="contadores-dash__periodo mb-0">
+          <span class="visually-hidden">Periodo</span>
+          <select
+            class="form-select form-select-sm contadores-dash__periodo-select"
+            [ngModel]="periodoKey"
+            (ngModelChange)="onPeriodoKeyChange($event)"
+          >
+            @for (p of opcionesPeriodo; track p.mes + '-' + p.anio) {
+              <option [value]="p.mes + '-' + p.anio">{{ p.label }}</option>
+            }
+          </select>
+        </label>
+        @if (periodoEnCierre) {
+          <span class="contadores-dash__pill contadores-dash__pill--warn">Periodo en cierre</span>
+        }
+      </div>
+    </header>
+
+    @if (loading) {
+      <p class="text-muted p-4">Cargando cartera…</p>
+    }
+    @if (!loading && error) {
+      <p class="text-danger p-4">{{ error }}</p>
+    }
+
+    @if (!loading && !error) {
+      <div class="contadores-dash__content">
+        <section class="contadores-dash__center">
+          <h1 class="contadores-dash__title">Cartera de clientes</h1>
+          <p class="contadores-dash__subtitle">{{ subtituloFiscal }}</p>
+
+          <div class="contadores-dash__kpis">
+            <div class="contadores-dash__kpi">
+              <span class="contadores-dash__kpi-label">Empresas asignadas</span>
+              <strong class="contadores-dash__kpi-value">{{ totalEmpresas }}</strong>
+            </div>
+            <div class="contadores-dash__kpi">
+              <span class="contadores-dash__kpi-label">Listas para declarar</span>
+              <strong class="contadores-dash__kpi-value">{{ listasParaDeclarar }} de {{ totalEmpresas }}</strong>
+            </div>
+            <div class="contadores-dash__kpi">
+              <span class="contadores-dash__kpi-label">Por contabilizar</span>
+              <strong class="contadores-dash__kpi-value">
+                {{ totalPorContabilizar }}
+                <span class="contadores-dash__kpi-unit">transacciones</span>
+              </strong>
+            </div>
+            <div class="contadores-dash__kpi">
+              <span class="contadores-dash__kpi-label">IVA a pagar de la cartera</span>
+              <strong class="contadores-dash__kpi-value">{{ formatoMoneda(ivaCartera) }}</strong>
+            </div>
+          </div>
+
+          <input
+            type="search"
+            class="form-control form-control-sm contadores-dash__search mb-3"
+            placeholder="Buscar empresa"
+            [(ngModel)]="buscador"
+          />
+
+          @if (empresasTabla.length === 0) {
+            <p class="text-muted">Ninguna empresa coincide con la búsqueda.</p>
+          }
+
+          <div class="table-responsive contadores-dash__table-wrap">
+            <table class="table contadores-dash__table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Empresa</th>
+                  <th class="text-end">Registradas</th>
+                  <th class="text-end">Con partida</th>
+                  <th class="contadores-dash__th-avance">Avance</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (e of empresasTabla; track e.id) {
+                  @if (metricas(e); as m) {
+                    <tr
+                      [class.contadores-dash__row--active]="seleccionada?.id === e.id"
+                      (click)="seleccionar(e)"
+                      role="button"
+                    >
+                      <td>
+                        <div class="d-flex align-items-center gap-2 contadores-dash__empresa-cell">
+                          @if (mostrarLogoEmpresa(e)) {
+                            <img
+                              class="contadores-dash__avatar contadores-dash__avatar--img"
+                              [src]="logoUrl(e.logo)"
+                              [alt]="e.nombre"
+                              (error)="onLogoError(e.id)"
+                            />
+                          } @else {
+                            <span class="contadores-dash__avatar" [style.background]="colorMarca(e.nombre)">{{ iniciales(e.nombre) }}</span>
+                          }
+                          <div class="min-w-0">
+                            <div class="contadores-dash__empresa-nombre">{{ e.nombre }}</div>
+                            @if (e.giro) {
+                              <div class="contadores-dash__empresa-giro">{{ e.giro }}</div>
+                            }
+                          </div>
+                        </div>
+                      </td>
+                      <td class="text-end contadores-dash__num">{{ m.registradas }}</td>
+                      <td class="text-end contadores-dash__num">{{ m.conPartida }}</td>
+                      <td>
+                        <div class="contadores-dash__avance-cell">
+                          <div class="contadores-dash__progress">
+                            <div
+                              class="contadores-dash__progress-bar"
+                              [class.contadores-dash__progress-bar--warn]="m.estado === 'atrasada'"
+                              [class.contadores-dash__progress-bar--casi]="m.estado === 'casi'"
+                              [style.width.%]="m.avance"
+                            ></div>
+                          </div>
+                          <span class="contadores-dash__avance-pct">{{ m.avance }}%</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="contadores-dash__estado contadores-dash__estado--{{ m.estado }}">
+                          @if (m.estado === 'lista') { ✓ }
+                          {{ etiquetaEstado(m.estado) }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        @if (seleccionada && metricasSeleccion; as sm) {
+          <aside class="contadores-dash__detail">
+            <div class="contadores-dash__detail-head">
+              @if (mostrarLogoEmpresa(seleccionada)) {
+                <img
+                  class="contadores-dash__avatar contadores-dash__avatar--lg contadores-dash__avatar--img"
+                  [src]="logoUrl(seleccionada.logo)"
+                  [alt]="seleccionada.nombre"
+                  (error)="onLogoError(seleccionada.id)"
+                />
+              } @else {
+                <span class="contadores-dash__avatar contadores-dash__avatar--lg" [style.background]="colorMarca(seleccionada.nombre)">
+                  {{ iniciales(seleccionada.nombre) }}
+                </span>
+              }
+              <div>
+                <h2>{{ seleccionada.nombre }}</h2>
+                @if (seleccionada.giro) {
+                  <p class="mb-0">{{ seleccionada.giro }}</p>
+                }
+              </div>
+            </div>
+
+            <p class="contadores-dash__detail-kicker">Avance de {{ periodoDetalleLabel }}</p>
+            <p class="contadores-dash__detail-pct">{{ sm.avance }}%</p>
+            <p class="contadores-dash__detail-meta">
+              {{ sm.conPartida }} de {{ sm.registradas }} con partida contable
+            </p>
+            <div class="contadores-dash__progress contadores-dash__progress--lg mb-2">
+              <div
+                class="contadores-dash__progress-bar"
+                [class.contadores-dash__progress-bar--warn]="sm.estado === 'atrasada'"
+                [style.width.%]="sm.avance"
+              ></div>
+            </div>
+            <p class="contadores-dash__detail-meta">Faltan {{ sm.registradas - sm.conPartida }} por contabilizar.</p>
+
+            @if (detalleLoading) {
+              <p class="small text-muted mt-3">Cargando desglose…</p>
+            }
+
+            @if (detalle && !detalleLoading) {
+              <div class="contadores-dash__mini-table-wrap mt-3">
+                <table class="table table-sm contadores-dash__mini-table mb-0">
+                  <thead>
+                    <tr>
+                      <th>Tipo</th>
+                      <th class="text-end">Registradas</th>
+                      <th class="text-end">Por correo</th>
+                      <th class="text-end">Con partida</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (fila of filasDesglose; track fila.tipo) {
+                      <tr>
+                        <td>{{ fila.tipo }}</td>
+                        <td class="text-end">{{ fila.registradas }}</td>
+                        <td class="text-end">{{ fila.porCorreo }}</td>
+                        <td class="text-end">{{ fila.conPartida }}</td>
+                      </tr>
+                    }
+                    @if (totalesDesglose; as t) {
+                      <tr class="contadores-dash__mini-total">
+                        <td>Total</td>
+                        <td class="text-end">{{ t.registradas }}</td>
+                        <td class="text-end">{{ t.porCorreo }}</td>
+                        <td class="text-end">{{ t.conPartida }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+
+              <p class="contadores-dash__detail-kicker mt-4">Impuestos de {{ periodoDetalleLabel }}</p>
+
+              <div class="contadores-dash__tax-block">
+                <p class="contadores-dash__tax-title">IVA · F-07</p>
+                <dl class="contadores-dash__tax-lines">
+                  <div>
+                    <dt>Débito fiscal</dt>
+                    <dd>{{ formatoMoneda(detalle.impuestos.f07.debito_fiscal) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Crédito fiscal</dt>
+                    <dd>{{ formatoMonedaSigned(detalle.impuestos.f07.credito_fiscal) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Retenciones</dt>
+                    <dd>{{ formatoMonedaSigned(detalle.impuestos.f07.retenciones) }}</dd>
+                  </div>
+                </dl>
+                <p class="contadores-dash__tax-total-label">IVA a pagar</p>
+                <p class="contadores-dash__tax-total-value">{{ formatoMoneda(detalle.impuestos.f07.iva_a_pagar) }}</p>
+              </div>
+
+              <div class="contadores-dash__tax-block mt-3">
+                <p class="contadores-dash__tax-title">Pago a cuenta y retenciones · F-14</p>
+                <dl class="contadores-dash__tax-lines">
+                  <div>
+                    <dt>Pago a cuenta 1.75%</dt>
+                    <dd>{{ formatoMoneda(detalle.impuestos.f14.pago_cuenta_isr) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Renta retenida</dt>
+                    <dd>{{ formatoMoneda(detalle.impuestos.f14.renta_retenida) }}</dd>
+                  </div>
+                </dl>
+                <p class="contadores-dash__tax-total-label">Total F-14</p>
+                <p class="contadores-dash__tax-total-value">{{ formatoMoneda(detalle.impuestos.f14.total) }}</p>
+              </div>
+            }
+
+            <button
+              type="button"
+              class="btn btn-primary w-100 mt-4 contadores-dash__cta"
+              [disabled]="abriendoCumplimiento"
+              (click)="abrirCumplimiento()"
+            >
+              @if (abriendoCumplimiento) {
+                Abriendo…
+              } @else {
+                Abrir cumplimiento de {{ nombreCortoEmpresa(seleccionada.nombre) }}
+              }
+            </button>
+          </aside>
+        }
+      </div>
+    }
+  </div>
+</div>

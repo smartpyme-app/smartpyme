@@ -2,6 +2,7 @@ import { Component, DestroyRef, ElementRef, inject, OnInit, ViewChild } from '@a
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import {
   ContadoresPortalService,
   ContadorEmpresaPortafolio,
@@ -9,6 +10,7 @@ import {
 } from '@services/contadores-portal.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { periodoCierrePorDefecto } from './contadores-periodo.util';
 
 type FiltroCartera = 'todas' | 'pendiente' | 'al_dia';
 
@@ -33,7 +35,6 @@ export class ContadoresPortafolioComponent implements OnInit {
   /** IDs cuyo logo remoto falló → mostramos iniciales. */
   readonly logoFallo = new Set<number>();
 
-  /** ponytail: métricas “por contabilizar” llegan en fase 3; hasta entonces todas “al día”. */
   private readonly pendientesPorEmpresa = new Map<number, number>();
 
   private destroyRef = inject(DestroyRef);
@@ -49,12 +50,21 @@ export class ContadoresPortafolioComponent implements OnInit {
     this.usuario = this.api.auth_user();
     this.recientes = this.contadoresPortal.leerRecientes();
 
-    this.contadoresPortal
-      .listarEmpresas()
+    forkJoin({
+      empresas: this.contadoresPortal.listarEmpresas(),
+      cartera: this.contadoresPortal.carteraMetricas(),
+    })
       .pipe(this.untilDestroyed())
       .subscribe({
-        next: (data) => {
-          this.empresas = data?.empresas ?? [];
+        next: ({ empresas, cartera }) => {
+          this.empresas = empresas?.empresas ?? [];
+          this.pendientesPorEmpresa.clear();
+          for (const [idStr, m] of Object.entries(cartera?.metricas ?? {})) {
+            const id = Number(idStr);
+            if (Number.isFinite(id) && m) {
+              this.pendientesPorEmpresa.set(id, m.por_contabilizar ?? 0);
+            }
+          }
           this.loading = false;
         },
         error: (err) => {
@@ -115,11 +125,20 @@ export class ContadoresPortafolioComponent implements OnInit {
     this.contadoresPortal.guardarEmpresaActiva(empresa.id);
     this.contadoresPortal.registrarAccesoReciente(empresa);
     this.recientes = this.contadoresPortal.leerRecientes();
-    this.router.navigate(['/contadores'], { queryParams: { empresa: empresa.id } });
+    this.router.navigate(['/contadores/cartera'], { queryParams: this.queryPeriodoCartera(empresa.id) });
   }
 
   irACarteraCompleta(): void {
-    this.seccionTodas?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    this.router.navigate(['/contadores/cartera'], { queryParams: this.queryPeriodoCartera() });
+  }
+
+  private queryPeriodoCartera(empresaId?: number): Record<string, number> {
+    const { mes, anio } = periodoCierrePorDefecto();
+    const q: Record<string, number> = { mes, anio };
+    if (empresaId != null) {
+      q['empresa'] = empresaId;
+    }
+    return q;
   }
 
   cerrarSesion(): void {
