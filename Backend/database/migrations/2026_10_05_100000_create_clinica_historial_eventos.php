@@ -23,8 +23,8 @@ return new class extends Migration
             $table->string('estado', 20)->default('activo');
             $table->timestamps();
 
-            $table->index(['id_expediente', 'fecha_evento', 'hora_evento']);
-            $table->unique(['origen_tipo', 'origen_id']);
+            $table->index(['id_expediente', 'fecha_evento', 'hora_evento'], 'clinica_hist_evt_exp_fecha_idx');
+            $table->unique(['origen_tipo', 'origen_id'], 'clinica_hist_evt_origen_uq');
             $table->foreign('id_empresa')->references('id')->on('empresas');
         });
 
@@ -34,7 +34,7 @@ return new class extends Migration
                 ->where('origen_id', $expediente->id)
                 ->exists();
             if ($existe) {
-                return;
+                continue;
             }
             DB::table('clinica_historial_eventos')->insert([
                 'id_empresa' => $expediente->id_empresa,
