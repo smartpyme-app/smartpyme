@@ -370,13 +370,17 @@
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Campaña:</label>
-          <input
-            type="text"
-            class="form-control"
-            [(ngModel)]="promocional.campania"
+          <ng-select
             name="campania"
-            placeholder="Ej: Boxful"
-          />
+            placeholder="Seleccione campaña"
+            [(ngModel)]="promocional.campania"
+            class="form-select p-0"
+            [items]="campanias"
+            bindLabel="nombre"
+            bindValue="nombre"
+            [clearable]="true"
+            notFoundText="No hay campañas"
+          ></ng-select>
         </div>
 
         <div class="form-group col-md-6 mb-3">

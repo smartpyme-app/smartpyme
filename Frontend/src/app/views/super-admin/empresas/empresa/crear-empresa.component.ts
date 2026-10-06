@@ -37,6 +37,7 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
     public departamentos:any = [];
     public municipios:any = [];
     public actividad_economicas:any = [];
+    public campanias: any[] = [];
 
   override modalRef!: BsModalRef;
 
@@ -65,6 +66,11 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
             this.loading = false;
         }, (error) => {this.alertService.error(error); this.loading = false; } );
 
+        this.apiService.getAll('campanias', { list: 1, estado: '1' }).pipe(this.untilDestroyed()).subscribe((campanias) => {
+            this.campanias = Array.isArray(campanias) ? campanias : [];
+            this.asegurarCampaniaActual();
+        }, (error) => { this.alertService.error(error); });
+
         this.apiService.getAll('admin-usuarios/list-vendedores').subscribe((response) => {
             let usuarios = [];
             if (response && response.data) {
@@ -86,6 +92,7 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
             this.loading = true;
             this.apiService.read('empresa/', id).pipe(this.untilDestroyed()).subscribe(empresa => {
                 this.empresa = empresa;
+                this.asegurarCampaniaActual();
                 this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false;});
         }else{
@@ -108,6 +115,14 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
         if (this.route.snapshot.queryParamMap.get('licencia')) {
             this.licencia = true;
         }
+    }
+
+    private asegurarCampaniaActual() {
+        const nombre = String(this.empresa?.campania ?? '').trim();
+        if (!nombre || this.campanias.some((c) => c.nombre === nombre)) {
+            return;
+        }
+        this.campanias = [{ id: null, nombre }, ...this.campanias];
     }
 
     public setCliente(cliente: any) {

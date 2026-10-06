@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { EncryptService } from '@services/encryption/encrypt.service';
@@ -14,7 +15,7 @@ import Swal from 'sweetalert2';
   selector: 'app-admin-promocionales',
   templateUrl: './admin-promocionales.component.html',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PopoverModule, TooltipModule]
+  imports: [CommonModule, FormsModule, RouterModule, PopoverModule, TooltipModule, NgSelectModule]
 })
 export class AdminPromocionalesComponent implements OnInit {
   public promocionales: any = [];
@@ -33,6 +34,7 @@ export class AdminPromocionalesComponent implements OnInit {
   public downloading: boolean = false;
 
   public planesDisponibles = ['Mensual', 'Trimestral', 'Anual'];
+  public campanias: any[] = [];
 
   modalRef!: BsModalRef;
 
@@ -46,6 +48,25 @@ export class AdminPromocionalesComponent implements OnInit {
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
     this.loadAll();
+    this.cargarCampanias();
+  }
+
+  private cargarCampanias() {
+    this.apiService.getAll('campanias', { list: 1, estado: '1' }).subscribe(
+      (campanias) => {
+        this.campanias = Array.isArray(campanias) ? campanias : [];
+        this.asegurarCampaniaActual();
+      },
+      (error) => this.alertService.error(error)
+    );
+  }
+
+  private asegurarCampaniaActual() {
+    const nombre = String(this.promocional?.campania ?? '').trim();
+    if (!nombre || this.campanias.some((c) => c.nombre === nombre)) {
+      return;
+    }
+    this.campanias = [{ id: null, nombre }, ...this.campanias];
   }
 
   public loadAll() {
@@ -167,6 +188,7 @@ export class AdminPromocionalesComponent implements OnInit {
         combinable: false,
       },
     };
+    this.asegurarCampaniaActual();
     this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
   }
 
