@@ -16,6 +16,7 @@ class Promocional extends Model
         'tipo',
         'activo',
         'campania',
+        'aliado',
         'descripcion',
         'planes_permitidos',
         'opciones',

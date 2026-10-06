@@ -5,6 +5,8 @@ import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { CrearCatalogoSuperComponent } from '@shared/modals/crear-catalogo-super/crear-catalogo-super.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { EncryptService } from '@services/encryption/encrypt.service';
@@ -14,7 +16,7 @@ import Swal from 'sweetalert2';
   selector: 'app-admin-promocionales',
   templateUrl: './admin-promocionales.component.html',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PopoverModule, TooltipModule]
+  imports: [CommonModule, FormsModule, RouterModule, PopoverModule, TooltipModule, NgSelectModule, CrearCatalogoSuperComponent]
 })
 export class AdminPromocionalesComponent implements OnInit {
   public promocionales: any = [];
@@ -33,6 +35,8 @@ export class AdminPromocionalesComponent implements OnInit {
   public downloading: boolean = false;
 
   public planesDisponibles = ['Mensual', 'Trimestral', 'Anual'];
+  public campanias: any[] = [];
+  public aliados: any[] = [];
 
   modalRef!: BsModalRef;
 
@@ -46,6 +50,58 @@ export class AdminPromocionalesComponent implements OnInit {
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
     this.loadAll();
+    this.cargarCampanias();
+    this.cargarAliados();
+  }
+
+  private cargarCampanias() {
+    this.apiService.getAll('campanias', { list: 1, estado: '1' }).subscribe(
+      (campanias) => {
+        this.campanias = Array.isArray(campanias) ? campanias : [];
+        this.asegurarCampaniaActual();
+      },
+      (error) => this.alertService.error(error)
+    );
+  }
+
+  private asegurarCampaniaActual() {
+    const nombre = String(this.promocional?.campania ?? '').trim();
+    if (!nombre || this.campanias.some((c) => c.nombre === nombre)) {
+      return;
+    }
+    this.campanias = [{ id: null, nombre }, ...this.campanias];
+  }
+
+  private cargarAliados() {
+    this.apiService.getAll('aliados', { list: 1, estado: '1' }).subscribe(
+      (aliados) => {
+        this.aliados = Array.isArray(aliados) ? aliados : [];
+        this.asegurarAliadoActual();
+      },
+      (error) => this.alertService.error(error)
+    );
+  }
+
+  private asegurarAliadoActual() {
+    const nombre = String(this.promocional?.aliado ?? '').trim();
+    if (!nombre || this.aliados.some((c) => c.nombre === nombre)) {
+      return;
+    }
+    this.aliados = [{ id: null, nombre }, ...this.aliados];
+  }
+
+  public agregarCampania(item: any) {
+    if (!this.campanias.some((c) => c.nombre === item.nombre)) {
+      this.campanias = [...this.campanias, item];
+    }
+    this.promocional.campania = item.nombre;
+  }
+
+  public agregarAliado(item: any) {
+    if (!this.aliados.some((c) => c.nombre === item.nombre)) {
+      this.aliados = [...this.aliados, item];
+    }
+    this.promocional.aliado = item.nombre;
   }
 
   public loadAll() {
@@ -102,6 +158,7 @@ export class AdminPromocionalesComponent implements OnInit {
       tipo: 'porcentaje',
       activo: true,
       campania: '',
+      aliado: '',
       descripcion: '',
       planes_permitidos: [],
       opciones: {
@@ -155,6 +212,7 @@ export class AdminPromocionalesComponent implements OnInit {
       tipo: promocional.tipo,
       activo: promocional.activo,
       campania: promocional.campania || '',
+      aliado: promocional.aliado || '',
       descripcion: promocional.descripcion || '',
       planes_permitidos: promocional.planes_permitidos || [],
       opciones: promocional.opciones || {
@@ -167,6 +225,8 @@ export class AdminPromocionalesComponent implements OnInit {
         combinable: false,
       },
     };
+    this.asegurarCampaniaActual();
+    this.asegurarAliadoActual();
     this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
   }
 

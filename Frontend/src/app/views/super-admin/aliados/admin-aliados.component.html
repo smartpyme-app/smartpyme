@@ -1,0 +1,174 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Aliados</h2>
+    <button (click)="openModal(maliado, {})" tooltip="Crear aliado" class="btn btn-default">
+        <i class="fa fa-plus"></i> Añadir aliado
+    </button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row mb-3">
+        <div class="col">
+            @if (aliados?.total) {
+                <span class="text-muted">
+                    Mostrando {{ aliados?.to }} de {{ aliados?.total + ' registros' }}
+                </span>
+            }
+        </div>
+        <div class="col">
+            <form class="d-flex input-group" name="form" (ngSubmit)="buscar()" autocomplete="off">
+                <div class="input-group">
+                    <div class="input-group-text bg-white border-end-0">
+                        <i class="fa fa-search text-muted"></i>
+                    </div>
+                    <input type="search" name="buscador" class="form-control pull-right border-start-0" placeholder="Buscar nombre o descripción" [(ngModel)]="filtros.buscador">
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="d-flex mb-3">
+        <div class="col d-flex gap-2">
+            <button class="btn btn-primary" tooltip="Actualizar" (click)="loadAll()">Todos</button>
+        </div>
+        <div class="col d-flex gap-2 justify-content-end">
+            <select name="estado" (change)="buscar()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+                <option value="">Estado</option>
+                <option value="1">Activo</option>
+                <option value="0">Inactivo</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-borderless table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Estado</th>
+                    <th class="text-end align-middle text-nowrap" style="width: 1%">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (loading) {
+                    <tr>
+                        <td class="text-center" colspan="4">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                }
+                @if (aliados?.total < 1 && !loading) {
+                    <tr>
+                        <td class="text-center" colspan="4">
+                            <span class="badge bg-primary">No hay aliados registrados</span>
+                        </td>
+                    </tr>
+                }
+                @for (item of aliados.data; track item.id) {
+                    <tr>
+                        <td>{{ item.nombre }}</td>
+                        <td>{{ item.descripcion }}</td>
+                        <td>
+                            @if (item.activo) {
+                                <span class="badge bg-success">Activo</span>
+                            } @else {
+                                <span class="badge bg-secondary">Inactivo</span>
+                            }
+                        </td>
+                        <td class="text-end align-middle" style="width: 1%; white-space: nowrap">
+                            <button
+                                type="button"
+                                class="btn btn-link text-secondary text-decoration-none p-0 lh-1"
+                                [popover]="accionesTemplate"
+                                container="body"
+                                placement="left"
+                                triggers="click"
+                                [outsideClick]="true"
+                                tooltip="Acciones"
+                            >
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </button>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+                                    <a
+                                        (click)="openModal(maliado, item)"
+                                        class="list-group-item list-group-item-action border-0 click"
+                                    >
+                                        <i class="fa fa-fw fa-edit"></i> Editar
+                                    </a>
+                                    <a
+                                        (click)="toggleActivo(item)"
+                                        class="list-group-item list-group-item-action border-0 click"
+                                    >
+                                        @if (item.activo) {
+                                            <i class="fa fa-fw fa-toggle-on"></i>
+                                        } @else {
+                                            <i class="fa fa-fw fa-toggle-off"></i>
+                                        }
+                                        {{ item.activo ? 'Desactivar' : 'Activar' }}
+                                    </a>
+                                    <a
+                                        (click)="delete(item)"
+                                        class="list-group-item list-group-item-action border-0 click text-danger"
+                                    >
+                                        <i class="fa fa-fw fa-trash"></i> Eliminar
+                                    </a>
+                                </div>
+                            </ng-template>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (aliados?.last_page > 1) {
+        <app-pagination [items]="aliados" (setPagination)="setPagination($event)"></app-pagination>
+    }
+</section>
+
+<ng-template #maliado>
+    <div class="modal-header">
+        <div class="modal-title">
+            <h2 class="text-center">
+                @if (aliado.id) {
+                    <span>Editar </span>
+                } @else {
+                    <span>Crear </span>
+                }
+                aliado
+            </h2>
+        </div>
+        <button type="button" class="btn-close" (click)="closeModal()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <form name="aliadoForm" autocomplete="off" (ngSubmit)="onSubmit()">
+            <app-notificaciones-container></app-notificaciones-container>
+            <div class="row">
+                <div class="form-group col-lg-12">
+                    <label for="aliado-nombre">Nombre:</label>
+                    <input id="aliado-nombre" type="text" class="form-control" name="nombre" maxlength="255" [(ngModel)]="aliado.nombre" required />
+                </div>
+                <div class="form-group col-lg-12">
+                    <label for="aliado-descripcion">Descripción:</label>
+                    <textarea id="aliado-descripcion" class="form-control" name="descripcion" rows="3" [(ngModel)]="aliado.descripcion"></textarea>
+                </div>
+                <div class="form-group col-md-12">
+                    <div class="form-switch bg-light-info rounded">
+                        <label for="aliado-activo">Activo</label>
+                        <input id="aliado-activo" class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="aliado.activo" name="activo">
+                    </div>
+                </div>
+            </div>
+            <div class="d-grid mt-4">
+                <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
+                    @if (saving) {
+                        <span>Guardando...</span>
+                    } @else {
+                        <span>Guardar</span>
+                    }
+                </button>
+            </div>
+        </form>
+    </div>
+</ng-template>
