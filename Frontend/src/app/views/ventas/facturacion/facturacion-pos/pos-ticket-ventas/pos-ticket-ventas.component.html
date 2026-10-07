@@ -84,11 +84,11 @@
         <td class="text-end"><b>Propina</b></td>
         <td class="text-end"><b>{{ venta.propina | currency }}</b></td>
       </tr>
-      <tr *ngIf="venta.seguro > 0">
+      <tr *ngIf="venta.nombre_documento == 'Factura de exportación' && venta.seguro > 0">
         <td class="text-end"><b>Seguro</b></td>
         <td class="text-end"><b>{{ venta.seguro | currency }}</b></td>
       </tr>
-      <tr *ngIf="venta.flete > 0">
+      <tr *ngIf="venta.nombre_documento == 'Factura de exportación' && venta.flete > 0">
         <td class="text-end"><b>Flete</b></td>
         <td class="text-end"><b>{{ venta.flete | currency }}</b></td>
       </tr>

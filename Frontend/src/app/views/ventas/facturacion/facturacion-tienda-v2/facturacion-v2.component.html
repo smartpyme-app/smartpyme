@@ -299,12 +299,12 @@
                         <td style="width: 150px;" class="text-right"><b> {{ venta.propina | currency}}</b> </td>
                         <td style="width: 50px;"></td>
                     </tr>
-                    <tr *ngIf="venta.seguro > 0">
+                    <tr *ngIf="venta.nombre_documento == 'Factura de exportación' && venta.seguro > 0">
                         <td class="text-right"> <b>Seguro</b> </td>
                         <td style="width: 150px;" class="text-right"><b> {{ venta.seguro | currency}}</b> </td>
                         <td style="width: 50px;"></td>
                     </tr>
-                    <tr *ngIf="venta.flete > 0">
+                    <tr *ngIf="venta.nombre_documento == 'Factura de exportación' && venta.flete > 0">
                         <td class="text-right"> <b>Flete</b> </td>
                         <td style="width: 150px;" class="text-right"><b> {{ venta.flete | currency}}</b> </td>
                         <td style="width: 50px;"></td>

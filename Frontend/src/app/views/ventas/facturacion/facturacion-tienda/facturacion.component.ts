@@ -3599,7 +3599,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     }
 
     public totalAPagar(): number {
-        return totalAPagarConSeguroFlete(this.venta?.total, this.venta?.seguro, this.venta?.flete);
+        return totalAPagarConSeguroFlete(this.venta?.total, this.venta?.seguro, this.venta?.flete, this.venta?.nombre_documento);
     }
 
     public getTotalConPropina(): number {
