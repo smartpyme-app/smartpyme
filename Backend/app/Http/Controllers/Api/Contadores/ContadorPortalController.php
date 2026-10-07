@@ -3,7 +3,11 @@
 namespace App\Http\Controllers\Api\Contadores;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin\Sucursal;
 use App\Models\Contadores\ContadorEmpresaAcceso;
+use App\Models\Inventario\Bodega;
+use App\Models\User;
+use App\Services\Auth\AuthService;
 use App\Services\Contadores\ContadorCarteraMetricasService;
 use App\Services\Contadores\ContadorCumplimientoService;
 use App\Services\Contadores\ContadorEmpresaAccesoPermisos;
@@ -15,6 +19,12 @@ use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
 class ContadorPortalController extends Controller
 {
+    private const EMPRESA_DESPACHO_HOME = 2;
+
+    public function __construct(private AuthService $authService)
+    {
+    }
+
     public function empresas(): JsonResponse
     {
         $user = JWTAuth::parseToken()->authenticate();
@@ -363,6 +373,16 @@ class ContadorPortalController extends Controller
 
     public function contexto(int $idEmpresa): JsonResponse
     {
+        return $this->aplicarContextoEmpresa($idEmpresa, true);
+    }
+
+    public function contextoDespacho(): JsonResponse
+    {
+        return $this->aplicarContextoEmpresa(self::EMPRESA_DESPACHO_HOME, false);
+    }
+
+    private function aplicarContextoEmpresa(int $idEmpresa, bool $exigirAccesoCartera): JsonResponse
+    {
         $user = JWTAuth::parseToken()->authenticate();
         $user->load('roles');
 
@@ -370,27 +390,81 @@ class ContadorPortalController extends Controller
             return response()->json(['error' => 'Acceso reservado al portal de contadores.', 'code' => 403], 403);
         }
 
-        $acceso = ContadorEmpresaAcceso::query()
-            ->with(['empresa:id,nombre,logo,giro,activo'])
-            ->where('id_usuario_contador', $user->id)
-            ->where('id_empresa', $idEmpresa)
-            ->where('estado', ContadorEmpresaAcceso::ESTADO_ACTIVO)
-            ->whereHas('empresa', fn ($q) => $q->where('activo', true))
-            ->first();
+        $contextoPayload = null;
 
-        if (!$acceso || !$acceso->empresa) {
-            return response()->json(['error' => 'No tienes acceso activo a esta empresa.', 'code' => 403], 403);
-        }
+        if ($exigirAccesoCartera) {
+            $acceso = ContadorEmpresaAcceso::query()
+                ->with(['empresa:id,nombre,logo,giro,activo'])
+                ->where('id_usuario_contador', $user->id)
+                ->where('id_empresa', $idEmpresa)
+                ->where('estado', ContadorEmpresaAcceso::ESTADO_ACTIVO)
+                ->whereHas('empresa', fn ($q) => $q->where('activo', true))
+                ->first();
 
-        return response()->json([
-            'contexto' => [
+            if (!$acceso || !$acceso->empresa) {
+                return response()->json(['error' => 'No tienes acceso activo a esta empresa.', 'code' => 403], 403);
+            }
+
+            $contextoPayload = [
                 'acceso_id' => $acceso->id,
                 'id' => $acceso->empresa->id,
                 'nombre' => $acceso->empresa->nombre,
                 'logo' => $acceso->empresa->logo,
                 'giro' => $acceso->empresa->giro,
                 'permisos' => $acceso->permisos ?? ContadorEmpresaAcceso::permisosPorDefecto(),
-            ],
-        ], 200);
+            ];
+        } elseif ($idEmpresa !== self::EMPRESA_DESPACHO_HOME) {
+            return response()->json(['error' => 'Contexto de despacho no válido.', 'code' => 422], 422);
+        }
+
+        [$idSucursal, $idBodega] = $this->defaultsEmpresaOperativa($idEmpresa);
+        if (!$idSucursal || !$idBodega) {
+            return response()->json([
+                'error' => ['No hay sucursal/bodega base para operar en esta empresa.'],
+                'code' => 422,
+            ], 422);
+        }
+
+        User::withoutGlobalScopes()
+            ->whereKey($user->id)
+            ->update([
+                'id_empresa' => $idEmpresa,
+                'id_sucursal' => $idSucursal,
+                'id_bodega' => $idBodega,
+            ]);
+
+        $user = User::withoutGlobalScopes()->findOrFail($user->id);
+        $user = $this->authService->cargarDatosUsuario($user);
+        if ($user->empresa) {
+            $user->empresa->es_empresa_padre = $user->empresa->esEmpresaPadre();
+            $user->empresa->es_empresa_hija = $user->empresa->esEmpresaHija();
+        }
+
+        $body = ['user' => $user];
+        if ($contextoPayload !== null) {
+            $body['contexto'] = $contextoPayload;
+        }
+
+        return response()->json($body, 200);
+    }
+
+    /** @return array{0: int|null, 1: int|null} */
+    private function defaultsEmpresaOperativa(int $idEmpresa): array
+    {
+        $idSucursal = Sucursal::withoutGlobalScopes()
+            ->where('id_empresa', $idEmpresa)
+            ->orderBy('id')
+            ->value('id');
+
+        if (!$idSucursal) {
+            return [null, null];
+        }
+
+        $idBodega = Bodega::withoutGlobalScopes()
+            ->where('id_sucursal', $idSucursal)
+            ->orderBy('id')
+            ->value('id');
+
+        return [$idSucursal, $idBodega];
     }
 }

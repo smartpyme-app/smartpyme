@@ -66,59 +66,15 @@ label.btn[disabled] {
 }
 
 .contadores-cump__body {
-  padding: 20px;
+  padding: 16px 20px 20px;
   overflow: auto;
   flex: 1;
 }
 
-.contadores-cump__hero {
+.contadores-cump__periodo-row {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.contadores-cump__hero-main {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.contadores-cump__hero-avatar,
-.contadores-cump__hero-logo {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.contadores-cump__hero-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-weight: 700;
-  font-size: 15px;
-}
-
-.contadores-cump__hero-logo {
-  object-fit: cover;
-  background: #fff;
-  border: 1px solid #e5ebf2;
-}
-
-.contadores-cump__hero-title {
-  font-size: 1.65rem;
-  font-weight: 700;
-  margin: 0 0 4px;
-  color: #16324f;
-}
-
-.contadores-cump__hero-sub {
-  color: #5c7190;
-  font-size: 14px;
+  justify-content: flex-end;
+  margin-bottom: 16px;
 }
 
 .contadores-cump__kpis {
@@ -150,11 +106,16 @@ label.btn[disabled] {
   line-height: 1.2;
 }
 
-.contadores-cump__grid-2 {
+.contadores-cump__grid-2eq {
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 16px;
+  align-items: start;
+}
+
+.contadores-cump__avance .contadores-dash__mini-table-wrap {
+  overflow-x: auto;
 }
 
 .contadores-cump__panel {
@@ -291,7 +252,7 @@ label.btn[disabled] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .contadores-cump__grid-2 {
+  .contadores-cump__grid-2eq {
     grid-template-columns: 1fr;
   }
 }

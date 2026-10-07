@@ -2,6 +2,11 @@
   display: block;
 }
 
+.contadores-page {
+  display: block;
+  color: #16324f;
+}
+
 .contadores-dash {
   display: flex;
   min-height: 100vh;
@@ -77,22 +82,13 @@
   flex-direction: column;
 }
 
-.contadores-dash__top {
+.contadores-dash__title-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 20px;
-  background: #fff;
-  border-bottom: 1px solid #e5ebf2;
-}
-
-.contadores-dash__back {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1775e5;
-  text-decoration: none;
+  margin-bottom: 8px;
 }
 
 .contadores-dash__top-meta {
@@ -126,14 +122,14 @@
 .contadores-dash__center {
   flex: 1;
   min-width: 0;
-  padding: 20px;
+  padding: 16px 20px 20px;
   overflow: auto;
 }
 
 .contadores-dash__title {
   font-size: 1.5rem;
   font-weight: 700;
-  margin: 0 0 8px;
+  margin: 0;
 }
 
 .contadores-dash__subtitle {

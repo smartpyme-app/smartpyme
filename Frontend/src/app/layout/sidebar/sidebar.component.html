@@ -53,6 +53,20 @@
                     </a>
                 </li>
             }
+            @if (apiService.esPortalContador()) {
+                <li class="mb-1">
+                    <button (click)="toggleDespacho()" tooltip="Despacho" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!despachoIsCollapsed" aria-controls="despacho">
+                        <img appLazyImage="/assets/icons/file-text.png" class="icon me-2">Despacho
+                    </button>
+                    <div [collapse]="despachoIsCollapsed" [isAnimated]="true" id="despacho">
+                        <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/despacho/cartera']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/users.png" class="icon me-2">Cartera de clientes</a></li>
+                            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/despacho/cumplimiento']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/check-circle.png" class="icon me-2">Cumplimiento</a></li>
+                            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/despacho/libros-iva']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/book-open.png" class="icon me-2">Libros de IVA</a></li>
+                        </ul>
+                    </div>
+                </li>
+            }
             @if (apiService.hasPermission('productos.ver')) {
                 <li class="mb-1">
                     <button tourAnchor="tour.productos" id="tour.productos" (click)="toggleProductos()" tooltip="Productos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!productosIsCollapsed" aria-controls="productos">

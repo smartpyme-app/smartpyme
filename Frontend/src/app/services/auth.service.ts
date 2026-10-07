@@ -1,4 +1,5 @@
 import { Injectable, inject, Injector } from '@angular/core';
+import { Router } from '@angular/router';
 import { HttpResponse } from '@angular/common/http';
 import { map, switchMap, tap } from 'rxjs/operators';
 import { Observable, of } from 'rxjs';
@@ -13,12 +14,34 @@ import { FuncionalidadesService } from '@services/functionalities.service';
 })
 export class AuthService {
   private injector = inject(Injector);
+  private router = inject(Router);
+  private sessionRedirecting = false;
 
   constructor(
     private httpService: HttpService,
     private permissionService: PermissionService,
     private constantsService: ConstantsService
   ) {}
+
+  /** Token inválido/expirado: limpiar sesión local y volver al login (sin depender del API logout). */
+  sessionExpired(): void {
+    if (this.sessionRedirecting) {
+      return;
+    }
+    this.sessionRedirecting = true;
+    localStorage.clear();
+    this.permissionService.clearPermissions();
+    this.injector.get(FuncionalidadesService).limpiarCache();
+    this.injector.get(CountryI18nService).applyForEmpresa(null).subscribe({ error: () => {} });
+    const url = this.router.url || '';
+    if (!url.startsWith('/login')) {
+      this.router.navigate(['/login']).finally(() => {
+        this.sessionRedirecting = false;
+      });
+    } else {
+      this.sessionRedirecting = false;
+    }
+  }
 
   login(user: any): Observable<any> {
     return this.httpService.store('login', user).pipe(

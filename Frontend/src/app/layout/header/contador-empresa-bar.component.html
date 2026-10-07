@@ -1,0 +1,60 @@
+@if (visible) {
+  <div class="contador-empresa-pill">
+    <button
+      type="button"
+      class="contador-empresa-pill__trigger"
+      [disabled]="cambiando || !empresas.length"
+      [attr.aria-expanded]="menuAbierto"
+      aria-haspopup="listbox"
+      (click)="toggleMenu()"
+    >
+      <span
+        class="contador-empresa-pill__avatar"
+        [style.background]="colorMarca(nombreMostrado)"
+        aria-hidden="true"
+      >
+        {{ iniciales(nombreMostrado) }}
+      </span>
+      <span class="contador-empresa-pill__text">
+        <span class="contador-empresa-pill__kicker">Trabajando en</span>
+        <span class="contador-empresa-pill__nombre">{{ nombreMostrado }}</span>
+      </span>
+      <i
+        class="fa fa-chevron-down contador-empresa-pill__chevron"
+        [class.contador-empresa-pill__chevron--open]="menuAbierto"
+        aria-hidden="true"
+      ></i>
+    </button>
+
+    @if (menuAbierto) {
+      <div class="contador-empresa-pill__menu" role="listbox">
+        @for (e of empresas; track e.id) {
+          <button
+            type="button"
+            class="contador-empresa-pill__option"
+            [class.contador-empresa-pill__option--active]="e.id === empresaId"
+            role="option"
+            [attr.aria-selected]="e.id === empresaId"
+            (click)="seleccionar(e.id)"
+          >
+            <span
+              class="contador-empresa-pill__avatar contador-empresa-pill__avatar--sm"
+              [style.background]="colorMarca(e.nombre)"
+            >
+              {{ iniciales(e.nombre) }}
+            </span>
+            <span class="contador-empresa-pill__option-name">{{ e.nombre }}</span>
+          </button>
+        }
+        <div class="contador-empresa-pill__menu-foot">
+          <a routerLink="/despacho/cartera" class="contador-empresa-pill__link" (click)="cerrarMenu()">
+            Ver cartera
+          </a>
+          <a routerLink="/contadores" class="contador-empresa-pill__link" (click)="cerrarMenu()">
+            Todas las empresas
+          </a>
+        </div>
+      </div>
+    }
+  </div>
+}

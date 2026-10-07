@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import {
-  ContadorCarteraDetalle,
   ContadorEmpresaPortafolio,
   ContadorMetricasEmpresa,
   ContadoresPortalService,
@@ -38,7 +37,6 @@ type OrdenCartera = 'prioridad' | 'nombre' | 'pendientes';
 })
 export class ContadoresDashboardComponent implements OnInit {
   empresas: ContadorEmpresaPortafolio[] = [];
-  seleccionada: ContadorEmpresaPortafolio | null = null;
   loading = true;
   error = '';
   usuario: { name?: string; empresa?: { nombre?: string } } | null = null;
@@ -53,13 +51,10 @@ export class ContadoresDashboardComponent implements OnInit {
   buscador = '';
   /** ponytail: orden fijo por prioridad; el mockup ya no expone selector. */
   private readonly orden: OrdenCartera = 'prioridad';
-  abriendoCumplimiento = false;
-  detalleLoading = false;
-  detalle: ContadorCarteraDetalle | null = null;
+  abriendoEmpresaId: number | null = null;
   readonly logoFallo = new Set<number>();
 
   private metricasPorEmpresa = new Map<number, MetricasEmpresa>();
-  private detalleCacheKey = '';
 
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
@@ -84,10 +79,7 @@ export class ContadoresDashboardComponent implements OnInit {
         prevAnio = anio;
         this.periodoMes = mes;
         this.periodoAnio = anio;
-        this.detalleCacheKey = '';
         this.cargarDatos();
-      } else if (this.empresas.length) {
-        this.aplicarSeleccionInicial();
       }
     });
   }
@@ -160,37 +152,6 @@ export class ContadoresDashboardComponent implements OnInit {
     return this.empresas.reduce((sum, e) => sum + this.metricas(e).ivaPagar, 0);
   }
 
-  get metricasSeleccion(): MetricasEmpresa | null {
-    return this.seleccionada ? this.metricas(this.seleccionada) : null;
-  }
-
-  get filasDesglose(): { tipo: string; registradas: number; porCorreo: number; conPartida: number }[] {
-    if (!this.detalle) {
-      return [];
-    }
-    const d = this.detalle.desglose;
-    return [
-      { tipo: 'Ventas', ...this.mapFila(d.ventas) },
-      { tipo: 'Compras', ...this.mapFila(d.compras) },
-      { tipo: 'Gastos', ...this.mapFila(d.gastos) },
-    ];
-  }
-
-  get totalesDesglose(): { registradas: number; porCorreo: number; conPartida: number } | null {
-    if (!this.detalle?.totales) {
-      return null;
-    }
-    return {
-      registradas: this.detalle.totales.registradas,
-      porCorreo: this.detalle.totales.por_correo,
-      conPartida: this.detalle.totales.con_partida,
-    };
-  }
-
-  get periodoDetalleLabel(): string {
-    return this.periodoLabel || `${this.periodoMes}/${this.periodoAnio}`;
-  }
-
   metricas(empresa: ContadorEmpresaPortafolio): MetricasEmpresa {
     return (
       this.metricasPorEmpresa.get(empresa.id) ?? {
@@ -226,40 +187,28 @@ export class ContadoresDashboardComponent implements OnInit {
     });
   }
 
-  seleccionar(empresa: ContadorEmpresaPortafolio): void {
-    this.seleccionada = empresa;
-    this.contadoresPortal.guardarEmpresaActiva(empresa.id);
-    this.cargarDetalle(empresa.id);
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { empresa: empresa.id },
-      queryParamsHandling: 'merge',
-      replaceUrl: true,
-    });
-  }
-
-  abrirCumplimiento(): void {
-    if (!this.seleccionada || this.abriendoCumplimiento) {
+  irCumplimiento(empresa: ContadorEmpresaPortafolio): void {
+    if (this.abriendoEmpresaId != null) {
       return;
     }
-    this.abriendoCumplimiento = true;
-    this.contadoresPortal.registrarAccesoReciente(this.seleccionada);
+    this.abriendoEmpresaId = empresa.id;
+    this.contadoresPortal.registrarAccesoReciente(empresa);
     this.contadoresPortal
-      .establecerContextoEmpresa(this.seleccionada.id)
+      .cambiarEmpresaActiva(empresa.id)
       .pipe(this.untilDestroyed())
       .subscribe({
         next: () => {
-          this.abriendoCumplimiento = false;
-          this.router.navigate(['/contadores/cumplimiento'], {
+          this.abriendoEmpresaId = null;
+          this.router.navigate(['/despacho/cumplimiento'], {
             queryParams: {
-              empresa: this.seleccionada!.id,
+              empresa: empresa.id,
               mes: this.periodoMes,
               anio: this.periodoAnio,
             },
           });
         },
         error: () => {
-          this.abriendoCumplimiento = false;
+          this.abriendoEmpresaId = null;
         },
       });
   }
@@ -309,18 +258,6 @@ export class ContadoresDashboardComponent implements OnInit {
     return new Intl.NumberFormat('es-SV', { style: 'currency', currency: 'USD' }).format(monto);
   }
 
-  formatoMonedaSigned(monto: number): string {
-    const abs = this.formatoMoneda(Math.abs(monto));
-    if (monto < 0) {
-      return `-${abs}`;
-    }
-    return abs;
-  }
-
-  nombreCortoEmpresa(nombre: string): string {
-    return (nombre || '').split(',')[0].trim();
-  }
-
   etiquetaPermiso(permisos: string[]): string {
     const set = new Set((permisos ?? []).map((p) => p.toLowerCase()));
     if (set.has('aprobar')) {
@@ -361,10 +298,6 @@ export class ContadoresDashboardComponent implements OnInit {
           this.subtituloFiscal = textoVencimientoIva(this.periodoMes, this.periodoAnio);
           this.metricasPorEmpresa = this.mapearMetricas(cartera?.metricas ?? {});
           this.loading = false;
-          this.aplicarSeleccionInicial();
-          if (this.seleccionada) {
-            this.cargarDetalle(this.seleccionada.id);
-          }
         },
         error: (err) => {
           this.loading = false;
@@ -392,56 +325,4 @@ export class ContadoresDashboardComponent implements OnInit {
     return map;
   }
 
-  private mapFila(fila: { registradas: number; por_correo: number; con_partida: number }): {
-    registradas: number;
-    porCorreo: number;
-    conPartida: number;
-  } {
-    return {
-      registradas: fila.registradas ?? 0,
-      porCorreo: fila.por_correo ?? 0,
-      conPartida: fila.con_partida ?? 0,
-    };
-  }
-
-  private cargarDetalle(idEmpresa: number): void {
-    const key = `${idEmpresa}-${this.periodoMes}-${this.periodoAnio}`;
-    if (key === this.detalleCacheKey && this.detalle && !this.detalleLoading) {
-      return;
-    }
-    this.detalleCacheKey = key;
-    this.detalleLoading = true;
-    this.detalle = null;
-
-    this.contadoresPortal
-      .carteraDetalleEmpresa(idEmpresa, { mes: this.periodoMes, anio: this.periodoAnio })
-      .pipe(this.untilDestroyed())
-      .subscribe({
-        next: (res) => {
-          if (this.seleccionada?.id !== idEmpresa) {
-            return;
-          }
-          this.detalle = res?.detalle ?? null;
-          this.detalleLoading = false;
-        },
-        error: () => {
-          if (this.seleccionada?.id === idEmpresa) {
-            this.detalleLoading = false;
-          }
-        },
-      });
-  }
-
-  private aplicarSeleccionInicial(): void {
-    const qp = this.route.snapshot.queryParamMap.get('empresa');
-    const idQuery = qp ? Number(qp) : null;
-    const idStorage = this.contadoresPortal.leerEmpresaActivaId();
-    const id = idQuery && this.empresas.some((e) => e.id === idQuery) ? idQuery : idStorage;
-    const empresa = this.empresas.find((e) => e.id === id) ?? this.empresas[0] ?? null;
-    this.seleccionada = empresa;
-    if (empresa) {
-      this.contadoresPortal.guardarEmpresaActiva(empresa.id);
-      this.cargarDetalle(empresa.id);
-    }
-  }
 }

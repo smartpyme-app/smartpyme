@@ -63,7 +63,9 @@
     <app-sidebar></app-sidebar>
   }
 
-  <div class="content pt-5 mt-5 p-2 px-lg-4 py-lg-5 position-relative overflow-hidden">
+  <div class="app-layout-main flex-grow-1 min-w-0 d-flex flex-column">
+  <app-header></app-header>
+  <div class="content pt-5 mt-5 p-2 px-lg-4 py-lg-5 position-relative overflow-hidden flex-grow-1">
     <div class="container-fluid p-0 m-0">
       <!-- Sección de estado de suscripción -->
 
@@ -277,11 +279,11 @@
           </div>
       }
     </div>
-    <app-header></app-header>
     <!-- Siempre renderizar el componente de notificaciones para que pueda recibir mensajes -->
     <!-- El componente manejará internamente si debe mostrarse o no -->
     <app-notificaciones-container></app-notificaciones-container>
     <router-outlet></router-outlet>
+  </div>
   </div>
 </div>
 

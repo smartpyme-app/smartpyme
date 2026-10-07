@@ -15,6 +15,7 @@ import { ContadoresPortafolioComponent } from './views/contadores/contadores-por
 import { ContadoresDashboardComponent } from './views/contadores/contadores-dashboard.component';
 import { ContadoresCumplimientoComponent } from './views/contadores/contadores-cumplimiento.component';
 import { ContadoresLibrosIvaComponent } from './views/contadores/contadores-libros-iva.component';
+import { LayoutComponent } from './layout/layout.component';
 
 export const GUARD_TYPES = {
   ADMIN: 'admin',
@@ -31,24 +32,10 @@ export const routes: Routes = [
       component: ContadoresPortafolioComponent,
       title: 'Empresas',
     },
-    {
-      path: 'contadores/cartera',
-      canActivate: [AuthGuard],
-      component: ContadoresDashboardComponent,
-      title: 'Cartera de clientes',
-    },
-    {
-      path: 'contadores/cumplimiento',
-      canActivate: [AuthGuard],
-      component: ContadoresCumplimientoComponent,
-      title: 'Cumplimiento fiscal',
-    },
-    {
-      path: 'contadores/libros-iva',
-      canActivate: [AuthGuard],
-      component: ContadoresLibrosIvaComponent,
-      title: 'Libros de IVA',
-    },
+    { path: 'contadores/cartera', redirectTo: 'despacho/cartera', pathMatch: 'full' },
+    { path: 'contadores/cumplimiento', redirectTo: 'despacho/cumplimiento', pathMatch: 'full' },
+    { path: 'contadores/libros-iva', redirectTo: 'despacho/libros-iva', pathMatch: 'full' },
+    { path: 'contadores/ventas-compras', redirectTo: 'despacho/cartera', pathMatch: 'full' },
     { path: 'registro', component: RegisterEntryComponent, title: 'Registro' },
     { path: 'pago', component: PagoEntryComponent, title: 'Pago' },
     {
@@ -92,6 +79,28 @@ export const routes: Routes = [
         {
           path: 'finanzas',
           loadChildren: () => import('./views/finanzas/finanzas.module').then(m => m.FinanzasModule),
+        },
+        {
+          path: 'despacho',
+          component: LayoutComponent,
+          children: [
+            {
+              path: 'cartera',
+              component: ContadoresDashboardComponent,
+              title: 'Cartera de clientes',
+            },
+            {
+              path: 'cumplimiento',
+              component: ContadoresCumplimientoComponent,
+              title: 'Cumplimiento fiscal',
+            },
+            {
+              path: 'libros-iva',
+              component: ContadoresLibrosIvaComponent,
+              title: 'Libros de IVA',
+            },
+            { path: '', redirectTo: 'cartera', pathMatch: 'full' },
+          ],
         },
         // Dash
         {

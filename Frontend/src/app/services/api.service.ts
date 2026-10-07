@@ -21,6 +21,7 @@ import { environment } from './../../environments/environment';
 import { ChatService } from '@services/chat/chat.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { CountryI18nService } from '@services/country-i18n.service';
+import { CONTADOR_PORTAL_STORAGE_KEY } from '../auth/login/login-host';
 
 export const GUARD_TYPES = {
   ADMIN: 'admin',
@@ -340,6 +341,35 @@ export class ApiService {
 
   validateRole(roleToCheck: string, equals: boolean = true): boolean {
     return this.permissionService.validateRole(roleToCheck, equals);
+  }
+
+  /** Portal contador con cartera (rol admin_contador). */
+  esPortalContador(): boolean {
+    if (this.validateRole('admin_contador', true)) {
+      return true;
+    }
+    try {
+      if (localStorage.getItem(CONTADOR_PORTAL_STORAGE_KEY) === '1') {
+        return true;
+      }
+    } catch {
+      /* ignore */
+    }
+    const user = this.auth_user();
+    if (!user) {
+      return false;
+    }
+    if (user.tipo === 'Admin Contador') {
+      return true;
+    }
+    const roles = user.roles;
+    if (Array.isArray(roles)) {
+      return roles.some((r: unknown) => {
+        const name = typeof r === 'string' ? r : (r as { name?: string })?.name;
+        return name === 'admin_contador';
+      });
+    }
+    return false;
   }
 
   isSupervisorLimitado(): boolean {

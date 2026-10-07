@@ -6,12 +6,15 @@ import { forkJoin } from 'rxjs';
 import { ApiService } from '@services/api.service';
 import {
   ContadorEmpresaPortafolio,
-  ContadorLibrosIvaInforme,
   ContadorLibrosIvaResponse,
   ContadoresPortalService,
 } from '@services/contadores-portal.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { mesAnioDesdeQuery, opcionesPeriodo, periodoCierrePorDefecto } from './contadores-periodo.util';
+import {
+  LivaModuloDescarga,
+  modulosDescargaLibrosIva,
+} from './contadores-libros-iva-layout.util';
 
 @Component({
   selector: 'app-contadores-libros-iva',
@@ -24,17 +27,14 @@ export class ContadoresLibrosIvaComponent implements OnInit {
   usuario: { name?: string; empresa?: { nombre?: string } } | null = null;
   empresas: ContadorEmpresaPortafolio[] = [];
   vista: ContadorLibrosIvaResponse | null = null;
-  informe: ContadorLibrosIvaInforme | null = null;
 
   idEmpresa: number | null = null;
-  informeClave = 'compras_libro';
   periodoMes = periodoCierrePorDefecto().mes;
   periodoAnio = periodoCierrePorDefecto().anio;
   readonly opcionesPeriodo = opcionesPeriodo(24);
 
   loading = true;
-  loadingInforme = false;
-  descargando = false;
+  descargandoKey: string | null = null;
   error = '';
 
   private destroyRef = inject(DestroyRef);
@@ -55,23 +55,13 @@ export class ContadoresLibrosIvaComponent implements OnInit {
       const { mes, anio } = mesAnioDesdeQuery(params.get('mes'), params.get('anio'));
       const id = Number(params.get('empresa'));
       const idEmpresa = Number.isFinite(id) ? id : null;
-      const informeParam = params.get('informe');
-      const informeClave = informeParam || this.informeClave;
 
       const contextoCambio =
         idEmpresa !== this.idEmpresa || mes !== this.periodoMes || anio !== this.periodoAnio;
-      const soloInforme =
-        !contextoCambio && this.vista != null && informeClave !== this.informeClave;
 
       this.periodoMes = mes;
       this.periodoAnio = anio;
       this.idEmpresa = idEmpresa;
-      this.informeClave = informeClave;
-
-      if (soloInforme) {
-        this.cargarInforme();
-        return;
-      }
 
       if (contextoCambio || !this.vista) {
         this.cargar();
@@ -79,39 +69,8 @@ export class ContadoresLibrosIvaComponent implements OnInit {
     });
   }
 
-  get despachoNombre(): string {
-    return this.usuario?.empresa?.nombre ?? 'Despacho contable';
-  }
-
   get periodoKey(): string {
     return `${this.periodoMes}-${this.periodoAnio}`;
-  }
-
-  get empresaSeleccionada(): ContadorEmpresaPortafolio | null {
-    if (!this.idEmpresa) {
-      return null;
-    }
-    return this.empresas.find((e) => e.id === this.idEmpresa) ?? null;
-  }
-
-  get grupoInformeActivo(): string {
-    if (!this.vista) {
-      return '';
-    }
-    for (const g of this.vista.grupos) {
-      if (g.informes.some((i) => i.clave === this.informeClave)) {
-        return g.titulo;
-      }
-    }
-    return '';
-  }
-
-  onEmpresaChange(id: number): void {
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { empresa: id, mes: this.periodoMes, anio: this.periodoAnio, informe: this.informeClave },
-      queryParamsHandling: 'merge',
-    });
   }
 
   onPeriodoKeyChange(key: string): void {
@@ -126,23 +85,8 @@ export class ContadoresLibrosIvaComponent implements OnInit {
     });
   }
 
-  seleccionarInforme(clave: string): void {
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { informe: clave },
-      queryParamsHandling: 'merge',
-    });
-  }
-
-  volverCartera(): void {
-    this.router.navigate(['/contadores/cartera'], {
-      queryParams: { empresa: this.idEmpresa, mes: this.periodoMes, anio: this.periodoAnio },
-    });
-  }
-
-  cerrarSesion(): void {
-    this.api.logout();
-    this.router.navigate(['/login']);
+  modulosDescarga(vista: ContadorLibrosIvaResponse): LivaModuloDescarga[] {
+    return modulosDescargaLibrosIva(vista);
   }
 
   formatoMoneda(monto: number | null | undefined): string {
@@ -152,24 +96,21 @@ export class ContadoresLibrosIvaComponent implements OnInit {
     return new Intl.NumberFormat('es-SV', { style: 'currency', currency: 'USD' }).format(monto);
   }
 
-  valorCelda(fila: Record<string, unknown>, key: string, numeric?: boolean): string {
-    const v = fila[key];
-    if (numeric && typeof v === 'number') {
-      return this.formatoMoneda(v);
-    }
-    return v == null || v === '' ? '—' : String(v);
+  estaDescargando(clave: string, formato: 'pdf' | 'excel' | 'csv'): boolean {
+    return this.descargandoKey === `${clave}:${formato}`;
   }
 
-  descargar(formato: 'pdf' | 'excel' | 'csv'): void {
-    if (!this.idEmpresa || !this.informeClave) {
+  descargar(informeClave: string, formato: 'pdf' | 'excel' | 'csv'): void {
+    if (!this.idEmpresa || !informeClave) {
       return;
     }
-    this.descargando = true;
+    const key = `${informeClave}:${formato}`;
+    this.descargandoKey = key;
     const q = new URLSearchParams({
       id_empresa: String(this.idEmpresa),
       mes: String(this.periodoMes),
       anio: String(this.periodoAnio),
-      informe: this.informeClave,
+      informe: informeClave,
       formato,
     });
     this.api
@@ -182,16 +123,16 @@ export class ContadoresLibrosIvaComponent implements OnInit {
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `${this.informeClave}.${ext}`;
+          a.download = `${informeClave}.${ext}`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
           window.URL.revokeObjectURL(url);
-          this.descargando = false;
+          this.descargandoKey = null;
           this.cdr.markForCheck();
         },
         error: () => {
-          this.descargando = false;
+          this.descargandoKey = null;
           window.alert('No se pudo descargar el archivo.');
           this.cdr.markForCheck();
         },
@@ -202,7 +143,6 @@ export class ContadoresLibrosIvaComponent implements OnInit {
     this.loading = true;
     this.error = '';
     this.vista = null;
-    this.informe = null;
 
     forkJoin({
       empresas: this.contadoresPortal.listarEmpresas(),
@@ -228,7 +168,6 @@ export class ContadoresLibrosIvaComponent implements OnInit {
                 empresa: this.idEmpresa,
                 mes: this.periodoMes,
                 anio: this.periodoAnio,
-                informe: this.informeClave,
               },
               queryParamsHandling: 'merge',
               replaceUrl: true,
@@ -237,17 +176,13 @@ export class ContadoresLibrosIvaComponent implements OnInit {
           }
           if ('libros' in res && res.libros) {
             this.vista = res.libros;
-            if (this.syncInformeConVista()) {
-              this.loading = false;
-              this.cdr.markForCheck();
-              return;
+            if (this.idEmpresa) {
+              this.contadoresPortal.cambiarEmpresaActiva(this.idEmpresa).pipe(this.untilDestroyed()).subscribe();
             }
-            this.contadoresPortal.establecerContextoEmpresa(this.idEmpresa!).pipe(this.untilDestroyed()).subscribe();
-            this.cargarInforme();
           }
           this.loading = false;
           if (!this.idEmpresa) {
-            this.error = 'Elige una empresa para ver libros de IVA.';
+            this.error = 'Elige una empresa en el header para ver libros de IVA.';
           }
           this.cdr.markForCheck();
         },
@@ -255,54 +190,6 @@ export class ContadoresLibrosIvaComponent implements OnInit {
           this.loading = false;
           const raw = err?.error?.error;
           this.error = Array.isArray(raw) ? raw.join(', ') : (raw ?? 'No se pudo cargar libros de IVA.');
-          this.cdr.markForCheck();
-        },
-      });
-  }
-
-  /** Si el informe de la URL no aplica al país de la empresa, redirige al default del catálogo. */
-  private syncInformeConVista(): boolean {
-    if (!this.vista) {
-      return false;
-    }
-    const claves = this.vista.grupos.flatMap((g) => g.informes.map((i) => i.clave));
-    if (claves.includes(this.informeClave)) {
-      return false;
-    }
-    const def = this.vista.informe_default ?? claves[0];
-    if (!def) {
-      return false;
-    }
-    this.informeClave = def;
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { informe: def },
-      queryParamsHandling: 'merge',
-      replaceUrl: true,
-    });
-    return true;
-  }
-
-  private cargarInforme(): void {
-    if (!this.idEmpresa) {
-      return;
-    }
-    this.loadingInforme = true;
-    this.informe = null;
-    this.contadoresPortal
-      .librosIvaInforme(this.idEmpresa, this.informeClave, {
-        mes: this.periodoMes,
-        anio: this.periodoAnio,
-      })
-      .pipe(this.untilDestroyed())
-      .subscribe({
-        next: (informe) => {
-          this.informe = informe;
-          this.loadingInforme = false;
-          this.cdr.markForCheck();
-        },
-        error: () => {
-          this.loadingInforme = false;
           this.cdr.markForCheck();
         },
       });

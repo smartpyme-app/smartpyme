@@ -1,5 +1,6 @@
 // alert-service.ts
-import { Injectable } from '@angular/core';
+import { Injectable, inject, Injector } from '@angular/core';
+import { AuthService } from '@services/auth.service';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Router, ActivatedRoute } from '@angular/router';
 import { pareceErrorHaciendaCr } from './facturacion-electronica/hacienda-cr-error.parser';
@@ -12,6 +13,7 @@ export class AlertService {
 
     public modal:boolean = false;
     private alertSubject = new BehaviorSubject<any>(null);
+    private injector = inject(Injector);
 
     getAlert(): Observable<any> { return this.alertSubject.asObservable(); }
 
@@ -64,9 +66,14 @@ export class AlertService {
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : mensaje});
         }
         else if(status == 401) {
-            const mensaje = typeof errBody?.message === 'string' ? errBody.message : 'Sesión expirada';
+            const mensaje =
+                typeof errBody?.error === 'string'
+                    ? errBody.error
+                    : typeof errBody?.message === 'string'
+                      ? errBody.message
+                      : 'Sesión expirada';
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : mensaje});
-            this.router.navigate(['/login']);
+            this.injector.get(AuthService).sessionExpired();
         }
         else if(status == 400) {
             const body = (typeof errBody === 'object' && errBody !== null) ? errBody : {};

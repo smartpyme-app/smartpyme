@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '@services/api.service';
 import {
+  ContadorCarteraDetalle,
   ContadorCumplimientoResponse,
   ContadorEmpresaPortafolio,
   ContadoresPortalService,
@@ -33,6 +34,7 @@ export class ContadoresCumplimientoComponent implements OnInit {
   subiendo = false;
   empresas: ContadorEmpresaPortafolio[] = [];
   vista: ContadorCumplimientoResponse | null = null;
+  detalleAvance: ContadorCarteraDetalle | null = null;
 
   idEmpresa: number | null = null;
   periodoMes = periodoCierrePorDefecto().mes;
@@ -87,6 +89,40 @@ export class ContadoresCumplimientoComponent implements OnInit {
     return !!this.vista?.capacidades?.subir_archivos;
   }
 
+  get avanceContable(): { registradas: number; conPartida: number; avance: number } | null {
+    const t = this.detalleAvance?.totales;
+    if (!t) {
+      return null;
+    }
+    const registradas = t.registradas ?? 0;
+    const conPartida = t.con_partida ?? 0;
+    const avance = registradas > 0 ? Math.round((conPartida / registradas) * 100) : 100;
+    return { registradas, conPartida, avance };
+  }
+
+  get filasDesgloseAvance(): { tipo: string; registradas: number; porCorreo: number; conPartida: number }[] {
+    if (!this.detalleAvance) {
+      return [];
+    }
+    const d = this.detalleAvance.desglose;
+    return [
+      { tipo: 'Ventas', ...this.mapFilaDesglose(d.ventas) },
+      { tipo: 'Compras', ...this.mapFilaDesglose(d.compras) },
+      { tipo: 'Gastos', ...this.mapFilaDesglose(d.gastos) },
+    ];
+  }
+
+  get totalesDesgloseAvance(): { registradas: number; porCorreo: number; conPartida: number } | null {
+    if (!this.detalleAvance?.totales) {
+      return null;
+    }
+    return {
+      registradas: this.detalleAvance.totales.registradas,
+      porCorreo: this.detalleAvance.totales.por_correo,
+      conPartida: this.detalleAvance.totales.con_partida,
+    };
+  }
+
   /** Tipos del catálogo (una opción por slug) para el modal de alta. */
   get tiposCatalogoModal(): { slug: string; nombre: string }[] {
     const seen = new Set<string>();
@@ -125,7 +161,7 @@ export class ContadoresCumplimientoComponent implements OnInit {
   }
 
   volverCartera(): void {
-    this.router.navigate(['/contadores/cartera'], {
+    this.router.navigate(['/despacho/cartera'], {
       queryParams: {
         empresa: this.idEmpresa,
         mes: this.periodoMes,
@@ -150,16 +186,6 @@ export class ContadoresCumplimientoComponent implements OnInit {
 
   etiquetaCalendario(estado: EstadoCalendarioContador): string {
     return estado === 'presentado' ? 'Presentado' : 'Pendiente';
-  }
-
-  etiquetaRenovacion(estado: string): string {
-    if (estado === 'vence_pronto') {
-      return 'Vence pronto';
-    }
-    if (estado === 'vigente') {
-      return 'Vigente';
-    }
-    return estado;
   }
 
   formatoMoneda(monto: number | null | undefined): string {
@@ -397,16 +423,33 @@ export class ContadoresCumplimientoComponent implements OnInit {
       });
   }
 
+  private mapFilaDesglose(fila: { registradas: number; por_correo: number; con_partida: number }): {
+    registradas: number;
+    porCorreo: number;
+    conPartida: number;
+  } {
+    return {
+      registradas: fila.registradas ?? 0,
+      porCorreo: fila.por_correo ?? 0,
+      conPartida: fila.con_partida ?? 0,
+    };
+  }
+
   private cargar(): void {
     this.loading = true;
     this.error = '';
     this.vista = null;
+    this.detalleAvance = null;
 
     forkJoin({
       empresas: this.contadoresPortal.listarEmpresas(),
       ...(this.idEmpresa
         ? {
             cumplimiento: this.contadoresPortal.cumplimiento(this.idEmpresa, {
+              mes: this.periodoMes,
+              anio: this.periodoAnio,
+            }),
+            carteraDetalle: this.contadoresPortal.carteraDetalleEmpresa(this.idEmpresa, {
               mes: this.periodoMes,
               anio: this.periodoAnio,
             }),
@@ -430,8 +473,9 @@ export class ContadoresCumplimientoComponent implements OnInit {
           }
           if ('cumplimiento' in res && res.cumplimiento) {
             this.vista = res.cumplimiento;
+            this.detalleAvance = res.carteraDetalle?.detalle ?? null;
             if (this.idEmpresa) {
-              this.contadoresPortal.establecerContextoEmpresa(this.idEmpresa).pipe(this.untilDestroyed()).subscribe();
+              this.contadoresPortal.cambiarEmpresaActiva(this.idEmpresa).pipe(this.untilDestroyed()).subscribe();
             }
           }
           this.loading = false;

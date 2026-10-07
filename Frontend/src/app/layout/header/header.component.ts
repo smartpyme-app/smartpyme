@@ -11,14 +11,18 @@ import { EncryptService } from '@services/encryption/encrypt.service';
 import { Router } from '@angular/router';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { LazyImageDirective } from '../../directives/lazy-image.directive';
+import { ContadorEmpresaBarComponent } from './contador-empresa-bar.component';
+import { ContadoresPortalService } from '@services/contadores-portal.service';
+import { syncLayoutSidebarInset } from '../layout-sidebar-inset';
 
 // declare var $:any;
 
 @Component({
     selector: 'app-header',
     templateUrl: './header.component.html',
+    styleUrls: ['./header.component.css'],
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, TooltipModule, LazyImageDirective],
+    imports: [CommonModule, RouterModule, FormsModule, TooltipModule, LazyImageDirective, ContadorEmpresaBarComponent],
     
 })
 export class HeaderComponent implements OnInit {
@@ -40,13 +44,21 @@ export class HeaderComponent implements OnInit {
         private permissionService: PermissionService,
         public encryptService: EncryptService,
         private router: Router,
+        private contadoresPortal: ContadoresPortalService,
         @Inject(DOCUMENT) private document: any
      ) { }
 
     ngOnInit() {
+        syncLayoutSidebarInset();
         // $('.drop-down').dropdown();
         this.usuario = this.apiService.auth_user() ?? {};
         this.refreshDisplayRole();
+
+        this.contadoresPortal.contextoSesionActualizado$
+            .pipe(this.untilDestroyed())
+            .subscribe(() => {
+                this.usuario = this.apiService.auth_user() ?? {};
+            });
 
         this.permissionService.onPermissionsUpdated()
             .pipe(this.untilDestroyed())

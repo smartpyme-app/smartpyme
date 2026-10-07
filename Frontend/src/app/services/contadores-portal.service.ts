@@ -1,7 +1,11 @@
-import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { Injectable, inject, Injector } from '@angular/core';
+import { Observable, Subject, of } from 'rxjs';
+import { map, switchMap, tap } from 'rxjs/operators';
 import { ApiService } from '@services/api.service';
+import { CountryI18nService } from '@services/country-i18n.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
+import { ConstantsService } from '@services/constants.service';
+import { SharedDataService } from '@services/shared-data.service';
 
 export interface ContadorEmpresaPortafolio {
   acceso_id: number;
@@ -186,6 +190,12 @@ const KEY_CONTEXTO = 'SP_contador_contexto_empresa';
 
 @Injectable({ providedIn: 'root' })
 export class ContadoresPortalService {
+  private readonly injector = inject(Injector);
+  /** Emite cuando cambia la empresa cliente activa (header o portafolio). */
+  readonly empresaActiva$ = new Subject<number>();
+  /** Sesión local ya aplicada (user, permisos, i18n): recargar vistas que cachean empresa/sucursal. */
+  readonly contextoSesionActualizado$ = new Subject<void>();
+
   constructor(private api: ApiService) {}
 
   listarEmpresas(): Observable<{ empresas: ContadorEmpresaPortafolio[] }> {
@@ -331,15 +341,81 @@ export class ContadoresPortalService {
     }
   }
 
-  establecerContextoEmpresa(idEmpresa: number): Observable<{ contexto: ContadorContextoEmpresa }> {
+  establecerContextoEmpresa(idEmpresa: number): Observable<ContadorContextoEmpresa | null> {
     return this.api.store(`contadores/empresas/${idEmpresa}/contexto`, {}).pipe(
-      tap((res) => {
-        if (res?.contexto) {
-          localStorage.setItem(KEY_CONTEXTO, JSON.stringify(res.contexto));
-          this.guardarEmpresaActiva(idEmpresa);
+      switchMap((res) => this.aplicarRespuestaContexto(res, idEmpresa)),
+    );
+  }
+
+  restablecerContextoDespacho(): Observable<void> {
+    return this.api.store('contadores/contexto/despacho', {}).pipe(
+      switchMap((res) =>
+        this.aplicarRespuestaContexto(res, null).pipe(
+          tap(() => {
+            localStorage.removeItem(KEY_CONTEXTO);
+            localStorage.removeItem(KEY_EMPRESA_ACTIVA);
+          }),
+          map(() => undefined),
+        ),
+      ),
+    );
+  }
+
+  cambiarEmpresaActiva(idEmpresa: number): Observable<ContadorContextoEmpresa | null> {
+    const sesionId = this.api.auth_user()?.id_empresa;
+    if (sesionId === idEmpresa) {
+      this.guardarEmpresaActiva(idEmpresa);
+      this.empresaActiva$.next(idEmpresa);
+      return of(this.leerContextoEmpresa());
+    }
+    return this.establecerContextoEmpresa(idEmpresa).pipe(
+      tap((ctx) => {
+        if (ctx?.id) {
+          this.empresaActiva$.next(ctx.id);
         }
       }),
     );
+  }
+
+  private aplicarRespuestaContexto(
+    res: { contexto?: ContadorContextoEmpresa; user?: unknown },
+    idEmpresaFallback: number | null,
+  ): Observable<ContadorContextoEmpresa | null> {
+    if (res?.user) {
+      localStorage.setItem('SP_auth_user', JSON.stringify(res.user));
+    }
+    const ctx = res?.contexto ?? null;
+    if (ctx) {
+      localStorage.setItem(KEY_CONTEXTO, JSON.stringify(ctx));
+      this.guardarEmpresaActiva(ctx.id);
+    } else if (idEmpresaFallback != null) {
+      this.guardarEmpresaActiva(idEmpresaFallback);
+    }
+
+    const userId = this.api.auth_user()?.id;
+    if (!userId) {
+      return of(ctx);
+    }
+
+    this.api.loadUserPermissions(userId);
+    this.injector.get(FuncionalidadesService).limpiarCache();
+
+    const empresa = (res?.user as { empresa?: unknown } | undefined)?.empresa ?? null;
+    this.injector.get(ConstantsService).loadConstants().subscribe({
+      error: () => {},
+    });
+
+    return this.injector
+      .get(CountryI18nService)
+      .applyForEmpresa(empresa)
+      .pipe(
+        tap(() => {
+          this.injector.get(SharedDataService).invalidateOperationalListCaches();
+          this.api.loadData();
+          this.contextoSesionActualizado$.next();
+        }),
+        map(() => ctx),
+      );
   }
 
   leerContextoEmpresa(): ContadorContextoEmpresa | null {

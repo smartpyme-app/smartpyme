@@ -8,7 +8,8 @@ import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
-import { switchMap } from 'rxjs/operators';
+import { switchMap, tap } from 'rxjs/operators';
+import { CONTADOR_PORTAL_STORAGE_KEY } from './login-host';
 
 declare let $: any;
 
@@ -49,7 +50,11 @@ export class LoginContadoresComponent implements OnInit {
 
     this.apiService.login(this.user)
       .pipe(
-        switchMap(() => this.apiService.get('contadores/empresas')),
+        switchMap(() =>
+          this.apiService.get('contadores/empresas').pipe(
+            tap(() => localStorage.setItem(CONTADOR_PORTAL_STORAGE_KEY, '1')),
+          ),
+        ),
         this.untilDestroyed(),
       )
       .subscribe({

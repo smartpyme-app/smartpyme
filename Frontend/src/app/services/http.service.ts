@@ -4,6 +4,7 @@ import { map, catchError, retry, timeout, switchMap } from 'rxjs/operators';
 import { Observable, throwError, from, of } from 'rxjs';
 import { environment } from './../../environments/environment';
 import { AlertService } from '@services/alert.service';
+import { AuthService } from '@services/auth.service';
 import { CountryI18nService } from '@services/country-i18n.service';
 
 @Injectable({
@@ -322,8 +323,26 @@ export class HttpService {
       .pipe(retry(0), catchError(this.handleError));
   }
 
-  private handleError(error: HttpErrorResponse): Observable<never> {
+  private handleError = (error: HttpErrorResponse): Observable<never> => {
+    if (this.shouldRedirectToLogin(error)) {
+      this.injector.get(AuthService).sessionExpired();
+    }
     return throwError(() => error);
+  };
+
+  private shouldRedirectToLogin(error: HttpErrorResponse): boolean {
+    const status = error?.status;
+    if (status === 401) {
+      return true;
+    }
+    const body = error?.error;
+    const msg =
+      typeof body === 'object' && body !== null
+        ? String(body.error ?? body.message ?? '')
+        : typeof body === 'string'
+          ? body
+          : '';
+    return /token has expired|token inv[aá]lido|unauthenticated|sesi[oó]n expirada/i.test(msg);
   }
 }
 

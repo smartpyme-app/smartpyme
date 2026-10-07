@@ -9,6 +9,8 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { LibroIvaPaisService } from '@views/contabilidad/libro-iva-shared/libro-iva-pais.service';
 import { CountryI18nService } from '@services/country-i18n.service';
+import { ContadoresPortalService } from '@services/contadores-portal.service';
+import { syncLayoutSidebarInset } from '../layout-sidebar-inset';
 import { SLUG_DESCARGA_AUTOMATIZADA_DTES } from '@guards/funcionalidad.guard';
 import { puedeVerMenuCreditos, SLUG_CREDITOS_CLIENTES } from '@views/ventas/creditos/creditos-acceso';
 import { puedeVerMenuPrestamos, SLUG_PRESTAMOS_EMPRESA } from '@views/finanzas/prestamos/prestamos-acceso';
@@ -42,6 +44,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
     public sidebarCollapsed:boolean = false;
 
     public productosIsCollapsed:boolean = true;
+    public despachoIsCollapsed:boolean = true;
     public ventasIsCollapsed:boolean = true;
     public comprasIsCollapsed:boolean = true;
     public gastosIsCollapsed:boolean = true;
@@ -145,7 +148,8 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         private router: Router,
         private funcionalidadesService: FuncionalidadesService,
         private libroIvaPais: LibroIvaPaisService,
-        private countryI18n: CountryI18nService
+        private countryI18n: CountryI18nService,
+        private contadoresPortal: ContadoresPortalService,
     ) {
         super();
     }
@@ -161,6 +165,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         }else{
             this.sidebarCollapsed = JSON.parse(localStorage.getItem('sidebarCollapsed')!);
         }
+        syncLayoutSidebarInset();
         if (!localStorage.getItem('productosIsCollapsed')) {
             localStorage.setItem('productosIsCollapsed', this.productosIsCollapsed.toString());
         }else{
@@ -170,6 +175,11 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
             localStorage.setItem('ventasIsCollapsed', this.ventasIsCollapsed.toString());
         }else{
             this.ventasIsCollapsed = JSON.parse(localStorage.getItem('ventasIsCollapsed')!);
+        }
+        if (!localStorage.getItem('despachoIsCollapsed')) {
+            localStorage.setItem('despachoIsCollapsed', this.despachoIsCollapsed.toString());
+        } else {
+            this.despachoIsCollapsed = JSON.parse(localStorage.getItem('despachoIsCollapsed')!);
         }
         if (!localStorage.getItem('clinicaIsCollapsed')) {
             localStorage.setItem('clinicaIsCollapsed', this.clinicaIsCollapsed.toString());
@@ -252,6 +262,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         } else {
             this.pedidosIsCollapsed = JSON.parse(localStorage.getItem('pedidosIsCollapsed')!);
         }
+        this.expandirMenusPorRuta(this.router.url);
         this.searchControl.valueChanges
           .pipe(
             debounceTime(500),
@@ -263,6 +274,10 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
             this.items = Array.isArray(results) ? results : [];
             this.loading = false;
           });
+
+        this.contadoresPortal.contextoSesionActualizado$
+          .pipe(this.untilDestroyed())
+          .subscribe(() => this.refrescarTrasCambioEmpresaContador());
 
         this.loadNotificaciones();
         this.loadModules();
@@ -317,6 +332,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
                     this.verificarDescargaDtesHabilitada();
                     this.actualizarMenusRestaurantePedidos();
                 }
+                this.expandirMenusPorRuta(this.router.url);
             });
     }
 
@@ -351,6 +367,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
     toggleSidebar() {
         this.sidebarCollapsed = !this.sidebarCollapsed;
         localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed.toString());
+        syncLayoutSidebarInset();
 
         if (this.sidebarCollapsed) {
             this.closeAll();
@@ -373,6 +390,15 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         }
         this.isVisible = !this.isVisible;
 
+    }
+
+    toggleDespacho() {
+        if (this.despachoIsCollapsed) {
+            this.closeAll();
+        }
+        this.despachoIsCollapsed = !this.despachoIsCollapsed;
+        localStorage.setItem('despachoIsCollapsed', this.despachoIsCollapsed.toString());
+        this.toggleSidebarMenu();
     }
 
     toggleProductos() {
@@ -528,7 +554,17 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         };
     }
 
+    private expandirMenusPorRuta(url: string): void {
+        const path = (url || '').split('?')[0];
+        if (path === '/despacho' || path.startsWith('/despacho/')) {
+            this.despachoIsCollapsed = false;
+            localStorage.setItem('despachoIsCollapsed', 'false');
+        }
+    }
+
     closeAll(){
+        this.despachoIsCollapsed = true;
+        localStorage.setItem('despachoIsCollapsed', this.despachoIsCollapsed.toString());
         this.productosIsCollapsed = true;
         localStorage.setItem('productosIsCollapsed', this.productosIsCollapsed.toString());
         this.ventasIsCollapsed = true;
@@ -741,6 +777,25 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
 
     canShowOption(permission: string): boolean {
         return this.apiService.hasPermission(permission);
+    }
+
+    private refrescarTrasCambioEmpresaContador(): void {
+        this.usuario = this.apiService.auth_user() ?? {};
+        if (!this.usuario.empresa) {
+            this.usuario.empresa = {};
+        }
+        this.loadModules();
+        this.verificarAccesoContabilidad();
+        this.verificarFidelizacionHabilitada();
+        this.verificarComisionesHabilitada();
+        this.verificarBonosHabilitada();
+        this.verificarGiftCardsHabilitada();
+        this.verificarClinicaPacientes();
+        this.verificarClinicaProfesionales();
+        this.verificarCreditosHabilitada();
+        this.verificarPrestamosHabilitada();
+        this.verificarModuloRestauranteHabilitado();
+        this.verificarDescargaDtesHabilitada();
     }
 
     loadModules() {

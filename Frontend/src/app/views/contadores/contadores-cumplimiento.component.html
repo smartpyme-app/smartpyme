@@ -1,61 +1,4 @@
-<div class="contadores-dash">
-  <aside class="contadores-dash__sidebar">
-    <a routerLink="/contadores" class="contadores-dash__logo">
-      <img src="assets/img/smartpyme.png" alt="SmartPyme" height="28" />
-    </a>
-    <p class="contadores-dash__nav-label">Despacho</p>
-    <nav class="contadores-dash__nav">
-      <a routerLink="/contadores/cartera" class="contadores-dash__nav-link">Cartera de clientes</a>
-      <a routerLink="/contadores/cumplimiento" routerLinkActive="contadores-dash__nav-link--active" class="contadores-dash__nav-link">
-        Cumplimiento
-      </a>
-      <a routerLink="/contadores/libros-iva" routerLinkActive="contadores-dash__nav-link--active" class="contadores-dash__nav-link">
-        Libros de IVA
-      </a>
-    </nav>
-    <p class="contadores-dash__nav-label">Dentro de cada empresa</p>
-    <nav class="contadores-dash__nav">
-      <span class="contadores-dash__nav-link contadores-dash__nav-link--disabled">Ventas y compras</span>
-      <span class="contadores-dash__nav-link contadores-dash__nav-link--disabled">Partidas contables</span>
-      <span class="contadores-dash__nav-link contadores-dash__nav-link--disabled">Planillas</span>
-      <span class="contadores-dash__nav-link contadores-dash__nav-link--disabled">Estados financieros</span>
-    </nav>
-    <div class="contadores-dash__sidebar-foot">
-      <strong>{{ despachoNombre }}</strong>
-      <span>{{ usuario?.name }}</span>
-      <button type="button" class="btn btn-link p-0" (click)="cerrarSesion()">Cerrar sesión</button>
-    </div>
-  </aside>
-
-  <div class="contadores-dash__main">
-    <header class="contadores-dash__top contadores-cump__top">
-      <div class="contadores-cump__top-left">
-        <button type="button" class="contadores-dash__back btn btn-link p-0" (click)="volverCartera()">← Cartera</button>
-        @if (empresas.length) {
-          <select
-            class="form-select form-select-sm contadores-cump__empresa-select"
-            [ngModel]="idEmpresa"
-            (ngModelChange)="onEmpresaChange($event)"
-          >
-            @for (e of empresas; track e.id) {
-              <option [ngValue]="e.id">Trabajando en {{ e.nombre }}</option>
-            }
-          </select>
-        }
-      </div>
-      <div class="contadores-cump__top-right">
-        <select
-          class="form-select form-select-sm contadores-dash__periodo-select"
-          [ngModel]="periodoKey"
-          (ngModelChange)="onPeriodoKeyChange($event)"
-        >
-          @for (p of opcionesPeriodo; track p.mes + '-' + p.anio) {
-            <option [value]="p.mes + '-' + p.anio">{{ p.label }}</option>
-          }
-        </select>
-      </div>
-    </header>
-
+<div class="contadores-page">
     @if (loading) {
       <p class="text-muted p-4">Cargando cumplimiento…</p>
     }
@@ -65,28 +8,17 @@
 
     @if (!loading && !error && vista; as v) {
       <div class="contadores-cump__body">
-        <header class="contadores-cump__hero">
-          <div class="contadores-cump__hero-main">
-            @if (mostrarLogo(v.empresa.id, v.empresa.logo)) {
-              <img
-                class="contadores-cump__hero-logo"
-                [src]="logoUrl(v.empresa.logo)"
-                [alt]="v.empresa.nombre"
-                (error)="onLogoError(v.empresa.id)"
-              />
-            } @else {
-              <span class="contadores-cump__hero-avatar" [style.background]="colorMarca(v.empresa.nombre)">
-                {{ iniciales(v.empresa.nombre) }}
-              </span>
+        <div class="contadores-cump__periodo-row">
+          <select
+            class="form-select form-select-sm contadores-dash__periodo-select"
+            [ngModel]="periodoKey"
+            (ngModelChange)="onPeriodoKeyChange($event)"
+          >
+            @for (p of opcionesPeriodo; track p.mes + '-' + p.anio) {
+              <option [value]="p.mes + '-' + p.anio">{{ p.label }}</option>
             }
-            <div>
-              <h1 class="contadores-cump__hero-title">{{ v.empresa.nombre }}</h1>
-              <p class="contadores-cump__hero-sub mb-0">
-                {{ v.empresa.giro || 'Empresa cliente' }} · Cumplimiento y documentos
-              </p>
-            </div>
-          </div>
-        </header>
+          </select>
+        </div>
 
         <div class="contadores-cump__kpis">
           <div class="contadores-cump__kpi">
@@ -111,7 +43,48 @@
           </div>
         </div>
 
-        <div class="contadores-cump__grid-2">
+        <div class="contadores-cump__grid-2eq">
+          <section class="contadores-cump__panel contadores-cump__avance">
+            <h2 class="contadores-cump__panel-title">Avance contable de {{ v.periodo.label }}</h2>
+            @if (detalleAvance && avanceContable; as ac) {
+              <p class="contadores-dash__detail-meta mb-2">
+                {{ ac.conPartida }} de {{ ac.registradas }} con partida contable · {{ ac.avance }}%
+              </p>
+              <div class="contadores-dash__progress contadores-dash__progress--lg mb-3">
+                <div class="contadores-dash__progress-bar" [style.width.%]="ac.avance"></div>
+              </div>
+              <div class="contadores-dash__mini-table-wrap">
+                <table class="table table-sm contadores-dash__mini-table mb-0">
+                  <thead>
+                    <tr>
+                      <th>Tipo</th>
+                      <th class="text-end">Registradas</th>
+                      <th class="text-end">Con partida</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (fila of filasDesgloseAvance; track fila.tipo) {
+                      <tr>
+                        <td>{{ fila.tipo }}</td>
+                        <td class="text-end">{{ fila.registradas }}</td>
+                        <td class="text-end">{{ fila.conPartida }}</td>
+                      </tr>
+                    }
+                    @if (totalesDesgloseAvance; as t) {
+                      <tr class="contadores-dash__mini-total">
+                        <td>Total</td>
+                        <td class="text-end">{{ t.registradas }}</td>
+                        <td class="text-end">{{ t.conPartida }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <p class="contadores-cump__panel-lede mb-0">Sin desglose contable para este periodo.</p>
+            }
+          </section>
+
           <section class="contadores-cump__panel">
             <h2 class="contadores-cump__panel-title">Calendario tributario</h2>
             <p class="contadores-cump__panel-lede">
@@ -139,28 +112,6 @@
                         Marcar presentado
                       </button>
                     }
-                  </div>
-                </li>
-              }
-            </ul>
-          </section>
-
-          <section class="contadores-cump__panel">
-            <h2 class="contadores-cump__panel-title">Renovaciones anuales</h2>
-            <p class="contadores-cump__panel-lede">
-              Fecha límite y monto estimado con el balance general del sistema.
-            </p>
-            <ul class="contadores-cump__ren-list list-unstyled mb-0">
-              @for (r of v.renovaciones; track r.slug) {
-                <li class="contadores-cump__ren-item">
-                  <div>
-                    <strong>{{ r.nombre }}</strong>
-                    <p class="mb-0 small text-muted">{{ r.nota }}</p>
-                  </div>
-                  <div class="text-end">
-                    <div class="small text-muted">Vence {{ r.fecha_limite | date: 'd MMM y':'':'es' }}</div>
-                    <div class="fw-semibold">{{ formatoMoneda(r.monto_estimado) }}</div>
-                    <span class="contadores-cump__badge contadores-cump__badge--warn">{{ etiquetaRenovacion(r.estado) }}</span>
                   </div>
                 </li>
               }
@@ -276,7 +227,6 @@
         </section>
       </div>
     }
-  </div>
 </div>
 
 @if (modalCargaAbierto) {

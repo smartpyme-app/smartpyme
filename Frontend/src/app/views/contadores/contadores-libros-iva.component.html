@@ -1,47 +1,15 @@
-<div class="contadores-dash">
-  <aside class="contadores-dash__sidebar">
-    <a routerLink="/contadores" class="contadores-dash__logo">
-      <img src="assets/img/smartpyme.png" alt="SmartPyme" height="28" />
-    </a>
-    <p class="contadores-dash__nav-label">Despacho</p>
-    <nav class="contadores-dash__nav">
-      <a routerLink="/contadores/cartera" class="contadores-dash__nav-link">Cartera de clientes</a>
-      <a routerLink="/contadores/cumplimiento" class="contadores-dash__nav-link">Cumplimiento</a>
-      <a routerLink="/contadores/libros-iva" routerLinkActive="contadores-dash__nav-link--active" class="contadores-dash__nav-link">
-        Libros de IVA
-      </a>
-    </nav>
-    <p class="contadores-dash__nav-label">Dentro de cada empresa</p>
-    <nav class="contadores-dash__nav">
-      <span class="contadores-dash__nav-link contadores-dash__nav-link--disabled">Ventas y compras</span>
-      <span class="contadores-dash__nav-link contadores-dash__nav-link--disabled">Partidas contables</span>
-      <span class="contadores-dash__nav-link contadores-dash__nav-link--disabled">Planillas</span>
-      <span class="contadores-dash__nav-link contadores-dash__nav-link--disabled">Estados financieros</span>
-    </nav>
-    <div class="contadores-dash__sidebar-foot">
-      <strong>{{ despachoNombre }}</strong>
-      <span>{{ usuario?.name }}</span>
-      <button type="button" class="btn btn-link p-0" (click)="cerrarSesion()">Cerrar sesión</button>
-    </div>
-  </aside>
+<div class="contadores-page">
+  @if (loading) {
+    <p class="text-muted p-4">Cargando libros de IVA…</p>
+  }
+  @if (!loading && error) {
+    <p class="text-danger p-4">{{ error }}</p>
+  }
 
-  <div class="contadores-dash__main">
-    <header class="contadores-dash__top contadores-cump__top contadores-liva__top">
-      <div class="contadores-cump__top-left">
-        <button type="button" class="contadores-dash__back btn btn-link p-0" (click)="volverCartera()">← Cartera</button>
-        @if (empresas.length) {
-          <select
-            class="form-select form-select-sm contadores-cump__empresa-select"
-            [ngModel]="idEmpresa"
-            (ngModelChange)="onEmpresaChange($event)"
-          >
-            @for (e of empresas; track e.id) {
-              <option [ngValue]="e.id">Trabajando en {{ e.nombre }}</option>
-            }
-          </select>
-        }
-      </div>
-      <div class="contadores-cump__top-right">
+  @if (!loading && !error && vista; as v) {
+    <div class="contadores-cump__body contadores-liva__body">
+      <div class="contadores-liva__title-row">
+        <h1 class="contadores-liva__page-title">Libros de IVA</h1>
         <select
           class="form-select form-select-sm contadores-dash__periodo-select"
           [ngModel]="periodoKey"
@@ -52,162 +20,87 @@
           }
         </select>
       </div>
-    </header>
 
-    @if (loading) {
-      <p class="text-muted p-4">Cargando libros de IVA…</p>
-    }
-    @if (!loading && error) {
-      <p class="text-danger p-4">{{ error }}</p>
-    }
+      <p class="contadores-liva__lede">
+        Resumen del período y descarga de libros fiscales y anexos en los mismos formatos que Contabilidad.
+      </p>
 
-    @if (!loading && !error && vista; as v) {
-      <div class="contadores-cump__body contadores-liva__body">
-        <header class="contadores-liva__hero">
-          <h1 class="contadores-liva__hero-title">Libros de IVA</h1>
-          <p class="contadores-liva__hero-sub mb-0">
-            Los reportes se actualizan con cada venta o compra registrada en {{ v.empresa.nombre }}.
-          </p>
-        </header>
-
-        <div class="contadores-liva__kpis">
-          <div class="contadores-liva__kpi">
-            <span>Débito fiscal</span>
-            <strong>{{ formatoMoneda(v.resumen.debito_fiscal) }}</strong>
-          </div>
-          <div class="contadores-liva__kpi">
-            <span>Crédito fiscal</span>
-            <strong>{{ formatoMoneda(v.resumen.credito_fiscal) }}</strong>
-          </div>
-          <div class="contadores-liva__kpi">
-            <span>Retenciones y percepciones 1%</span>
-            <strong>{{ formatoMoneda(v.resumen.retenciones) }}</strong>
-          </div>
-          <div class="contadores-liva__kpi">
-            <span>IVA a pagar</span>
-            <strong>{{ formatoMoneda(v.resumen.iva_a_pagar) }}</strong>
-          </div>
+      <div class="contadores-liva__kpis">
+        <div class="contadores-liva__kpi">
+          <span>Débito fiscal</span>
+          <strong>{{ formatoMoneda(v.resumen.debito_fiscal) }}</strong>
         </div>
-
-        <div class="contadores-liva__layout">
-          <nav class="contadores-liva__menu" aria-label="Informes de IVA">
-            @for (grupo of v.grupos; track grupo.titulo) {
-              <div class="contadores-liva__menu-group">
-                <div class="contadores-liva__menu-label">{{ grupo.titulo }}</div>
-                @for (item of grupo.informes; track item.clave) {
-                  <button
-                    type="button"
-                    class="contadores-liva__menu-item"
-                    [class.contadores-liva__menu-item--active]="informeClave === item.clave"
-                    (click)="seleccionarInforme(item.clave)"
-                  >
-                    <span class="contadores-liva__menu-item-row">
-                      <span class="contadores-liva__menu-item-title">{{ item.titulo }}</span>
-                      <span class="contadores-liva__menu-item-count">{{ item.total_documentos }} documentos</span>
-                    </span>
-                    <span class="contadores-liva__menu-item-meta">{{ item.descripcion }}</span>
-                  </button>
-                }
-              </div>
-            }
-          </nav>
-
-          <section class="contadores-liva__detail">
-            @if (loadingInforme) {
-              <p class="text-muted mb-0">Cargando vista previa…</p>
-            } @else if (informe; as inf) {
-              <div class="contadores-liva__detail-head">
-                <div class="contadores-liva__detail-head-main">
-                  @if (grupoInformeActivo) {
-                    <p class="contadores-liva__detail-kicker">{{ grupoInformeActivo }}</p>
-                  }
-                  <h2 class="contadores-liva__detail-title">{{ inf.titulo }}</h2>
-                  <p class="contadores-liva__detail-desc">{{ inf.descripcion }}</p>
-                </div>
-                <div class="contadores-liva__detail-head-aside">
-                  @if (v.actualizado_hoy) {
-                    <span class="contadores-liva__badge-ok">✓ Actualizado hoy</span>
-                  }
-                  <div class="contadores-liva__actions">
-                    @if (informeClave && v.grupos) {
-                      @for (g of v.grupos; track g.titulo) {
-                        @for (it of g.informes; track it.clave) {
-                          @if (it.clave === informeClave) {
-                            @if (it.soporta_pdf) {
-                              <button type="button" class="btn btn-sm btn-primary" [disabled]="descargando" (click)="descargar('pdf')">
-                                Descargar PDF
-                              </button>
-                            }
-                            @if (it.soporta_excel) {
-                              <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="descargando" (click)="descargar('excel')">
-                                Descargar Excel
-                              </button>
-                            }
-                            @if (it.soporta_csv) {
-                              <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="descargando" (click)="descargar('csv')">
-                                Descargar CSV
-                              </button>
-                            }
-                          }
-                        }
-                      }
-                    }
-                  </div>
-                </div>
-              </div>
-
-              <div class="contadores-liva__preview">
-                <p class="contadores-liva__preview-label">VISTA PREVIA</p>
-                <p class="contadores-liva__preview-meta">Mostrando {{ inf.mostrando }} de {{ inf.total }} documentos</p>
-
-                @if (inf.nota) {
-                  <p class="contadores-liva__preview-meta">{{ inf.nota }}</p>
-                }
-
-                @if (inf.columnas.length && inf.filas.length) {
-                  <div class="contadores-liva__table-wrap contadores-dash__table-wrap">
-                    <table class="table table-sm align-middle mb-0 contadores-liva__table">
-                    <thead>
-                      <tr>
-                        @for (col of inf.columnas; track col.key) {
-                          <th [class.text-end]="col.numeric">{{ col.label }}</th>
-                        }
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (fila of inf.filas; track $index) {
-                        <tr>
-                          @for (col of inf.columnas; track col.key) {
-                            <td [class.text-end]="col.numeric">{{ valorCelda(fila, col.key, col.numeric) }}</td>
-                          }
-                        </tr>
-                      }
-                    </tbody>
-                    @if (inf.totales && inf.columnas.length) {
-                      <tfoot>
-                        <tr>
-                          @for (col of inf.columnas; track col.key; let i = $index) {
-                            <td [class.text-end]="col.numeric">
-                              @if (i === 0) {
-                                Total del período
-                              } @else if (col.numeric && inf.totales[col.key] != null) {
-                                {{ formatoMoneda(inf.totales[col.key]) }}
-                              }
-                            </td>
-                          }
-                        </tr>
-                      </tfoot>
-                    }
-                    </table>
-                  </div>
-                } @else if (!inf.nota) {
-                  <p class="contadores-liva__empty mb-0">No hay registros en este período.</p>
-                }
-              </div>
-            }
-          </section>
+        <div class="contadores-liva__kpi">
+          <span>Crédito fiscal</span>
+          <strong>{{ formatoMoneda(v.resumen.credito_fiscal) }}</strong>
+        </div>
+        <div class="contadores-liva__kpi">
+          <span>Retenciones y percepciones 1%</span>
+          <strong>{{ formatoMoneda(v.resumen.retenciones) }}</strong>
+        </div>
+        <div class="contadores-liva__kpi">
+          <span>IVA a pagar</span>
+          <strong>{{ formatoMoneda(v.resumen.iva_a_pagar) }}</strong>
         </div>
       </div>
-    }
-  </div>
+
+      <section class="contadores-liva__downloads" aria-labelledby="liva-descargas-title">
+        <div class="contadores-liva__downloads-head">
+          <h2 id="liva-descargas-title" class="contadores-liva__section-title">Descargas</h2>
+          @if (v.actualizado_hoy) {
+            <span class="contadores-liva__badge-ok">Actualizado hoy</span>
+          }
+        </div>
+
+        @for (modulo of modulosDescarga(v); track modulo.titulo) {
+          <div class="contadores-liva__module">
+            <h3 class="contadores-liva__module-title">{{ modulo.titulo }}</h3>
+            <div class="contadores-liva__module-rows">
+              @for (fila of modulo.filas; track fila.item.clave) {
+                <div class="contadores-liva__module-row">
+                  <div class="contadores-liva__module-row-main">
+                    <span class="contadores-liva__fila-tipo">{{ fila.etiqueta }}</span>
+                    <span class="contadores-liva__fila-desc">{{ fila.item.descripcion }}</span>
+                    <span class="contadores-liva__fila-meta">{{ fila.item.total_documentos }} documentos</span>
+                  </div>
+                  <div class="contadores-liva__download-actions">
+                    @if (fila.item.soporta_pdf) {
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-primary"
+                        [disabled]="estaDescargando(fila.item.clave, 'pdf')"
+                        (click)="descargar(fila.item.clave, 'pdf')"
+                      >
+                        PDF
+                      </button>
+                    }
+                    @if (fila.item.soporta_excel) {
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary"
+                        [disabled]="estaDescargando(fila.item.clave, 'excel')"
+                        (click)="descargar(fila.item.clave, 'excel')"
+                      >
+                        Excel
+                      </button>
+                    }
+                    @if (fila.item.soporta_csv) {
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        [disabled]="estaDescargando(fila.item.clave, 'csv')"
+                        (click)="descargar(fila.item.clave, 'csv')"
+                      >
+                        CSV
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </section>
+    </div>
+  }
 </div>

@@ -11,6 +11,7 @@ import {
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { periodoCierrePorDefecto } from './contadores-periodo.util';
+import { CONTADOR_PORTAL_STORAGE_KEY } from '../../auth/login/login-host';
 
 type FiltroCartera = 'todas' | 'pendiente' | 'al_dia';
 
@@ -50,6 +51,10 @@ export class ContadoresPortafolioComponent implements OnInit {
     this.usuario = this.api.auth_user();
     this.recientes = this.contadoresPortal.leerRecientes();
 
+    if (this.api.esPortalContador()) {
+      this.contadoresPortal.restablecerContextoDespacho().pipe(this.untilDestroyed()).subscribe();
+    }
+
     forkJoin({
       empresas: this.contadoresPortal.listarEmpresas(),
       cartera: this.contadoresPortal.carteraMetricas(),
@@ -58,6 +63,9 @@ export class ContadoresPortafolioComponent implements OnInit {
       .subscribe({
         next: ({ empresas, cartera }) => {
           this.empresas = empresas?.empresas ?? [];
+          if (this.empresas.length) {
+            localStorage.setItem(CONTADOR_PORTAL_STORAGE_KEY, '1');
+          }
           this.pendientesPorEmpresa.clear();
           for (const [idStr, m] of Object.entries(cartera?.metricas ?? {})) {
             const id = Number(idStr);
@@ -122,14 +130,20 @@ export class ContadoresPortafolioComponent implements OnInit {
   }
 
   elegirEmpresa(empresa: ContadorEmpresaPortafolio): void {
-    this.contadoresPortal.guardarEmpresaActiva(empresa.id);
-    this.contadoresPortal.registrarAccesoReciente(empresa);
-    this.recientes = this.contadoresPortal.leerRecientes();
-    this.router.navigate(['/contadores/cartera'], { queryParams: this.queryPeriodoCartera(empresa.id) });
+    this.contadoresPortal
+      .cambiarEmpresaActiva(empresa.id)
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: () => {
+          this.contadoresPortal.registrarAccesoReciente(empresa);
+          this.recientes = this.contadoresPortal.leerRecientes();
+          this.router.navigate(['/']);
+        },
+      });
   }
 
   irACarteraCompleta(): void {
-    this.router.navigate(['/contadores/cartera'], { queryParams: this.queryPeriodoCartera() });
+    this.router.navigate(['/despacho/cartera'], { queryParams: this.queryPeriodoCartera() });
   }
 
   private queryPeriodoCartera(empresaId?: number): Record<string, number> {

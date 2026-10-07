@@ -13,3 +13,4 @@ Route::post('/contadores/cumplimiento/documentos', [ContadorPortalController::cl
 Route::post('/contadores/cumplimiento/presentado', [ContadorPortalController::class, 'cumplimientoPresentado']);
 Route::get('/contadores/cartera/empresa/{idEmpresa}', [ContadorPortalController::class, 'carteraEmpresa']);
 Route::post('/contadores/empresas/{idEmpresa}/contexto', [ContadorPortalController::class, 'contexto']);
+Route::post('/contadores/contexto/despacho', [ContadorPortalController::class, 'contextoDespacho']);
