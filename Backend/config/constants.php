@@ -21,9 +21,9 @@ return [
     ],
 
     'CORREO_FACTURACION_MENSUAL' => [
-        'karla.b@smartpyme.sv',
-        'jose.e@smartpyme.sv',
-        'alejandro.a@smartpyme.sv',
+        'karla.b@smartpyme.app',
+        'jose.e@smartpyme.app',
+        'alejandro.a@smartpyme.app',
     ],
 
     /**

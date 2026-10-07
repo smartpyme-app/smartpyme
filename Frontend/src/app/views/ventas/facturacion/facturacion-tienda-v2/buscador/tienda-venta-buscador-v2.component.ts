@@ -169,7 +169,8 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
     }
 
     /**
-     * Calcula el precio con IVA incluido usando el % del producto si tiene, si no el de la empresa.
+     * Precio con IVA del producto. Usa el guardado; si no hay, lo calcula.
+     * Una presentación trae el precio_con_iva del producto base: ahí se calcula sobre su precio.
      */
     public getPrecioConIva(producto: any): number {
         return getPrecioConIvaProducto(producto, this.ivaEmpresa());
