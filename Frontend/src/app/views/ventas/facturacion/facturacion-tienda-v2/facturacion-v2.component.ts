@@ -995,7 +995,10 @@ export class FacturacionV2Component implements OnInit {
           copiarImpuestosProductoAlDetalle(detalle, producto, ivaEmpresa);
 
           const precioSinIva = parseFloat(producto.precio);
-          const precioConIva = precioSinIva * (1 + pctImpuesto / 100);
+          const guardadoConIva = producto.precio_con_iva;
+          const precioConIva = guardadoConIva != null && guardadoConIva !== ''
+            ? parseFloat(guardadoConIva)
+            : precioSinIva * (1 + pctImpuesto / 100);
           detalle.precio_iva = redondearMoneda(precioConIva).toFixed(2);
           detalle.precio = precioSinIva.toFixed(4);
 
@@ -1012,6 +1015,7 @@ export class FacturacionV2Component implements OnInit {
           detalle.precios.unshift({
             precio: precioSinIva.toFixed(4),
             precio_sin_iva: precioSinIva,
+            precio_con_iva: precioConIva.toFixed(4),
           });
 
           this.aplicarCoincidenciaListaPreciosOrden(detalle, detalleCompra, pctImpuesto);
@@ -1020,6 +1024,7 @@ export class FacturacionV2Component implements OnInit {
             detalle.precios[0] = {
               precio: typeof detalle.precio === 'string' ? detalle.precio : parseFloat(detalle.precio).toFixed(4),
               precio_sin_iva: parseFloat(detalle.precio),
+              precio_con_iva: detalle.precio_iva,
             };
           }
 
@@ -1461,7 +1466,11 @@ export class FacturacionV2Component implements OnInit {
     for (const p of lista) {
       const sinLista = parseFloat(String(p?.precio));
       if (!Number.isFinite(sinLista)) continue;
-      const conLista = pct > 0 ? sinLista * (1 + pct / 100) : sinLista;
+      const guardado = p?.precio_con_iva;
+      const conLista = guardado != null && guardado !== ''
+        ? parseFloat(String(guardado))
+        : (pct > 0 ? sinLista * (1 + pct / 100) : sinLista);
+      if (!Number.isFinite(conLista)) continue;
       if (!this.igualdadPrecioMercado(referenciaConIva, conLista)) continue;
       const err = Math.abs(referenciaConIva - conLista);
       if (err < mejorErr - 1e-9) {
@@ -1479,9 +1488,11 @@ export class FacturacionV2Component implements OnInit {
         : parseFloat(String(mejor.precio));
     if (!Number.isFinite(sinSel)) return;
     detalle.precio = sinSel.toFixed(4);
-    detalle.precio_iva = pct > 0
-      ? redondearMoneda(sinSel * (1 + pct / 100)).toFixed(2)
-      : redondearMoneda(sinSel).toFixed(2);
+    const conSelRaw = mejor.precio_con_iva;
+    const conSel = conSelRaw != null && conSelRaw !== ''
+      ? Number(conSelRaw)
+      : (pct > 0 ? sinSel * (1 + pct / 100) : sinSel);
+    detalle.precio_iva = redondearMoneda(conSel).toFixed(2);
   }
 
   /** Stock desde producto ya cargado por bodega (misma regla que el buscador v2). */

@@ -170,8 +170,7 @@
                         <td class="d-none d-md-table-cell" *ngIf="isComponenteQuimicoHabilitado()">{{
                             producto.componente_quimico || '-' }}</td>
                         <td class="text-right">{{ producto.precio | currency }}</td>
-                        <td class="text-right">{{ (producto.precio * 1) + (producto.precio *
-                            (getPorcentajeProducto(producto) / 100) ) | currency }}</td>
+                        <td class="text-right">{{ getPrecioConIva(producto) | currency }}</td>
                         <td class="text-center">
                             <!-- Si tiene lotes activados, mostrar stock de lotes -->
                             <div *ngIf="producto.inventario_por_lotes">
