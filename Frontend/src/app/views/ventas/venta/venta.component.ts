@@ -20,7 +20,7 @@ import { FE_PAIS_CR, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturaci
 import { detalleTieneExoneracionCr } from '@shared/modals/fe-cr-exoneracion-detalle/fe-cr-exoneracion-detalle.util';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
-import { porcentajeIvaDetalle, redondearMoneda } from '@utils/impuestos-venta.util';
+import { porcentajeIvaDetalle, redondearMoneda, totalAPagarConSeguroFlete } from '@utils/impuestos-venta.util';
 import { puedeFacturarVentaCuota, queryFacturarVenta } from '@views/ventas/creditos/creditos-facturar';
 
 @Component({
@@ -334,10 +334,13 @@ export class VentaComponent implements OnInit {
         this.location.back();
     }
 
+    public totalAPagar(): number {
+        return totalAPagarConSeguroFlete(this.venta?.total, this.venta?.seguro, this.venta?.flete, this.venta?.nombre_documento);
+    }
+
     public getTotalConPropina(): number {
-        const total = parseFloat(this.venta?.total || 0);
         const propina = parseFloat(this.venta?.propina || 0);
-        return total + propina;
+        return this.totalAPagar() + propina;
     }
 
     public hasImage(img: any): boolean {

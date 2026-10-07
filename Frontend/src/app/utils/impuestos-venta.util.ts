@@ -10,6 +10,28 @@ export function redondearMoneda(n: number): number {
   return (sign * cents) / 100;
 }
 
+function montoNumerico(valor: unknown): number {
+  const n = parseFloat(String(valor ?? ''));
+  return Number.isFinite(n) ? n : 0;
+}
+
+/**
+ * Monto a cobrar en pantalla. Seguro y flete se suman solo en factura de exportación.
+ * venta.total no se modifica: en exportación esa cifra es la base gravada del DTE.
+ */
+export function totalAPagarConSeguroFlete(
+  total: unknown,
+  seguro: unknown,
+  flete: unknown,
+  nombreDocumento?: unknown
+): number {
+  const base = redondearMoneda(montoNumerico(total));
+  if (String(nombreDocumento ?? '') !== 'Factura de exportación') {
+    return base;
+  }
+  return redondearMoneda(base + montoNumerico(seguro) + montoNumerico(flete));
+}
+
 export function redondear4(n: number): number {
   return Math.round(n * 10000) / 10000;
 }

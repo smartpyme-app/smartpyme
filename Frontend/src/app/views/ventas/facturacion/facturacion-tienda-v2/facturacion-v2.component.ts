@@ -51,6 +51,7 @@ import {
   sumarDescuentoConIvaEncabezadoVenta,
   sumarSubTotalEncabezadoVenta,
   sumarTotalEncabezadoVenta,
+  totalAPagarConSeguroFlete,
 } from '@utils/impuestos-venta.util';
 import { esVentaPorConsigna, sincronizarFlagConsignaVenta, aplicarEstadoConsignaEnVenta } from '@utils/venta-consigna.util';
 import { debeDispararAtajoTcla } from '@utils/atajos-teclado.util';
@@ -1344,7 +1345,7 @@ export class FacturacionV2Component implements OnInit {
     if (!this.tieneMultimoneda || this.monedaVenta !== 'USD' || this.monedaVenta === this.monedaFuncional) {
       return null;
     }
-    const total = parseFloat(this.venta?.total);
+    const total = this.totalAPagar();
     const rate = parseFloat(this.venta?.exchange_rate);
     if (!Number.isFinite(total) || !Number.isFinite(rate) || rate <= 0 || rate === 1) {
       return null;
@@ -1672,7 +1673,7 @@ export class FacturacionV2Component implements OnInit {
   public actualizarCambioEfectivo(): void {
     this.venta.cambio = calcularCambioEfectivo({
       montoPago: this.venta.monto_pago,
-      total: this.venta.total,
+      total: this.totalAPagar(),
       propina: this.venta.propina,
       formaPago: this.venta.forma_pago,
       efectivo: this.venta.efectivo,
@@ -2983,11 +2984,14 @@ export class FacturacionV2Component implements OnInit {
     });
   }
 
-public getTotalConPropina(): number {
-    const total = parseFloat(this.venta?.total || 0);
+  public totalAPagar(): number {
+    return totalAPagarConSeguroFlete(this.venta?.total, this.venta?.seguro, this.venta?.flete, this.venta?.nombre_documento);
+  }
+
+  public getTotalConPropina(): number {
     const propina = parseFloat(this.venta?.propina || 0);
-    return total + propina;
-}
+    return this.totalAPagar() + propina;
+  }
 
   // ==================== FIDELIZACIÓN - PUNTOS ====================
 

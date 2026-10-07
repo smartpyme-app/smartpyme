@@ -9,6 +9,7 @@ import { AlertService } from '@services/alert.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { aplicarResumenPagoMultiple, resumenPagoMultiple } from '@utils/cambio-efectivo.util';
+import { totalAPagarConSeguroFlete } from '@utils/impuestos-venta.util';
 
 @Component({
     selector: 'app-metodos-de-pago',
@@ -43,8 +44,12 @@ export class MetodosDePagoComponent extends BaseModalComponent implements OnInit
         super.openModal(template, { class: 'modal-md', backdrop: 'static' });
     }
 
+    public totalAPagar(): number {
+        return totalAPagarConSeguroFlete(this.venta?.total, this.venta?.seguro, this.venta?.flete, this.venta?.nombre_documento);
+    }
+
     public sumTotal(){
-        const r = resumenPagoMultiple({ total: this.venta.total, formaPagos: this.formaPagos });
+        const r = resumenPagoMultiple({ total: this.totalAPagar(), formaPagos: this.formaPagos });
         this.formaPagos.total = r.recibido.toFixed(4);
         this.pendiente = r.pendiente;
         this.vuelto = r.vuelto;
@@ -53,7 +58,7 @@ export class MetodosDePagoComponent extends BaseModalComponent implements OnInit
     }
 
     public onSubmit(){
-        const r = resumenPagoMultiple({ total: this.venta.total, formaPagos: this.formaPagos });
+        const r = resumenPagoMultiple({ total: this.totalAPagar(), formaPagos: this.formaPagos });
         if (!r.puedeAplicar) {
             return;
         }

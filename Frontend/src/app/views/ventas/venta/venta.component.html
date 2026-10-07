@@ -420,9 +420,21 @@
                             <td class="text-end"><b>{{ venta.propina | currency }}</b></td>
                         </tr>
                     }
+                    @if (venta.nombre_documento == 'Factura de exportación' && venta.seguro > 0) {
+                        <tr>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Seguro:</b></td>
+                            <td class="text-end"><b>{{ venta.seguro | currency }}</b></td>
+                        </tr>
+                    }
+                    @if (venta.nombre_documento == 'Factura de exportación' && venta.flete > 0) {
+                        <tr>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Flete:</b></td>
+                            <td class="text-end"><b>{{ venta.flete | currency }}</b></td>
+                        </tr>
+                    }
                     <tr>
                         <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Total:</b></td>
-                        <td class="text-end"><b>{{ venta?.total | currency }}</b></td>
+                        <td class="text-end"><b>{{ totalAPagar() | currency }}</b></td>
                     </tr>
                     @if (muestraMonedaDocumentoCr && equivalenteUsd != null) {
                         <tr class="text-muted">

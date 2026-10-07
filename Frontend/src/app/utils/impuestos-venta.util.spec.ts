@@ -9,6 +9,7 @@ import {
   sumarIvaLineasSinRedondeo,
   sumarSubTotalEncabezadoVenta,
   sumarTotalEncabezadoVenta,
+  totalAPagarConSeguroFlete,
   resolverIvaObjetivoEncabezadoVenta,
   calcularDescuentoDesdePrecioConIva,
   sumarDescuentoConIvaEncabezadoVenta,
@@ -841,5 +842,11 @@ describe('impuestos-venta.util — IVA vs especiales', () => {
 
     expect(Number(ventaImpuestos[0].monto)).toBe(2.6);
     expect(Number(ventaImpuestos[1].monto)).toBe(0);
+  });
+
+  it('suma seguro y flete solo en factura de exportación', () => {
+    expect(totalAPagarConSeguroFlete(3886.32, 50, 750, 'Factura de exportación')).toBe(4686.32);
+    expect(totalAPagarConSeguroFlete(3886.32, 50, 750, 'Crédito fiscal')).toBe(3886.32);
+    expect(totalAPagarConSeguroFlete(3886.32, 50, 750)).toBe(3886.32);
   });
 });

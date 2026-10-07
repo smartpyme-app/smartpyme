@@ -3,6 +3,7 @@ import { CommonModule, DecimalPipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { DisplayNombreImpuestoPipe } from '@pipes/display-nombre-impuesto.pipe';
+import { totalAPagarConSeguroFlete } from '@utils/impuestos-venta.util';
 
 @Component({
   selector: 'app-pos-ticket-ventas',
@@ -47,5 +48,9 @@ export class PosTicketVentasComponent {
 
   cantidadLinea(detalle: any): number {
     return parseFloat(detalle?.cantidad) || 0;
+  }
+
+  totalAPagar(): number {
+    return totalAPagarConSeguroFlete(this.venta?.total, this.venta?.seguro, this.venta?.flete, this.venta?.nombre_documento);
   }
 }
