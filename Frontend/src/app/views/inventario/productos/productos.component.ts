@@ -169,6 +169,15 @@ export class ProductosComponent implements OnInit {
         return pct != null && pct !== '' ? Number(pct) : 0;
     }
 
+    public getPrecioConIva(producto: any): number {
+        const guardado = producto?.precio_con_iva;
+        if (guardado != null && guardado !== '') {
+            return Number(guardado);
+        }
+        const precio = Number(producto?.precio) || 0;
+        return precio + (precio * (this.getPorcentajeProducto(producto) / 100));
+    }
+
     public setEstado(producto: any) {
         this.apiService.store('producto', producto).subscribe(producto => {
             this.alertService.success('Producto actualizado', 'El producto fue guardado exitosamente.');
