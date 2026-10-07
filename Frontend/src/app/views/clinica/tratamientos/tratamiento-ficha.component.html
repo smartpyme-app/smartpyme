@@ -1,0 +1,94 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3 flex-wrap gap-2">
+    <div>
+        <h2 class="page-heading mb-0">Plan de tratamiento</h2>
+        @if (tratamiento) {
+            <span class="badge py-2 mt-2" [ngClass]="{
+                'bg-primary': tratamiento.estado === 'en_curso',
+                'bg-secondary': tratamiento.estado === 'indicado',
+                'bg-warning text-dark': tratamiento.estado === 'suspendido',
+                'bg-success': tratamiento.estado === 'finalizado'
+            }">{{ tratamiento.estado }}</span>
+        }
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (tratamiento?.editable && apiService.hasPermission('clinica.tratamientos.editar')) {
+            <button type="button" class="btn btn-default" (click)="editar()">Editar plan</button>
+        }
+        @if (tratamiento?.estado === 'indicado' && apiService.hasPermission('clinica.tratamientos.editar')) {
+            <button type="button" class="btn btn-primary" (click)="iniciar()">Iniciar tratamiento</button>
+        }
+        @if (tratamiento && (tratamiento.estado === 'indicado' || tratamiento.estado === 'en_curso') && apiService.hasPermission('clinica.tratamientos.editar')) {
+            <button type="button" class="btn btn-default" (click)="suspender()">Suspender</button>
+            <button type="button" class="btn btn-default" (click)="finalizar()">Finalizar</button>
+        }
+        <button type="button" class="btn btn-default" [routerLink]="['/clinica/pacientes', idPaciente, 'expediente', 'historial']">Historial</button>
+    </div>
+</section>
+
+@if (cargando) {
+    <section class="bg-white p-4 rounded"><span class="badge bg-primary">Cargando...</span></section>
+}
+
+@if (!cargando && tratamiento) {
+    <section class="bg-white p-4 rounded mb-3">
+        <div class="row">
+            <div class="col-md-6"><label class="fw-medium">Descripción</label><p>{{ tratamiento.descripcion }}</p></div>
+            <div class="col-md-3"><label class="fw-medium">Inicio</label><p>{{ tratamiento.fecha_inicio }}</p></div>
+            <div class="col-md-3"><label class="fw-medium">Fin</label><p>{{ tratamiento.fecha_fin || '—' }}</p></div>
+            <div class="col-md-3"><label class="fw-medium">Frecuencia</label><p>{{ tratamiento.frecuencia || '—' }}</p></div>
+            <div class="col-md-3"><label class="fw-medium">Duración</label><p>{{ tratamiento.duracion || '—' }}</p></div>
+            <div class="col-md-6"><label class="fw-medium">Profesional</label><p>{{ tratamiento.profesional?.nombre || '—' }}</p></div>
+            <div class="col-12"><label class="fw-medium">Indicaciones</label><p>{{ tratamiento.indicaciones || '—' }}</p></div>
+        </div>
+    </section>
+
+    @if (tratamiento.estado === 'en_curso' && apiService.hasPermission('clinica.tratamientos.editar')) {
+        <section class="bg-white p-4 rounded mb-3">
+            <h6 class="pb-2">Registrar avance</h6>
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3"><label>Fecha</label><input type="date" class="form-control" [(ngModel)]="avance.fecha"></div>
+                <div class="col-md-6"><label>Nota</label><input class="form-control" [(ngModel)]="avance.nota"></div>
+                <div class="col-md-3">
+                    <label class="d-block"><input type="checkbox" [(ngModel)]="avance.incumplimiento"> Incumplimiento</label>
+                    <button type="button" class="btn btn-primary mt-2" (click)="guardarAvance()">Guardar avance</button>
+                </div>
+            </div>
+        </section>
+    }
+
+    @if ((tratamiento.estado === 'indicado' || tratamiento.estado === 'en_curso') && apiService.hasPermission('clinica.tratamientos.editar')) {
+        <section class="bg-white p-4 rounded mb-3">
+            <h6 class="pb-2">Terapia no quirúrgica</h6>
+            <div class="row g-2">
+                <div class="col-md-3"><label>Fecha</label><input type="date" class="form-control" [(ngModel)]="terapia.fecha"></div>
+                <div class="col-md-3"><label>Tipo</label><input class="form-control" [(ngModel)]="terapia.tipo" placeholder="Física, conductual…"></div>
+                <div class="col-md-6"><label>Descripción</label><input class="form-control" [(ngModel)]="terapia.descripcion"></div>
+                <div class="col-12"><label>Notas de resultado</label><textarea class="form-control" rows="2" [(ngModel)]="terapia.notas_resultado"></textarea></div>
+                <div class="col-12 text-end"><button type="button" class="btn btn-primary" (click)="guardarTerapia()">Registrar terapia</button></div>
+            </div>
+        </section>
+    }
+
+    <section class="bg-white p-4 rounded mb-3">
+        <h6 class="pb-2">Avances registrados</h6>
+        @if (!tratamiento.avances?.length) { <p class="text-muted mb-0">Sin avances.</p> }
+        @for (a of tratamiento.avances; track a.id) {
+            <div class="border-bottom py-2">
+                <strong>{{ a.fecha }}</strong>
+                @if (a.incumplimiento) { <span class="badge bg-warning text-dark ms-2">Incumplimiento</span> }
+                <p class="mb-0">{{ a.nota || '—' }}</p>
+            </div>
+        }
+    </section>
+
+    <section class="bg-white p-4 rounded mb-3">
+        <h6 class="pb-2">Terapias registradas</h6>
+        @if (!tratamiento.terapias?.length) { <p class="text-muted mb-0">Sin terapias.</p> }
+        @for (t of tratamiento.terapias; track t.id) {
+            <div class="border-bottom py-2">
+                <strong>{{ t.fecha }} — {{ t.tipo }}</strong>
+                <p class="mb-0">{{ t.descripcion || '' }} {{ t.notas_resultado || '' }}</p>
+            </div>
+        }
+    </section>
+}

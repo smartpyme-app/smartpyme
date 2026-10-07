@@ -68,7 +68,9 @@ class ExpedientesController extends Controller
         }
 
         $expediente = $this->expedientes->dePaciente($paciente);
-        $detalle = $request->user()->can(ClinicaPermisos::CONSULTAS_VER);
+        $detalle = $request->user()->can(ClinicaPermisos::CONSULTAS_VER)
+            || $request->user()->can(ClinicaPermisos::TRATAMIENTOS_VER)
+            || $request->user()->can(ClinicaPermisos::DIAGNOSTICOS_VER);
         $eventos = $this->historial->listar($expediente, [
             'tipo' => $request->input('tipo'),
             'fecha_desde' => $request->input('fecha_desde'),

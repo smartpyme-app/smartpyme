@@ -16,6 +16,7 @@ class ConsultaService
     public function __construct(
         private ExpedienteService $expedientes,
         private HistorialClinicoService $historial,
+        private DiagnosticoService $diagnosticos,
     ) {
     }
 
@@ -64,6 +65,7 @@ class ConsultaService
 
         return DB::transaction(function () use ($consulta) {
             $consulta->update(['estado' => 'cerrada']);
+            $this->diagnosticos->cerrarActivosPorConsulta($consulta->fresh());
             $this->sincronizarHistorial($consulta);
 
             return $consulta->fresh();

@@ -1,0 +1,46 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading mb-0">Diagnósticos</h2>
+    <div class="d-flex gap-2">
+        @if (apiService.hasPermission('clinica.diagnosticos.crear')) {
+            <a class="btn btn-primary" [routerLink]="['/clinica/pacientes', idPaciente, 'diagnosticos', 'nuevo']">Nuevo diagnóstico</a>
+        }
+        <button type="button" class="btn btn-default" [routerLink]="['/clinica/pacientes', idPaciente, 'expediente']">Expediente</button>
+    </div>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    @if (cargando) {
+        <span class="badge bg-primary">Cargando...</span>
+    }
+    @if (!cargando && diagnosticos.length === 0) {
+        <span class="badge bg-secondary">Sin diagnósticos registrados</span>
+    }
+    @if (!cargando && diagnosticos.length > 0) {
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Descripción</th>
+                        <th>Rol</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (dx of diagnosticos; track dx.id) {
+                        <tr [class.text-muted]="dx.estado === 'anulado'">
+                            <td>{{ dx.fecha }}</td>
+                            <td>{{ dx.descripcion }}</td>
+                            <td>{{ dx.rol }}</td>
+                            <td>{{ dx.estado }}</td>
+                            <td class="text-end">
+                                <a class="btn btn-primary btn-sm" [routerLink]="['/clinica/pacientes', idPaciente, 'diagnosticos', dx.id]">Ver</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

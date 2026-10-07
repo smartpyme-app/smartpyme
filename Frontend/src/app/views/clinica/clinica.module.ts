@@ -16,6 +16,11 @@ import { ExpedienteFichaComponent } from './expediente/expediente-ficha.componen
 import { HistorialExpedienteComponent } from './historial/historial-expediente.component';
 import { ConsultaFormComponent } from './consultas/consulta-form.component';
 import { ConsultaFichaComponent } from './consultas/consulta-ficha.component';
+import { TratamientoFormComponent } from './tratamientos/tratamiento-form.component';
+import { TratamientoFichaComponent } from './tratamientos/tratamiento-ficha.component';
+import { DiagnosticosPacienteComponent } from './diagnosticos/diagnosticos-paciente.component';
+import { DiagnosticoFormComponent } from './diagnosticos/diagnostico-form.component';
+import { DiagnosticoFichaComponent } from './diagnosticos/diagnostico-ficha.component';
 
 @NgModule({
   declarations: [
@@ -27,6 +32,11 @@ import { ConsultaFichaComponent } from './consultas/consulta-ficha.component';
     HistorialExpedienteComponent,
     ConsultaFormComponent,
     ConsultaFichaComponent,
+    TratamientoFormComponent,
+    TratamientoFichaComponent,
+    DiagnosticosPacienteComponent,
+    DiagnosticoFormComponent,
+    DiagnosticoFichaComponent,
   ],
   imports: [
     CommonModule,
