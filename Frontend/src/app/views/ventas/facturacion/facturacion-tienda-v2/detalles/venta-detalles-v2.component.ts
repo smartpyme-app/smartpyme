@@ -222,7 +222,11 @@ export class VentaDetallesV2Component implements OnInit, OnDestroy {
         const pctDet = this.obtenerPorcentajeIvaDetalle(detalle);
         const precioLinea = parseFloat(String(detalle.precio ?? 0)) || 0;
         const itemPrecio = (sin: number, src?: any) => {
-            const con = pctDet > 0 ? sin * (1 + pctDet / 100) : sin;
+            const guardado = src?.precio_con_iva;
+            const conGuardado = guardado != null && guardado !== '' ? parseFloat(String(guardado)) : NaN;
+            const con = Number.isFinite(conGuardado)
+                ? conGuardado
+                : (pctDet > 0 ? sin * (1 + pctDet / 100) : sin);
             return {
                 ...(src || {}),
                 precio: sin.toFixed(4),
@@ -297,10 +301,13 @@ export class VentaDetallesV2Component implements OnInit, OnDestroy {
             return;
         }
         detalle.precio = sinLista.toFixed(4);
-        detalle.precio_iva =
-            pctDetalle > 0
+        const conGuardado = precioSeleccionado?.precio_con_iva;
+        const conNum = conGuardado != null && conGuardado !== '' ? Number(conGuardado) : NaN;
+        detalle.precio_iva = Number.isFinite(conNum)
+            ? redondearMoneda(conNum).toFixed(2)
+            : (pctDetalle > 0
                 ? redondearMoneda(sinLista * (1 + pctDetalle / 100)).toFixed(2)
-                : redondearMoneda(sinLista).toFixed(2);
+                : redondearMoneda(sinLista).toFixed(2));
         this.updateTotal(detalle);
         // Mantener el valor del <select> alineado con las opciones del catálogo
         // (updateTotal reformatea precio a 6 decimales y el select queda en blanco).
@@ -566,12 +573,13 @@ export class VentaDetallesV2Component implements OnInit, OnDestroy {
 
             const pctDet = this.obtenerPorcentajeIvaDetalle(this.detalle);
             const precioSinIvaLinea = parseFloat(this.detalle.precio || 0);
-            if (pctDet > 0) {
-                this.detalle.precio_iva = redondearMoneda(precioSinIvaLinea * (1 + pctDet / 100)).toFixed(2);
-            } else if (!this.detalle.precio_iva) {
-                this.detalle.precio_iva = redondearMoneda(precioSinIvaLinea).toFixed(2);
-            } else {
+            const precioIvaYaDefinido = this.detalle.precio_iva != null && this.detalle.precio_iva !== '';
+            if (precioIvaYaDefinido) {
                 this.detalle.precio_iva = redondearMoneda(parseFloat(this.detalle.precio_iva)).toFixed(2);
+            } else if (pctDet > 0) {
+                this.detalle.precio_iva = redondearMoneda(precioSinIvaLinea * (1 + pctDet / 100)).toFixed(2);
+            } else {
+                this.detalle.precio_iva = redondearMoneda(precioSinIvaLinea).toFixed(2);
             }
 
             const precioSinIva = parseFloat(this.detalle.precio || 0);
