@@ -122,11 +122,22 @@ class ChatController extends Controller
                 'source' => $request->input('source', $source),
             ];
 
-            if ($request->filled('conversation_id')) {
+            if ($request->boolean('new_conversation')) {
+                // Cierra la activa en Lucas y abre otra. Sin esto, omitir
+                // conversation_id reutiliza el hilo activo y el historial queda en uno.
+                $created = $this->lucas->newConversation([
+                    'user_id' => $user->id,
+                    'empresa_id' => $user->id_empresa,
+                    'title' => $this->titleFromMessage($request->input('message')),
+                ]);
+                if (empty($created['conversation_id'])) {
+                    throw new \RuntimeException('No se pudo crear la conversación.');
+                }
+                $payload['conversation_id'] = $created['conversation_id'];
+            } elseif ($request->filled('conversation_id')) {
                 $payload['conversation_id'] = $request->input('conversation_id');
             } else {
-                // Conversación nueva: sugerir un título a partir del primer
-                // mensaje del usuario para un historial más amigable.
+                // WhatsApp y el primer mensaje sin hilo: Lucas reutiliza la activa o crea una.
                 $payload['title'] = $this->titleFromMessage($request->input('message'));
             }
 

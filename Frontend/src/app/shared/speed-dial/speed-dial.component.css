@@ -14,10 +14,29 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
   padding: 0;
   overflow: hidden;
+  --bs-btn-bg: #1974e5;
+  --bs-btn-border-color: #1974e5;
+  --bs-btn-hover-bg: #1974e5;
+  --bs-btn-hover-border-color: #1974e5;
+  --bs-btn-active-bg: #1974e5;
+  --bs-btn-active-border-color: #1974e5;
+  --bs-btn-disabled-bg: #1974e5;
+  --bs-btn-disabled-border-color: #1974e5;
+  background-color: #1974e5 !important;
+  border-color: #1974e5 !important;
 }
 
 .floating-speed-dial .btn i {
   font-size: 1.5rem;
+}
+
+.floating-speed-dial .btn:hover,
+.floating-speed-dial .btn:focus,
+.floating-speed-dial .btn:active,
+.floating-speed-dial .btn:focus-visible {
+  background-color: #1974e5 !important;
+  border-color: #1974e5 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
 
 .floating-speed-dial .btn:hover {
@@ -28,6 +47,8 @@
 .bot-avatar {
   width: 40px;
   height: 40px;
-  object-fit: cover; /* Mantiene las proporciones de la imagen */
-  border-radius: 50%; /* Hace la imagen redonda si lo prefieres */
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-sizing: border-box;
 }

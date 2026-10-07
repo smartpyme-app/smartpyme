@@ -91,7 +91,10 @@ class LucasService
      */
     public function newConversation(array $params): array
     {
-        $response = $this->request()->post($this->baseUrl() . '/conversations/new', null, $params);
+        // FastAPI lee user_id, empresa_id y title como query. post() no acepta query en el 3er argumento.
+        $response = $this->request()
+            ->withQueryParameters($params)
+            ->post($this->baseUrl() . '/conversations/new');
 
         if ($response->failed()) {
             $this->fail($response, 'conversations/new');

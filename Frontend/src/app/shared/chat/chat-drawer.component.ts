@@ -80,7 +80,8 @@ export class ChatDrawerComponent
           if (this.isRestoring) {
             this.isRestoring = false;
           } else {
-            this.view = 'list';
+            this.view = 'chat';
+            this.chatService.ensureSessionChat();
             this.chatService.loadConversations();
           }
         } else {
