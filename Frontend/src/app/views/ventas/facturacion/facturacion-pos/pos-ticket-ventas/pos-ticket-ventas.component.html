@@ -84,9 +84,17 @@
         <td class="text-end"><b>Propina</b></td>
         <td class="text-end"><b>{{ venta.propina | currency }}</b></td>
       </tr>
+      <tr *ngIf="venta.seguro > 0">
+        <td class="text-end"><b>Seguro</b></td>
+        <td class="text-end"><b>{{ venta.seguro | currency }}</b></td>
+      </tr>
+      <tr *ngIf="venta.flete > 0">
+        <td class="text-end"><b>Flete</b></td>
+        <td class="text-end"><b>{{ venta.flete | currency }}</b></td>
+      </tr>
       <tr class="pos-ticket-total">
         <td class="text-end"><b>Total</b></td>
-        <td class="text-end"><b>{{ venta.total | currency }}</b></td>
+        <td class="text-end"><b>{{ totalAPagar() | currency }}</b></td>
       </tr>
       <tr *ngIf="tieneMultimoneda && monedaVenta === 'USD' && usdEquivalentTotal !== null">
         <td class="text-end text-muted">Equivalente USD</td>

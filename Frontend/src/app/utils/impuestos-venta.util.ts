@@ -10,6 +10,19 @@ export function redondearMoneda(n: number): number {
   return (sign * cents) / 100;
 }
 
+function montoNumerico(valor: unknown): number {
+  const n = parseFloat(String(valor ?? ''));
+  return Number.isFinite(n) ? n : 0;
+}
+
+/**
+ * Monto a cobrar en pantalla: mercancía (venta.total) + seguro + flete.
+ * venta.total no se modifica: en exportación esa cifra es la base gravada del DTE.
+ */
+export function totalAPagarConSeguroFlete(total: unknown, seguro: unknown, flete: unknown): number {
+  return redondearMoneda(montoNumerico(total) + montoNumerico(seguro) + montoNumerico(flete));
+}
+
 export function redondear4(n: number): number {
   return Math.round(n * 10000) / 10000;
 }

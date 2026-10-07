@@ -21,6 +21,14 @@
           <ng-option [value]="item.cod" *ngFor="let item of host.incoterms">{{ item.nombre }}</ng-option>
         </ng-select>
       </div>
+      <div class="col-md-6">
+        <label class="form-label">Seguro</label>
+        <input type="number" class="form-control" [(ngModel)]="host.venta.seguro" name="pos_seguro">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Flete</label>
+        <input type="number" class="form-control" [(ngModel)]="host.venta.flete" name="pos_flete">
+      </div>
     </div>
   </section>
 
@@ -130,6 +138,6 @@
   </div>
 </div>
 <div class="modal-footer d-flex justify-content-between align-items-center">
-  <strong>Total: {{ host.venta.total | currency }}</strong>
+  <strong>Total: {{ host.totalAPagar() | currency }}</strong>
   <button type="button" class="btn btn-primary" (click)="aplicar.emit()">Aplicar</button>
 </div>
