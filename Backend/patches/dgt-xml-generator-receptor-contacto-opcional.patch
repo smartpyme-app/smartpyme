@@ -1,0 +1,81 @@
+diff --git a/src/Builders/BaseDocumentBuilder.php b/src/Builders/BaseDocumentBuilder.php
+--- a/src/Builders/BaseDocumentBuilder.php
++++ b/src/Builders/BaseDocumentBuilder.php
+@@ -181,14 +181,16 @@ abstract class BaseDocumentBuilder
+         $issuer->setActivity($issuerData['activity']);
+ 
+-        // Location
+-        $issuer->setLocation($issuerData['location']);
++        if (! empty($issuerData['location'])) {
++            $issuer->setLocation($issuerData['location']);
++        }
+ 
+-        // Phone
+-        $issuer->setPhone($issuerData['phone']);
++        if (! empty($issuerData['phone'])) {
++            $issuer->setPhone($issuerData['phone']);
++        }
+ 
+-        // Email
+-        $issuer->setEmail($issuerData['email']);
++        if (! empty($issuerData['email'])) {
++            $issuer->setEmail($issuerData['email']);
++        }
+ 
+         $this->document->setIssuer($issuer);
+     }
+@@ -216,14 +218,18 @@ abstract class BaseDocumentBuilder
+             $receiver->setActivity($receiverData['activity']);
+         }
+ 
+-        // Location
+-        $receiver->setLocation($receiverData['location']);
++        // Location, phone and email are optional on the receiver (XSD). Omit when the client has no data.
++        if (! empty($receiverData['location'])) {
++            $receiver->setLocation($receiverData['location']);
++        }
+ 
+-        // Phone
+-        $receiver->setPhone($receiverData['phone']);
++        if (! empty($receiverData['phone'])) {
++            $receiver->setPhone($receiverData['phone']);
++        }
+ 
+-        // Email
+-        $receiver->setEmail($receiverData['email']);
++        if (! empty($receiverData['email'])) {
++            $receiver->setEmail($receiverData['email']);
++        }
+ 
+         $this->document->setReceiver($receiver);
+     }
+diff --git a/src/Views/Components/entity.xml.twig b/src/Views/Components/entity.xml.twig
+--- a/src/Views/Components/entity.xml.twig
++++ b/src/Views/Components/entity.xml.twig
+@@ -10,20 +10,24 @@
+   {% if entity.trade_name %}
+   <NombreComercial>{{ entity.trade_name }}</NombreComercial>
+   {% endif %} 
+-  <Ubicacion>
++  {% if entity.location and entity.location.province %}
++  <Ubicacion>
+     <Provincia>{{ entity.location.province.code }}</Provincia>
+     <Canton>{{ entity.location.canton.code|slice(-2) }}</Canton>
+     <Distrito>{{ entity.location.district.code|slice(-2) }}</Distrito>
+     <Barrio>{{ entity.location.neighborhood }}</Barrio>
+     <OtrasSenas>{{ entity.location.address_details }}</OtrasSenas>
+     {% if entity.location.foreign_address_details %}
+     <OtrasSenasExtranjero>{{ entity.location.foreign_address_details }}</OtrasSenasExtranjero>
+     {% endif %}
+   </Ubicacion>
+-  <Telefono>
++  {% endif %}
++  {% if entity.phone and entity.phone.number %}
++  <Telefono>
+     <CodigoPais>{{ entity.phone.country_code }}</CodigoPais>
+     <NumTelefono>{{ entity.phone.number }}</NumTelefono>
+   </Telefono>
++  {% endif %}
+   {% for email in entity.email %}
+   <CorreoElectronico>{{ email }}</CorreoElectronico>
+   {% endfor %}

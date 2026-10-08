@@ -5,8 +5,10 @@ namespace Tests\Unit\Services\FacturacionElectronica\CostaRica;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\Impuesto;
 use App\Models\Inventario\Producto;
+use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Devoluciones\Detalle as DetalleDevolucion;
 use App\Models\Ventas\Devoluciones\Devolucion;
+use App\Models\Ventas\Venta;
 use App\Services\FacturacionElectronica\CostaRica\BccrTipoCambioClient;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaInvoiceFromVentaMapper;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaTipoCambioService;
@@ -145,6 +147,70 @@ final class CostaRicaInvoiceFromVentaMapperTest extends TestCase
         $this->expectExceptionMessageMatches('/posible suma multiimpuesto/');
 
         $this->mapper->lineaDesdeDetalleDevolucion($detalle, $empresa, 18.0);
+    }
+
+    public function test_receptor_empresa_no_copia_direccion_telefono_ni_correo_del_emisor(): void
+    {
+        $empresa = $this->empresaStub();
+        $empresa->direccion = 'Barva Centro';
+        $empresa->telefono = '22222222';
+        $empresa->correo = 'ventas@grupoteccr.com';
+
+        $cliente = (new \ReflectionClass(Cliente::class))->newInstanceWithoutConstructor();
+        $cliente->tipo = 'Empresa';
+        $cliente->tipo_documento = '02';
+        $cliente->nit = '3102666312';
+        $cliente->nombre_empresa = 'Condominio Vereda del Café';
+        $cliente->direccion = null;
+        $cliente->telefono = null;
+        $cliente->empresa_direccion = 'Veredas del Café, Santa Bárbara';
+        $cliente->empresa_telefono = '88881234';
+        $cliente->correo = 'admin@veredacafe.cr';
+        $cliente->cod_distrito = '40401';
+        $cliente->distrito = 'Santa Bárbara';
+        $cliente->municipio = 'Santa Bárbara';
+
+        $venta = (new \ReflectionClass(Venta::class))->newInstanceWithoutConstructor();
+        $venta->setRelation('cliente', $cliente);
+
+        $receiver = $this->mapper->receptorDatosVenta($venta, $empresa);
+
+        $this->assertSame('40401', $receiver['location']['district']);
+        $this->assertSame(4, $receiver['location']['province']);
+        $this->assertSame('404', $receiver['location']['canton']);
+        $this->assertSame('Veredas del Café, Santa Bárbara', $receiver['location']['address_details']);
+        $this->assertSame('Santa Bárbara', $receiver['location']['neighborhood']);
+        $this->assertSame('88881234', $receiver['phone']['number']);
+        $this->assertSame(['admin@veredacafe.cr'], $receiver['email']);
+    }
+
+    public function test_receptor_sin_contacto_no_copia_ubicacion_telefono_ni_correo_del_emisor(): void
+    {
+        $empresa = $this->empresaStub();
+        $empresa->direccion = 'Barva Centro';
+        $empresa->telefono = '22222222';
+        $empresa->correo = 'ventas@grupoteccr.com';
+
+        $cliente = (new \ReflectionClass(Cliente::class))->newInstanceWithoutConstructor();
+        $cliente->tipo = 'Empresa';
+        $cliente->tipo_documento = '02';
+        $cliente->nit = '3102666312';
+        $cliente->nombre_empresa = 'Condominio Vereda del Café';
+        $cliente->direccion = null;
+        $cliente->telefono = null;
+        $cliente->empresa_direccion = null;
+        $cliente->empresa_telefono = null;
+        $cliente->correo = null;
+        $cliente->cod_distrito = null;
+
+        $venta = (new \ReflectionClass(Venta::class))->newInstanceWithoutConstructor();
+        $venta->setRelation('cliente', $cliente);
+
+        $receiver = $this->mapper->receptorDatosVenta($venta, $empresa);
+
+        $this->assertArrayNotHasKey('location', $receiver);
+        $this->assertArrayNotHasKey('phone', $receiver);
+        $this->assertArrayNotHasKey('email', $receiver);
     }
 
     public function test_tarifa_iva_1_por_ciento_codigo_02(): void

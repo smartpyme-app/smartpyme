@@ -62,6 +62,11 @@
     "extra": {
         "laravel": {
             "dont-discover": []
+        },
+        "patches": {
+            "dazza-dev/dgt-xml-generator": {
+                "Receptor: omitir ubicacion, telefono y correo cuando no vienen del cliente": "patches/dgt-xml-generator-receptor-contacto-opcional.patch"
+            }
         }
     },
     "autoload": {
