@@ -149,6 +149,7 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
         }
       },
       eventMinHeight: 48,
+      displayEventTime: false,
       initialView: 'timeGridDay',
       views: {
         timeGridDay: {
@@ -233,8 +234,15 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
       this.loading = false;
       if (this.calendarOptions) {
         this.calendarOptions.events = eventos.map((evento: any) => {
-          const color = this.colorEncargado(evento?.data?.id_usuario);
-          return { ...evento, color, backgroundColor: color, borderColor: color, textColor: '#1e293b' };
+          const estilo = this.estiloCita(evento?.data?.tipo);
+          return {
+            ...evento,
+            classNames: [estilo.className],
+            color: estilo.borderColor,
+            backgroundColor: estilo.backgroundColor,
+            borderColor: estilo.borderColor,
+            textColor: estilo.textColor,
+          };
         });
         this.updateMinMaxTime(eventos);
 
@@ -289,15 +297,21 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
     return CalendarioComponent.PALETA_ENCARGADO[n % CalendarioComponent.PALETA_ENCARGADO.length];
   }
 
-  fondoEstado(tipo: string): string {
-    const fondos: Record<string, string> = {
-      'Pagado': '#86efac',
-      'Confirmado': '#93c5fd',
-      'Sin confirmar': '#fdba74',
-      'Pendiente': '#fca5a5',
-      'Cancelado': '#d1d5db',
-    };
-    return fondos[tipo] || '#fca5a5';
+  /** Tonos 80–95 de la paleta. El azul no marca estados. */
+  private estiloCita(tipo: string): { className: string; backgroundColor: string; borderColor: string; textColor: string } {
+    if (tipo === 'Cancelado') {
+      return { className: 'cita-cancelada', backgroundColor: '#FFFFFF', borderColor: '#C7C6CA', textColor: '#919094' };
+    }
+    if (tipo === 'Pagado') {
+      return { className: 'cita-pagada', backgroundColor: '#BBF7D0', borderColor: '#86EFAC', textColor: '#14532D' };
+    }
+    if (tipo === 'Confirmado') {
+      return { className: 'cita-confirmada', backgroundColor: '#D7E2FF', borderColor: '#ABC7FF', textColor: '#001B3F' };
+    }
+    if (tipo === 'Pendiente') {
+      return { className: 'cita-pendiente', backgroundColor: '#FFFFFF', borderColor: '#919094', textColor: '#919094' };
+    }
+    return { className: 'cita-abierta', backgroundColor: '#FFFFFF', borderColor: '#FFB777', textColor: '#2F1500' };
   }
 
   contenidoEvento(arg: any) {
@@ -309,13 +323,11 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
       const titulo = this.textoPlano(arg.event.title || '');
       return { html: `<div class="cita-evento-mes">${hora}${titulo}</div>` };
     }
-    const tipo = arg.event.extendedProps?.data?.tipo;
-    const badge = tipo
-      ? `<span class="cita-estado" style="display:inline-block;flex:0 0 auto;margin:0 0 2px;padding:0 6px;border-radius:999px;font-size:11px;font-weight:700;line-height:16px;color:#1e293b;background:${this.fondoEstado(tipo)};position:relative;z-index:2;">${this.textoPlano(tipo)}</span>`
-      : '';
-    const hora = arg.timeText ? `<div class="cita-hora">${this.textoPlano(arg.timeText)}</div>` : '';
-    const titulo = `<div class="cita-titulo">${this.textoPlano(arg.event.title || '')}</div>`;
-    return { html: `<div class="cita-evento">${badge}${hora}${titulo}</div>` };
+    const datos = arg.event.extendedProps?.data || {};
+    const lineas = [datos.descripcion || arg.event.title, datos.nombre_cliente, datos.nombre_usuario]
+      .filter((linea) => linea);
+    const html = lineas.map((linea) => `<div class="cita-linea">${this.textoPlano(String(linea))}</div>`).join('');
+    return { html: `<div class="cita-evento">${html}</div>` };
   }
 
   textoPlano(value: string): string {
@@ -323,13 +335,12 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
   }
 
   pintarEvento(info: any) {
-    const datos = info.event.extendedProps?.data;
-    const color = this.colorEncargado(datos?.id_usuario);
-    info.el.style.setProperty('--staff-color', color);
-    info.el.style.backgroundColor = color;
-    info.el.style.borderColor = color;
-    info.el.style.color = '#1e293b';
-    info.el.style.overflow = info.view?.type === 'dayGridMonth' ? 'hidden' : 'visible';
+    const estilo = this.estiloCita(info.event.extendedProps?.data?.tipo);
+    info.el.classList.add(estilo.className);
+    info.el.style.backgroundColor = estilo.backgroundColor;
+    info.el.style.borderColor = estilo.borderColor;
+    info.el.style.color = estilo.textColor;
+    info.el.style.overflow = 'hidden';
     info.el.addEventListener('mouseenter', (event: MouseEvent) => this.mostrarFicha(info.event, event));
     info.el.addEventListener('mouseleave', () => this.ocultarFicha());
   }
@@ -344,16 +355,18 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
       .join(', ');
     const inicio = fcEvent.start ? moment(fcEvent.start).format('DD/MM/YYYY hh:mm a') : '';
     const fin = fcEvent.end ? moment(fcEvent.end).format('hh:mm a') : '';
-    const lineas = [
-      datos.descripcion || fcEvent.title,
-      datos.nombre_cliente ? `Cliente: ${datos.nombre_cliente}` : '',
-      datos.nombre_usuario ? `Encargado: ${datos.nombre_usuario}` : '',
-      datos.tipo ? `Estado: ${datos.tipo}` : '',
-      inicio ? `Horario: ${inicio}${fin ? ' – ' + fin : ''}` : '',
-      productos ? `Productos: ${productos}` : '',
-    ].filter(Boolean);
+    const titulo = this.textoPlano(String(datos.descripcion || fcEvent.title || ''));
+    const dato = (etiqueta: string, valor: string) =>
+      valor ? `<div><strong>${etiqueta}:</strong> ${this.textoPlano(valor)}</div>` : '';
     const ficha = this.asegurarFicha();
-    ficha.innerHTML = lineas.map((linea) => `<div>${this.textoPlano(String(linea))}</div>`).join('');
+    ficha.innerHTML = [
+      titulo ? `<div class="cita-ficha-titulo"><strong>${titulo}</strong></div>` : '',
+      dato('Cliente', datos.nombre_cliente || ''),
+      dato('Encargado', datos.nombre_usuario || ''),
+      dato('Estado', datos.tipo || ''),
+      dato('Horario', inicio ? `${inicio}${fin ? ' – ' + fin : ''}` : ''),
+      dato('Productos', productos),
+    ].join('');
     ficha.hidden = false;
     ficha.style.left = `${Math.min(mouse.clientX + 12, window.innerWidth - 300)}px`;
     ficha.style.top = `${Math.min(mouse.clientY + 12, window.innerHeight - 180)}px`;

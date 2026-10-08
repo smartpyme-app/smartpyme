@@ -1,0 +1,88 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <div class="d-flex align-items-center flex-wrap gap-2">
+        <h2 class="page-heading mb-0">Expediente clínico</h2>
+        @if (expediente) {
+            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="expediente.estado === 'archivado' ? 'bg-secondary' : 'bg-primary'">
+                {{ etiquetaEstado(expediente.estado) }}
+            </span>
+            @if (!expediente.operativo) {
+                <span class="badge bg-warning text-dark py-2" style="font-size: 0.8rem;">Solo consulta</span>
+            }
+        }
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        @if (expediente && apiService.hasPermission('clinica.expediente.archivar')) {
+            @if (expediente.estado === 'abierto') {
+                <button type="button" class="btn btn-default" (click)="archivar(false)">Archivar expediente</button>
+            } @else {
+                <button type="button" class="btn btn-default" (click)="archivar(true)">Reabrir expediente</button>
+            }
+        }
+        <button type="button" class="btn btn-default" [routerLink]="['/clinica/pacientes', idPaciente]">
+            <i class="fa fa-arrow-left"></i> Regresar al paciente
+        </button>
+    </div>
+</section>
+
+@if (cargando) {
+    <section class="bg-white p-4 rounded mb-3">
+        <span class="badge bg-primary">Cargando...</span>
+    </section>
+}
+
+@if (!cargando && expediente) {
+    <section class="bg-white p-4 rounded mb-3">
+        <div class="row">
+            <div class="form-group col-lg-3">
+                <label class="fw-medium">Número:</label>
+                <p>{{ expediente.numero }}</p>
+            </div>
+            <div class="form-group col-lg-3">
+                <label class="fw-medium">Apertura:</label>
+                <p>{{ expediente.fecha_apertura || '—' }}</p>
+            </div>
+            <div class="form-group col-lg-3">
+                <label class="fw-medium">Paciente:</label>
+                <p>{{ expediente.paciente?.nombre_completo }}</p>
+            </div>
+            <div class="form-group col-lg-3">
+                <label class="fw-medium">Sucursal de apertura:</label>
+                <p>{{ expediente.sucursal_apertura?.nombre || '—' }}</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="bg-white p-4 rounded mb-3">
+        <h6 class="pb-2 mb-3">Secciones del expediente</h6>
+        <div class="row g-3">
+            @for (seccion of expediente.secciones; track seccion.slug) {
+                <div class="col-md-4 col-lg-3">
+                    <div class="card border rounded shadow-sm h-100" [class.bg-light]="!seccion.disponible">
+                        <div class="card-body d-flex flex-column">
+                            <span class="fw-medium d-block">{{ seccion.nombre }}</span>
+                            @if (seccion.disponible) {
+                                <span class="badge bg-success mt-2 align-self-start">Disponible</span>
+                            } @else {
+                                <span class="badge bg-secondary mt-2 align-self-start">Próximamente</span>
+                            }
+                            @if (seccion.disponible && seccion.slug === 'historial') {
+                                <div class="mt-auto pt-3">
+                                    <a [routerLink]="['/clinica/pacientes', idPaciente, 'expediente', 'historial']" class="btn btn-primary w-100">
+                                        <i class="fa fa-clock-rotate-left me-1"></i> Ver historial
+                                    </a>
+                                </div>
+                            }
+                            @if (seccion.disponible && seccion.slug === 'consultas' && expediente.operativo && apiService.hasPermission('clinica.consultas.crear')) {
+                                <div class="mt-auto pt-3">
+                                    <a [routerLink]="['/clinica/pacientes', idPaciente, 'consultas', 'nuevo']" class="btn btn-primary w-100">
+                                        <i class="fa fa-plus me-1"></i> Nueva consulta
+                                    </a>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+}

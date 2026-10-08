@@ -613,10 +613,16 @@ return [
         ],
         'expediente' => [
             'ver' => 'clinica.expediente.ver',
+            'archivar' => 'clinica.expediente.archivar',
         ],
         'profesionales' => [
             'ver' => 'clinica.profesionales.ver',
             'editar' => 'clinica.profesionales.editar',
+        ],
+        'consultas' => [
+            'ver' => 'clinica.consultas.ver',
+            'crear' => 'clinica.consultas.crear',
+            'editar' => 'clinica.consultas.editar',
         ],
     ],
 

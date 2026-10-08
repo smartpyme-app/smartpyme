@@ -174,7 +174,7 @@
                                         {{getTotalConPropina(venta) | currency}}
                                     </span>
                                     <span *ngIf="!(venta.propina > 0)">
-                                        {{venta.total | currency}}
+                                        {{totalListado(venta) | currency}}
                                     </span>
                                     <span *ngIf="tieneDevolucionesNcNd(venta)"
                                         class="position-absolute fw-bold text-danger"
@@ -188,7 +188,7 @@
                                         {{getTotalConPropina(venta) | currency}}
                                     </span>
                                     <span *ngIf="!(venta.propina > 0)">
-                                        {{venta.total | currency}}
+                                        {{totalListado(venta) | currency}}
                                     </span>
                                 </span>
                             </ng-template>
@@ -199,7 +199,7 @@
                                             <tbody>
                                                 <tr>
                                                     <td>Total</td>
-                                                    <td class="text-end">{{ venta.total | currency}}</td>
+                                                    <td class="text-end">{{ totalListado(venta) | currency}}</td>
                                                 </tr>
                                                 <tr *ngIf="venta.propina > 0">
                                                     <td>Propina</td>

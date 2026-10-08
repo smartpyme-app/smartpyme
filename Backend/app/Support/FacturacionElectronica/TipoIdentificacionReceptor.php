@@ -74,6 +74,25 @@ final class TipoIdentificacionReceptor
         return null;
     }
 
+    /**
+     * FE (01): tipos 05/06 no son consumidor final; Hacienda rechaza -17/-38 con placeholders genéricos.
+     */
+    public static function estructuraValidaCostaRicaFactura(string $tipo, string $numeroSoloDigitos): bool
+    {
+        $n = preg_replace('/\D/', '', $numeroSoloDigitos) ?? '';
+        if ($n === '' || preg_match('/^0+$/', $n) === 1) {
+            return false;
+        }
+
+        return match ($tipo) {
+            '01' => strlen($n) === 9,
+            '02' => strlen($n) === 10,
+            '03' => strlen($n) === 11 || strlen($n) === 12,
+            '04' => strlen($n) === 10,
+            default => false,
+        };
+    }
+
     public static function numeroElSalvador(string $tipo, ?string $nit, ?string $dui): ?string
     {
         $nitClean = self::tieneValor($nit) ? str_replace('-', '', (string) $nit) : null;

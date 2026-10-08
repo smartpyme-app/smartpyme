@@ -76,6 +76,16 @@ const routes: Routes = [
           title: 'Códigos Promocionales'
         },
         {
+          path: 'campanias',
+          loadComponent: () => import('./campanias/admin-campanias.component').then(m => m.AdminCampaniasComponent),
+          title: 'Campañas'
+        },
+        {
+          path: 'aliados',
+          loadComponent: () => import('./aliados/admin-aliados.component').then(m => m.AdminAliadosComponent),
+          title: 'Aliados'
+        },
+        {
           path: 'pais-configuracion',
           loadComponent: () => import('./pais-configuracion/admin-pais-configuracion.component').then(m => m.AdminPaisConfiguracionComponent),
           title: 'Configuración por país'

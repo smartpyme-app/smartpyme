@@ -144,6 +144,7 @@
             >
               Campaña
             </th>
+            <th>Aliado</th>
             <th>Descripción</th>
             <th>Planes Permitidos</th>
             <th
@@ -163,12 +164,12 @@
         </thead>
         <tbody>
           <tr *ngIf="loading">
-            <td colspan="8" class="text-center">
+            <td colspan="9" class="text-center">
               <span class="badge bg-primary">Cargando...</span>
             </td>
           </tr>
           <tr *ngIf="!loading && promocionales?.total < 1">
-            <td colspan="8" class="text-center">
+            <td colspan="9" class="text-center">
               <span class="badge bg-primary"
                 >No hay códigos promocionales registrados</span
               >
@@ -194,6 +195,9 @@
             </td>
             <td>
               <span class="text-muted">{{ promocional.campania || "-" }}</span>
+            </td>
+            <td>
+              <span class="text-muted">{{ promocional.aliado || "-" }}</span>
             </td>
             <td>
               <span class="text-muted">{{ promocional.descripcion || "-" }}</span>
@@ -370,13 +374,38 @@
 
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Campaña:</label>
-          <input
-            type="text"
-            class="form-control"
-            [(ngModel)]="promocional.campania"
-            name="campania"
-            placeholder="Ej: Boxful"
-          />
+          <div class="input-group flex-nowrap">
+            <ng-select
+              name="campania"
+              placeholder="Seleccione campaña"
+              [(ngModel)]="promocional.campania"
+              class="form-select p-0"
+              [items]="campanias"
+              bindLabel="nombre"
+              bindValue="nombre"
+              [clearable]="true"
+              notFoundText="No hay campañas"
+            ></ng-select>
+            <app-crear-catalogo-super endpoint="campania" (update)="agregarCampania($event)"></app-crear-catalogo-super>
+          </div>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Aliado:</label>
+          <div class="input-group flex-nowrap">
+            <ng-select
+              name="aliado"
+              placeholder="Seleccione aliado"
+              [(ngModel)]="promocional.aliado"
+              class="form-select p-0"
+              [items]="aliados"
+              bindLabel="nombre"
+              bindValue="nombre"
+              [clearable]="true"
+              notFoundText="No hay aliados"
+            ></ng-select>
+            <app-crear-catalogo-super endpoint="aliado" (update)="agregarAliado($event)"></app-crear-catalogo-super>
+          </div>
         </div>
 
         <div class="form-group col-md-6 mb-3">

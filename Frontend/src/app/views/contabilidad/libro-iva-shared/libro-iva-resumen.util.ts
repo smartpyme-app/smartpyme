@@ -61,6 +61,9 @@ export function resumenIvaLibroIva(fiscalResumen: unknown): {
   credito_fiscal_compras: number | null;
   credito_fiscal_gastos: number | null;
   credito_fiscal_devoluciones_compras: number | null;
+  iva_retenido_y_percibido: number | null;
+  iva_a_pagar: number | null;
+  remanente_nota: string | null;
 } {
   const i = (fiscalResumen as { iva?: Record<string, unknown> })?.iva;
   return {
@@ -71,6 +74,10 @@ export function resumenIvaLibroIva(fiscalResumen: unknown): {
     credito_fiscal_gastos: i?.['credito_fiscal_gastos'] != null ? Number(i['credito_fiscal_gastos']) : null,
     credito_fiscal_devoluciones_compras:
       i?.['credito_fiscal_devoluciones_compras'] != null ? Number(i['credito_fiscal_devoluciones_compras']) : null,
+    iva_retenido_y_percibido:
+      i?.['iva_retenido_y_percibido'] != null ? Number(i['iva_retenido_y_percibido']) : null,
+    iva_a_pagar: i?.['iva_a_pagar'] != null ? Number(i['iva_a_pagar']) : null,
+    remanente_nota: i?.['remanente_nota'] != null ? String(i['remanente_nota']) : null,
   };
 }
 
@@ -78,12 +85,24 @@ export function pagoCuentaIvaResumenLibroIva(fiscalResumen: unknown): {
   aplica: boolean;
   monto: number;
   descripcion: string;
+  ingresos_brutos: number | null;
+  pago_cuenta_isr: number | null;
+  renta_retenida: number | null;
+  renta_retenida_planilla: number | null;
+  renta_retenida_compras_gastos: number | null;
 } {
   const p = (fiscalResumen as { pago_a_cuenta_iva?: Record<string, unknown> })?.pago_a_cuenta_iva;
   return {
     aplica: Boolean(p?.['aplica']),
     monto: Number(p?.['monto'] ?? 0),
     descripcion: String(p?.['descripcion'] ?? ''),
+    ingresos_brutos: p?.['ingresos_brutos'] != null ? Number(p['ingresos_brutos']) : null,
+    pago_cuenta_isr: p?.['pago_cuenta_isr'] != null ? Number(p['pago_cuenta_isr']) : null,
+    renta_retenida: p?.['renta_retenida'] != null ? Number(p['renta_retenida']) : null,
+    renta_retenida_planilla:
+      p?.['renta_retenida_planilla'] != null ? Number(p['renta_retenida_planilla']) : null,
+    renta_retenida_compras_gastos:
+      p?.['renta_retenida_compras_gastos'] != null ? Number(p['renta_retenida_compras_gastos']) : null,
   };
 }
 

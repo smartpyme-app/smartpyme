@@ -1,0 +1,40 @@
+<button type="button" class="btn btn-default" (click)="openModal(mItem)" [tooltip]="endpoint === 'aliado' ? 'Agregar aliado' : 'Agregar campaña'">
+    <i class="fa fa-plus"></i>
+</button>
+
+<ng-template #mItem>
+    <div class="modal-header justify-content-between">
+        <h3 class="modal-title">
+            {{ endpoint === 'aliado' ? 'Nuevo aliado' : 'Nueva campaña' }}
+        </h3>
+        <button type="button" class="btn btn-light text-danger" (click)="closeModal(); alertService.modal = false;">
+            Cancelar <i class="fa fa-close"></i>
+        </button>
+    </div>
+    <div class="modal-body p-3">
+        <app-notificaciones-container></app-notificaciones-container>
+        <form (ngSubmit)="onSubmit()" autocomplete="off">
+            <div class="row">
+                <div class="form-group col-md-12">
+                    <label for="catalogo-nombre">Nombre:</label>
+                    <input id="catalogo-nombre" type="text" class="form-control" name="nombre" maxlength="255" [(ngModel)]="item.nombre" required>
+                </div>
+                <div class="form-group col-md-12">
+                    <label for="catalogo-descripcion">Descripción:</label>
+                    <textarea id="catalogo-descripcion" class="form-control" name="descripcion" rows="3" [(ngModel)]="item.descripcion"></textarea>
+                </div>
+                <div class="form-group col-md-12">
+                    <div class="form-switch bg-light-info rounded">
+                        <label for="catalogo-activo">{{ endpoint === 'aliado' ? 'Activo' : 'Activa' }}</label>
+                        <input id="catalogo-activo" class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="item.activo" name="activo">
+                    </div>
+                </div>
+            </div>
+            <div class="form-group col-md-12 mt-3">
+                <button type="submit" [disabled]="saving || !item.nombre" class="btn btn-primary float-end">
+                    {{ saving ? 'Guardando...' : 'Guardar' }}
+                </button>
+            </div>
+        </form>
+    </div>
+</ng-template>

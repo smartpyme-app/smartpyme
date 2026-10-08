@@ -25,6 +25,11 @@ use Throwable;
  */
 final class CostaRicaFeEmitService
 {
+    /** ponytail: Hacienda a veces tarda >6s; el SDK solo esperaba 3×2s y podía fallar al persistir tras «aceptado». */
+    private const POLL_ESTADO_HACIENDA_MAX_INTENTOS = 12;
+
+    private const POLL_ESTADO_HACIENDA_SEGUNDOS = 3;
+
     public function __construct(
         private readonly CostaRicaDgtClientFactory $factory,
         private readonly CostaRicaInvoiceFromVentaMapper $mapper,
@@ -49,6 +54,7 @@ final class CostaRicaFeEmitService
 
         $sec = $this->secuencialDesdeCorrelativo($venta->correlativo);
         $data = $this->mapper->buildDocumentData($venta, $venta->empresa, $sec);
+        $this->mapper->assertReceptorFacturaElectronicaCr($data['receiver']);
 
         return $this->enviarYPersistirVenta($venta, 'invoice', '01', 'FacturaElectronica', $data);
     }
@@ -173,6 +179,28 @@ final class CostaRicaFeEmitService
         try {
             $envio = $client->sendDocument();
         } catch (Throwable $e) {
+            $recuperado = $this->intentarRecuperarEmisionSiConsecutivoDuplicado(
+                $e,
+                $client,
+                $data,
+                function (string $clave, array $estado) use ($client, $devolucion): array {
+                    $devolucion->codigo_generacion = $clave;
+                    $devolucion->tipo_dte = '03';
+                    $devolucion->sello_mh = $clave;
+                    $devolucion->dte = $this->persistirDteCrAceptado($client, $estado);
+                    $devolucion->save();
+
+                    return [
+                        'clave' => $clave,
+                        'aceptada' => true,
+                        'detalle_estado' => $estado,
+                        'devolucion' => $devolucion->fresh(),
+                    ];
+                }
+            );
+            if ($recuperado !== null) {
+                return $recuperado;
+            }
             Log::error('FE CR sendDocument NC', ['devolucion' => $devolucionId, 'error' => $e->getMessage()]);
             [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
             throw new CostaRicaFeEmisionFallidaException(
@@ -187,22 +215,7 @@ final class CostaRicaFeEmitService
         }
 
         $clave = $client->getDocumentKey();
-        $estado = XmlRespuestaHaciendaCr::normalizarResponseXmlEnEstado(
-            $client->checkStatusWithRetry($clave, 3, 2)
-        );
-        $aceptada = (bool) ($estado['success'] ?? false);
-
-        if (! $aceptada) {
-            [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
-            throw new CostaRicaFeEmisionFallidaException(
-                $this->mensajeEstadoHaciendaNoAceptado($estado),
-                $data,
-                $clave,
-                $estado,
-                $xmlSin,
-                $xmlFirm
-            );
-        }
+        $estado = $this->assertEstadoHaciendaAceptadoOFallar($client, $clave, $data);
 
         $devolucion->codigo_generacion = $clave;
         $devolucion->tipo_dte = '03';
@@ -354,6 +367,30 @@ final class CostaRicaFeEmitService
         try {
             $envio = $client->sendDocument();
         } catch (Throwable $e) {
+            $recuperado = $this->intentarRecuperarEmisionSiConsecutivoDuplicado(
+                $e,
+                $client,
+                $data,
+                function (string $clave, array $estado) use ($client, $devolucionNd, $venta): array {
+                    $dteNd = $this->persistirDteCrAceptado($client, $estado);
+                    $devolucionNd->codigo_generacion = $clave;
+                    $devolucionNd->tipo_dte = '02';
+                    $devolucionNd->sello_mh = $clave;
+                    $devolucionNd->dte = $dteNd;
+                    $devolucionNd->save();
+
+                    return [
+                        'clave' => $clave,
+                        'aceptada' => true,
+                        'detalle_estado' => $estado,
+                        'venta' => $venta->fresh(),
+                        'devolucion' => $devolucionNd->fresh(),
+                    ];
+                }
+            );
+            if ($recuperado !== null) {
+                return $recuperado;
+            }
             Log::error('FE CR sendDocument ND', ['venta' => $ventaFacturaId, 'error' => $e->getMessage()]);
             [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
             throw new CostaRicaFeEmisionFallidaException(
@@ -368,22 +405,7 @@ final class CostaRicaFeEmitService
         }
 
         $clave = $client->getDocumentKey();
-        $estado = XmlRespuestaHaciendaCr::normalizarResponseXmlEnEstado(
-            $client->checkStatusWithRetry($clave, 3, 2)
-        );
-        $aceptada = (bool) ($estado['success'] ?? false);
-
-        if (! $aceptada) {
-            [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
-            throw new CostaRicaFeEmisionFallidaException(
-                $this->mensajeEstadoHaciendaNoAceptado($estado),
-                $data,
-                $clave,
-                $estado,
-                $xmlSin,
-                $xmlFirm
-            );
-        }
+        $estado = $this->assertEstadoHaciendaAceptadoOFallar($client, $clave, $data);
 
         $dteNd = $this->persistirDteCrAceptado($client, $estado);
 
@@ -598,6 +620,28 @@ final class CostaRicaFeEmitService
         try {
             $envio = $client->sendDocument();
         } catch (Throwable $e) {
+            $recuperado = $this->intentarRecuperarEmisionSiConsecutivoDuplicado(
+                $e,
+                $client,
+                $data,
+                function (string $clave, array $estado) use ($client, $venta, $tipoDte): array {
+                    $venta->codigo_generacion = $clave;
+                    $venta->tipo_dte = $tipoDte;
+                    $venta->sello_mh = $clave;
+                    $venta->dte = $this->persistirDteCrAceptado($client, $estado);
+                    $venta->save();
+
+                    return [
+                        'clave' => $clave,
+                        'aceptada' => true,
+                        'detalle_estado' => $estado,
+                        'venta' => $venta->fresh(),
+                    ];
+                }
+            );
+            if ($recuperado !== null) {
+                return $recuperado;
+            }
             Log::error('FE CR sendDocument', ['venta' => $venta->id, 'tipo' => $dgtType, 'error' => $e->getMessage()]);
             [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
             throw new CostaRicaFeEmisionFallidaException(
@@ -612,22 +656,7 @@ final class CostaRicaFeEmitService
         }
 
         $clave = $client->getDocumentKey();
-        $estado = XmlRespuestaHaciendaCr::normalizarResponseXmlEnEstado(
-            $client->checkStatusWithRetry($clave, 3, 2)
-        );
-        $aceptada = (bool) ($estado['success'] ?? false);
-
-        if (! $aceptada) {
-            [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
-            throw new CostaRicaFeEmisionFallidaException(
-                $this->mensajeEstadoHaciendaNoAceptado($estado),
-                $data,
-                $clave,
-                $estado,
-                $xmlSin,
-                $xmlFirm
-            );
-        }
+        $estado = $this->assertEstadoHaciendaAceptadoOFallar($client, $clave, $data);
 
         $venta->codigo_generacion = $clave;
         $venta->tipo_dte = $tipoDte;
@@ -659,6 +688,28 @@ final class CostaRicaFeEmitService
         try {
             $envio = $client->sendDocument();
         } catch (Throwable $e) {
+            $recuperado = $this->intentarRecuperarEmisionSiConsecutivoDuplicado(
+                $e,
+                $client,
+                $data,
+                function (string $clave, array $estado) use ($client, $compra, $tipoDte): array {
+                    $compra->codigo_generacion = $clave;
+                    $compra->tipo_dte = $tipoDte;
+                    $compra->sello_mh = $clave;
+                    $compra->dte = $this->persistirDteCrAceptado($client, $estado);
+                    $compra->save();
+
+                    return [
+                        'clave' => $clave,
+                        'aceptada' => true,
+                        'detalle_estado' => $estado,
+                        'compra' => $compra->fresh(),
+                    ];
+                }
+            );
+            if ($recuperado !== null) {
+                return $recuperado;
+            }
             Log::error('FE CR sendDocument FEC compra', ['compra' => $compra->id, 'tipo' => $dgtType, 'error' => $e->getMessage()]);
             [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
             throw new CostaRicaFeEmisionFallidaException(
@@ -673,22 +724,7 @@ final class CostaRicaFeEmitService
         }
 
         $clave = $client->getDocumentKey();
-        $estado = XmlRespuestaHaciendaCr::normalizarResponseXmlEnEstado(
-            $client->checkStatusWithRetry($clave, 3, 2)
-        );
-        $aceptada = (bool) ($estado['success'] ?? false);
-
-        if (! $aceptada) {
-            [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
-            throw new CostaRicaFeEmisionFallidaException(
-                $this->mensajeEstadoHaciendaNoAceptado($estado),
-                $data,
-                $clave,
-                $estado,
-                $xmlSin,
-                $xmlFirm
-            );
-        }
+        $estado = $this->assertEstadoHaciendaAceptadoOFallar($client, $clave, $data);
 
         $compra->codigo_generacion = $clave;
         $compra->tipo_dte = $tipoDte;
@@ -719,6 +755,28 @@ final class CostaRicaFeEmitService
         try {
             $envio = $client->sendDocument();
         } catch (Throwable $e) {
+            $recuperado = $this->intentarRecuperarEmisionSiConsecutivoDuplicado(
+                $e,
+                $client,
+                $data,
+                function (string $clave, array $estado) use ($client, $gasto, $tipoDte): array {
+                    $gasto->codigo_generacion = $clave;
+                    $gasto->tipo_dte = $tipoDte;
+                    $gasto->sello_mh = $clave;
+                    $gasto->dte = $this->persistirDteCrAceptado($client, $estado);
+                    $gasto->save();
+
+                    return [
+                        'clave' => $clave,
+                        'aceptada' => true,
+                        'detalle_estado' => $estado,
+                        'gasto' => $gasto->fresh(),
+                    ];
+                }
+            );
+            if ($recuperado !== null) {
+                return $recuperado;
+            }
             Log::error('FE CR sendDocument FEC gasto', ['gasto' => $gasto->id, 'tipo' => $dgtType, 'error' => $e->getMessage()]);
             [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
             throw new CostaRicaFeEmisionFallidaException(
@@ -733,22 +791,7 @@ final class CostaRicaFeEmitService
         }
 
         $clave = $client->getDocumentKey();
-        $estado = XmlRespuestaHaciendaCr::normalizarResponseXmlEnEstado(
-            $client->checkStatusWithRetry($clave, 3, 2)
-        );
-        $aceptada = (bool) ($estado['success'] ?? false);
-
-        if (! $aceptada) {
-            [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
-            throw new CostaRicaFeEmisionFallidaException(
-                $this->mensajeEstadoHaciendaNoAceptado($estado),
-                $data,
-                $clave,
-                $estado,
-                $xmlSin,
-                $xmlFirm
-            );
-        }
+        $estado = $this->assertEstadoHaciendaAceptadoOFallar($client, $clave, $data);
 
         $gasto->codigo_generacion = $clave;
         $gasto->tipo_dte = $tipoDte;
@@ -812,7 +855,9 @@ final class CostaRicaFeEmitService
 
         $status = strtolower(trim((string) ($estado['status'] ?? '')));
         if ($status === 'rechazado') {
-            return 'El comprobante fue rechazado por Hacienda. Revise los datos y vuelva a intentar la emisión.';
+            return 'El comprobante fue rechazado por Hacienda. Corrija los datos indicados abajo antes de volver a emitir. '
+                .'Si al reintentar aparece consecutivo duplicado (-99), Hacienda ya registró ese número aunque haya sido rechazado: '
+                .'cree una venta nueva con el siguiente correlativo o consulte en ATV si puede reutilizar la numeración.';
         }
 
         if ($status === 'recibido' || $status === 'procesando') {
@@ -835,6 +880,9 @@ final class CostaRicaFeEmitService
         }
         if ($this->estadoContieneCodigoHacienda($estado, -37)) {
             $hints[] = 'Sugerencia (código -37): provincia, cantón y distrito del emisor deben coincidir con el domicilio fiscal registrado en la DGT. Revise facturacion_fe.emisor_distrito (código INEC de 5 dígitos) o emisor_provincia_manual, emisor_canton_manual y emisor_distrito_manual.';
+        }
+        if ($this->estadoContieneCodigoHacienda($estado, -17) || $this->estadoContieneCodigoHacienda($estado, -38)) {
+            $hints[] = 'Sugerencia (códigos -17/-38): en factura (01) el receptor debe tener cédula o NITE válidos (no tipo 06 ni ceros). Sin identificación use Ticket/Tiquete (04) o actualice NIT/cédula del cliente.';
         }
         if ($this->estadoContieneCodigoHacienda($estado, -111)) {
             $hints[] = 'Sugerencia (código -111): los totales de servicios vs mercancías gravadas deben coincidir con las líneas del XML (UnidadMedida Sp vs Unid y CABYS). En FEC, un CABYS de servicios (p. ej. 83131…) debe ir como servicio; revise tipo de producto y facturacion_fe.cabys_prefijos_servicio si aplica.';
@@ -1040,6 +1088,110 @@ final class CostaRicaFeEmitService
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    private function esperarEstadoHaciendaTrasEnvio(Client $client, string $clave): array
+    {
+        return XmlRespuestaHaciendaCr::normalizarResponseXmlEnEstado(
+            $this->checkStatusConReintentosSinPersistirXml(
+                $client,
+                $clave,
+                self::POLL_ESTADO_HACIENDA_MAX_INTENTOS,
+                self::POLL_ESTADO_HACIENDA_SEGUNDOS
+            )
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function assertEstadoHaciendaAceptadoOFallar(Client $client, string $clave, array $data): array
+    {
+        $estado = $this->esperarEstadoHaciendaTrasEnvio($client, $clave);
+        if (! (bool) ($estado['success'] ?? false)) {
+            [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
+            throw new CostaRicaFeEmisionFallidaException(
+                $this->mensajeEstadoHaciendaNoAceptado($estado),
+                $data,
+                $clave,
+                $estado,
+                $xmlSin,
+                $xmlFirm
+            );
+        }
+
+        return $estado;
+    }
+
+    /**
+     * Si Hacienda ya recibió el consecutivo (-99) pero la venta no quedó guardada, consulta y persiste.
+     *
+     * @param  callable(string, array<string, mixed>): array<string, mixed>  $persistirSiAceptado
+     * @return array<string, mixed>|null
+     */
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  callable(string, array<string, mixed>): array<string, mixed>  $persistirSiAceptado
+     * @return array<string, mixed>|null
+     */
+    private function intentarRecuperarEmisionSiConsecutivoDuplicado(
+        Throwable $e,
+        Client $client,
+        array $data,
+        callable $persistirSiAceptado
+    ): ?array {
+        if (! $this->esErrorConsecutivoDuplicadoHacienda($e)) {
+            return null;
+        }
+
+        try {
+            $clave = trim($client->getDocumentKey());
+        } catch (Throwable) {
+            return null;
+        }
+        if ($clave === '') {
+            return null;
+        }
+
+        $estado = $this->esperarEstadoHaciendaTrasEnvio($client, $clave);
+        if (! (bool) ($estado['success'] ?? false)) {
+            if ($this->normalizarIndEstadoHacienda($estado['status'] ?? null) === 'rechazado') {
+                [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
+                throw new CostaRicaFeEmisionFallidaException(
+                    $this->mensajeEstadoHaciendaNoAceptado($estado),
+                    $data,
+                    $clave,
+                    $estado,
+                    $xmlSin,
+                    $xmlFirm
+                );
+            }
+
+            return null;
+        }
+
+        Log::info('FE CR: recuperación emisión tras consecutivo duplicado en Hacienda', ['clave' => $clave]);
+
+        return $persistirSiAceptado($clave, $estado);
+    }
+
+    private function esErrorConsecutivoDuplicadoHacienda(Throwable $e): bool
+    {
+        $msg = strtolower($e->getMessage());
+
+        return str_contains($msg, '-99') || str_contains($msg, 'ya existe');
+    }
+
+    /**
+     * Normaliza {@code ind-estado} de la API DGT (evita desajuste por mayúsculas/espacios).
+     */
+    private function normalizarIndEstadoHacienda(mixed $raw): string
+    {
+        return is_string($raw) ? strtolower(trim($raw)) : '';
+    }
+
+    /**
      * Igual que {@see Client::checkStatusWithRetry} pero sin guardar XML en disco (evita Document + getDocumentFileName).
      *
      * @return array<string, mixed>
@@ -1054,7 +1206,7 @@ final class CostaRicaFeEmitService
         for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
             $documentStatus = $client->checkStatus($claveConsulta);
 
-            $status = $documentStatus['ind-estado'] ?? null;
+            $status = $this->normalizarIndEstadoHacienda($documentStatus['ind-estado'] ?? null);
             $claveRespuesta = $documentStatus['clave'] ?? null;
             $date = $documentStatus['fecha'] ?? null;
 
@@ -1237,9 +1389,9 @@ final class CostaRicaFeEmitService
         }
 
         $client = $this->factory->make($empresa);
-        $estado = $this->checkStatusConReintentosSinPersistirXml($client, $clave, 3, 2);
+        $estado = $this->esperarEstadoHaciendaTrasEnvio($client, $clave);
         $aceptada = (bool) ($estado['success'] ?? false);
-        $status = strtolower(trim((string) ($estado['status'] ?? '')));
+        $status = $this->normalizarIndEstadoHacienda($estado['status'] ?? null);
 
         if ($status === 'rechazado') {
             $model->codigo_generacion = null;

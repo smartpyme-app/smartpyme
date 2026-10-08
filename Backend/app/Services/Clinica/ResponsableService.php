@@ -11,6 +11,10 @@ use Illuminate\Validation\ValidationException;
 
 class ResponsableService
 {
+    public function __construct(private ExpedienteService $expedientes)
+    {
+    }
+
     public function deFicha(Paciente $paciente): array
     {
         $vinculos = PacienteResponsable::query()
@@ -64,6 +68,8 @@ class ResponsableService
 
     public function vincular(Paciente $paciente, array $datos): PacienteResponsable
     {
+        $this->expedientes->exigirOperativo($paciente);
+
         return DB::transaction(function () use ($paciente, $datos) {
             $rol = $this->rol($datos['rol'] ?? null);
             $esPaciente = filter_var($datos['es_el_paciente'] ?? false, FILTER_VALIDATE_BOOLEAN);
@@ -154,6 +160,8 @@ class ResponsableService
 
     public function actualizar(Paciente $paciente, PacienteResponsable $vinculo, array $datos): PacienteResponsable
     {
+        $this->expedientes->exigirOperativo($paciente);
+
         if ((int) $vinculo->id_paciente !== (int) $paciente->id || $vinculo->vigente_hasta !== null) {
             throw ValidationException::withMessages(['responsable' => 'Ese vínculo ya no está vigente.']);
         }
@@ -176,6 +184,8 @@ class ResponsableService
 
     public function desactivar(Paciente $paciente, PacienteResponsable $vinculo): PacienteResponsable
     {
+        $this->expedientes->exigirOperativo($paciente);
+
         if ((int) $vinculo->id_paciente !== (int) $paciente->id || $vinculo->vigente_hasta !== null) {
             throw ValidationException::withMessages(['responsable' => 'Ese vínculo ya no está vigente.']);
         }
@@ -193,6 +203,8 @@ class ResponsableService
 
     public function cerrarAlta(Paciente $paciente, bool $cerrada): Paciente
     {
+        $this->expedientes->exigirOperativo($paciente);
+
         if (! $cerrada) {
             $paciente->update(['alta_cerrada' => false]);
 

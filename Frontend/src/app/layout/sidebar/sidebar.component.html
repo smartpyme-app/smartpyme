@@ -1,14 +1,17 @@
 <div style="z-index: 1050;" class="position-relative sidebar shadow-sm" [ngClass]="{'collapsed': sidebarCollapsed}" tourAnchor="tour.sidebar" id="tour.sidebar">
     <div class="click d-flex justify-content-start align-items-center ps-2 pb-2 mb-2 border-bottom position-relative" style="height: 47px;">
-        @if (!isAbacoSite) {
+        @if (!isAbacoSite && !isOnvoSite) {
           <img appLazyImage="assets/img/icon.png" (click)="toggleSidebar()" height="25px">
         }
         <a routerLink="/" tooltip="Dashboard" style="display: flex; align-items: center;">
-          @if (!isAbacoSite) {
+          @if (!isAbacoSite && !isOnvoSite) {
             <img appLazyImage="assets/img/logo.png" class="logo" height="25px">
           }
           @if (isAbacoSite) {
             <img appLazyImage="assets/img/logo-abaco.png" class="logo" height="15px">
+          }
+          @if (isOnvoSite) {
+            <img appLazyImage="assets/img/logo-onvo.png" class="logo" height="28px" alt="ONVO">
           }
         </a>
         <button tourAnchor="tour.sidebar_toogle" id="tour.sidebar_toogle"  id="toggleBtn" class="btn btn-link text-decoration-none d-flex justify-content-end toggle" type="button" (click)="toggleSidebar()">

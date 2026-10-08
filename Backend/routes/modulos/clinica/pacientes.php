@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Clinica\ExpedientesController;
 use App\Http\Controllers\Api\Clinica\PacientesController;
 use App\Http\Controllers\Api\Clinica\ResponsablesController;
 use Illuminate\Support\Facades\Route;
@@ -14,6 +15,12 @@ Route::middleware(['verificar.funcionalidad:clinica-pacientes'])->group(function
 
     Route::get('clinica/pacientes', [PacientesController::class, 'index'])
         ->middleware('permission:clinica.pacientes.ver');
+    Route::get('clinica/pacientes/{id}/expediente/historial', [ExpedientesController::class, 'historial'])
+        ->middleware('permission:clinica.expediente.ver');
+    Route::get('clinica/pacientes/{id}/expediente', [ExpedientesController::class, 'show'])
+        ->middleware('permission:clinica.expediente.ver');
+    Route::patch('clinica/pacientes/{id}/expediente/estado', [ExpedientesController::class, 'estado'])
+        ->middleware('permission:clinica.expediente.archivar');
     Route::get('clinica/pacientes/{id}', [PacientesController::class, 'show'])
         ->middleware('permission:clinica.pacientes.ver');
     Route::post('clinica/pacientes', [PacientesController::class, 'store'])

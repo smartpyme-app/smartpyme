@@ -71,6 +71,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/gift-cards.php');
 	require base_path('routes/modulos/clinica/pacientes.php');
 	require base_path('routes/modulos/clinica/profesionales.php');
+	require base_path('routes/modulos/clinica/consultas.php');
 	require base_path('routes/modulos/incentivos.php');
 
 	// Restaurante
@@ -168,6 +169,8 @@ Route::group(['middleware' => ['jwt.auth']], function () {
     // Super Admin
 	require base_path('routes/modulos/super-admin/usuarios.php');
 	require base_path('routes/modulos/super-admin/planes.php');
+	require base_path('routes/modulos/super-admin/campanias.php');
+	require base_path('routes/modulos/super-admin/aliados.php');
 	require base_path('routes/modulos/super-admin/pagos.php');
 	require base_path('routes/modulos/super-admin/transacciones.php');
 	require base_path('routes/modulos/super-admin/auditoria.php');

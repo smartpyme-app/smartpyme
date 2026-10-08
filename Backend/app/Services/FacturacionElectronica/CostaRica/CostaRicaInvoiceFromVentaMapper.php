@@ -24,7 +24,8 @@ use InvalidArgumentException;
  * Mapea una {@link Venta} al arreglo esperado por dazza-dev/dgt-xml-generator (Factura 01).
  *
  * Reutiliza campos de empresa ya usados para FE (y formularios): cod_actividad_economica, giro,
- * Ubicación emisor/receptor en XML: código distrito CR de 5 dígitos (facturacion_fe.emisor_distrito o cod_distrito si ya es CR).
+ * Ubicación del emisor: obligatoria (distrito fiscal de la empresa). Teléfono del emisor: solo si existe.
+ * Ubicación, teléfono y correo del receptor: datos del cliente. Si faltan, no se envían.
  * No usar distrito/municipio de El Salvador rellenado a 5 dígitos. Establecimiento (3 dígitos) y terminal / punto de
  * venta (5 dígitos) en la clave DGT: igual que FE de SV, por sucursal de la venta/compra/gasto ({@see Sucursal::cod_estable_mh},
  * {@see Sucursal::codigo_punto_venta}); si no hay sucursal o los campos vienen vacíos: empresa.cod_estable y empresa.cod_estable_mh.
@@ -36,6 +37,9 @@ use InvalidArgumentException;
  */
 final class CostaRicaInvoiceFromVentaMapper
 {
+    /** XSD v4.4 NombreEmisor / NombreReceptor (maxLength 100). */
+    private const MAX_NOMBRE_TERCERO_CR = 100;
+
     public function __construct(
         private readonly CostaRicaTipoCambioService $tipoCambio,
     ) {}
@@ -131,6 +135,28 @@ final class CostaRicaInvoiceFromVentaMapper
     public function receptorGenericoDatos(Empresa $empresa, string $nombre = 'Cliente general'): array
     {
         return $this->receptorGenerico($empresa, $nombre);
+    }
+
+    /**
+     * Factura 01 exige receptor identificado (v4.4). Tipo 06 es solo FEC; consumidor final → tiquete 04.
+     *
+     * @param  array<string, mixed>  $receiver
+     */
+    public function assertReceptorFacturaElectronicaCr(array $receiver): void
+    {
+        $tipo = trim((string) ($receiver['identification_type'] ?? ''));
+        $num = preg_replace('/\D/', '', (string) ($receiver['identification_number'] ?? '')) ?? '';
+        if (TipoIdentificacionReceptor::estructuraValidaCostaRicaFactura($tipo, $num)) {
+            return;
+        }
+
+        $nombre = trim((string) ($receiver['name'] ?? 'Receptor'));
+        throw new InvalidArgumentException(
+            'La factura electrónica (01) requiere un receptor con identificación válida en Hacienda '
+            .'(cédula física 9 dígitos, jurídica/NITE 10, DIMEX 11–12). '
+            .'Receptor «'.$nombre.'»: tipo '.$tipo.' número «'.$num.'» no es válido para factura. '
+            .'Sin cédula use el documento Ticket/Tiquete (04), o complete NIT/cédula del cliente en el maestro.'
+        );
     }
 
     /**
@@ -701,28 +727,6 @@ final class CostaRicaInvoiceFromVentaMapper
     }
 
     /**
-     * XSD Hacienda (BarrioUbicacionType): minLength 5. La plantilla dgt-xml-generator siempre emite el elemento Barrio
-     * con el texto de neighborhood; si falta, el XML queda vacío y falla la validación.
-     */
-    private function textoBarrioUbicacionXml(string ...$candidatos): string
-    {
-        foreach ($candidatos as $c) {
-            $t = trim((string) $c);
-            if (mb_strlen($t) >= 5) {
-                return mb_substr($t, 0, 160);
-            }
-        }
-        foreach ($candidatos as $c) {
-            $t = trim((string) $c);
-            if ($t !== '') {
-                return str_pad($t, 5, '.', STR_PAD_RIGHT);
-            }
-        }
-
-        return 'Centro';
-    }
-
-    /**
      * dgt-xml-generator usa el catálogo actividades-economicas.json con códigos "NNNN.N" (p. ej. 7020.0).
      * Hacienda suele devolver 5 dígitos (70200) o 6 con cero a la izquierda por error (070200); ambos se mapean a 7020.0.
      */
@@ -785,26 +789,27 @@ final class CostaRicaInvoiceFromVentaMapper
         }
 
         $loc = $this->ubicacionEmisor($empresa);
+        $direccion = trim((string) ($empresa->direccion ?? ''));
+        $barrio = trim((string) ($empresa->getCustomConfigValue('facturacion_fe', 'emisor_barrio', '') ?? ''));
+        if (mb_strlen($barrio) < 5 && mb_strlen($direccion) >= 5) {
+            $barrio = mb_substr($direccion, 0, 50);
+        }
 
-        return [
+        $emisor = [
             'identification_type' => $this->tipoIdentificacionEmisorCr($empresa),
             'identification_number' => $nit,
-            'name' => $empresa->nombre ?? 'Emisor',
-            'trade_name' => $empresa->nombre ?? null,
+            'name' => $this->nombreTerceroCr((string) ($empresa->nombre ?? ''), 'Emisor'),
             'activity' => $codAct,
             'location' => [
                 'province' => $loc['province'],
                 'canton' => $loc['canton'],
                 'district' => $loc['district'],
-                'neighborhood' => $this->textoBarrioUbicacionXml(
-                    (string) $empresa->getCustomConfigValue('facturacion_fe', 'emisor_barrio', ''),
-                    (string) ($empresa->direccion ?? '')
-                ),
-                'address_details' => $empresa->direccion ?? 'Costa Rica',
+                'neighborhood' => $barrio,
+                'address_details' => $direccion,
             ],
-            'phone' => $this->telefonoCr($empresa->telefono ?? '22222222'),
-            'email' => array_filter([$empresa->correo ?? null]),
         ];
+
+        return $this->conContactoTercero($emisor, $empresa->telefono ?? null, $empresa->correo ?? null);
     }
 
     private function receptor(Venta $venta, Empresa $empresa): array
@@ -825,70 +830,116 @@ final class CostaRicaInvoiceFromVentaMapper
             ? ($cliente->nombre_empresa ?: trim(($cliente->nombre ?? '').' '.($cliente->apellido ?? '')))
             : (trim(($cliente->nombre ?? '').' '.($cliente->apellido ?? '')) ?: $cliente->nombre_empresa);
 
-        $loc = $this->ubicacionEmisor($empresa);
-
         $receiver = [
             'identification_type' => $tipo,
             'identification_number' => $num,
-            'name' => $nombre ?: 'Receptor',
-            'location' => [
-                'province' => $loc['province'],
-                'canton' => $loc['canton'],
-                'district' => $loc['district'],
-                'neighborhood' => $this->textoBarrioUbicacionXml(
-                    (string) $empresa->getCustomConfigValue('facturacion_fe', 'receptor_barrio', ''),
-                    (string) ($cliente->distrito ?? ''),
-                    (string) ($cliente->municipio ?? ''),
-                    (string) ($cliente->direccion ?? ''),
-                    (string) ($empresa->direccion ?? '')
-                ),
-                'address_details' => $cliente->direccion ?: ($empresa->direccion ?? 'Costa Rica'),
-            ],
+            'name' => $this->nombreTerceroCr($nombre ?: 'Receptor'),
         ];
+
+        $loc = $this->ubicacionTerceroCr(
+            $cliente->cod_distrito ?? null,
+            $cliente->distrito ?? null,
+            $cliente->municipio ?? null,
+            $this->direccionCliente($cliente)
+        );
+        if ($loc !== null) {
+            $receiver['location'] = $loc;
+        }
 
         $ractCode = $empresa->getCustomConfigValue('facturacion_fe', 'receptor_actividad_codigo', null);
         if ($ractCode !== null && trim((string) $ractCode) !== '') {
             $receiver['activity'] = $this->codigoActividadEconomicaParaDgt((string) $ractCode);
         }
 
-        if ($cliente->correo) {
-            $receiver['email'] = [$cliente->correo];
-        }
-        if ($cliente->telefono) {
-            $receiver['phone'] = $this->telefonoCr($cliente->telefono);
+        return $this->conContactoTercero($receiver, $this->telefonoCliente($cliente), $cliente->correo ?? null);
+    }
+
+    private function direccionCliente(Cliente $cliente): string
+    {
+        $efectiva = trim((string) ($cliente->getDireccionEfectiva() ?? ''));
+        if ($efectiva !== '') {
+            return $efectiva;
         }
 
-        // dgt-xml-generator siempre lee phone y email en el receptor (sin isset).
-        if (! isset($receiver['phone'])) {
-            $receiver['phone'] = $this->telefonoCr($empresa->telefono ?? '22222222');
+        return trim((string) ($cliente->direccion ?: $cliente->empresa_direccion ?: ''));
+    }
+
+    private function telefonoCliente(Cliente $cliente): string
+    {
+        $efectivo = trim((string) ($cliente->getTelefonoEfectivo() ?? ''));
+        if ($efectivo !== '') {
+            return $efectivo;
         }
-        if (! isset($receiver['email'])) {
-            $receiver['email'] = array_filter([$empresa->correo ?? null]);
+
+        return trim((string) ($cliente->telefono ?: $cliente->empresa_telefono ?: ''));
+    }
+
+    /**
+     * Igual que la dirección del receptor en FE SV: solo si hay código territorial y señas del tercero.
+     * Si falta algo, null (el XML omite Ubicacion).
+     *
+     * @return array{province: int, canton: string, district: string, neighborhood: string, address_details: string}|null
+     */
+    private function ubicacionTerceroCr(?string $codDistrito, ?string $distrito, ?string $municipio, string $direccion): ?array
+    {
+        $rawDist = preg_replace('/\D/', '', (string) $codDistrito) ?? '';
+        $senas = trim($direccion);
+        if (strlen($rawDist) !== 5 || preg_match('/^[1-7]\d{4}$/', $rawDist) !== 1 || mb_strlen($senas) < 5) {
+            return null;
+        }
+
+        $barrio = null;
+        foreach ([$distrito, $senas, $municipio] as $candidato) {
+            $t = trim((string) $candidato);
+            if (mb_strlen($t) >= 5) {
+                $barrio = mb_substr($t, 0, 160);
+                break;
+            }
+        }
+        if ($barrio === null) {
+            return null;
+        }
+
+        return [
+            'province' => (int) $rawDist[0],
+            'canton' => substr($rawDist, 0, 3),
+            'district' => $rawDist,
+            'neighborhood' => $barrio,
+            'address_details' => mb_substr($senas, 0, 250),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $receiver
+     * @return array<string, mixed>
+     */
+    private function conContactoTercero(array $receiver, ?string $telefono, ?string $correo): array
+    {
+        $digits = preg_replace('/\D/', '', (string) $telefono) ?? '';
+        if ($digits !== '') {
+            $receiver['phone'] = $this->telefonoCr((string) $telefono);
+        }
+        $mail = trim((string) $correo);
+        if ($mail !== '') {
+            $receiver['email'] = [$mail];
         }
 
         return $receiver;
     }
 
+    private function nombreTerceroCr(string $nombre, string $fallback = 'Receptor'): string
+    {
+        $t = trim($nombre);
+
+        return mb_substr($t !== '' ? $t : $fallback, 0, self::MAX_NOMBRE_TERCERO_CR);
+    }
+
     private function receptorGenerico(Empresa $empresa, string $nombre = 'Cliente general'): array
     {
-        $loc = $this->ubicacionEmisor($empresa);
-
         return [
             'identification_type' => '06',
             'identification_number' => '00000000000000',
-            'name' => $nombre,
-            'location' => [
-                'province' => $loc['province'],
-                'canton' => $loc['canton'],
-                'district' => $loc['district'],
-                'neighborhood' => $this->textoBarrioUbicacionXml(
-                    (string) $empresa->getCustomConfigValue('facturacion_fe', 'emisor_barrio', ''),
-                    (string) ($empresa->direccion ?? '')
-                ),
-                'address_details' => $empresa->direccion ?? 'Costa Rica',
-            ],
-            'phone' => $this->telefonoCr($empresa->telefono ?? '22222222'),
-            'email' => array_filter([$empresa->correo ?? null]),
+            'name' => $this->nombreTerceroCr($nombre, 'Cliente general'),
         ];
     }
 
@@ -1820,14 +1871,20 @@ final class CostaRicaInvoiceFromVentaMapper
                 ?: (string) ($proveedor->nombre_empresa ?? 'Proveedor');
         }
 
-        $loc = $this->ubicacionProveedorOEmpresa($proveedor, $empresaCompradora);
-
         $receiver = [
             'identification_type' => $tipo,
             'identification_number' => $num,
-            'name' => $nombre !== '' ? mb_substr($nombre, 0, 100) : 'Proveedor',
-            'location' => $loc,
+            'name' => $this->nombreTerceroCr($nombre, 'Proveedor'),
         ];
+        $loc = $this->ubicacionTerceroCr(
+            $proveedor->cod_distrito ?? null,
+            $proveedor->distrito ?? null,
+            $proveedor->municipio ?? null,
+            trim((string) ($proveedor->direccion ?? ''))
+        );
+        if ($loc !== null) {
+            $receiver['location'] = $loc;
+        }
 
         // FEC (08): Hacienda (XSD) exige CodigoActividadReceptor antes de NumeroConsecutivo con código CIIU válido; no admite omitir el nodo ni vacío.
         $codReceptorAct = null;
@@ -1844,55 +1901,7 @@ final class CostaRicaInvoiceFromVentaMapper
         }
         $receiver['activity'] = $this->codigoActividadEconomicaParaDgt($codReceptorAct);
 
-        if ($proveedor->correo) {
-            $receiver['email'] = [$proveedor->correo];
-        }
-        if ($proveedor->telefono) {
-            $receiver['phone'] = $this->telefonoCr($proveedor->telefono);
-        }
-        if (! isset($receiver['phone'])) {
-            $receiver['phone'] = $this->telefonoCr($empresaCompradora->telefono ?? '22222222');
-        }
-        if (! isset($receiver['email'])) {
-            $receiver['email'] = array_filter([$empresaCompradora->correo ?? null]);
-        }
-
-        return $receiver;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function ubicacionProveedorOEmpresa(Proveedor $proveedor, Empresa $empresa): array
-    {
-        $rawDist = $proveedor->cod_distrito ?? null;
-        $d = preg_replace('/\D/', '', (string) $rawDist);
-        if (strlen($d) === 5 && preg_match('/^[1-7]\d{4}$/', $d) === 1) {
-            return [
-                'province' => (int) $d[0],
-                'canton' => substr($d, 0, 3),
-                'district' => $d,
-                'neighborhood' => $this->textoBarrioUbicacionXml(
-                    (string) ($proveedor->distrito ?? ''),
-                    (string) ($proveedor->direccion ?? '')
-                ),
-                'address_details' => $proveedor->direccion ?: ($empresa->direccion ?? 'Costa Rica'),
-            ];
-        }
-
-        $loc = $this->ubicacionEmisor($empresa);
-
-        return [
-            'province' => $loc['province'],
-            'canton' => $loc['canton'],
-            'district' => $loc['district'],
-            'neighborhood' => $this->textoBarrioUbicacionXml(
-                (string) $empresa->getCustomConfigValue('facturacion_fe', 'emisor_barrio', ''),
-                (string) ($proveedor->direccion ?? ''),
-                (string) ($empresa->direccion ?? '')
-            ),
-            'address_details' => $proveedor->direccion ?: ($empresa->direccion ?? 'Costa Rica'),
-        ];
+        return $this->conContactoTercero($receiver, $proveedor->telefono ?? null, $proveedor->correo ?? null);
     }
 
     /**

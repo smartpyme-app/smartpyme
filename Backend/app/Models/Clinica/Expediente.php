@@ -14,6 +14,7 @@ class Expediente extends AuditableModel
     protected $fillable = [
         'id_empresa',
         'id_paciente',
+        'id_sucursal_apertura',
         'numero',
         'fecha_apertura',
         'estado',
@@ -32,5 +33,10 @@ class Expediente extends AuditableModel
     public function paciente()
     {
         return $this->belongsTo(Paciente::class, 'id_paciente');
+    }
+
+    public function sucursalApertura()
+    {
+        return $this->belongsTo(\App\Models\Admin\Sucursal::class, 'id_sucursal_apertura');
     }
 }

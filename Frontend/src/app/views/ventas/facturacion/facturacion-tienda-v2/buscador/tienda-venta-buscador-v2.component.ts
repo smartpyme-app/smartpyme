@@ -1,4 +1,4 @@
-﻿import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -169,7 +169,8 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
     }
 
     /**
-     * Calcula el precio con IVA incluido usando el % del producto si tiene, si no el de la empresa.
+     * Precio con IVA del producto. Usa el guardado; si no hay, lo calcula.
+     * Una presentación trae el precio_con_iva del producto base: ahí se calcula sobre su precio.
      */
     public getPrecioConIva(producto: any): number {
         return getPrecioConIvaProducto(producto, this.ivaEmpresa());

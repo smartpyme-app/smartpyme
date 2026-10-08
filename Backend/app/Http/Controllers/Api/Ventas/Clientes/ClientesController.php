@@ -149,7 +149,8 @@ class ClientesController extends Controller
                       ->orWhere('telefono', 'like', $searchTerm)
                       ->orWhere('red_social', 'like', $searchTerm)
                       ->orWhere('ncr', 'like', $searchTerm)
-                      ->orWhere('dui', 'like', $searchTerm);
+                      ->orWhere('dui', 'like', $searchTerm)
+                      ->orWhere('etiquetas', 'like', $searchTerm);
                 });
             })
             ->when($request->nombre, function ($q) use ($request) {

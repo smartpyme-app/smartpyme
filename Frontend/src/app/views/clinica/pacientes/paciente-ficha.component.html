@@ -11,10 +11,18 @@
             <span class="badge py-2 ms-2" style="font-size: 0.8rem;" [ngClass]="{'bg-primary': paciente.alta_cerrada, 'bg-secondary': !paciente.alta_cerrada}">
                 {{ paciente.alta_cerrada ? 'Alta cerrada' : 'Alta abierta' }}
             </span>
+            @if (paciente.expediente?.estado === 'archivado') {
+                <span class="badge py-2 ms-2 bg-secondary" style="font-size: 0.8rem;">Expediente archivado</span>
+            }
         }
     </div>
     <div class="d-flex align-items-center gap-2">
-        @if (paciente && apiService.hasPermission('clinica.pacientes.editar')) {
+        @if (paciente && apiService.hasPermission('clinica.expediente.ver')) {
+            <button type="button" class="btn btn-default" [routerLink]="['/clinica/pacientes', paciente.id, 'expediente']">
+                Expediente clínico
+            </button>
+        }
+        @if (paciente && apiService.hasPermission('clinica.pacientes.editar') && paciente.expediente?.operativo !== false) {
             <button class="btn btn-default" type="button" (click)="cerrarAlta(!paciente.alta_cerrada)">
                 {{ paciente.alta_cerrada ? 'Reabrir alta' : 'Cerrar alta' }}
             </button>
@@ -128,7 +136,7 @@
                         }
                         <div class="col-12 d-flex justify-content-between align-items-center pb-2 my-3">
                             <h6 class="mb-0">Responsables</h6>
-                            @if (apiService.hasPermission('clinica.pacientes.editar')) {
+                            @if (apiService.hasPermission('clinica.pacientes.editar') && paciente.expediente?.operativo !== false) {
                                 <button type="button" class="btn btn-default" (click)="abrirResponsable(mresponsable)">
                                     <i class="fa fa-plus"></i> Añadir responsable
                                 </button>
@@ -167,7 +175,7 @@
                                                 <td>{{ etiquetaRol(responsable.rol) }}</td>
                                                 <td>{{ responsable.vigente_desde }}</td>
                                                 <td class="text-center">
-                                                    @if (apiService.hasPermission('clinica.pacientes.editar')) {
+                                                    @if (apiService.hasPermission('clinica.pacientes.editar') && paciente.expediente?.operativo !== false) {
                                                         <span class="btn" [popover]="accionesResponsable" [outsideClick]="true" tooltip="Acciones">
                                                             <i class="fa fa-ellipsis-vertical fa-fw"></i>
                                                         </span>

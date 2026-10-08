@@ -356,10 +356,19 @@
                         <td style="width: 150px;" class="text-right"><b> {{ venta.propina | currency}}</b> </td>
                         <td style="width: 50px;"></td>
                     </tr>
+                    <tr *ngIf="venta.nombre_documento == 'Factura de exportación' && venta.seguro > 0">
+                        <td class="text-right"> <b>Seguro</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ venta.seguro | currency}}</b> </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="venta.nombre_documento == 'Factura de exportación' && venta.flete > 0">
+                        <td class="text-right"> <b>Flete</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ venta.flete | currency}}</b> </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
                     <tr>
                         <td class="text-right"> <b>Total</b> </td>
-                        <td style="width: 150px;" class="text-right"><b> {{ venta.total |
-                                currency}}</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ totalAPagar() | currency}}</b> </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr *ngIf="tieneMultimoneda && monedaVenta === 'USD' && usdEquivalentTotal !== null">
@@ -740,11 +749,11 @@
   <div class="modal-body">
     <form name="facturacion" autocomplete="off" (ngSubmit)="onFacturar()">
         <div class="row text-center">
-            <h4 class="col-md-6">Total: <span class="badge badge-primary">{{ venta.total | currency }}</span></h4>
-            <h4 class="col-md-6">Vuelto: <span class="badge badge-info" *ngIf="venta.recibido">{{ venta.recibido - venta.total | currency }}</span> <span class="badge badge-info" *ngIf="!venta.recibido">$0.00</span></h4>
+            <h4 class="col-md-6">Total: <span class="badge badge-primary">{{ totalAPagar() | currency }}</span></h4>
+            <h4 class="col-md-6">Vuelto: <span class="badge badge-info" *ngIf="venta.recibido">{{ venta.recibido - totalAPagar() | currency }}</span> <span class="badge badge-info" *ngIf="!venta.recibido">$0.00</span></h4>
             <div class="form-group text-center col-md-12 my-3">
                 <label for="recibido">Recibido:</label>
-                <input type="number" name="recibido" [(ngModel)]="venta.recibido" placeholder="{{ venta.total | currency }}" class="form-control text-center">
+                <input type="number" name="recibido" [(ngModel)]="venta.recibido" placeholder="{{ totalAPagar() | currency }}" class="form-control text-center">
             </div>
 
                             @if (!venta.nota) {

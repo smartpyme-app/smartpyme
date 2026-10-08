@@ -43,12 +43,28 @@ describe('producto-detalle-v2.mapper', () => {
   });
 
   it('getPrecioConIvaProducto aplica iva empresa si producto sin pct', () => {
-    expect(getPrecioConIvaProducto({ precio: 100 }, 15)).toBe(115);
+    expect(getPrecioConIvaProducto({ precio: 100 }, 15)).toBeCloseTo(115);
   });
 
   it('armarPreciosDetalleV2 respeta exento explicito', () => {
     const r = armarPreciosDetalleV2({ precio: 100, porcentaje_impuesto: 0 }, 15);
     expect(r.precioConIva).toBe(100);
     expect(r.porcentajeImpuesto).toBe(0);
+  });
+
+  it('usa precio_con_iva guardado y lo ignora en presentacion', () => {
+    expect(getPrecioConIvaProducto({ precio: 100, precio_con_iva: '113.50' }, 13)).toBe(113.5);
+    const det = armarDetalleDesdeProductoV2(
+      { id: 1, nombre: 'Cafe', precio: 100, precio_con_iva: '113.50', porcentaje_impuesto: 13, tipo: 'Producto', inventarios: [] },
+      ctx
+    );
+    expect(det.precio_iva).toBe('113.50');
+    expect(det.precios[0].precio_con_iva).toBe('113.5000');
+
+    const presentacion = armarPreciosDetalleV2(
+      { precio: 50, precio_con_iva: '999', porcentaje_impuesto: 13, id_presentacion: 9 },
+      13
+    );
+    expect(presentacion.precioConIva).toBeCloseTo(56.5);
   });
 });

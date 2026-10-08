@@ -61,6 +61,8 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
     public loading: boolean = false;
     /** true cuando el dominio es abaco.smartpyme.site */
     public isAbacoSite: boolean = false;
+    /** true cuando el dominio es onvo.smartpyme.site */
+    public isOnvoSite: boolean = false;
     public filtros: any = {};
     public items: any = [];
     public notificaciones: any = [];
@@ -156,6 +158,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
             this.usuario.empresa = {};
         }
         this.isAbacoSite = window.location.hostname === 'abaco.smartpyme.site';
+        this.isOnvoSite = window.location.hostname === 'onvo.smartpyme.site';
         if (!localStorage.getItem('sidebarCollapsed')) {
             localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed.toString());
         }else{

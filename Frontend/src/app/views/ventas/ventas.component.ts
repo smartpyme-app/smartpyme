@@ -31,6 +31,7 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { puedeFacturarVentaCuota, queryFacturarVenta } from '@views/ventas/creditos/creditos-facturar';
 import { BoxfulApiService } from '@services/boxful/boxful-api.service';
 import { SharedModule } from '@shared/shared.module';
+import { totalAPagarConSeguroFlete } from '@utils/impuestos-venta.util';
 import Swal from 'sweetalert2';
 import { LazyImageDirective } from '../../directives/lazy-image.directive';
 import { Subject } from 'rxjs';
@@ -2232,14 +2233,17 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     );
   }
 
+  public totalListado(venta: any): number {
+    return totalAPagarConSeguroFlete(venta?.total, venta?.seguro, venta?.flete, venta?.nombre_documento);
+  }
+
   public getTotalConPropina(venta: any): number {
-    const total = parseFloat(venta?.total || 0);
     const propina = parseFloat(venta?.propina || 0);
-    return total + propina;
+    return this.totalListado(venta) + propina;
   }
 
   public getSaldo(venta: any): number {
-    const total = parseFloat(venta?.total || 0);
+    const total = this.totalListado(venta);
     const abonos = parseFloat(venta?.abonos_sum_total || 0);
     const devoluciones = parseFloat(venta?.devoluciones_sum_total || 0);
     return Math.round((total - abonos - devoluciones) * 100) / 100;

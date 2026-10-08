@@ -79,17 +79,6 @@ class MHFacturaExportacion extends Model
                     break;
             }
 
-        // Total en letras
-        $partes = explode('.', strval( number_format($this->venta->total, 2) ));
-
-        $formatter = new NumeroALetras();
-        $n = explode(".", number_format($venta->total,2));
-        
-        $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
-        $centavos = $formatter->toWords($n[1]);
-
-        $this->venta->total_en_letras = $dolares . ' DÓLARES CON ' . $centavos . ' CENTAVOS.';
-
         return $this->generarFactura();
 
     } 
@@ -192,6 +181,12 @@ class MHFacturaExportacion extends Model
         }
 
         $pagoCond = $this->condicionOperacionYPagoPlazo();
+        $totalGravada = floatval(number_format((float) $totalGravada, 2, '.', ''));
+        $seguro = floatval(number_format((float) ($this->venta->seguro ?? 0), 2, '.', ''));
+        $flete = floatval(number_format((float) ($this->venta->flete ?? 0), 2, '.', ''));
+        // MH tipo 11: montoTotalOperacion = totalGravada - descuento + seguro + flete. El descuento del resumen va en 0.
+        $montoTotalOperacion = floatval(number_format($totalGravada + $seguro + $flete, 2, '.', ''));
+        $this->venta->total_en_letras = $this->totalEnLetras($montoTotalOperacion);
 
         return 
             [
@@ -202,21 +197,21 @@ class MHFacturaExportacion extends Model
                 "ventaTercero" => NULL,
                 "cuerpoDocumento" => $this->detalles(),
                 "resumen" => [
-                  "totalGravada" => floatval(number_format($totalGravada, 2, '.', '')),
+                  "totalGravada" => $totalGravada,
                   "descuento" => floatval(number_format(0, 2, '.', '')),
                   "porcentajeDescuento" => 0,
                   "totalDescu" => floatval(number_format(0, 2, '.', '')),
-                  "seguro" => floatval(number_format($this->venta->seguro, 2, '.', '')),
-                  "flete" => floatval(number_format($this->venta->flete, 2, '.', '')),
-                  "montoTotalOperacion" => floatval(number_format($totalGravada, 2, '.', '')),
+                  "seguro" => $seguro,
+                  "flete" => $flete,
+                  "montoTotalOperacion" => $montoTotalOperacion,
                   "totalNoGravado" => 0,
-                  "totalPagar" => floatval(number_format($totalGravada, 2, '.', '')),
+                  "totalPagar" => $montoTotalOperacion,
                   "totalLetras" => $this->venta->total_en_letras,
                   "condicionOperacion" => $pagoCond['condicionOperacion'],
                   "pagos" => [
                     [
                       "codigo" => $this->venta->cod_metodo_pago,
-                      "montoPago" => floatval(number_format($totalGravada, 2, '.', '')),
+                      "montoPago" => $montoTotalOperacion,
                       "referencia" => NULL,
                       "plazo" => $pagoCond['plazo'],
                       "periodo" => $pagoCond['periodo']
@@ -283,6 +278,16 @@ class MHFacturaExportacion extends Model
         }
 
         return $detalles;
+    }
+
+    private function totalEnLetras(float $monto): string
+    {
+        $formatter = new NumeroALetras();
+        $n = explode('.', number_format($monto, 2));
+        $dolares = $formatter->toWords(floatval(str_replace(',', '', $n[0])));
+        $centavos = $formatter->toWords($n[1]);
+
+        return $dolares . ' DÓLARES CON ' . $centavos . ' CENTAVOS.';
     }
 
     /**
