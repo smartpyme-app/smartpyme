@@ -222,7 +222,7 @@
                 <tr>
                     <td style="width: 22%;">
                         @if ($logoSrc)
-                            <img height="100" src="{{ $logoSrc }}" alt="" style="max-width: 140px;">
+                            <img height="100" src="{{ $logoSrc }}" alt="&nbsp;" style="max-width: 140px;">
                         @endif
                     </td>
                     <td style="width: 56%; text-align: center;">
