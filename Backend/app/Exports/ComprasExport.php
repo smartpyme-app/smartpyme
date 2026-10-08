@@ -70,11 +70,19 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
         $compras = Compra::when($idEmpresa, function ($query) use ($idEmpresa) {
                             return $query->where('id_empresa', $idEmpresa);
                         })
-                        ->when($request->buscador, function($query) use ($request){
-                        return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('estado', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
+                        ->when($request->buscador, function ($query) use ($request) {
+                            $texto = '%'.$request->buscador.'%';
+                            return $query->where(function ($q) use ($texto) {
+                                $q->whereHas('proveedor', function ($p) use ($texto) {
+                                    $p->where('nombre', 'like', $texto)
+                                        ->orWhere('nombre_empresa', 'like', $texto)
+                                        ->orWhere('ncr', 'like', $texto)
+                                        ->orWhere('nit', 'like', $texto);
+                                })->orWhere('referencia', 'like', $texto)
+                                    ->orWhere('estado', 'like', $texto)
+                                    ->orWhere('observaciones', 'like', $texto)
+                                    ->orWhere('forma_pago', 'like', $texto);
+                            });
                         })
                         ->when($request->inicio, function($query) use ($request){
                             return $query->whereBetween('fecha', [$request->inicio, $request->fin]);

@@ -2,7 +2,9 @@ import {
   alCambiarDepartamento,
   alCambiarDistrito,
   alCambiarMunicipio,
+  claveDistritoActual,
   dedupePorCod,
+  distritosParaSelector,
   filtrarPorCodDepartamento,
   hidratarCodigosUbicacion,
   trackUbicacionCod,
@@ -97,6 +99,15 @@ describe('ubicacion-catalogo.util', () => {
   });
 
   describe('alCambiarDistrito', () => {
+    const distritosSv = [
+      { cod: '01', nombre: 'San Salvador Centro', cod_departamento: '06', cod_municipio: '14' },
+      { cod: '01', nombre: 'Soyapango', cod_departamento: '06', cod_municipio: '23' },
+    ];
+    const municipiosSv = [
+      { cod: '14', nombre: 'San Salvador Centro', cod_departamento: '06' },
+      { cod: '23', nombre: 'Soyapango', cod_departamento: '06' },
+    ];
+
     it('rellena distrito y cantón del catálogo', () => {
       const sucursal: any = { cod_departamento: '1', cod_municipio: '01' };
       const distritos = [
@@ -109,6 +120,41 @@ describe('ubicacion-catalogo.util', () => {
       expect(sucursal.distrito).toBe('Carmen');
       expect(sucursal.cod_distrito).toBe('10101');
       expect(sucursal.municipio).toBe('Central');
+    });
+
+    it('elige el distrito del municipio correcto cuando el cod MH se repite', () => {
+      const cliente: any = { cod_departamento: '06' };
+      const clave = trackUbicacionCod(distritosSv[1]);
+
+      alCambiarDistrito(cliente, distritosSv, municipiosSv, clave);
+
+      expect(cliente.cod_distrito).toBe('01');
+      expect(cliente.distrito).toBe('Soyapango');
+      expect(cliente.cod_municipio).toBe('23');
+      expect(cliente.municipio).toBe('Soyapango');
+      expect(claveDistritoActual(cliente, distritosSv)).toBe(clave);
+    });
+  });
+
+  describe('distritosParaSelector', () => {
+    const distritos = [
+      { cod: '01', nombre: 'Centro', cod_departamento: '06', cod_municipio: '14' },
+      { cod: '01', nombre: 'Soyapango', cod_departamento: '06', cod_municipio: '23' },
+      { cod: '02', nombre: 'Apaneca', cod_departamento: '01', cod_municipio: '02' },
+    ];
+
+    it('lista todos los distritos del departamento', () => {
+      expect(distritosParaSelector(distritos, '06', '').map((d) => d.nombre)).toEqual([
+        'Centro',
+        'Soyapango',
+      ]);
+    });
+
+    it('ignora un municipio que no pertenece al departamento', () => {
+      expect(distritosParaSelector(distritos, '06', '02').map((d) => d.nombre)).toEqual([
+        'Centro',
+        'Soyapango',
+      ]);
     });
   });
 
