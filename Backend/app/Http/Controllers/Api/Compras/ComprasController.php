@@ -27,6 +27,7 @@ use App\Exports\CuentasPagarExport;
 use App\Services\Compras\PagoMasivoBancoAgricolaService;
 use App\Exports\RentabilidadSucursalExport;
 use App\Helpers\ExportPeriodHelper;
+use App\Support\ComprasListQuery;
 use Maatwebsite\Excel\Facades\Excel;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Auth;
@@ -51,58 +52,7 @@ class ComprasController extends Controller
             $columns[$dteIndex] = DB::raw("IF(COALESCE(compras.dte_s3_key,'') <> '', NULL, compras.dte) as dte");
         }
 
-        $compras = Compra::select($columns)
-            ->when($request->inicio, function($query) use ($request){
-                            return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
-                        })
-                        ->when($request->recurrente !== null, function($q) use ($request){
-                            $q->where('recurrente', !!$request->recurrente);
-                        })
-                        ->when($request->num_identificacion, function ($q) use ($request) {
-                            $q->where('num_identificacion', $request->num_identificacion);
-                        })
-                        ->when($request->id_sucursal, function($query) use ($request){
-                            return $query->where('id_sucursal', $request->id_sucursal);
-                        })
-                        ->when($request->id_bodega, function($query) use ($request){
-                            return $query->where('id_bodega', $request->id_bodega);
-                        })
-                        ->when($request->id_usuario, function($query) use ($request){
-                            return $query->where('id_usuario', $request->id_usuario);
-                        })
-                        ->when($request->id_proveedor, function($query) use ($request){
-                            return $query->where('id_proveedor', $request->id_proveedor);
-                        })
-                        ->when($request->forma_pago, function($query) use ($request){
-                            return $query->where('forma_pago', $request->forma_pago);
-                        })
-                        ->when($request->estado, function($query) use ($request){
-                            return $query->where('estado', $request->estado);
-                        })
-                        ->when($request->metodo_pago, function($query) use ($request){
-                            return $query->where('metodo_pago', $request->metodo_pago);
-                        })
-                        ->when($request->id_proyecto, function($query) use ($request){
-                            return $query->where('id_proyecto', $request->id_proyecto);
-                        })
-                        ->when($request->dte && $request->dte == 0, function($query) {
-                                return $query->whereNull('sello_mh');
-                        })
-                        ->when($request->dte && $request->dte == 1, function($query) {
-                            return $query->whereNotNull('sello_mh');
-                        })
-                        ->where('cotizacion', 0)
-                        ->when($request->buscador, function($query) use ($request){
-                        return $query->whereHas('proveedor', function($q) use ($request){
-                                    $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
-                                    ->orwhere('nombre_empresa', 'like' ,"%" . $request->buscador . "%")
-                                    ->orwhere('ncr', 'like' ,"%" . $request->buscador . "%")
-                                    ->orwhere('nit', 'like' ,"%" . $request->buscador . "%");
-                                 })->orwhere('referencia', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('estado', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
-                        })
+        $compras = ComprasListQuery::apply(Compra::select($columns), $request)
                         ->with(['proveedor', 'usuario', 'sucursal', 'proyecto', 'empresa'])
                         ->withSum(['abonos' => function ($query) {
                             $query->where('estado', 'Confirmado');
@@ -110,8 +60,6 @@ class ComprasController extends Controller
                         ->withSum(['devoluciones' => function ($query) {
                             $query->where('enable', 1);
                         }], 'total')
-                        ->orderBy($request->orden, $request->direccion)
-                        ->orderBy('id', 'desc')
                         ->paginate($request->paginate);
 
         return Response()->json($compras, 200);

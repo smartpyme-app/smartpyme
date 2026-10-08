@@ -17,8 +17,10 @@ import { FeCrUbicacionService } from '@services/fe-cr-ubicacion.service';
 import {
     alCambiarDepartamento,
     alCambiarDistrito,
+    alCambiarMunicipio,
     claveDistritoActual,
     dedupePorCod,
+    distritosParaSelector,
     filtrarPorCodDepartamento,
     trackUbicacionCod,
 } from '@utils/ubicacion-catalogo.util';
@@ -273,7 +275,7 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
     }
 
     get distritosFiltrados(): any[] {
-        return filtrarPorCodDepartamento(this.distritos, this.cliente?.cod_departamento);
+        return distritosParaSelector(this.distritos, this.cliente?.cod_departamento, this.cliente?.cod_municipio);
     }
 
     trackUbicacion = trackUbicacionCod;
@@ -490,17 +492,7 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
     }
 
     setMunicipio(cod?: unknown){
-        if (cod !== undefined && cod !== null) {
-            this.cliente.cod_municipio = cod;
-        }
-        let municipio = this.municipios.find((item:any) => item.cod == this.cliente.cod_municipio && item.cod_departamento == this.cliente.cod_departamento);
-        if(municipio){
-            this.cliente.municipio = municipio.nombre;
-            this.cliente.cod_municipio = municipio.cod;
-
-            this.cliente.distrito = '';
-            this.cliente.cod_distrito = '';
-        }
+        alCambiarMunicipio(this.cliente, this.municipios, cod ?? this.cliente.cod_municipio);
     }
 
     setDepartamento(cod?: unknown){

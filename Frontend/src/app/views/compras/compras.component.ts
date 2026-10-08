@@ -583,7 +583,12 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
         if (!tipo) return null;
         const fechas = buildFechasExportValidadas(this.exportPeriodo, tipo);
         if (!fechas) return null;
-        return { ...this.filtros, inicio: fechas.inicio, fin: fechas.fin };
+        const base = this.filtrosParaApi();
+        delete base['paginate'];
+        delete base['page'];
+        delete base['orden'];
+        delete base['direccion'];
+        return { ...base, inicio: fechas.inicio, fin: fechas.fin };
     }
 
     private alertPeriodoExportInvalidoCompras(tipo: ExportLimiteTipo): void {

@@ -7,6 +7,7 @@ use App\Helpers\CountryTermsHelper;
 use App\Models\Admin\Empresa;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Devoluciones\Devolucion;
+use App\Support\ComprasListQuery;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -62,66 +63,15 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
         $idEmpresa = Auth::check()
             ? Auth::user()->id_empresa
             : ($request->id_empresa ?? null);
-        $orden = $request->orden ?: 'fecha';
-        $direccion = in_array(strtolower((string) ($request->direccion ?? '')), ['asc', 'desc'], true)
-            ? strtolower($request->direccion)
-            : 'desc';
-
-        $compras = Compra::when($idEmpresa, function ($query) use ($idEmpresa) {
-                            return $query->where('id_empresa', $idEmpresa);
-                        })
-                        ->when($request->buscador, function ($query) use ($request) {
-                            $texto = '%'.$request->buscador.'%';
-                            return $query->where(function ($q) use ($texto) {
-                                $q->whereHas('proveedor', function ($p) use ($texto) {
-                                    $p->where('nombre', 'like', $texto)
-                                        ->orWhere('nombre_empresa', 'like', $texto)
-                                        ->orWhere('ncr', 'like', $texto)
-                                        ->orWhere('nit', 'like', $texto);
-                                })->orWhere('referencia', 'like', $texto)
-                                    ->orWhere('estado', 'like', $texto)
-                                    ->orWhere('observaciones', 'like', $texto)
-                                    ->orWhere('forma_pago', 'like', $texto);
-                            });
-                        })
-                        ->when($request->inicio, function($query) use ($request){
-                            return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
-                        })
-                        ->when($request->recurrente !== null, function($q) use ($request){
-                            $q->where('recurrente', !!$request->recurrente);
-                        })
-                        ->when($request->id_proyecto, function($q) use ($request){
-                            $q->where('id_proyecto', $request->id_proyecto);
-                        })
-                        ->when($request->num_identificacion, function($q) use ($request){
-                            $q->where('num_identificacion', $request->num_identificacion);
-                        })
-                        ->when($request->id_sucursal, function($query) use ($request){
-                            return $query->where('id_sucursal', $request->id_sucursal);
-                        })
-                        ->when(!empty($request->sucursales) && is_array($request->sucursales), function ($query) use ($request) {
-                            return $query->whereIn('id_sucursal', $request->sucursales);
-                        })
-                        ->when($request->id_usuario, function($query) use ($request){
-                            return $query->where('id_usuario', $request->id_usuario);
-                        })
-                        ->when($request->id_proveedor, function($query) use ($request){
-                            return $query->where('id_proveedor', $request->id_proveedor);
-                        })
-                        ->when($request->forma_pago, function($query) use ($request){
-                            return $query->where('forma_pago', $request->forma_pago);
-                        })
-                        ->when($request->estado, function($query) use ($request){
-                            return $query->where('estado', $request->estado);
-                        })
-                        ->when($request->metodo_pago, function($query) use ($request){
-                            return $query->where('metodo_pago', $request->metodo_pago);
-                        })
-                        ->where('cotizacion', 0)
-                        ->with(['proveedor', 'proyecto'])
-                        ->orderBy($orden, $direccion)
-                        ->orderBy('id', 'desc')
-                        ->get();
+        $compras = ComprasListQuery::apply(
+            Compra::query()->when($idEmpresa, fn ($query) => $query->where('id_empresa', $idEmpresa)),
+            $request,
+        )
+            ->when(!empty($request->sucursales) && is_array($request->sucursales), function ($query) use ($request) {
+                return $query->whereIn('id_sucursal', $request->sucursales);
+            })
+            ->with(['proveedor', 'proyecto'])
+            ->get();
 
         $devoluciones = $this->queryDevoluciones()->get()->each(function (Devolucion $devolucion) {
             DevolucionEnReporte::marcar($devolucion);
@@ -146,8 +96,9 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
             ->when($idEmpresa, function ($query) use ($idEmpresa) {
                 return $query->where('id_empresa', $idEmpresa);
             })
-            ->when($request->inicio, function ($query) use ($request) {
-                return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
+            ->when($request->filled('inicio') && $request->filled('fin'), function ($query) use ($request) {
+                return $query->whereDate('fecha', '>=', $request->inicio)
+                    ->whereDate('fecha', '<=', $request->fin);
             })
             ->when($request->id_sucursal, function ($query) use ($request) {
                 return $query->where('id_sucursal', $request->id_sucursal);

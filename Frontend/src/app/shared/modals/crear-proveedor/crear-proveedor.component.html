@@ -209,6 +209,38 @@
                               <label for="canton_cr_p">{{ 'country.location.municipality' | translate }}</label>
                             }
                             @if (!esCostaRicaFe()) {
+                              <label for="municipio">{{ 'country.location.municipalityColon' | translate }}</label>
+                            }
+                            @if (apiService.auth_user().empresa.pais != 'El Salvador' && !esCostaRicaFe()) {
+                              <input type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="proveedor.municipio">
+                            }
+                            @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                              <input type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="proveedor.municipio">
+                            }
+                            @if (apiService.auth_user().empresa.facturacion_electronica && !esCostaRicaFe()) {
+                              <ng-select [(ngModel)]="proveedor.cod_municipio" (ngModelChange)="setMunicipio($event)" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_municipio">
+                                @for (municipio of municipiosFiltrados; track trackUbicacion(municipio)) {
+                                  <ng-option [value]="municipio.cod">
+                                    {{ municipio.nombre }}
+                                  </ng-option>
+                                }
+                              </ng-select>
+                            }
+                            @if (esCostaRicaFe()) {
+                              <ng-select [(ngModel)]="proveedor.cod_municipio" (ngModelChange)="setMunicipio($event)" placeholder="Seleccione" class="form-control form-select p-0" name="canton_cr_p" id="canton_cr_p">
+                                @for (mun of municipiosFiltradosCr(); track trackUbicacion(mun)) {
+                                  <ng-option [value]="mun.cod">{{ mun.nombre }}</ng-option>
+                                }
+                              </ng-select>
+                            }
+                          </div>
+                        }
+                        @if (proveedor.tipo == 'Persona') {
+                          <div class="form-group col-6 col-lg-4">
+                            @if (esCostaRicaFe()) {
+                              <label for="distrito_cr_p">{{ 'country.location.district' | translate }}</label>
+                            }
+                            @if (!esCostaRicaFe()) {
                               <label for="distrito">{{ 'country.location.districtColon' | translate }}</label>
                             }
                             @if (apiService.auth_user().empresa.pais != 'El Salvador' && !esCostaRicaFe()) {
@@ -227,37 +259,8 @@
                               </ng-select>
                             }
                             @if (esCostaRicaFe()) {
-                              <ng-select [(ngModel)]="proveedor.cod_municipio" (change)="setMunicipio()" placeholder="Seleccione" class="form-control form-select p-0" name="canton_cr_p" id="canton_cr_p">
-                                @for (mun of municipiosFiltradosCr(); track mun.cod) {
-                                  <ng-option [value]="mun.cod">{{ mun.nombre }}</ng-option>
-                                }
-                              </ng-select>
-                            }
-                          </div>
-                        }
-                        @if (proveedor.tipo == 'Persona') {
-                          <div class="form-group col-6 col-lg-4">
-                            @if (esCostaRicaFe()) {
-                              <label for="distrito_cr_p">{{ 'country.location.district' | translate }}</label>
-                            }
-                            @if (!esCostaRicaFe()) {
-                              <label for="municipio">{{ 'country.location.municipalityColon' | translate }}</label>
-                            }
-                            @if (!apiService.auth_user().empresa.facturacion_electronica && !esCostaRicaFe()) {
-                              <input type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="proveedor.municipio">
-                            }
-                            @if (apiService.auth_user().empresa.facturacion_electronica && !esCostaRicaFe()) {
-                              <ng-select [(ngModel)]="proveedor.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_municipio">
-                                @for (municipio of municipios | filter:'nombre_departamento':proveedor.departamento; track municipio.cod) {
-                                  <ng-option [value]="municipio.cod">
-                                    {{ municipio.nombre }}
-                                  </ng-option>
-                                }
-                              </ng-select>
-                            }
-                            @if (esCostaRicaFe()) {
-                              <ng-select [(ngModel)]="proveedor.cod_distrito" (change)="setDistrito()" placeholder="Seleccione" class="form-control form-select p-0" name="distrito_cr_p" id="distrito_cr_p">
-                                @for (dis of distritosFiltradosCr(); track dis.cod) {
+                              <ng-select [(ngModel)]="proveedor.cod_distrito" (ngModelChange)="setDistrito($event)" placeholder="Seleccione" class="form-control form-select p-0" name="distrito_cr_p" id="distrito_cr_p">
+                                @for (dis of distritosFiltradosCr(); track trackUbicacion(dis)) {
                                   <ng-option [value]="dis.cod">{{ dis.nombre }}</ng-option>
                                 }
                               </ng-select>
@@ -446,6 +449,38 @@
                               <label for="canton_cr_e">{{ 'country.location.municipality' | translate }}</label>
                             }
                             @if (!esCostaRicaFe()) {
+                              <label for="municipio">{{ 'country.location.municipalityColon' | translate }}</label>
+                            }
+                            @if (apiService.auth_user().empresa.pais != 'El Salvador' && !esCostaRicaFe()) {
+                              <input type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="proveedor.municipio">
+                            }
+                            @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                              <input type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="proveedor.municipio">
+                            }
+                            @if (apiService.auth_user().empresa.facturacion_electronica && !esCostaRicaFe()) {
+                              <ng-select [(ngModel)]="proveedor.cod_municipio" (ngModelChange)="setMunicipio($event)" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_municipio">
+                                @for (municipio of municipiosFiltrados; track trackUbicacion(municipio)) {
+                                  <ng-option [value]="municipio.cod">
+                                    {{ municipio.nombre }}
+                                  </ng-option>
+                                }
+                              </ng-select>
+                            }
+                            @if (esCostaRicaFe()) {
+                              <ng-select [(ngModel)]="proveedor.cod_municipio" (ngModelChange)="setMunicipio($event)" placeholder="Seleccione" class="form-control form-select p-0" name="canton_cr_e" id="canton_cr_e">
+                                @for (mun of municipiosFiltradosCr(); track trackUbicacion(mun)) {
+                                  <ng-option [value]="mun.cod">{{ mun.nombre }}</ng-option>
+                                }
+                              </ng-select>
+                            }
+                          </div>
+                        }
+                        @if (proveedor.tipo == 'Empresa') {
+                          <div class="form-group col-6 col-lg-3">
+                            @if (esCostaRicaFe()) {
+                              <label for="distrito_cr_e">{{ 'country.location.district' | translate }}</label>
+                            }
+                            @if (!esCostaRicaFe()) {
                               <label for="distrito">{{ 'country.location.districtColon' | translate }}</label>
                             }
                             @if (apiService.auth_user().empresa.pais != 'El Salvador' && !esCostaRicaFe()) {
@@ -464,37 +499,8 @@
                               </ng-select>
                             }
                             @if (esCostaRicaFe()) {
-                              <ng-select [(ngModel)]="proveedor.cod_municipio" (change)="setMunicipio()" placeholder="Seleccione" class="form-control form-select p-0" name="canton_cr_e" id="canton_cr_e">
-                                @for (mun of municipiosFiltradosCr(); track mun.cod) {
-                                  <ng-option [value]="mun.cod">{{ mun.nombre }}</ng-option>
-                                }
-                              </ng-select>
-                            }
-                          </div>
-                        }
-                        @if (proveedor.tipo == 'Empresa') {
-                          <div class="form-group col-6 col-lg-3">
-                            @if (esCostaRicaFe()) {
-                              <label for="distrito_cr_e">{{ 'country.location.district' | translate }}</label>
-                            }
-                            @if (!esCostaRicaFe()) {
-                              <label for="municipio">{{ 'country.location.municipalityColon' | translate }}</label>
-                            }
-                            @if (!apiService.auth_user().empresa.facturacion_electronica && !esCostaRicaFe()) {
-                              <input type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="proveedor.municipio">
-                            }
-                            @if (apiService.auth_user().empresa.facturacion_electronica && !esCostaRicaFe()) {
-                              <ng-select [(ngModel)]="proveedor.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_municipio">
-                                @for (municipio of municipios | filter:'nombre_departamento':proveedor.departamento; track municipio.cod) {
-                                  <ng-option [value]="municipio.cod">
-                                    {{ municipio.nombre }}
-                                  </ng-option>
-                                }
-                              </ng-select>
-                            }
-                            @if (esCostaRicaFe()) {
-                              <ng-select [(ngModel)]="proveedor.cod_distrito" (change)="setDistrito()" placeholder="Seleccione" class="form-control form-select p-0" name="distrito_cr_e" id="distrito_cr_e">
-                                @for (dis of distritosFiltradosCr(); track dis.cod) {
+                              <ng-select [(ngModel)]="proveedor.cod_distrito" (ngModelChange)="setDistrito($event)" placeholder="Seleccione" class="form-control form-select p-0" name="distrito_cr_e" id="distrito_cr_e">
+                                @for (dis of distritosFiltradosCr(); track trackUbicacion(dis)) {
                                   <ng-option [value]="dis.cod">{{ dis.nombre }}</ng-option>
                                 }
                               </ng-select>

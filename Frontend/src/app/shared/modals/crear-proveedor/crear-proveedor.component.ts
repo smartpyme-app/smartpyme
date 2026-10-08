@@ -16,7 +16,9 @@ import { NgxMaskDirective } from 'ngx-mask';
 import { FilterPipe } from '@pipes/filter.pipe';
 import {
     alCambiarDistrito,
+    alCambiarMunicipio,
     claveDistritoActual,
+    distritosParaSelector,
     filtrarPorCodDepartamento,
     trackUbicacionCod,
 } from '@utils/ubicacion-catalogo.util';
@@ -410,7 +412,11 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
     }
 
     get distritosFiltrados(): any[] {
-        return filtrarPorCodDepartamento(this.distritos, this.proveedor?.cod_departamento);
+        return distritosParaSelector(this.distritos, this.proveedor?.cod_departamento, this.proveedor?.cod_municipio);
+    }
+
+    get municipiosFiltrados(): any[] {
+        return filtrarPorCodDepartamento(this.municipios, this.proveedor?.cod_departamento);
     }
 
     trackUbicacion = trackUbicacionCod;
@@ -423,15 +429,8 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
         alCambiarDistrito(this.proveedor, this.distritos, this.municipios, cod ?? this.proveedor.cod_distrito);
     }
 
-    setMunicipio(){
-        let municipio = this.municipios.find((item:any) => item.cod == this.proveedor.cod_municipio && item.cod_departamento == this.proveedor.cod_departamento);
-        if(municipio){
-            this.proveedor.municipio = municipio.nombre; 
-            this.proveedor.cod_municipio = municipio.cod;
-
-            this.proveedor.distrito = ''; 
-            this.proveedor.cod_distrito = '';
-        }
+    setMunicipio(cod?: unknown){
+        alCambiarMunicipio(this.proveedor, this.municipios, cod ?? this.proveedor.cod_municipio);
     }
 
     setDepartamento(){
