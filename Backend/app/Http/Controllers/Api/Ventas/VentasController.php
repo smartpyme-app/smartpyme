@@ -250,7 +250,7 @@ class VentasController extends Controller
     }
 
     /**
-     * Aplica el filtro de búsqueda por cliente (FULLTEXT: nombre, apellido, ncr, nit, nombre_empresa),
+     * Aplica el filtro de búsqueda por cliente (FULLTEXT: nombre, apellido, ncr, nit, nombre_empresa; LIKE en etiquetas),
      * correlativo (LIKE), y ventas (FULLTEXT: num_orden, observaciones, forma_pago, estado, numero_control).
      */
     private function aplicarFiltroBuscador($query, string $termino)
@@ -300,7 +300,8 @@ class VentasController extends Controller
                 ->orWhereRaw(
                     'MATCH(ventas.num_orden, ventas.observaciones, ventas.forma_pago, ventas.estado, ventas.numero_control) AGAINST(? IN NATURAL LANGUAGE MODE)',
                     [$termino]
-                );
+                )
+                ->orWhereHas('cliente', fn ($cliente) => $cliente->where('etiquetas', 'like', $buscador));
         });
     }
 
