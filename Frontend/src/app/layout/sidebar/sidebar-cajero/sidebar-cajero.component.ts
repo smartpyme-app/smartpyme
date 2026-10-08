@@ -15,11 +15,13 @@ export class SidebarCajeroComponent implements OnInit {
   public usuario: any = {};
   public isVisible = false;
   public isAbacoSite = false;
+  public isOnvoSite = false;
 
   constructor(public apiService: ApiService) {}
 
   ngOnInit(): void {
     this.isAbacoSite = window.location.hostname === 'abaco.smartpyme.site';
+    this.isOnvoSite = window.location.hostname === 'onvo.smartpyme.site';
     if (!localStorage.getItem('sidebarCollapsed')) {
       localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed.toString());
     } else {
