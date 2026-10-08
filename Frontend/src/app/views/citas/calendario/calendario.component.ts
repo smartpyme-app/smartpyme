@@ -23,7 +23,7 @@ import { registerLocaleData } from '@angular/common';
 import localeEs from '@angular/common/locales/es';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { NgSelectModule } from '@ng-select/ng-select';
+import { NgSelectComponent, NgSelectModule } from '@ng-select/ng-select';
 registerLocaleData(localeEs);
 @Component({
     selector: 'app-calendario',
@@ -36,8 +36,14 @@ registerLocaleData(localeEs);
 })
 export class CalendarioComponent extends BaseComponent implements OnInit {
 
+  static readonly PALETA_ENCARGADO = [
+    '#DBEAFE', '#FDE68A', '#BBF7D0', '#E9D5FF', '#FBCFE8', '#CCFBF1',
+    '#FED7AA', '#C7D2FE', '#FEF3C7', '#F5D0FE', '#FECACA', '#BAE6FD',
+  ];
+
   @Output() update = new EventEmitter();
   public eventos: any = [];
+  public encargadoPorAgregar: number | null = null;
   public evento: any = {};
   public filtros: any = {};
   public loading: boolean = false;
@@ -62,6 +68,7 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
     super();
   }
 
+  @ViewChild('encargadoSelect') encargadoSelect?: NgSelectComponent;
   @ViewChild('fullcalendar') fullcalendar?: FullCalendarComponent;
   @ViewChild("fullCalendarContainer") fullCalendarContainer?: any;
   get calendar(): Calendar | undefined {
@@ -80,7 +87,7 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
       this.filtros.id_usuario = this.usuarioActual.id;
     } else {
       // Si no es Citas, no filtrar por usuario para mostrar todos los eventos
-      this.filtros.id_usuario = null;
+      this.filtros.id_usuario = [];
     }
 
     this.apiService.getAll('usuarios/list')
@@ -205,6 +212,10 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
     const filtrosEnvio = { ...this.filtros };
 
     // Si los filtros son null, undefined o string vacío, no enviarlos en la petición
+    const encargados = filtrosEnvio.id_usuario;
+    if (Array.isArray(encargados)) {
+      filtrosEnvio.id_usuario = encargados.length ? encargados.join(',') : undefined;
+    }
     if (!filtrosEnvio.id_usuario) {
       delete filtrosEnvio.id_usuario;
     }
@@ -246,6 +257,53 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
   }
 
 
+  usuariosParaFiltro(): any[] {
+    const ids = new Set((this.filtros.id_usuario || []).map((id: any) => Number(id)));
+    return (this.usuarios || []).filter((usuario: any) => !ids.has(Number(usuario.id)));
+  }
+
+  encargadosSeleccionados(): any[] {
+    const ids = Array.isArray(this.filtros.id_usuario) ? this.filtros.id_usuario : [];
+    return ids
+      .map((id: number) => (this.usuarios || []).find((usuario: any) => Number(usuario.id) === Number(id)))
+      .filter(Boolean);
+  }
+
+  agregarEncargado(id: number | null): void {
+    if (id == null) {
+      return;
+    }
+    const ids = Array.isArray(this.filtros.id_usuario) ? this.filtros.id_usuario : [];
+    if (!ids.some((item: number) => Number(item) === Number(id))) {
+      this.filtros.id_usuario = [...ids, id];
+      this.loadAll();
+    }
+    this.encargadoPorAgregar = null;
+    this.encargadoSelect?.writeValue(null);
+    this.cdr.markForCheck();
+  }
+
+  quitarEncargado(id: number): void {
+    this.filtros.id_usuario = (this.filtros.id_usuario || []).filter((item: number) => Number(item) !== Number(id));
+    if (!this.filtros.id_usuario.length) {
+      this.encargadoPorAgregar = null;
+      this.encargadoSelect?.writeValue(null);
+    }
+    this.loadAll();
+  }
+
+  limpiarEncargados(): void {
+    this.filtros.id_usuario = [];
+    this.encargadoPorAgregar = null;
+    this.encargadoSelect?.writeValue(null);
+    this.loadAll();
+  }
+
+  colorEncargado(id: number): string {
+    const n = Math.abs(Math.trunc(Number(id))) || 0;
+    return CalendarioComponent.PALETA_ENCARGADO[n % CalendarioComponent.PALETA_ENCARGADO.length];
+  }
+
   /** Tonos 80–95 de la paleta. El azul no marca estados. */
   private estiloCita(tipo: string): { className: string; backgroundColor: string; borderColor: string; textColor: string } {
     if (tipo === 'Cancelado') {
@@ -266,6 +324,11 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
   contenidoEvento(arg: any) {
     if (arg.view?.type === 'multiMonthYear') {
       return;
+    }
+    if (arg.view?.type === 'dayGridMonth') {
+      const hora = arg.timeText ? `${this.textoPlano(arg.timeText)} ` : '';
+      const titulo = this.textoPlano(arg.event.title || '');
+      return { html: `<div class="cita-evento-mes">${hora}${titulo}</div>` };
     }
     const datos = arg.event.extendedProps?.data || {};
     const lineas = [datos.descripcion || arg.event.title, datos.nombre_cliente, datos.nombre_usuario]

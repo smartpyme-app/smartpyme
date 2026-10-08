@@ -40,9 +40,8 @@
     <div class="row col-6 justify-content-end">
       @if (!isCitas()) {
         <div class="form-group col-12 col-md-4">
-          <ng-select name="id_usuario" [(ngModel)]="filtros.id_usuario" class="form-select p-0 bg-default" placeholder="Encargado"
-            (change)="loadAll()" clearable="true">
-            @for (usuario of usuarios; track usuario.id) {
+          <ng-select #encargadoSelect name="id_usuario" [ngModel]="encargadoPorAgregar" (ngModelChange)="agregarEncargado($event)" class="form-select p-0 bg-default" [placeholder]="encargadosSeleccionados().length ? 'Encargado' : 'Todos'" [clearable]="false">
+            @for (usuario of usuariosParaFiltro(); track usuario.id) {
               <ng-option [value]="usuario.id">
                 {{ usuario.name }}
               </ng-option>
@@ -83,6 +82,20 @@
         </div>
       }
     </div>
+    @if (!isCitas() && encargadosSeleccionados().length) {
+      <div class="col-12">
+        <div class="encargados-seleccion">
+          <span class="encargados-seleccion-titulo">Encargados</span>
+          @for (usuario of encargadosSeleccionados(); track usuario.id) {
+            <button type="button" class="btn btn-sm py-0 encargados-badge" (click)="quitarEncargado(usuario.id)"
+              [style.background]="colorEncargado(usuario.id)">
+              {{ usuario.name }} <i class="fa fa-times ms-1"></i>
+            </button>
+          }
+          <button type="button" class="btn btn-link btn-sm encargados-limpiar" (click)="limpiarEncargados()">Limpiar</button>
+        </div>
+      </div>
+    }
   </div>
   <div #fullCalendarContainer>
     <full-calendar #fullcalendar [options]="calendarOptions"></full-calendar>

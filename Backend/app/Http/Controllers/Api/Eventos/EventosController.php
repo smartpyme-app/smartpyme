@@ -29,8 +29,8 @@ class EventosController extends Controller
                 ->when($request->id_sucursal, function ($query) use ($request) {
                     return $query->where('id_sucursal', $request->id_sucursal);
                 })
-                ->when($request->id_usuario, function ($query) use ($request) {
-                    return $query->where('id_usuario', $request->id_usuario);
+                ->when($request->filled('id_usuario'), function ($query) use ($request) {
+                    return $this->whereUsuarios($query, $request->input('id_usuario'));
                 })
                 ->when($request->id_cliente, function ($query) use ($request) {
                     return $query->where('id_cliente', $request->id_cliente);
@@ -66,8 +66,8 @@ class EventosController extends Controller
             ->when($request->id_sucursal, function ($query) use ($request) {
                 return $query->where('id_sucursal', $request->id_sucursal);
             })
-            ->when($request->id_usuario, function ($query) use ($request) {
-                return $query->where('id_usuario', $request->id_usuario);
+            ->when($request->filled('id_usuario'), function ($query) use ($request) {
+                return $this->whereUsuarios($query, $request->input('id_usuario'));
             })
             ->when($request->id_cliente != null, function ($query) use ($request) {
                 return $query->where('id_cliente', $request->id_cliente);
@@ -226,6 +226,13 @@ class EventosController extends Controller
         }
     }
 
+
+    private function whereUsuarios($query, $raw)
+    {
+        $ids = array_values(array_filter(array_map('intval', explode(',', (string) $raw))));
+
+        return $ids ? $query->whereIn('id_usuario', $ids) : $query;
+    }
 
     public function delete($id)
     {
