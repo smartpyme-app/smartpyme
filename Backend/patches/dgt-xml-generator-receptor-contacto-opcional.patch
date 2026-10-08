@@ -1,7 +1,9 @@
 diff --git a/src/Builders/BaseDocumentBuilder.php b/src/Builders/BaseDocumentBuilder.php
+index 5dee30a10..3bbcea352 100644
 --- a/src/Builders/BaseDocumentBuilder.php
 +++ b/src/Builders/BaseDocumentBuilder.php
-@@ -181,14 +181,16 @@ abstract class BaseDocumentBuilder
+@@ -181,14 +181,17 @@ abstract class BaseDocumentBuilder
+         // Activity
          $issuer->setActivity($issuerData['activity']);
  
 -        // Location
@@ -24,7 +26,7 @@ diff --git a/src/Builders/BaseDocumentBuilder.php b/src/Builders/BaseDocumentBui
  
          $this->document->setIssuer($issuer);
      }
-@@ -216,14 +218,18 @@ abstract class BaseDocumentBuilder
+@@ -216,14 +219,18 @@ abstract class BaseDocumentBuilder
              $receiver->setActivity($receiverData['activity']);
          }
  
@@ -50,28 +52,24 @@ diff --git a/src/Builders/BaseDocumentBuilder.php b/src/Builders/BaseDocumentBui
          $this->document->setReceiver($receiver);
      }
 diff --git a/src/Views/Components/entity.xml.twig b/src/Views/Components/entity.xml.twig
+index bfd98319a..b9ee1e31f 100644
 --- a/src/Views/Components/entity.xml.twig
 +++ b/src/Views/Components/entity.xml.twig
-@@ -10,20 +10,24 @@
+@@ -10,6 +10,7 @@
    {% if entity.trade_name %}
    <NombreComercial>{{ entity.trade_name }}</NombreComercial>
    {% endif %} 
--  <Ubicacion>
 +  {% if entity.location and entity.location.province %}
-+  <Ubicacion>
+   <Ubicacion>
      <Provincia>{{ entity.location.province.code }}</Provincia>
      <Canton>{{ entity.location.canton.code|slice(-2) }}</Canton>
-     <Distrito>{{ entity.location.district.code|slice(-2) }}</Distrito>
-     <Barrio>{{ entity.location.neighborhood }}</Barrio>
-     <OtrasSenas>{{ entity.location.address_details }}</OtrasSenas>
-     {% if entity.location.foreign_address_details %}
+@@ -20,10 +21,13 @@
      <OtrasSenasExtranjero>{{ entity.location.foreign_address_details }}</OtrasSenasExtranjero>
      {% endif %}
    </Ubicacion>
--  <Telefono>
 +  {% endif %}
 +  {% if entity.phone and entity.phone.number %}
-+  <Telefono>
+   <Telefono>
      <CodigoPais>{{ entity.phone.country_code }}</CodigoPais>
      <NumTelefono>{{ entity.phone.number }}</NumTelefono>
    </Telefono>
