@@ -135,6 +135,28 @@ final class CostaRicaInvoiceFromVentaMapper
     }
 
     /**
+     * Factura 01 exige receptor identificado (v4.4). Tipo 06 es solo FEC; consumidor final → tiquete 04.
+     *
+     * @param  array<string, mixed>  $receiver
+     */
+    public function assertReceptorFacturaElectronicaCr(array $receiver): void
+    {
+        $tipo = trim((string) ($receiver['identification_type'] ?? ''));
+        $num = preg_replace('/\D/', '', (string) ($receiver['identification_number'] ?? '')) ?? '';
+        if (TipoIdentificacionReceptor::estructuraValidaCostaRicaFactura($tipo, $num)) {
+            return;
+        }
+
+        $nombre = trim((string) ($receiver['name'] ?? 'Receptor'));
+        throw new InvalidArgumentException(
+            'La factura electrónica (01) requiere un receptor con identificación válida en Hacienda '
+            .'(cédula física 9 dígitos, jurídica/NITE 10, DIMEX 11–12). '
+            .'Receptor «'.$nombre.'»: tipo '.$tipo.' número «'.$num.'» no es válido para factura. '
+            .'Sin cédula use el documento Ticket/Tiquete (04), o complete NIT/cédula del cliente en el maestro.'
+        );
+    }
+
+    /**
      * Fecha/hora de emisión del XML (FechaEmision): instante actual en zona CR con offset -06:00.
      * Hacienda rechaza -53 si se usa medianoche o una hora desincronizada.
      */
