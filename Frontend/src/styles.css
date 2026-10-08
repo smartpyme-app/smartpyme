@@ -290,6 +290,39 @@ a.fc-col-header-cell-cushion{
     max-width:180px;
   }
 
+  .encargados-seleccion {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0 16px;
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+  }
+
+  .encargados-seleccion-titulo {
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    margin-right: 4px;
+  }
+
+  .encargados-badge {
+    color: #1e293b;
+    border: none;
+    border-radius: 999px;
+  }
+
+  .encargados-limpiar {
+    margin-left: auto;
+    padding: 0 4px;
+    color: #475569;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
   /* Modales con z-index mayor que las notificaciones */
   .modal {
     z-index: 10000 !important;

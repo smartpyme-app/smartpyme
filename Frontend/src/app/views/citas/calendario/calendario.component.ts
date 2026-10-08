@@ -292,6 +292,13 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
     this.loadAll();
   }
 
+  limpiarEncargados(): void {
+    this.filtros.id_usuario = [];
+    this.encargadoPorAgregar = null;
+    this.encargadoSelect?.writeValue(null);
+    this.loadAll();
+  }
+
   colorEncargado(id: number): string {
     const n = Math.abs(Math.trunc(Number(id))) || 0;
     return CalendarioComponent.PALETA_ENCARGADO[n % CalendarioComponent.PALETA_ENCARGADO.length];
