@@ -36,6 +36,7 @@ export class ChatDrawerComponent
   conversationsLoading = false;
   loadingConversation = false;
   minimized = false;
+  chatHeight: string | null = null;
 
   // Evita que el listener `hidden.bs.offcanvas` trate una minimización como un
   // cierre (y reseteé la conversación).
@@ -49,8 +50,18 @@ export class ChatDrawerComponent
   private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   private scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+  private drag: { y: number; h: number } | null = null;
 
-  constructor(private chatService: ChatService) {}
+  constructor(private chatService: ChatService) {
+    try {
+      const saved = sessionStorage.getItem('lucas_chat_altura');
+      if (saved && /^\d+px$/.test(saved)) {
+        this.chatHeight = saved;
+      }
+    } catch {
+      // sin storage el alto vuelve al de siempre
+    }
+  }
 
   ngOnInit(): void {
     // Verificar acceso al chat
@@ -132,7 +143,54 @@ export class ChatDrawerComponent
       clearTimeout(this.scrollTimeout);
       this.scrollTimeout = null;
     }
+    this.endResize();
   }
+
+  startResize(event: PointerEvent): void {
+    if (event.button !== 0) {
+      return;
+    }
+    const panel = (event.currentTarget as HTMLElement).parentElement;
+    if (!panel) {
+      return;
+    }
+    event.preventDefault();
+    this.drag = { y: event.clientY, h: panel.getBoundingClientRect().height };
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'ns-resize';
+    window.addEventListener('pointermove', this.moveResize);
+    window.addEventListener('pointerup', this.endResize);
+    window.addEventListener('pointercancel', this.endResize);
+  }
+
+  private moveResize = (event: PointerEvent): void => {
+    if (!this.drag) {
+      return;
+    }
+    const next = this.drag.h + (this.drag.y - event.clientY);
+    const max = window.innerHeight - 16;
+    this.chatHeight = `${Math.round(Math.min(max, Math.max(280, next)))}px`;
+  };
+
+  private endResize = (): void => {
+    if (!this.drag && !document.body.style.cursor) {
+      return;
+    }
+    window.removeEventListener('pointermove', this.moveResize);
+    window.removeEventListener('pointerup', this.endResize);
+    window.removeEventListener('pointercancel', this.endResize);
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+    this.drag = null;
+    if (!this.chatHeight) {
+      return;
+    }
+    try {
+      sessionStorage.setItem('lucas_chat_altura', this.chatHeight);
+    } catch {
+      // el alto se conserva igual en esta vista
+    }
+  };
 
   toggle() {
     this.chatService.toggleDrawer();
@@ -410,6 +468,13 @@ export class ChatDrawerComponent
         offcanvasElement
       );
       bsOffcanvas.show();
+      // El sidebar va en z-index 1050, por encima del velo de Bootstrap (1040),
+      // y se queda iluminado. El velo del chat queda bajo el panel (9999).
+      const backs = document.querySelectorAll('.offcanvas-backdrop');
+      const backdrop = backs[backs.length - 1] as HTMLElement | undefined;
+      if (backdrop) {
+        backdrop.style.zIndex = '9990';
+      }
 
       // Agregar listener para cuando se cierre manualmente
       offcanvasElement.addEventListener(
