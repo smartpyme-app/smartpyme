@@ -1,9 +1,10 @@
 <div id="tour.sidebar" class="sidebar shadow-sm" [ngClass]="{'collapsed': sidebarCollapsed}">
     <div class="click d-flex justify-content-start align-items-center ps-2 pb-2 mb-2 border-bottom position-relative" style="min-height: 7vh;">
-        <img *ngIf="!isAbacoSite" src="assets/img/icon.png" (click)="toggleSidebar()" height="25px">
+        <img *ngIf="!isAbacoSite && !isOnvoSite" src="assets/img/icon.png" (click)="toggleSidebar()" height="25px">
         <a routerLink="/" tooltip="Caja" style="display: flex; align-items: center;">
-            <img *ngIf="!isAbacoSite" src="assets/img/logo.png" class="logo" height="25px">
+            <img *ngIf="!isAbacoSite && !isOnvoSite" src="assets/img/logo.png" class="logo" height="25px">
             <img *ngIf="isAbacoSite" src="assets/img/logo-abaco.png" class="logo" height="15px">
+            <img *ngIf="isOnvoSite" src="assets/img/logo-onvo.png" class="logo" height="28px" alt="ONVO">
         </a>
         <button id="toggleBtn" class="btn btn-link text-decoration-none d-flex justify-content-end toggle" type="button" (click)="toggleSidebar()">
             <img src="/assets/icons/sidebar.png">
