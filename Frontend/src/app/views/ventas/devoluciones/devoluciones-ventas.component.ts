@@ -16,6 +16,7 @@ import {
 } from '@services/facturacion-electronica/fe-cr-http-error.util';
 import { AlertsHaciendaComponent } from '@shared/parts/alerts-hacienda/alerts-hacienda.component';
 import { FeCrEmisionAvanzadoComponent } from '@shared/parts/fe-cr-emision-avanzado/fe-cr-emision-avanzado.component';
+import { FeEnviarCorreoComponent } from '@shared/parts/fe-enviar-correo/fe-enviar-correo.component';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
@@ -28,7 +29,7 @@ import Swal from 'sweetalert2';
     selector: 'app-devoluciones-ventas',
     templateUrl: './devoluciones-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective, AlertsHaciendaComponent, FeCrEmisionAvanzadoComponent, CurrencyPipe],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective, AlertsHaciendaComponent, FeCrEmisionAvanzadoComponent, FeEnviarCorreoComponent, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 
@@ -39,6 +40,8 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
     public ventas:any = {};
     public id_venta: any = null;
     public sending: boolean = false;
+    /** Destinatario opcional del reenvío. Vacío usa el correo del cliente. */
+    public correoEnvioDte = '';
     public downloading: boolean = false;
     public clientes: any = [];
     public usuarios: any = [];
@@ -261,6 +264,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
 
     openDTE(template: TemplateRef<any>, venta: any) {
         /** `this.openModal` está sobrescrito para el modal de alta; usar `super` para asignar la devolución con `id` (BaseCrudComponent). */
+        this.correoEnvioDte = '';
         super.openModal(template, venta);
         if (!this.venta.dte) {
             this.emitirDTE();
@@ -431,8 +435,14 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
     }
 
     enviarDTE(venta: any) {
+        const correo = (this.correoEnvioDte ?? '').trim();
+        if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+            this.alertService.error('Escriba un correo válido o déjelo vacío para usar el del cliente.');
+            return;
+        }
         this.sending = true;
-        this.apiService.store('enviarDTE', venta)
+        const payload = correo ? { ...venta, correo } : venta;
+        this.apiService.store('enviarDTE', payload)
             .pipe(this.untilDestroyed())
             .subscribe({
                 next: () => {

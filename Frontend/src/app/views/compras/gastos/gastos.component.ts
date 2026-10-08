@@ -10,6 +10,7 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
 import { CrearAbonoGastoComponent } from '@shared/modals/crear-abono-gasto/crear-abono-gasto.component';
 import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-proveedor.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
+import { FeEnviarCorreoComponent } from '@shared/parts/fe-enviar-correo/fe-enviar-correo.component';
 import { PipesModule } from '@pipes/pipes.module';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -66,6 +67,7 @@ export interface BulkGastoItem {
         CrearAbonoGastoComponent,
         CrearProveedorComponent,
         NotificacionesContainerComponent,
+        FeEnviarCorreoComponent,
     ]
 })
 
@@ -78,6 +80,8 @@ export class GastosComponent implements OnInit {
     public loading:boolean = false;
     public saving:boolean = false;
     public sending:boolean = false;
+    /** Destinatario opcional del reenvío. Vacío usa el correo del proveedor. */
+    public correoEnvioDte = '';
     public downloading:boolean = false;
 
     public clientes:any = [];
@@ -390,6 +394,7 @@ export class GastosComponent implements OnInit {
 
     openDTE(template: TemplateRef<any>, gasto:any){
         this.gasto = gasto;
+        this.correoEnvioDte = '';
         this.modalRef = this.modalService.show(template);
         this.alertService.modal = true;
         if(!this.gasto.dte){
@@ -419,9 +424,15 @@ export class GastosComponent implements OnInit {
 
 
     enviarDTE(){
+        const correo = (this.correoEnvioDte ?? '').trim();
+        if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+            this.alertService.error('Escriba un correo válido o déjelo vacío para usar el del proveedor.');
+            return;
+        }
         this.sending = true;
         this.gasto.tipo = 'gasto';
-        this.apiService.store('enviarDTE', this.gasto).subscribe(dte => {
+        const payload = correo ? { ...this.gasto, correo } : this.gasto;
+        this.apiService.store('enviarDTE', payload).subscribe(dte => {
             this.alertService.success(this.countryI18n.fe('sendSuccessTitle'), this.countryI18n.fe('sendSuccessBody'));
             this.sending = false;
             setTimeout(()=>{

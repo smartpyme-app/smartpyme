@@ -333,14 +333,13 @@
             }
 
             @if (venta.sello_mh && !esFeCostaRica()) {
-                <button [disabled]="sending" (click)="enviarDTE()" class="mb-3 btn btn-primary btn-block">
-                    @if (!sending) {
-                        <span>Enviar por correo</span>
-                    }
-                    @if (sending) {
-                        <span>Enviando...</span>
-                    }
-                </button>
+                <app-fe-enviar-correo
+                    [(correo)]="correoEnvioDte"
+                    [correoDefecto]="venta.cliente?.correo"
+                    quien="cliente"
+                    [sending]="sending"
+                    (enviar)="enviarDTE()">
+                </app-fe-enviar-correo>
             }
 
             @if (!venta.sello_mh && !(esFeCostaRica() && venta.codigo_generacion)) {

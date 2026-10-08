@@ -9,6 +9,7 @@ use App\Models\Compras\Compra;
 use App\Models\Compras\Gastos\Gasto;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Ventas\Venta;
+use App\Support\FacturacionElectronica\CorreoDestinoDte;
 use App\Support\FacturacionElectronica\CostaRicaFeDteDocumento;
 use App\Support\FacturacionElectronica\XmlRespuestaHaciendaCr;
 use Carbon\Carbon;
@@ -33,6 +34,7 @@ final class CostaRicaFeCorreoService
         $id = (int) $request->id;
 
         [$correo, $nombre, $registroModelo] = $this->resolverDestinatarioYRegistro($request);
+        $correo = CorreoDestinoDte::resolver(is_string($correo) ? $correo : null, $request->input('correo'));
 
         if (! is_string($correo) || trim($correo) === '' || ! filter_var($correo, FILTER_VALIDATE_EMAIL)) {
             return response()->json(['error' => 'Registro sin correo electrónico válido.'], 400);

@@ -684,25 +684,23 @@
             }
 
             @if (compra.sello_mh && !esFeCostaRica()) {
-                <button [disabled]="sending" (click)="enviarDTE()" class="mb-3 btn btn-primary btn-block">
-                    @if (!sending) {
-                        <span>Enviar por correo</span>
-                    }
-                    @if (sending) {
-                        <span>Enviando...</span>
-                    }
-                </button>
+                <app-fe-enviar-correo
+                    [(correo)]="correoEnvioDte"
+                    [correoDefecto]="compra.proveedor?.correo"
+                    quien="proveedor"
+                    [sending]="sending"
+                    (enviar)="enviarDTE()">
+                </app-fe-enviar-correo>
             }
 
             @if (esFeCostaRica() && compra.codigo_generacion) {
-                <button [disabled]="sending" (click)="enviarDTE()" class="mb-3 btn btn-primary btn-block">
-                    @if (!sending) {
-                        <span>Enviar por correo</span>
-                    }
-                    @if (sending) {
-                        <span>Enviando...</span>
-                    }
-                </button>
+                <app-fe-enviar-correo
+                    [(correo)]="correoEnvioDte"
+                    [correoDefecto]="compra.proveedor?.correo"
+                    quien="proveedor"
+                    [sending]="sending"
+                    (enviar)="enviarDTE()">
+                </app-fe-enviar-correo>
             }
 
             @if (!compra.sello_mh && !(esFeCostaRica() && compra.codigo_generacion)) {
