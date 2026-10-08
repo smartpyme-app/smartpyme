@@ -7,7 +7,7 @@
         * { margin: 0; font-family: "DejaVu Sans", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
         body { margin: 36px 40px 48px; font-size: 9px; color: #1a1a1a; }
         h1, h2, h3 { color: #003366 !important; }
-        h2.doc-title { font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 4px; }
+        h2.doc-title { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.15px; margin: 0 0 4px; line-height: 1.15; }
         h3.doc-sub { font-size: 12px; margin: 0; font-weight: 700; }
         .table { width: 100%; border-collapse: collapse; }
         .table th, .table td {
@@ -139,7 +139,8 @@
         return trim(($cc ? '+'.$cc.' ' : '').$n);
     };
 
-    $fmtUbicacion = static function ($entity): string {
+    $catalogUbicCr = app(\App\Services\FacturacionElectronica\CostaRica\CostaRicaDgtUbicacionCatalogService::class);
+    $fmtUbicacion = static function ($entity) use ($catalogUbicCr): string {
         $loc = is_array($entity) ? ($entity['location'] ?? null) : null;
         if (! is_array($loc)) {
             return '';
@@ -148,19 +149,15 @@
         if (! empty($loc['address_details'])) {
             $parts[] = $loc['address_details'];
         }
-        $prov = $loc['province'] ?? null;
-        $can = $loc['canton'] ?? null;
-        $dis = $loc['district'] ?? null;
-        if (is_array($prov) && isset($prov['code'])) {
-            $parts[] = 'Prov. '.$prov['code'];
-        } elseif ($prov !== null && $prov !== '') {
-            $parts[] = 'Prov. '.$prov;
+        $labels = $catalogUbicCr->etiquetasUbicacionParaRepresentacionGrafica($loc);
+        if (($labels['province'] ?? '') !== '') {
+            $parts[] = 'Prov. '.$labels['province'];
         }
-        if ($can !== null && $can !== '') {
-            $parts[] = 'Cantón '.$can;
+        if (($labels['canton'] ?? '') !== '') {
+            $parts[] = 'Cantón '.$labels['canton'];
         }
-        if ($dis !== null && $dis !== '') {
-            $parts[] = 'Distrito '.$dis;
+        if (($labels['district'] ?? '') !== '') {
+            $parts[] = 'Distrito '.$labels['district'];
         }
         $bar = $loc['neighborhood'] ?? null;
         if ($bar !== null && $bar !== '') {
