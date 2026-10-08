@@ -226,7 +226,7 @@
                         @endif
                     </td>
                     <td style="width: 56%; text-align: center;">
-                        <h2 class="doc-title">Ministerio de Hacienda ·<br>República de Costa Rica</h2>
+                        <h2 class="doc-title">Ministerio de Hacienda<br>República de Costa Rica</h2>
                         <h3 class="doc-sub">Documento tributario electrónico</h3>
                         <p style="margin-top:6px;font-size:11px;font-weight:bold;">{{ $nombreTipoNormativo }}</p>
                         <p class="muted">Tipo comprobante (código): {{ $tipoDocCodigo }}</p>
