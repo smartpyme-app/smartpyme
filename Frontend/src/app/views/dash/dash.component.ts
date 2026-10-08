@@ -8,8 +8,6 @@ import { ApiService } from '@services/api.service';
 import { AdminDashComponent } from './admin/admin-dash.component';
 import { CajaDashComponent } from './caja/caja-dash.component';
 import { VendedorDashComponent } from './vendedor/vendedor-dash.component';
-import { OrganizacionesDashComponent } from './organizaciones/organizaciones-dash.component';
-
 @Component({
     selector: 'app-dash',
     templateUrl: './dash.component.html',
@@ -20,7 +18,6 @@ import { OrganizacionesDashComponent } from './organizaciones/organizaciones-das
         AdminDashComponent,
         CajaDashComponent,
         VendedorDashComponent,
-        OrganizacionesDashComponent
     ],
     
 })

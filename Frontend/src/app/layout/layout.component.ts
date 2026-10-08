@@ -11,9 +11,9 @@ import { HeaderComponent } from './header/header.component';
 import { FooterComponent } from './footer/footer.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
 import { SidebarAdminComponent } from './sidebar/sidebar-admin/sidebar-admin.component';
-import { SidebarOrganizacionesComponent } from './sidebar/sidebar-organizaciones/sidebar-organizaciones.component';
 import { SidebarVentasComponent } from './sidebar/sidebar-ventas/sidebar-ventas.component';
 import { SidebarServiciosComponent } from './sidebar/sidebar-servicios/sidebar-servicios.component';
+import { SidebarCajeroComponent } from './sidebar/sidebar-cajero/sidebar-cajero.component';
 import { NotificacionesContainerComponent } from '../shared/parts/notificaciones/notificaciones-container.component';
 import { Router } from '@angular/router';
 import { AppConstants } from '../constants/app.constants';
@@ -37,9 +37,9 @@ import { TranslatePipe } from '@ngx-translate/core';
         FooterComponent,
         SidebarComponent,
         SidebarAdminComponent,
-        SidebarOrganizacionesComponent,
         SidebarVentasComponent,
         SidebarServiciosComponent,
+        SidebarCajeroComponent,
         NotificacionesContainerComponent,
         TranslatePipe
     ],
