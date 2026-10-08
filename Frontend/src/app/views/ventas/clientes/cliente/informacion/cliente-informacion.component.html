@@ -224,9 +224,9 @@
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="cliente.distrito">
                     }
                     @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
-                        <ng-select [(ngModel)]="cliente.cod_distrito" (ngModelChange)="setDistrito($event)" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_distrito">
+                        <ng-select [ngModel]="claveDistritoSeleccionado()" (ngModelChange)="setDistrito($event)" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_distrito">
                              @for (distrito of distritosFiltrados; track trackUbicacion(distrito)) {
-                                <ng-option [value]="distrito.cod">
+                                <ng-option [value]="trackUbicacion(distrito)">
                                     {{ distrito.nombre }}
                                 </ng-option>
                             }
@@ -500,9 +500,9 @@
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="cliente.distrito">
                     }
                     @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
-                        <ng-select [(ngModel)]="cliente.cod_distrito" (ngModelChange)="setDistrito($event)" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_distrito">
+                        <ng-select [ngModel]="claveDistritoSeleccionado()" (ngModelChange)="setDistrito($event)" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_distrito">
                              @for (distrito of distritosFiltrados; track trackUbicacion(distrito)) {
-                                <ng-option [value]="distrito.cod">
+                                <ng-option [value]="trackUbicacion(distrito)">
                                     {{ distrito.nombre }}
                                 </ng-option>
                             }

@@ -37,6 +37,8 @@ import {
     alCambiarDepartamento,
     alCambiarDistrito,
     alCambiarMunicipio,
+    claveDistritoActual,
+    distritosParaSelector,
     filtrarPorCodDepartamento,
     trackUbicacionCod,
 } from '@utils/ubicacion-catalogo.util';
@@ -166,12 +168,11 @@ export class ProveedorComponent extends BaseComponent implements OnInit {
     }
 
     get distritosFiltrados(): any[] {
-        let list = filtrarPorCodDepartamento(this.distritos, this.proveedor?.cod_departamento);
-        const mun = this.proveedor?.cod_municipio;
-        if (mun !== undefined && mun !== null && mun !== '') {
-            list = list.filter((d: any) => String(d.cod_municipio) === String(mun));
-        }
-        return list;
+        return distritosParaSelector(this.distritos, this.proveedor?.cod_departamento, this.proveedor?.cod_municipio);
+    }
+
+    claveDistritoSeleccionado(): string {
+        return claveDistritoActual(this.proveedor, this.distritos);
     }
 
     get municipiosFiltrados(): any[] {

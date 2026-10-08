@@ -16,6 +16,8 @@ import { DuplicateCheckService } from '@services/duplicate-check.service';
 import { FeCrUbicacionService } from '@services/fe-cr-ubicacion.service';
 import {
     alCambiarDepartamento,
+    alCambiarDistrito,
+    claveDistritoActual,
     dedupePorCod,
     filtrarPorCodDepartamento,
     trackUbicacionCod,
@@ -479,23 +481,12 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
         ).nombre;
     }
 
+    claveDistritoSeleccionado(): string {
+        return claveDistritoActual(this.cliente, this.distritos);
+    }
+
     setDistrito(cod?: unknown){
-        if (cod !== undefined && cod !== null) {
-            this.cliente.cod_distrito = cod;
-        }
-        let distrito = this.distritos.find((item:any) => item.cod == this.cliente.cod_distrito && item.cod_departamento == this.cliente.cod_departamento);
-        console.log(distrito);
-        if(distrito){
-            this.cliente.cod_municipio = distrito.cod_municipio;
-            const mun = this.municipios.find(
-                (m: any) => m.cod == distrito.cod_municipio && m.cod_departamento == distrito.cod_departamento,
-            );
-            if (mun) {
-                this.cliente.municipio = mun.nombre;
-            }
-            this.cliente.distrito = distrito.nombre;
-            this.cliente.cod_distrito = distrito.cod;
-        }
+        alCambiarDistrito(this.cliente, this.distritos, this.municipios, cod ?? this.cliente.cod_distrito);
     }
 
     setMunicipio(cod?: unknown){
