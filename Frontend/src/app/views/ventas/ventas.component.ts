@@ -20,6 +20,7 @@ import {
 } from '@services/facturacion-electronica/fe-cr-http-error.util';
 import { AlertsHaciendaComponent } from '@shared/parts/alerts-hacienda/alerts-hacienda.component';
 import { FeCrEmisionAvanzadoComponent } from '@shared/parts/fe-cr-emision-avanzado/fe-cr-emision-avanzado.component';
+import { FeEnviarCorreoComponent } from '@shared/parts/fe-enviar-correo/fe-enviar-correo.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { SharedDataService } from '@services/shared-data.service';
@@ -54,7 +55,7 @@ export type VentasExportPeriodoTipo = 'detalles' | 'ventas' | 'general';
     selector: 'app-ventas',
     templateUrl: './ventas.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule, LazyImageDirective, AlertsHaciendaComponent, FeCrEmisionAvanzadoComponent, NotificacionesContainerComponent, SharedModule, CurrencyPipe, VentaRecurrenciaConfigComponent],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule, LazyImageDirective, AlertsHaciendaComponent, FeCrEmisionAvanzadoComponent, FeEnviarCorreoComponent, NotificacionesContainerComponent, SharedModule, CurrencyPipe, VentaRecurrenciaConfigComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     styleUrls: ['./ventas.component.css'],
 })
@@ -85,6 +86,8 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   public cargandoTrackingBoxful = false;
   public trackingInfo: any = null;
   public sending: boolean = false;
+  /** Destinatario opcional del reenvío. Vacío usa el correo del cliente. */
+  public correoEnvioDte = '';
   public downloadingDetalles: boolean = false;
   public downloadingVentas: boolean = false;
   public downloadingCobrosVendedor: boolean = false;
@@ -1454,6 +1457,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   openDTE(template: TemplateRef<any>, venta: any) {
     const abrir = (v: any) => {
       this.venta = v;
+      this.correoEnvioDte = '';
       this.openModal(template);
       if (!this.venta.dte && !this.venta.dte_en_s3) {
         this.emitirDTE();
@@ -1585,8 +1589,16 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   }
 
   enviarDTE(venta: any, anulado = false) {
+    const correo = (this.correoEnvioDte ?? '').trim();
+    if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+      this.alertService.error('Escriba un correo válido o déjelo vacío para usar el del cliente.');
+      return;
+    }
     this.sending = true;
-    const payload = anulado ? { ...venta, documento: 'anulado' } : venta;
+    let payload = anulado ? { ...venta, documento: 'anulado' } : venta;
+    if (correo) {
+      payload = { ...payload, correo };
+    }
     this.apiService.store('enviarDTE', payload)
       .pipe(this.untilDestroyed())
       .subscribe(dte => {

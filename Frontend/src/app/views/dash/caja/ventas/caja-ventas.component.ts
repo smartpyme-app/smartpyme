@@ -15,6 +15,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 import { AlertsHaciendaComponent } from '@shared/parts/alerts-hacienda/alerts-hacienda.component';
+import { FeEnviarCorreoComponent } from '@shared/parts/fe-enviar-correo/fe-enviar-correo.component';
 import {
   MAX_DIAS_EXPORT_DETALLES,
   MAX_DIAS_EXPORT_VENTAS,
@@ -30,7 +31,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
     selector: 'app-caja-ventas',
     templateUrl: './caja-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, AlertsHaciendaComponent, PipesModule, PopoverModule, TooltipModule],
+    imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, AlertsHaciendaComponent, FeEnviarCorreoComponent, PipesModule, PopoverModule, TooltipModule],
 })
 
 export class CajaVentasComponent extends BaseCrudComponent<any> implements OnInit {
@@ -40,6 +41,8 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
     public ventas: any = {};
     public venta:any = {};
     public sending:boolean = false;
+    /** Destinatario opcional del reenvío. Vacío usa el correo del cliente. */
+    public correoEnvioDte = '';
 
     public clientes:any = [];
     public usuario:any = {};
@@ -299,6 +302,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
 
     openDTE(template: TemplateRef<any>, venta:any){
         this.venta = venta;
+        this.correoEnvioDte = '';
         this.openModal(template);
         if(!this.venta.dte){
             this.emitirDTE();
@@ -361,8 +365,14 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
     }
 
     enviarDTE(){
+        const correo = (this.correoEnvioDte ?? '').trim();
+        if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+            this.alertService.error('Escriba un correo válido o déjelo vacío para usar el del cliente.');
+            return;
+        }
         this.sending = true;
-        this.apiService.store('enviarDTE', this.venta)
+        const payload = correo ? { ...this.venta, correo } : this.venta;
+        this.apiService.store('enviarDTE', payload)
           .pipe(this.untilDestroyed())
           .subscribe(dte => {
             this.alertService.success(this.countryI18n.fe('sendSuccessTitle'), this.countryI18n.fe('sendSuccessBody'));

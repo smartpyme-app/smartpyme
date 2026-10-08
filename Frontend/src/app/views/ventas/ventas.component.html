@@ -710,27 +710,23 @@
             }
 
             @if (venta.sello_mh && !esFeCostaRica()) {
-                <button [disabled]="sending" (click)="enviarDTE(venta)"
-                    class="mb-3 btn btn-primary btn-block">
-                    @if (!sending) {
-                        <span>Enviar por correo</span>
-                    }
-                    @if (sending) {
-                        <span>Enviando...</span>
-                    }
-                </button>
+                <app-fe-enviar-correo
+                    [(correo)]="correoEnvioDte"
+                    [correoDefecto]="venta.cliente?.correo"
+                    quien="cliente"
+                    [sending]="sending"
+                    (enviar)="enviarDTE(venta)">
+                </app-fe-enviar-correo>
             }
 
             @if (esFeCostaRica() && venta.codigo_generacion) {
-                <button [disabled]="sending" (click)="enviarDTE(venta)"
-                    class="mb-3 btn btn-primary btn-block">
-                    @if (!sending) {
-                        <span>Enviar por correo</span>
-                    }
-                    @if (sending) {
-                        <span>Enviando...</span>
-                    }
-                </button>
+                <app-fe-enviar-correo
+                    [(correo)]="correoEnvioDte"
+                    [correoDefecto]="venta.cliente?.correo"
+                    quien="cliente"
+                    [sending]="sending"
+                    (enviar)="enviarDTE(venta)">
+                </app-fe-enviar-correo>
             }
 
             @if (esFeCostaRica() && tieneNotaDebitoCr(venta)) {

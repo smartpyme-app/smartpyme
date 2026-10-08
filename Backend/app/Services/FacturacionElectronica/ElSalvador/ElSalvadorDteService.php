@@ -27,6 +27,7 @@ use App\Models\MH\MHSujetoExcluidoGasto;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Ventas\Venta;
 use App\Services\MH\ConsultaDteMh;
+use App\Support\FacturacionElectronica\CorreoDestinoDte;
 use App\Services\MhGovSvGatewayService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
@@ -442,6 +443,8 @@ class ElSalvadorDteService
         if (! $registro) {
             return response()->json(['error' => 'No se encontró el registro correspondiente.'], 404);
         }
+
+        $correo = CorreoDestinoDte::resolver(is_string($correo) ? $correo : null, $request->input('correo'));
 
         $DTE = $registro->dte;
 

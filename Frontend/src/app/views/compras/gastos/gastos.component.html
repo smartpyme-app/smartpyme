@@ -299,10 +299,14 @@
                 Ver PDF
             </button>
 
-            <button *ngIf="gasto.sello_mh" [disabled]="sending" (click)="enviarDTE()" class="mb-3 btn btn-primary btn-block">
-                <span *ngIf="!sending">Enviar por correo</span>
-                <span *ngIf="sending">Enviando...</span>
-            </button>
+            <app-fe-enviar-correo
+                *ngIf="gasto.sello_mh"
+                [(correo)]="correoEnvioDte"
+                [correoDefecto]="gasto.proveedor?.correo"
+                quien="proveedor"
+                [sending]="sending"
+                (enviar)="enviarDTE()">
+            </app-fe-enviar-correo>
 
             <button *ngIf="!gasto.sello_mh" [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary btn-block">
                 <span *ngIf="!saving">Emitir</span>

@@ -26,6 +26,8 @@ class EnviarDTERequest extends FormRequest
             // envía el objeto completo del registro con su propio 'tipo' (p. ej. devolucion): excluirlo evita el
             // falso error "El tipo debe ser compra o gasto".
             'tipo' => ['exclude_unless:tipo_dte,14,08', 'required_if:tipo_dte,14,08', 'string', 'in:compra,gasto'],
+            // Opcional. Vacío = correo del cliente o proveedor. Si viene, es el destinatario de este envío.
+            'correo' => ['sometimes', 'nullable', 'string', 'email', 'max:255'],
         ];
     }
 
@@ -41,6 +43,8 @@ class EnviarDTERequest extends FormRequest
             'tipo_dte.in' => 'El tipo de DTE debe ser uno de: 01, 02, 03, 04, 05, 06, 08, 11, 14.',
             'tipo.required_if' => 'El tipo es requerido cuando el tipo de DTE es 14 u 08 (compra electrónica).',
             'tipo.in' => 'El tipo debe ser compra o gasto.',
+            'correo.email' => 'El correo no es válido.',
+            'correo.max' => 'El correo no puede superar 255 caracteres.',
         ];
     }
 }

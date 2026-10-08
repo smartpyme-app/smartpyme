@@ -23,6 +23,7 @@ import {
 } from '@services/facturacion-electronica/fe-cr-http-error.util';
 import { SharedDataService } from '@services/shared-data.service';
 import { AlertsHaciendaComponent } from '@shared/parts/alerts-hacienda/alerts-hacienda.component';
+import { FeEnviarCorreoComponent } from '@shared/parts/fe-enviar-correo/fe-enviar-correo.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
@@ -78,6 +79,7 @@ declare var $:any;
         PaginationComponent,
         LazyImageDirective,
         AlertsHaciendaComponent,
+        FeEnviarCorreoComponent,
         NotificacionesContainerComponent,
         CrearAbonoCompraComponent,
         CrearProveedorComponent,
@@ -104,6 +106,8 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
     public buscador:any = '';
     public override saving:boolean = false;
     public sending:boolean = false;
+    /** Destinatario opcional del reenvío. Vacío usa el correo del proveedor. */
+    public correoEnvioDte = '';
     public consulting:boolean = false;
     public downloadingDetalles:boolean = false;
     public downloadingCompras:boolean = false;
@@ -776,6 +780,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
     openDTE(template: TemplateRef<any>, compra:any){
         const abrir = (c: any) => {
             this.compra = c;
+            this.correoEnvioDte = '';
             this.modalRef = this.modalService.show(template);
             this.alertService.modal = true;
             if (!this.compra.dte && !this.compra.dte_en_s3) {
@@ -968,9 +973,15 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
 
 
     enviarDTE(){
+        const correo = (this.correoEnvioDte ?? '').trim();
+        if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+            this.alertService.error('Escriba un correo válido o déjelo vacío para usar el del proveedor.');
+            return;
+        }
         this.sending = true;
         this.compra.tipo = 'compra';
-        this.apiService.store('enviarDTE', this.compra)
+        const payload = correo ? { ...this.compra, correo } : this.compra;
+        this.apiService.store('enviarDTE', payload)
             .pipe(this.untilDestroyed())
             .subscribe(dte => {
             this.alertService.success(this.countryI18n.fe('sendSuccessTitle'), this.countryI18n.fe('sendSuccessBody'));
