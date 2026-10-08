@@ -86,16 +86,8 @@
   border-radius: 3px !important;
 
   .fc-event {
-    background-color: var(--staff-color, var(--bg-color)) !important;
-    --fc-event-text-color: #1e293b;
-    border: none !important;
     border-radius: 3px !important;
     padding: var(--fc-event-padding) !important;
-    // padding-right: 5px !important;
-  }
-
-  .fc-v-event .fc-event-main {
-    color: var(--fc-event-text-color) !important;
   }
 }
 
@@ -197,11 +189,6 @@
     --bg-color: var(--fullcalendar-color-1);
     --fg-color: var(--fullcalendar-color-contrast-1);
     width: 100% !important;
-
-    .fc-event {
-      background-color: var(--staff-color, var(--bg-color)) !important;
-      color: #1e293b !important;
-    }
   }
 
   a {

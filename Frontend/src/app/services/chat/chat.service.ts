@@ -5,6 +5,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { FuncionalidadesService } from '../functionalities.service';
 import { processSvgInMessage } from '@utils/svg-message.util';
+import { chatDeSesion, ChatSesionGuardado } from './chat-sesion';
 
 export interface ChatMessage {
   message_id: string;
@@ -42,7 +43,12 @@ export interface LucasChatResponse {
   providedIn: 'root',
 })
 export class ChatService {
+  private readonly ACTIVE_KEY = 'lucas_chat_activo';
   private currentConversationId: string | null = null;
+  // true solo tras un chat nuevo (día, sesión o «Nueva»): el primer mensaje abre otro hilo.
+  private pendingNewConversation = false;
+  private boundDay: string | null = null;
+  private boundUserId: string | null = null;
   private localMessageSeq = 0;
   private accesoVerificado = false;
 
@@ -205,6 +211,9 @@ export class ChatService {
   resetChat() {
     this.closeDrawer();
     this.currentConversationId = null;
+    this.pendingNewConversation = false;
+    this.boundDay = null;
+    this.boundUserId = null;
     this.messagesSubject.next([
       {
         message_id: this.newMessageId(),
@@ -297,6 +306,32 @@ export class ChatService {
   }
 
   /**
+   * Mismo hilo mientras dure la sesión y el día. Si cambia cualquiera, saludo nuevo.
+   * El historial anterior sigue en el listado.
+   */
+  ensureSessionChat(): void {
+    const today = this.todayKey();
+    const userId = this.sessionUserId();
+    const conversationId = chatDeSesion(this.readActive(), userId, today);
+
+    if (!conversationId) {
+      if (this.boundDay === today && this.boundUserId === userId && this.pendingNewConversation) {
+        return;
+      }
+      this.clearActive();
+      this.startNewConversation();
+      return;
+    }
+
+    this.boundDay = today;
+    this.boundUserId = userId;
+    if (this.currentConversationId === conversationId && !this.pendingNewConversation) {
+      return;
+    }
+    this.openConversation(conversationId);
+  }
+
+  /**
    * Carga los mensajes de una conversación existente.
    */
   openConversation(conversationId: string): void {
@@ -304,6 +339,8 @@ export class ChatService {
       return;
     }
 
+    this.pendingNewConversation = false;
+    this.messagesSubject.next([]);
     this.loadingConversationSubject.next(true);
 
     const params = new HttpParams().set('limit', '50');
@@ -341,18 +378,19 @@ export class ChatService {
   }
 
   /**
-   * Inicia una nueva conversación de forma LOCAL, sin crearla aún en Lucas.
-   * La conversación real se crea en Lucas al enviar el primer mensaje (el
-   * backend `/chat` asigna el `conversation_id` en ese momento), evitando así
-   * conversaciones vacías con 0 mensajes en el historial.
+   * Prepara un hilo nuevo en local. Lucas lo crea al enviar el primer mensaje
+   * (`new_conversation`), para no dejar conversaciones vacías en el historial.
    */
   startNewConversation(): void {
     if (!this.tieneAccesoSubject.value) {
       return;
     }
 
-    // Sin conversation_id, el próximo `/chat` creará la conversación en Lucas.
+    this.clearActive();
     this.currentConversationId = null;
+    this.pendingNewConversation = true;
+    this.boundDay = this.todayKey();
+    this.boundUserId = this.sessionUserId();
 
     this.loadingSubject.next(false);
 
@@ -416,7 +454,11 @@ export class ChatService {
       return;
     }
 
-    if (!text.trim()) return;
+    if (!text.trim() || this.loadingSubject.value) return;
+
+    if (this.enChatDeSesion() && this.diaOSesionDistinta()) {
+      this.startNewConversation();
+    }
 
     const userMessage: ChatMessage = {
       message_id: this.newMessageId(),
@@ -437,9 +479,11 @@ export class ChatService {
       message: text,
     };
 
-    // El contexto de la conversación lo mantiene Lucas (conversation_id)
+    // Hilo abierto: seguir en ese id. «Nueva»: crear otro y usarlo.
     if (this.currentConversationId) {
       payload.conversation_id = this.currentConversationId;
+    } else if (this.pendingNewConversation) {
+      payload.new_conversation = true;
     }
 
     this.http
@@ -449,8 +493,14 @@ export class ChatService {
       .subscribe({
         next: (response) => {
           // Conservar el conversation_id de Lucas para mantener el contexto
+          const eraNuevo = this.pendingNewConversation;
+          this.pendingNewConversation = false;
           if (response?.conversation_id) {
             this.currentConversationId = response.conversation_id;
+            const activo = this.readActive();
+            if (eraNuevo || !activo || activo.conversationId === response.conversation_id) {
+              this.writeActive(response.conversation_id);
+            }
           }
 
           // Procesar el mensaje para gestionar SVGs
@@ -486,6 +536,93 @@ export class ChatService {
           this.loadingSubject.next(false);
         },
       });
+  }
+
+  private enChatDeSesion(): boolean {
+    if (this.pendingNewConversation || !this.currentConversationId) {
+      return true;
+    }
+    const activo = this.readActive();
+    return !!activo && activo.conversationId === this.currentConversationId;
+  }
+
+  private diaOSesionDistinta(): boolean {
+    const today = this.todayKey();
+    const userId = this.sessionUserId();
+    if (this.boundDay && this.boundDay !== today) {
+      return true;
+    }
+    if (this.boundUserId && this.boundUserId !== userId) {
+      return true;
+    }
+    const activo = this.readActive();
+    return !!activo && (activo.day !== today || activo.userId !== userId);
+  }
+
+  private todayKey(): string {
+    const d = new Date();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${d.getFullYear()}-${m}-${day}`;
+  }
+
+  private sessionUserId(): string | null {
+    try {
+      const raw = localStorage.getItem('SP_auth_user');
+      if (!raw) {
+        return null;
+      }
+      const user = JSON.parse(raw);
+      if (user?.id == null) {
+        return null;
+      }
+      return `${user.id}:${user.id_empresa ?? ''}`;
+    } catch {
+      return null;
+    }
+  }
+
+  private readActive(): ChatSesionGuardado | null {
+    try {
+      const raw = localStorage.getItem(this.ACTIVE_KEY);
+      if (!raw) {
+        return null;
+      }
+      const data = JSON.parse(raw) as ChatSesionGuardado;
+      if (!data?.conversationId || !data.day || !data.userId) {
+        return null;
+      }
+      return data;
+    } catch {
+      return null;
+    }
+  }
+
+  private writeActive(conversationId: string): void {
+    const userId = this.sessionUserId();
+    if (!userId) {
+      return;
+    }
+    const data: ChatSesionGuardado = {
+      conversationId,
+      day: this.todayKey(),
+      userId,
+    };
+    try {
+      localStorage.setItem(this.ACTIVE_KEY, JSON.stringify(data));
+    } catch {
+      // sin storage el chat sigue en memoria hasta recargar
+    }
+    this.boundDay = data.day;
+    this.boundUserId = userId;
+  }
+
+  private clearActive(): void {
+    try {
+      localStorage.removeItem(this.ACTIVE_KEY);
+    } catch {
+      // igual que arriba
+    }
   }
 
 }

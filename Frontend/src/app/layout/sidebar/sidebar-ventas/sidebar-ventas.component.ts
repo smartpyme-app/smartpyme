@@ -31,6 +31,8 @@ export class SidebarVentasComponent implements OnInit {
     public modules: any[] = [];
     /** true cuando el dominio es abaco.smartpyme.site */
     public isAbacoSite: boolean = false;
+    /** true cuando el dominio es onvo.smartpyme.site */
+    public isOnvoSite: boolean = false;
     public tieneModuloRestaurante = false;
     public tieneClinicaPacientes = false;
     public tieneClinicaProfesionales = false;
@@ -49,6 +51,7 @@ export class SidebarVentasComponent implements OnInit {
 
     ngOnInit() {
         this.isAbacoSite = window.location.hostname === 'abaco.smartpyme.site';
+        this.isOnvoSite = window.location.hostname === 'onvo.smartpyme.site';
         if (!localStorage.getItem('sidebarCollapsed')) {
             localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed.toString());
         }else{

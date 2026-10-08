@@ -75,22 +75,75 @@ export function alCambiarMunicipio(
   entity.cod_distrito = '';
 }
 
+type DistritoCatalogo = {
+  cod?: unknown;
+  nombre?: string;
+  cod_departamento?: unknown;
+  cod_municipio?: unknown;
+};
+
+/** Si el municipio guardado no pertenece al departamento, no vacía el selector. */
+export function distritosParaSelector<T extends DistritoCatalogo>(
+  distritos: T[] | null | undefined,
+  codDepartamento: unknown,
+  codMunicipio: unknown,
+): T[] {
+  const list = filtrarPorCodDepartamento(distritos, codDepartamento);
+  if (codigoVacio(codMunicipio)) {
+    return list;
+  }
+  const delMunicipio = list.filter((item) => String(item.cod_municipio) === String(codMunicipio));
+  return delMunicipio.length ? delMunicipio : list;
+}
+
+function resolverDistrito(
+  distritos: DistritoCatalogo[] | null | undefined,
+  entity: UbicacionGeo,
+  valor: unknown,
+): DistritoCatalogo | undefined {
+  const needle = String(valor ?? '');
+  if (needle === '') {
+    return undefined;
+  }
+  const lista = distritos || [];
+  const porClave = lista.find((item) => trackUbicacionCod(item) === needle);
+  if (porClave) {
+    return porClave;
+  }
+  const porCod = lista.filter(
+    (item) =>
+      String(item.cod) === needle && String(item.cod_departamento) === String(entity.cod_departamento),
+  );
+  if (!codigoVacio(entity.cod_municipio)) {
+    const porMunicipio = porCod.find((item) => String(item.cod_municipio) === String(entity.cod_municipio));
+    if (porMunicipio) {
+      return porMunicipio;
+    }
+  }
+  return porCod[0];
+}
+
+/** Valor único del ng-select. El modelo sigue guardando `cod_distrito` del catálogo MH. */
+export function claveDistritoActual(entity: UbicacionGeo, distritos: DistritoCatalogo[] | null | undefined): string {
+  if (codigoVacio(entity.cod_distrito)) {
+    return '';
+  }
+  const distrito = resolverDistrito(distritos, entity, entity.cod_distrito);
+  return distrito ? trackUbicacionCod(distrito) : '';
+}
+
 export function alCambiarDistrito(
   entity: UbicacionGeo,
-  distritos: Array<{
-    cod?: unknown;
-    nombre?: string;
-    cod_departamento?: unknown;
-    cod_municipio?: unknown;
-  }>,
+  distritos: DistritoCatalogo[] | null | undefined,
   municipios: Array<{ cod?: unknown; nombre?: string; cod_departamento?: unknown }>,
   cod: unknown,
 ): void {
-  entity.cod_distrito = cod;
-  const distrito = (distritos || []).find(
-    (item) =>
-      String(item.cod) === String(cod) && String(item.cod_departamento) === String(entity.cod_departamento),
-  );
+  if (codigoVacio(cod)) {
+    entity.distrito = '';
+    entity.cod_distrito = '';
+    return;
+  }
+  const distrito = resolverDistrito(distritos, entity, cod);
   if (!distrito) {
     return;
   }

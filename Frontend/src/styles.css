@@ -117,30 +117,35 @@ a.fc-col-header-cell-cushion{
     border: 2px solid var(--smart-orange-80) !important;
     color: var(--smart-orange-10) !important;
   }
+.fc-event.cita-abierta .fc-event-main { color: var(--smart-orange-10) !important; }
 
 .fc-event.cita-pendiente {
     background: var(--smart-grey-100) !important;
     border: 2px solid var(--smart-grey-60) !important;
     color: var(--smart-grey-60) !important;
   }
+.fc-event.cita-pendiente .fc-event-main { color: var(--smart-grey-60) !important; }
 
 .fc-event.cita-confirmada {
     background: var(--smart-blue-90) !important;
     border: 2px solid var(--smart-blue-80) !important;
     color: var(--smart-blue-10) !important;
   }
+.fc-event.cita-confirmada .fc-event-main { color: var(--smart-blue-10) !important; }
 
 .fc-event.cita-pagada {
     background: var(--smart-green-80) !important;
     border: 2px solid var(--smart-green-70) !important;
     color: var(--smart-green-10) !important;
   }
+.fc-event.cita-pagada .fc-event-main { color: var(--smart-green-10) !important; }
 
 .fc-event.cita-cancelada {
     background: var(--smart-grey-100) !important;
     border: 1px solid var(--smart-grey-80) !important;
     color: var(--smart-grey-60) !important;
   }
+.fc-event.cita-cancelada .fc-event-main { color: var(--smart-grey-60) !important; }
 
 .fc-event.cita-cancelada .cita-linea {
     text-decoration: line-through;
@@ -173,10 +178,16 @@ a.fc-col-header-cell-cushion{
     padding: 2.5px !important;
   }
 
+  .fc-dayGridMonth-view .fc-daygrid-day,
+  .fc-dayGridMonth-view .fc-daygrid-day-frame {
+    overflow: hidden;
+  }
+
   .fc-dayGridMonth-view .fc-daygrid-day-frame {
     display: flex !important;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    max-width: 100%;
   }
 
   .fc-dayGridMonth-view .fc-daygrid-day-events {
@@ -194,6 +205,15 @@ a.fc-col-header-cell-cushion{
   .fc-dayGridMonth-view .fc-event-main {
     max-width: 100%;
     overflow: hidden;
+  }
+
+  .fc-dayGridMonth-view .cita-evento-mes {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+    line-height: 16px;
   }
 
   .fc-dayGridMonth-view .cita-linea {
@@ -268,6 +288,39 @@ a.fc-col-header-cell-cushion{
   .select-width {
     min-width:180px;
     max-width:180px;
+  }
+
+  .encargados-seleccion {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0 16px;
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+  }
+
+  .encargados-seleccion-titulo {
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    margin-right: 4px;
+  }
+
+  .encargados-badge {
+    color: #1e293b;
+    border: none;
+    border-radius: 999px;
+  }
+
+  .encargados-limpiar {
+    margin-left: auto;
+    padding: 0 4px;
+    color: #475569;
+    font-weight: 600;
+    text-decoration: none;
   }
 
   /* Modales con z-index mayor que las notificaciones */
