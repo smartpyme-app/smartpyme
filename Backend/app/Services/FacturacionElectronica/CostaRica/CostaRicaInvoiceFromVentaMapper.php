@@ -37,6 +37,9 @@ use InvalidArgumentException;
  */
 final class CostaRicaInvoiceFromVentaMapper
 {
+    /** XSD v4.4 NombreEmisor / NombreReceptor (maxLength 100). */
+    private const MAX_NOMBRE_TERCERO_CR = 100;
+
     public function __construct(
         private readonly CostaRicaTipoCambioService $tipoCambio,
     ) {}
@@ -795,7 +798,7 @@ final class CostaRicaInvoiceFromVentaMapper
         $emisor = [
             'identification_type' => $this->tipoIdentificacionEmisorCr($empresa),
             'identification_number' => $nit,
-            'name' => trim((string) ($empresa->nombre ?? '')),
+            'name' => $this->nombreTerceroCr((string) ($empresa->nombre ?? ''), 'Emisor'),
             'activity' => $codAct,
             'location' => [
                 'province' => $loc['province'],
@@ -830,7 +833,7 @@ final class CostaRicaInvoiceFromVentaMapper
         $receiver = [
             'identification_type' => $tipo,
             'identification_number' => $num,
-            'name' => $nombre ?: 'Receptor',
+            'name' => $this->nombreTerceroCr($nombre ?: 'Receptor'),
         ];
 
         $loc = $this->ubicacionTerceroCr(
@@ -924,12 +927,19 @@ final class CostaRicaInvoiceFromVentaMapper
         return $receiver;
     }
 
+    private function nombreTerceroCr(string $nombre, string $fallback = 'Receptor'): string
+    {
+        $t = trim($nombre);
+
+        return mb_substr($t !== '' ? $t : $fallback, 0, self::MAX_NOMBRE_TERCERO_CR);
+    }
+
     private function receptorGenerico(Empresa $empresa, string $nombre = 'Cliente general'): array
     {
         return [
             'identification_type' => '06',
             'identification_number' => '00000000000000',
-            'name' => $nombre,
+            'name' => $this->nombreTerceroCr($nombre, 'Cliente general'),
         ];
     }
 
@@ -1864,7 +1874,7 @@ final class CostaRicaInvoiceFromVentaMapper
         $receiver = [
             'identification_type' => $tipo,
             'identification_number' => $num,
-            'name' => $nombre !== '' ? mb_substr($nombre, 0, 100) : 'Proveedor',
+            'name' => $this->nombreTerceroCr($nombre, 'Proveedor'),
         ];
         $loc = $this->ubicacionTerceroCr(
             $proveedor->cod_distrito ?? null,

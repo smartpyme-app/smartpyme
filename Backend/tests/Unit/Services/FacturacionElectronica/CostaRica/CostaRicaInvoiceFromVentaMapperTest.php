@@ -184,6 +184,27 @@ final class CostaRicaInvoiceFromVentaMapperTest extends TestCase
         $this->assertSame(['admin@veredacafe.cr'], $receiver['email']);
     }
 
+    public function test_receptor_nombre_se_trunca_a_100_caracteres_xsd(): void
+    {
+        $empresa = $this->empresaStub();
+        $largo = 'SUB CONDOMINIO VERTICAL HORIZONTAL RESIDENCIAL VEREDA DEL CAFE EN FINCA FILIAL PRIMARIA INDIVIDUALIZADA NUMERO VEINTIOCHO';
+        $this->assertGreaterThan(100, mb_strlen($largo));
+
+        $cliente = (new \ReflectionClass(Cliente::class))->newInstanceWithoutConstructor();
+        $cliente->tipo = 'Empresa';
+        $cliente->tipo_documento = '02';
+        $cliente->nit = '3102666312';
+        $cliente->nombre_empresa = $largo;
+
+        $venta = (new \ReflectionClass(Venta::class))->newInstanceWithoutConstructor();
+        $venta->setRelation('cliente', $cliente);
+
+        $receiver = $this->mapper->receptorDatosVenta($venta, $empresa);
+
+        $this->assertSame(100, mb_strlen($receiver['name']));
+        $this->assertSame(mb_substr($largo, 0, 100), $receiver['name']);
+    }
+
     public function test_receptor_sin_contacto_no_copia_ubicacion_telefono_ni_correo_del_emisor(): void
     {
         $empresa = $this->empresaStub();
