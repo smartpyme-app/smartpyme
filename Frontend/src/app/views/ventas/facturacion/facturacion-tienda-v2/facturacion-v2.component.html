@@ -259,16 +259,18 @@
                             </button>
                         </td>
                     </tr>
-                    <!-- <tr>
-                        <td class="text-right"> <b>Impuestos</b></td>
+                    <tr *ngIf="venta.cobrar_impuestos">
+                        <td class="text-right">{{ 'country.tax.taxRateLabel' | translate:{ rate: (apiService.auth_user().empresa.iva | number:'1.0-2') } }}</td>
                         <td style="width: 150px;" class="text-right"> {{ venta.iva | currency}} </td>
                         <td style="width: 50px;"></td>
-                    </tr> -->
-                    <tr *ngFor="let impuesto of venta?.impuestos">
-                        <td class="text-right"> {{ impuesto.nombre | displayNombreImpuesto }} <small class="text-muted">({{ impuesto.porcentaje | number:'1.0-2' }}%)</small> </td>
-                        <td style="width: 150px;" class="text-right"> {{ (impuesto.monto ?? 0) | currency}} </td>
-                        <td style="width: 50px;"></td>
                     </tr>
+                    <ng-container *ngFor="let impuesto of venta?.impuestos">
+                        <tr *ngIf="!esImpuestoIvaVista(impuesto)">
+                            <td class="text-right"> {{ impuesto.nombre | displayNombreImpuesto }} <small class="text-muted">({{ impuesto.porcentaje | number:'1.0-2' }}%)</small> </td>
+                            <td style="width: 150px;" class="text-right"> {{ (impuesto.monto ?? 0) | currency}} </td>
+                            <td style="width: 50px;"></td>
+                        </tr>
+                    </ng-container>
                     <tr *ngIf="venta.retencion">
                         <td class="text-right"> <b>Retención (1%)</b></td>
                         <td style="width: 150px;" class="text-right"> {{ venta.iva_retenido | currency}} </td>

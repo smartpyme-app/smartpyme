@@ -201,9 +201,52 @@ export function porcentajeIvaDetalle(
 }
 
 /**
+ * Precio con IVA: el monto cobrado de la línea manda.
+ * total = ROUND(cantidad × ROUND(precio, 2) − ROUND(descuento, 2))
+ * neto   = ROUND(total / (1 + tasa)) si la línea es gravada; si no, el total entero
+ * iva    = total − neto
+ * Así neto + iva = total en cada línea, y la cabecera solo suma líneas.
+ * Vale para 1 línea o para 70, con o sin descuento.
+ */
+function aplicarMontosDesdePrecioCobrado(
+  detalle: any,
+  cantidad: number,
+  precioConIva: number,
+  descuentoConIva: number,
+  pct: number,
+  tipo: TipoGravadoVenta,
+  precioSinIva: number
+): void {
+  const totalCobrado = redondearMoneda(
+    cantidad * precioConIva - redondearMoneda(descuentoConIva)
+  );
+  const desglosa = tipo === 'gravada' && pct > 0;
+  const factor = pct > 0 ? 1 + pct / 100 : 1;
+  const neto = desglosa ? redondearMoneda(totalCobrado / factor) : totalCobrado;
+  const iva = desglosa ? redondearMoneda(totalCobrado - neto) : 0;
+
+  detalle.sub_total = neto.toFixed(2);
+  detalle.total = neto.toFixed(2);
+  detalle.precio_sin_iva = Number(precioSinIva).toFixed(6);
+  detalle.precio_con_iva = redondearMoneda(precioConIva).toFixed(4);
+  detalle.gravada = 0;
+  detalle.exenta = 0;
+  detalle.no_sujeta = 0;
+  detalle.total_iva = totalCobrado.toFixed(2);
+  detalle.iva = iva;
+  if (tipo === 'gravada') {
+    detalle.gravada = neto;
+  } else if (tipo === 'exenta') {
+    detalle.exenta = neto;
+  } else {
+    detalle.no_sujeta = neto;
+  }
+}
+
+/**
  * Calcula gravada/exenta/no_sujeta, IVA y total con IVA por línea.
- * Neto (gravada/sub_total/total) a moneda (2) por línea — Hacienda suma esas líneas.
- * total_iva a moneda (2). detalle.iva queda sin redondear para acumular en cabecera.
+ * Con precio_iva, el neto sale del monto cobrado (ver aplicarMontosDesdePrecioCobrado).
+ * Sin precio_iva, el neto es ROUND(cantidad × precio − descuento) y el IVA se agrega.
  */
 export function calcularMontosLineaDetalle(
   detalle: any,
@@ -246,8 +289,8 @@ export function calcularMontosLineaDetalle(
     Number.isFinite(precioIvaExistente) &&
     String(precioIvaRaw ?? '') !== ''
   ) {
-    // Fuente de verdad del monto cobrado: precio_iva (no reconstruir desde precio neto).
-    precioConIva = precioIvaExistente;
+    // Fuente de verdad del monto cobrado: precio_iva a centavos (no el neto guardado).
+    precioConIva = redondearMoneda(precioIvaExistente);
   } else if (pct > 0) {
     precioConIva = precioSinIva * factorIva;
     detalle.precio_iva = redondear4(precioConIva).toFixed(4);
@@ -265,6 +308,23 @@ export function calcularMontosLineaDetalle(
         ? descuento * factorIva
         : descuento;
   const totalConIva = redondearMoneda(cantidad * precioConIva - descuentoConIva);
+  const cobraPrecioConIva =
+    preservePrecioIva &&
+    !usuarioBorroPrecioIva &&
+    Number.isFinite(precioIvaExistente) &&
+    String(precioIvaRaw ?? '') !== '';
+  if (cobraPrecioConIva) {
+    aplicarMontosDesdePrecioCobrado(
+      detalle,
+      cantidad,
+      precioConIva,
+      descuentoConIva,
+      pct,
+      tipo,
+      precioSinIva
+    );
+    return;
+  }
 
   // Persistibles para cotización → factura (misma base que una venta).
   detalle.precio_sin_iva = Number(precioSinIva).toFixed(6);
@@ -317,12 +377,17 @@ export function sumarTotalConIvaEncabezadoVenta(detalles: any[]): number {
 }
 
 /**
- * Subtotal de encabezado: ROUND(neto, 2) por línea y luego suma.
- * Misma regla que Hacienda (totalGravada = suma de ventaGravada a 2 decimales).
- * El centavo frente al total cobrado se absorbe en el IVA residual, no en gravada.
+ * Subtotal de encabezado = suma de los netos ya cerrados por línea.
+ * No se vuelve a calcular desde el precio sin IVA guardado: eso descuadra el total cobrado.
  */
 export function sumarSubTotalEncabezadoVenta(detalles: any[]): number {
   const suma = (detalles || []).reduce((acc, d) => {
+    if (d?.sub_total != null && d.sub_total !== '') {
+      const gravada = parseFloat(String(d.gravada ?? 0)) || 0;
+      const exenta = parseFloat(String(d.exenta ?? 0)) || 0;
+      const noSujeta = parseFloat(String(d.no_sujeta ?? 0)) || 0;
+      return acc + gravada + exenta + noSujeta;
+    }
     const precio = parseFloat(String(d?.precio ?? 0)) || 0;
     const cantidad = parseFloat(String(d?.cantidad ?? 0)) || 0;
     const descuento = parseFloat(String(d?.descuento ?? 0)) || 0;

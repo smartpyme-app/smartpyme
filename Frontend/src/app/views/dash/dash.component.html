@@ -8,7 +8,7 @@
 
 
 
-@if (apiService.isAdmin() && !usuario?.empresa?.licencia) {
+@if (apiService.isAdmin()) {
     <app-admin-dash></app-admin-dash>
 }
 @if (apiService.validateRole('usuario_ventas', true) || usuario?.tipo == 'Cajero') {
@@ -18,8 +18,5 @@
     <app-vendedor-dash></app-vendedor-dash>
 }
 
-@if (apiService.isNotSuperAdmin() && usuario.empresa.licencia) {
-    <app-organizaciones-dash></app-organizaciones-dash>
-}
 
 

@@ -1529,6 +1529,10 @@ export class FacturacionV2Component implements OnInit {
     return null;
   }
 
+  esImpuestoIvaVista(impuesto: any): boolean {
+    return esImpuestoIva(impuesto, this.apiService.auth_user()?.empresa?.iva);
+  }
+
   public sumTotal() {
     // Asegurar que detalles existe y es un array
     if (!this.venta.detalles || !Array.isArray(this.venta.detalles)) {

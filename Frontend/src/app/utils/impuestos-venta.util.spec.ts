@@ -562,6 +562,64 @@ describe('impuestos-venta.util — IVA vs especiales', () => {
     expect(total).toBe(312.21);
   });
 
+  it('precio con IVA: neto + iva = total cobrado en cualquier venta', () => {
+    const tasas = [13, 15, 8, 4, 1];
+    const tipos = ['gravada', 'exenta', 'no_sujeta'] as const;
+    let semilla = 20261008;
+    const rnd = () => {
+      semilla = (semilla * 1664525 + 1013904223) % 4294967296;
+      return semilla / 4294967296;
+    };
+
+    for (let venta = 0; venta < 200; venta++) {
+      const nLineas = 1 + Math.floor(rnd() * 80);
+      const tasa = tasas[Math.floor(rnd() * tasas.length)];
+      const detalles: any[] = [];
+      for (let i = 0; i < nLineas; i++) {
+        const cantidad = 1 + Math.floor(rnd() * 40);
+        const precioConIva = Math.round(rnd() * 500000) / 10000;
+        const descuentoConIva = rnd() < 0.3 ? Math.round(rnd() * precioConIva * cantidad * 100) / 100 : 0;
+        const tipo = tipos[Math.floor(rnd() * tipos.length)];
+        const detalle: any = {
+          cantidad,
+          precio: tasa > 0 ? precioConIva / (1 + tasa / 100) : precioConIva,
+          precio_iva: precioConIva.toFixed(4),
+          descuento_con_iva: descuentoConIva,
+          descuento: tasa > 0 ? descuentoConIva / (1 + tasa / 100) : descuentoConIva,
+          tipo_gravado: tipo,
+          porcentaje_impuesto: tasa,
+        };
+        calcularMontosLineaDetalle(detalle, true, tasa, { preservePrecioIva: true });
+        const neto = Number(detalle.gravada) + Number(detalle.exenta) + Number(detalle.no_sujeta);
+        const iva = Number(detalle.iva);
+        const total = Number(detalle.total_iva);
+        expect(redondearMoneda(neto + iva)).toBe(total);
+        detalles.push(detalle);
+      }
+      const sub = sumarSubTotalEncabezadoVenta(detalles);
+      const iva = resolverIvaObjetivoEncabezadoVenta(detalles, true, tasa);
+      const total = sumarTotalEncabezadoVenta(detalles, [], { empresaIva: tasa, cobrarImpuestos: true });
+      expect(redondearMoneda(sub + iva)).toBe(total);
+    }
+  });
+
+  it('v2: 12 x 8.3959 cobra 100.80 y el neto es 89.20, no 89.16', () => {
+    const detalle: any = {
+      cantidad: 12,
+      precio: (8.4 / 1.13).toFixed(4),
+      precio_iva: '8.3959',
+      descuento: 0,
+      tipo_gravado: 'gravada',
+      porcentaje_impuesto: 13,
+    };
+    calcularMontosLineaDetalle(detalle, true, 13, { preservePrecioIva: true });
+
+    expect(Number(detalle.total_iva)).toBe(100.8);
+    expect(Number(detalle.gravada)).toBe(89.2);
+    expect(sumarSubTotalEncabezadoVenta([detalle])).toBe(89.2);
+    expect(resolverIvaObjetivoEncabezadoVenta([detalle], true, 13)).toBe(11.6);
+  });
+
   it('v2 precio con IVA 34.99 cierra total (30.96 + 4.03)', () => {
     const precioSinIva = 34.99 / 1.13;
     const detalle: any = {
