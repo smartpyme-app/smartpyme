@@ -97,7 +97,7 @@ export class DiagnosticoFormComponent implements OnInit {
     this.guardando = true;
     const payload = { ...this.registro };
     const peticion = this.esEdicion
-      ? this.apiService.update('clinica/pacientes', this.idPaciente + '/diagnosticos/' + this.idDiagnostico, payload)
+      ? this.apiService.update('clinica/pacientes/' + this.idPaciente + '/diagnosticos', this.idDiagnostico, payload)
       : this.apiService.store('clinica/pacientes/' + this.idPaciente + '/diagnosticos', payload);
     peticion.pipe(this.untilDestroyed()).subscribe({
       next: (respuesta) => {
