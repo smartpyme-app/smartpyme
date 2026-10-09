@@ -4,6 +4,8 @@ namespace App\Exports\ReportesAutomaticos\DetalleVentasPorVendedor;
 
 use App\Exports\ReportesAutomaticos\DetalleVentasPorVendedor\DetalleVentasResumenSheet;
 use App\Exports\ReportesAutomaticos\DetalleVentasPorVendedor\DetalleVentasVendedorSheet;
+use App\Exports\Support\DevolucionesEnReporteQuery;
+use App\Exports\Support\RangoFecha;
 use App\Services\Ventas\VentaMontosPorVendedorService;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
@@ -59,9 +61,8 @@ class DetalleVentasVendedorExport implements WithMultipleSheets
                 ->leftJoin('clientes as cl', 'vv.id_cliente', '=', 'cl.id')
                 ->leftJoin('sucursales as suc', 'vv.id_sucursal', '=', 'suc.id')
                 ->leftJoin('documentos as doc', 'vv.id_documento', '=', 'doc.id')
-                ->where('vv.estado', '!=', 'Anulada')
-                ->where('vv.id_empresa', $this->id_empresa)
-                ->whereBetween('vv.fecha', [$this->fechaInicio, $this->fechaFin]);
+                ->where('vv.id_empresa', $this->id_empresa);
+            RangoFecha::ventasDelPeriodo($query, 'vv', $this->fechaInicio, $this->fechaFin);
 
             // Aplicar filtro de sucursales si está definido
             if (!empty($this->sucursales)) {
@@ -89,7 +90,13 @@ class DetalleVentasVendedorExport implements WithMultipleSheets
                 ->orderBy('us.name')
                 ->orderBy('vv.fecha')
                 ->orderBy('vv.created_at')
-                ->get();
+                ->get()
+                ->concat(DevolucionesEnReporteQuery::filasDetalleVendedor(
+                    $this->id_empresa,
+                    $this->fechaInicio,
+                    $this->fechaFin,
+                    $this->sucursales
+                ));
                 
             // Obtener lista de vendedores únicos
             $this->vendedoresUnicos = $this->detalleVentas->pluck('nombre_vendedor')->unique();
