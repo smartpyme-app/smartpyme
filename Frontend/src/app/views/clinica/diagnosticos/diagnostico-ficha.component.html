@@ -1,0 +1,45 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <div>
+        <h2 class="page-heading mb-0">Diagnóstico clínico</h2>
+        @if (diagnostico) {
+            <span class="badge py-2 mt-2" [ngClass]="diagnostico.estado === 'cerrado' ? 'bg-success' : diagnostico.estado === 'anulado' ? 'bg-danger' : 'bg-secondary'">
+                {{ diagnostico.estado }}
+            </span>
+            @if (diagnostico.rol === 'principal') {
+                <span class="badge bg-primary py-2 mt-2 ms-1">Principal</span>
+            }
+        }
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        @if (diagnostico?.editable && apiService.hasPermission('clinica.diagnosticos.editar')) {
+            <button type="button" class="btn btn-default" (click)="editar()">Editar</button>
+            <button type="button" class="btn btn-primary" (click)="cerrar()">Cerrar diagnóstico</button>
+        }
+        @if (diagnostico?.estado === 'activo' && apiService.hasPermission('clinica.diagnosticos.editar')) {
+            <button type="button" class="btn btn-outline-danger" (click)="anular()">Anular</button>
+        }
+        @if (diagnostico?.puede_corregir && apiService.hasPermission('clinica.diagnosticos.editar')) {
+            <button type="button" class="btn btn-default" (click)="corregir()">Corregir (nuevo registro)</button>
+        }
+        <button type="button" class="btn btn-default" [routerLink]="['/clinica/pacientes', idPaciente, 'diagnosticos']">Listado</button>
+    </div>
+</section>
+
+@if (cargando) {
+    <section class="bg-white p-4 rounded"><span class="badge bg-primary">Cargando...</span></section>
+}
+
+@if (!cargando && diagnostico) {
+    <section class="bg-white p-4 rounded mb-3">
+        <div class="row">
+            <div class="col-md-3"><label class="fw-medium">Fecha</label><p>{{ diagnostico.fecha }}</p></div>
+            <div class="col-md-3"><label class="fw-medium">Código</label><p>{{ diagnostico.codigo || '—' }}</p></div>
+            <div class="col-md-3"><label class="fw-medium">Profesional</label><p>{{ diagnostico.profesional?.nombre || '—' }}</p></div>
+            <div class="col-md-3"><label class="fw-medium">Consulta</label><p>{{ diagnostico.id_consulta || '—' }}</p></div>
+            <div class="col-12"><label class="fw-medium">Descripción</label><p>{{ diagnostico.descripcion }}</p></div>
+            @if (diagnostico.motivo_anulacion) {
+                <div class="col-12"><label class="fw-medium">Motivo anulación</label><p>{{ diagnostico.motivo_anulacion }}</p></div>
+            }
+        </div>
+    </section>
+}

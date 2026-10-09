@@ -624,6 +624,16 @@ return [
             'crear' => 'clinica.consultas.crear',
             'editar' => 'clinica.consultas.editar',
         ],
+        'tratamientos' => [
+            'ver' => 'clinica.tratamientos.ver',
+            'crear' => 'clinica.tratamientos.crear',
+            'editar' => 'clinica.tratamientos.editar',
+        ],
+        'diagnosticos' => [
+            'ver' => 'clinica.diagnosticos.ver',
+            'crear' => 'clinica.diagnosticos.crear',
+            'editar' => 'clinica.diagnosticos.editar',
+        ],
     ],
 
     /*

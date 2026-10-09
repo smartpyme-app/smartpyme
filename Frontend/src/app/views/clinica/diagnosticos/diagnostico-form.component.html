@@ -1,0 +1,60 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading mb-0">{{ esEdicion ? 'Editar diagnóstico' : 'Nuevo diagnóstico' }}</h2>
+    <button type="button" class="btn btn-default" [routerLink]="['/clinica/pacientes', idPaciente, 'diagnosticos']">Regresar</button>
+</section>
+
+@if (cargando) {
+    <section class="bg-white p-4 rounded"><span class="badge bg-primary">Cargando...</span></section>
+}
+
+@if (!cargando) {
+    <section class="bg-white p-4 rounded mb-3">
+        <div class="row">
+            <div class="form-group col-md-3">
+                <label>Fecha</label>
+                <input type="date" class="form-control" [(ngModel)]="registro.fecha" name="fecha">
+            </div>
+            <div class="form-group col-md-3">
+                <label>Rol</label>
+                <select class="form-select" [(ngModel)]="registro.rol" name="rol">
+                    <option value="principal">Principal</option>
+                    <option value="secundario">Secundario</option>
+                </select>
+            </div>
+            <div class="form-group col-md-3">
+                <label>Código catálogo (opcional)</label>
+                <input class="form-control" [(ngModel)]="registro.codigo" name="codigo" list="catalogo-codigos" (change)="aplicarCodigoCatalogo()">
+                <datalist id="catalogo-codigos">
+                    @for (c of catalogo; track c.id) {
+                        <option [value]="c.codigo">{{ c.nombre }}</option>
+                    }
+                </datalist>
+            </div>
+            <div class="form-group col-12">
+                <label>Descripción</label>
+                <textarea class="form-control" rows="2" [(ngModel)]="registro.descripcion" name="descripcion"></textarea>
+            </div>
+            <div class="form-group col-md-3">
+                <label>Sucursal</label>
+                <select class="form-select" [(ngModel)]="registro.id_sucursal" name="id_sucursal">
+                    <option value="">Seleccione</option>
+                    @for (s of sucursales; track s.id) {
+                        <option [ngValue]="s.id">{{ s.nombre }}</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group col-md-3">
+                <label>Profesional</label>
+                <select class="form-select" [(ngModel)]="registro.id_usuario_profesional" name="id_usuario_profesional">
+                    <option value="">Seleccione</option>
+                    @for (p of profesionales; track p.id) {
+                        <option [ngValue]="p.id_usuario">{{ p.nombre }}</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="d-flex justify-content-end mt-3">
+            <button type="button" class="btn btn-primary" [disabled]="guardando" (click)="guardar()">Guardar</button>
+        </div>
+    </section>
+}

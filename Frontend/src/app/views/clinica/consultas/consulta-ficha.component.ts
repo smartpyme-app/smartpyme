@@ -11,6 +11,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 })
 export class ConsultaFichaComponent implements OnInit {
   consulta: any = null;
+  diagnosticos: any[] = [];
   cargando = true;
   idPaciente = 0;
   idConsulta = 0;
@@ -44,10 +45,24 @@ export class ConsultaFichaComponent implements OnInit {
         next: (respuesta) => {
           this.consulta = respuesta?.data ?? null;
           this.cargando = false;
+          this.cargarDiagnosticos();
         },
         error: (error) => {
           this.alertService.error(error);
           this.cargando = false;
+        },
+      });
+  }
+
+  cargarDiagnosticos(): void {
+    if (!this.apiService.hasPermission('clinica.diagnosticos.ver')) {
+      return;
+    }
+    this.apiService.getAll('clinica/pacientes/' + this.idPaciente + '/diagnosticos', { id_consulta: this.idConsulta })
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (respuesta) => {
+          this.diagnosticos = respuesta?.data ?? [];
         },
       });
   }

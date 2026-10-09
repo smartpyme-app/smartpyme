@@ -21,6 +21,8 @@ class ClinicaModuloPermissionSeeder extends Seeder
         'expediente' => 'Expediente clínico',
         'profesionales' => 'Profesionales',
         'consultas' => 'Consultas clínicas',
+        'tratamientos' => 'Tratamientos clínicos',
+        'diagnosticos' => 'Diagnósticos clínicos',
     ];
 
     /** @return list<string> */

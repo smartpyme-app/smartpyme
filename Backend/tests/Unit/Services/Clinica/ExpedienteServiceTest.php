@@ -68,6 +68,10 @@ class ExpedienteServiceTest extends TestCase
         $this->assertTrue($data['secciones'][0]['disponible']);
         $this->assertSame('historial', $data['secciones'][0]['slug']);
         $this->assertFalse($data['secciones'][2]['disponible']);
+        $this->assertTrue($data['secciones'][3]['disponible']);
+        $this->assertSame('diagnosticos', $data['secciones'][3]['slug']);
+        $this->assertTrue($data['secciones'][4]['disponible']);
+        $this->assertSame('tratamientos', $data['secciones'][4]['slug']);
     }
 
     private function pacienteConExpediente(string $estado): Paciente

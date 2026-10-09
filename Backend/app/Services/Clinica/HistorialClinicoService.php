@@ -11,6 +11,10 @@ class HistorialClinicoService
 
     public const TIPO_CONSULTA = 'consulta';
 
+    public const TIPO_TRATAMIENTO = 'tratamiento';
+
+    public const TIPO_DIAGNOSTICO = 'diagnostico';
+
     /** @param array{tipo?: string, fecha_desde?: string, fecha_hasta?: string, id_usuario_profesional?: int} $filtros */
     public function listar(Expediente $expediente, array $filtros, bool $detalleClinico): array
     {
@@ -109,6 +113,16 @@ class HistorialClinicoService
                 'ruta' => '/clinica/pacientes/'.$idPaciente.'/consultas/'.$evento->origen_id,
             ];
         }
+        if ($evento->origen_tipo === 'tratamiento') {
+            return [
+                'ruta' => '/clinica/pacientes/'.$idPaciente.'/tratamientos/'.$evento->origen_id,
+            ];
+        }
+        if ($evento->origen_tipo === 'diagnostico') {
+            return [
+                'ruta' => '/clinica/pacientes/'.$idPaciente.'/diagnosticos/'.$evento->origen_id,
+            ];
+        }
 
         return null;
     }
@@ -118,6 +132,8 @@ class HistorialClinicoService
         return match ($tipo) {
             self::TIPO_APERTURA => 'Apertura de expediente',
             self::TIPO_CONSULTA => 'Consulta',
+            self::TIPO_TRATAMIENTO => 'Tratamiento',
+            self::TIPO_DIAGNOSTICO => 'Diagnóstico',
             'vacuna' => 'Vacuna',
             'laboratorio' => 'Laboratorio',
             default => ucfirst(str_replace('_', ' ', $tipo)),

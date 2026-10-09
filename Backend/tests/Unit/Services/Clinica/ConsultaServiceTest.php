@@ -6,7 +6,9 @@ use App\Models\Clinica\Consulta;
 use App\Models\Clinica\Expediente;
 use App\Models\Clinica\HistorialEvento;
 use App\Models\Clinica\Paciente;
+use App\Models\Clinica\Diagnostico;
 use App\Services\Clinica\ConsultaService;
+use App\Services\Clinica\DiagnosticoService;
 use App\Services\Clinica\ExpedienteService;
 use App\Services\Clinica\HistorialClinicoService;
 use Illuminate\Database\Schema\Blueprint;
@@ -49,7 +51,8 @@ class ConsultaServiceTest extends TestCase
 
         $historial = new HistorialClinicoService();
         $expedientes = new ExpedienteService($historial);
-        $this->consultas = new ConsultaService($expedientes, $historial);
+        $diagnosticos = new DiagnosticoService($expedientes, $historial);
+        $this->consultas = new ConsultaService($expedientes, $historial, $diagnosticos);
     }
 
     public function test_crear_solo_con_campos_minimos(): void
@@ -152,6 +155,34 @@ class ConsultaServiceTest extends TestCase
         $resumen = $this->consultas->presentar($consulta, false);
         $this->assertArrayNotHasKey('anamnesis', $resumen);
         $this->assertSame('Control', $resumen['motivo']);
+    }
+
+    public function test_cerrar_consulta_cierra_diagnosticos_activos(): void
+    {
+        [$paciente] = $this->pacienteYExpediente();
+        $consulta = $this->consultas->crear(1, 10, $paciente, [
+            'fecha' => '2026-10-05',
+            'motivo' => 'Control',
+            'id_sucursal' => 1,
+            'id_usuario_profesional' => 10,
+        ]);
+        $expediente = Expediente::where('id_paciente', $paciente->id)->first();
+        Diagnostico::create([
+            'id_empresa' => 1,
+            'id_expediente' => $expediente->id,
+            'id_paciente' => $paciente->id,
+            'id_consulta' => $consulta->id,
+            'id_sucursal' => 1,
+            'id_usuario_profesional' => 10,
+            'descripcion' => 'Dx activo',
+            'rol' => 'secundario',
+            'fecha' => '2026-10-05',
+            'estado' => 'activo',
+        ]);
+
+        $this->consultas->cerrar($consulta);
+
+        $this->assertSame('cerrado', Diagnostico::where('id_consulta', $consulta->id)->value('estado'));
     }
 
     public function test_cerrar_consulta_registra_evento_en_historial(): void
@@ -259,6 +290,24 @@ class ConsultaServiceTest extends TestCase
         Schema::create('clinica_profesional_sucursales', function (Blueprint $table): void {
             $table->unsignedBigInteger('id_profesional');
             $table->integer('id_sucursal');
+        });
+        Schema::create('clinica_diagnosticos', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedInteger('id_empresa');
+            $table->unsignedBigInteger('id_expediente');
+            $table->unsignedBigInteger('id_paciente');
+            $table->unsignedBigInteger('id_consulta')->nullable();
+            $table->unsignedInteger('id_sucursal')->default(1);
+            $table->unsignedBigInteger('id_usuario_profesional');
+            $table->unsignedBigInteger('id_usuario_registro')->nullable();
+            $table->unsignedBigInteger('id_diagnostico_anterior')->nullable();
+            $table->string('codigo', 32)->nullable();
+            $table->text('descripcion');
+            $table->string('rol', 16)->default('secundario');
+            $table->date('fecha');
+            $table->string('estado', 16)->default('activo');
+            $table->string('motivo_anulacion', 255)->nullable();
+            $table->timestamps();
         });
     }
 

@@ -79,6 +79,23 @@
                                     </a>
                                 </div>
                             }
+                            @if (seccion.disponible && seccion.slug === 'diagnosticos') {
+                                <div class="mt-auto pt-3 d-grid gap-2">
+                                    <a [routerLink]="['/clinica/pacientes', idPaciente, 'diagnosticos']" class="btn btn-default w-100">Ver diagnósticos</a>
+                                    @if (expediente.operativo && apiService.hasPermission('clinica.diagnosticos.crear')) {
+                                        <a [routerLink]="['/clinica/pacientes', idPaciente, 'diagnosticos', 'nuevo']" class="btn btn-primary w-100">
+                                            <i class="fa fa-plus me-1"></i> Nuevo diagnóstico
+                                        </a>
+                                    }
+                                </div>
+                            }
+                            @if (seccion.disponible && seccion.slug === 'tratamientos' && expediente.operativo && apiService.hasPermission('clinica.tratamientos.crear')) {
+                                <div class="mt-auto pt-3">
+                                    <a [routerLink]="['/clinica/pacientes', idPaciente, 'tratamientos', 'nuevo']" class="btn btn-primary w-100">
+                                        <i class="fa fa-plus me-1"></i> Nuevo tratamiento
+                                    </a>
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>

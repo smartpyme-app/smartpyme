@@ -72,6 +72,8 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/clinica/pacientes.php');
 	require base_path('routes/modulos/clinica/profesionales.php');
 	require base_path('routes/modulos/clinica/consultas.php');
+	require base_path('routes/modulos/clinica/tratamientos.php');
+	require base_path('routes/modulos/clinica/diagnosticos.php');
 	require base_path('routes/modulos/incentivos.php');
 
 	// Restaurante
