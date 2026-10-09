@@ -85,7 +85,7 @@ class AnexoSujetosExcluidosExport implements FromCollection, WithMapping, WithCu
                 \Carbon\Carbon::parse($compra->fecha)->format('d/m/Y'),  // D - FECHA DE EMISI N DEL DOCUMENTO
                 $colSerie,  // E - Número de serie = sello recepción (DTE)
                 $colNumDoc,  // F - Número documento = código generación DTE
-                number_format($compra->total, 2, '.', ''),  // G - MONTO DE LA OPERACIÖN
+                number_format(SujetosExcluidosDteHelper::montoOperacionBruto($compra), 2, '.', ''),  // G - MONTO DE LA OPERACIÖN (bruto)
                 number_format($compra->iva, 2, '.', ''),  // H - MONTO DE LA RETENCIÖN IVA 13%
                 $this->tipoOperacion($compra->tipo_operacion),  // Q - TIPO DE OPERACIÖN
                 $this->tipoClasificacion($compra->tipo_clasificacion),  // R - CLASIFICACI Costo gasto

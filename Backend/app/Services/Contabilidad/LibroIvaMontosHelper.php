@@ -7,6 +7,16 @@ namespace App\Services\Contabilidad;
  */
 class LibroIvaMontosHelper
 {
+    /** @var list<string> */
+    public const TIPOS_DOCUMENTO_COMPRA_LIBRO = [
+        'Crédito fiscal',
+        'Factura',
+        'Factura de exportación',
+        'Importación',
+        'Nota de crédito',
+        'Nota de débito',
+    ];
+
     public static function ventasExentas(object $documento): float
     {
         $exenta = (float) ($documento->exenta ?? 0);
@@ -27,6 +37,42 @@ class LibroIvaMontosHelper
     public static function ventasNoSujetas(object $documento): float
     {
         return round(max(0, (float) ($documento->no_sujeta ?? 0)), 2);
+    }
+
+    public static function montoVentaPropioSinCuentaTerceros(object $venta): float
+    {
+        $total = (float) ($venta->total ?? 0);
+        $ct = (float) ($venta->cuenta_a_terceros ?? 0);
+        $neto = $total - $ct;
+
+        return $neto > 0 ? round($neto, 2) : 0.0;
+    }
+
+    /**
+     * Devoluciones de compra viven en devoluciones_compra y traen id_compra.
+     */
+    public static function multiplicadorDevolucionCompra(object $registro): float
+    {
+        return isset($registro->id_compra) ? -1.0 : 1.0;
+    }
+
+    public static function applyFiltroTipoDocumentoCompraLibro($query): void
+    {
+        $query->where(function ($q) {
+            $q->whereIn('tipo_documento', self::TIPOS_DOCUMENTO_COMPRA_LIBRO)
+                ->orWhereNull('tipo_documento')
+                ->orWhere('tipo_documento', '');
+        });
+    }
+
+    public static function tipoDocumentoCompraParaLibro(object $registro): string
+    {
+        $tipo = trim((string) ($registro->tipo_documento ?? ''));
+        if ($tipo !== '') {
+            return $tipo;
+        }
+
+        return isset($registro->id_compra) ? 'Nota de crédito' : $tipo;
     }
 
     public static function ventasGravadas(object $documento): float

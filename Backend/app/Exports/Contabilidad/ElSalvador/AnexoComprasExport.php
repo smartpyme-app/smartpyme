@@ -5,7 +5,6 @@ namespace App\Exports\Contabilidad\ElSalvador;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Devoluciones\Devolucion;
 use App\Models\Compras\Gastos\Gasto;
-use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
@@ -29,12 +28,14 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
 
+        $tipos = LibroIvaMontosHelper::TIPOS_DOCUMENTO_COMPRA_LIBRO;
+
         $compras = Compra::with(['proveedor'])
             ->where('estado', '!=', 'Anulada')
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
+            ->whereIn('tipo_documento', $tipos)
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
             ->get()
@@ -49,7 +50,7 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
+            ->whereIn('tipo_documento', $tipos)
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get()
             ->map(function ($gasto) {
@@ -57,11 +58,22 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
                 return $gasto;
             });
 
-        $libroCompras = $compras->merge($compras)->merge($gastos)->sortBy(function ($item) {
-                return [$item['fecha']];
+        $devoluciones = Devolucion::with(['proveedor', 'detalles'])
+            ->where('enable', true)
+            ->when($request->id_sucursal, function ($q) use ($request) {
+                $q->where('id_sucursal', $request->id_sucursal);
+            })
+            ->where(function ($q) {
+                LibroIvaMontosHelper::applyFiltroTipoDocumentoCompraLibro($q);
+            })
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->get()
+            ->map(function ($devolucion) {
+                $devolucion->origen = 'devolucion';
+                return $devolucion;
             });
 
-        return $libroCompras;
+        return $compras->merge($gastos)->merge($devoluciones)->sortBy('fecha');
 
     }
 
@@ -69,26 +81,31 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
             setlocale(LC_NUMERIC, 'C');
 
             $proveedor = optional($compra->proveedor()->first());
+            $multiplier = LibroIvaMontosHelper::multiplicadorDevolucionCompra($compra);
+            $tipoDocumento = LibroIvaMontosHelper::tipoDocumentoCompraParaLibro($compra);
 
             $tipo = '03'; //CCF
 
-            if ($compra->tipo_documento == 'Factura') {
+            if ($tipoDocumento == 'Factura') {
                 $tipo = '01';
             }
-            if ($compra->tipo_documento == 'Nota de crédito') {
+            if ($tipoDocumento == 'Nota de crédito') {
                 $tipo = '05';
             }
 
-            if ($compra->tipo_documento == 'Nota de débito') {
+            if ($tipoDocumento == 'Nota de débito') {
                 $tipo = '06';
             }
 
-            if ($compra->tipo_documento == 'Factura de exportación') {
+            if ($tipoDocumento == 'Factura de exportación') {
                 $tipo = '11';
             }
 
-            $compraExenta = LibroIvaMontosHelper::comprasExentas($compra);
-            $compraGravada = LibroIvaMontosHelper::comprasGravadas($compra);
+            $compraExenta = LibroIvaMontosHelper::comprasExentas($compra) * $multiplier;
+            $compraGravada = LibroIvaMontosHelper::comprasGravadas($compra) * $multiplier;
+            $iva = (float) ($compra->iva ?? 0) * $multiplier;
+            $total = (float) ($compra->total ?? 0) * $multiplier;
+            $otrosImpuestos = (float) ($compra->total_otros_impuestos ?? 0) * $multiplier;
 
             $data = [
                 \Carbon\Carbon::parse($compra->fecha)->format('d/m/Y'), //A Fecha sin ceros a la izquierda
@@ -97,15 +114,15 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
                 str_replace('-', '', $compra->referencia), //D Num Documento
                 $proveedor->ncr ? $proveedor->ncr : $proveedor->nit,  // E - NIT o NRC
                 $compra->nombre_proveedor,  // F - NOMBRE, RAZ N SOCIAL O DENOMINACI N
-                number_format($compra->total_otros_impuestos, 2, '.', '') ?? '0',  // G - Compras internas exentas
-                number_format($compraExenta, 2, '.', '') ?? '0' ,  // H - Internaciones exentas
+                number_format($otrosImpuestos, 2, '.', ''),  // G - Compras internas exentas
+                number_format($compraExenta, 2, '.', ''),  // H - Internaciones exentas
                 '0',  // I - Importaciones exentas
                 number_format($compraGravada, 2, '.', ''),  // J - Compras gravadas
                 '0',  // K - Internaciones gravadas
                 '0',  // l - Importaciones gravadas de bienes
                 '0',  // M - Importaciones gravadas de servicios
-                number_format($compra->iva, 2, '.', ''),  // N - credito fiscal
-                number_format($compra->total, 2, '.', ''),  // O - total
+                number_format($iva, 2, '.', ''),  // N - credito fiscal
+                number_format($total, 2, '.', ''),  // O - total
                 null,  // P - dui
                 $this->tipoOperacion($compra->tipo_operacion),  // Q - TIPO DE OPERACIÖN
                 $this->tipoClasificacion($compra->tipo_clasificacion),  // R - CLASIFICACI Costo gasto

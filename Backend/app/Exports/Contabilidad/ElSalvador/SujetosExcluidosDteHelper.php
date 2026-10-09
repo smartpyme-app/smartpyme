@@ -41,4 +41,18 @@ final class SujetosExcluidosDteHelper
 
         return '';
     }
+
+    /** Monto bruto de la operación (anexo F07), antes de retención de renta. */
+    public static function montoOperacionBruto($registro): float
+    {
+        $subTotal = (float) ($registro->sub_total ?? 0);
+        if ($subTotal > 0) {
+            return round($subTotal, 2);
+        }
+
+        return round(
+            (float) ($registro->total ?? 0) + (float) ($registro->renta_retenida ?? 0),
+            2
+        );
+    }
 }

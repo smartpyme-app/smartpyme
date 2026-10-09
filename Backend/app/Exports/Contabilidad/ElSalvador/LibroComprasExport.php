@@ -73,7 +73,7 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
+            ->whereIn('tipo_documento', LibroIvaMontosHelper::TIPOS_DOCUMENTO_COMPRA_LIBRO)
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
             ->get();
@@ -85,7 +85,7 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
+            ->whereIn('tipo_documento', LibroIvaMontosHelper::TIPOS_DOCUMENTO_COMPRA_LIBRO)
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get();
 
@@ -94,7 +94,9 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
             ->when($request->id_sucursal, function ($query) use ($request) {
                 return $query->where('id_sucursal', $request->id_sucursal);
             })
-            ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
+            ->where(function ($q) {
+                LibroIvaMontosHelper::applyFiltroTipoDocumentoCompraLibro($q);
+            })
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get();
             
@@ -106,7 +108,7 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
     public function map($compra): array
     {
         $proveedor = optional($compra->proveedor()->first());
-        $multiplier = isset($compra->id_compra) ? -1 : 1;
+        $multiplier = LibroIvaMontosHelper::multiplicadorDevolucionCompra($compra);
 
         // Valores base
         $data = [
