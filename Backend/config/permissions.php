@@ -634,6 +634,10 @@ return [
             'crear' => 'clinica.diagnosticos.crear',
             'editar' => 'clinica.diagnosticos.editar',
         ],
+        'medicamentos' => [
+            'ver' => 'clinica.medicamentos.ver',
+            'configurar' => 'clinica.medicamentos.configurar',
+        ],
     ],
 
     /*

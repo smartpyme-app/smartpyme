@@ -85,6 +85,14 @@ class ClinicaPacientesRoutesTest extends TestCase
             'verificar.funcionalidad:clinica-profesionales',
             'permission:clinica.profesionales.editar',
         ]);
+        $this->assertRoute('api/clinica/medicamentos-productos', 'GET', [
+            'verificar.funcionalidad:clinica-pacientes',
+            'permission:clinica.medicamentos.ver',
+        ]);
+        $this->assertRoute('api/clinica/medicamentos-productos/{idProducto}', 'PUT', [
+            'verificar.funcionalidad:clinica-pacientes',
+            'permission:clinica.medicamentos.configurar',
+        ]);
     }
 
     public function test_no_hay_ruta_para_borrar_pacientes(): void

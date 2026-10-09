@@ -25,4 +25,8 @@ final class ClinicaPermisos
     public const DIAGNOSTICOS_CREAR = 'clinica.diagnosticos.crear';
 
     public const DIAGNOSTICOS_EDITAR = 'clinica.diagnosticos.editar';
+
+    public const MEDICAMENTOS_VER = 'clinica.medicamentos.ver';
+
+    public const MEDICAMENTOS_CONFIGURAR = 'clinica.medicamentos.configurar';
 }
