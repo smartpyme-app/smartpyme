@@ -8,7 +8,7 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Illuminate\Http\Request;
-use App\Models\Admin\Empresa;
+use App\Services\Contabilidad\LibroIvaMontosHelper;
 
 class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustomCsvSettings
 {
@@ -60,33 +60,60 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
         
     }
 
+    /**
+     * @return array{exenta: float, gravada: float, no_sujeta: float, total_propio: float, exportacion: float}
+     */
+    private function montosAnexoConsumidor(Venta $venta, bool $esFacturaExportacion): array
+    {
+        $totalPropio = LibroIvaMontosHelper::montoVentaPropioSinCuentaTerceros($venta);
+        $dte = is_array($venta->dte ?? null) ? $venta->dte : [];
+        $resumen = $dte['resumen'] ?? [];
+
+        if ($resumen !== []) {
+            return [
+                'exenta' => $esFacturaExportacion ? 0.0 : (float) ($resumen['totalExenta'] ?? 0),
+                'gravada' => $esFacturaExportacion ? 0.0 : (float) ($resumen['totalGravada'] ?? 0),
+                'no_sujeta' => (float) ($resumen['totalNoSuj'] ?? 0),
+                'total_propio' => $totalPropio,
+                'exportacion' => $esFacturaExportacion ? $totalPropio : 0.0,
+            ];
+        }
+
+        if ($esFacturaExportacion) {
+            return [
+                'exenta' => 0.0,
+                'gravada' => 0.0,
+                'no_sujeta' => 0.0,
+                'total_propio' => $totalPropio,
+                'exportacion' => $totalPropio,
+            ];
+        }
+
+        if ((float) ($venta->iva ?? 0) > 0) {
+            return [
+                'exenta' => 0.0,
+                'gravada' => $totalPropio,
+                'no_sujeta' => LibroIvaMontosHelper::ventasNoSujetas($venta),
+                'total_propio' => $totalPropio,
+                'exportacion' => 0.0,
+            ];
+        }
+
+        return [
+            'exenta' => $totalPropio,
+            'gravada' => 0.0,
+            'no_sujeta' => LibroIvaMontosHelper::ventasNoSujetas($venta),
+            'total_propio' => $totalPropio,
+            'exportacion' => 0.0,
+        ];
+    }
+
     public function map($venta): array{
             setlocale(LC_NUMERIC, 'C');
 
             $documento = $venta->documento;
-            $cliente = optional($venta->cliente);
-
-            $tipo = '01'; //CF
             $esFacturaExportacion = $documento && strtolower(trim($documento->nombre ?? '')) === 'factura de exportación';
-
-            if ($esFacturaExportacion) {
-                $tipo = '11';
-            }
-
-            // Para facturas de exportación, no asignar valores a gravada/exenta
-            $cuentaTerceros = (float) ($venta->cuenta_a_terceros ?? 0);
-            $totalPropio = max(0, (float) $venta->total - $cuentaTerceros);
-
-            if ($esFacturaExportacion) {
-                $venta->exenta = 0;
-                $venta->gravada = 0;
-            } elseif ($venta->iva > 0) {
-                $venta->exenta = 0;
-                $venta->gravada = $totalPropio;
-            } else {
-                $venta->gravada = 0;
-                $venta->exenta = $totalPropio;
-            }
+            $montos = $this->montosAnexoConsumidor($venta, $esFacturaExportacion);
 
            // Según guía de Hacienda:
            // Para documentos IMPRESOS (sin FE): F y G = correlativo, H e I = correlativo
@@ -108,16 +135,16 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
                 $tieneFE ? '' : $correlativo, //H Numero Control (vacío si DTE, correlativo si impreso)
                 $tieneFE ? '' : $correlativo, //I Numero Control (vacío si DTE, correlativo si impreso)
                 NULL, //J Caja registradora
-                $venta->exenta ? number_format($venta->exenta, 2, '.', '') : '0.00', //K Exentas
+                $montos['exenta'] > 0 ? number_format($montos['exenta'], 2, '.', '') : '0.00', //K Exentas
                 '0.00', //L No Exentas no sujetas a proporcionalidad
-                $venta->no_sujeta ? number_format($venta->no_sujeta, 2, '.', '') : '0.00', //M No Sujetas
-                $esFacturaExportacion ? '0.00' : number_format($venta->gravada, 2, '.', ''), //N Gravadas'
-                $esFacturaExportacion ? number_format(max(0, (float) $venta->total - $cuentaTerceros), 2, '.', ''): '0.00', //O Exportacion internas (propio, sin terceros)'
+                $montos['no_sujeta'] > 0 ? number_format($montos['no_sujeta'], 2, '.', '') : '0.00', //M No Sujetas (sin cobro a terceros)
+                $esFacturaExportacion ? '0.00' : number_format($montos['gravada'], 2, '.', ''), //N Gravadas'
+                $esFacturaExportacion ? number_format($montos['exportacion'], 2, '.', ''): '0.00', //O Exportacion internas (propio, sin terceros)'
                 '0.00', //P Exportacion externas'
                 '0.00', //Q Exportacion servicios'
                 '0.00', //R Ventas zonas francas'
-                number_format($cuentaTerceros, 2, '.', ''), //S Ventas a terceros
-                $venta->total ? number_format($venta->total, 2, '.', '') : '0.00', //T Total
+                '0.00', //S Ventas a terceros — no aplica en anexo consumidor final
+                number_format($montos['total_propio'], 2, '.', ''), //T Total (sin cobro por cuenta de terceros)
                 $this->tipoOperacion($venta->tipo_operacion), //U Tipo operacion renta 1 Gravada 2 Exenta
                 $this->tipoRentaVenta($venta), //V Tipo ingreso renta
                 2, //W num de Anexo

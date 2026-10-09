@@ -124,7 +124,7 @@ class LibroSujetosExcluidosExport implements FromCollection, WithMapping, WithHe
             'sello' => $sello,
             'cod_generacion' => $codGen,
             'referencia' => $compra->referencia,
-            'total' => $compra->total,
+            'total' => SujetosExcluidosDteHelper::montoOperacionBruto($compra),
             'iva' => $compra->iva,
             'renta_retenida' => (float) ($compra->renta_retenida ?? 0),
             'tipo_operacion' => $this->tipoOperacion($compra->tipo_operacion),

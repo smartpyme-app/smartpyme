@@ -451,7 +451,7 @@ class LibrosIvaSvController extends Controller
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
+            ->whereIn('tipo_documento', LibroIvaMontosHelper::TIPOS_DOCUMENTO_COMPRA_LIBRO)
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
             ->get()
@@ -506,7 +506,7 @@ class LibrosIvaSvController extends Controller
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
+            ->whereIn('tipo_documento', LibroIvaMontosHelper::TIPOS_DOCUMENTO_COMPRA_LIBRO)
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get()
             ->map(function ($gasto) {
@@ -557,7 +557,9 @@ class LibrosIvaSvController extends Controller
             ->when($request->id_sucursal, function ($query) use ($request) {
                 return $query->where('id_sucursal', $request->id_sucursal);
             })
-            ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
+            ->where(function ($q) {
+                LibroIvaMontosHelper::applyFiltroTipoDocumentoCompraLibro($q);
+            })
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get()
             ->map(function ($devolucion) {
@@ -569,12 +571,12 @@ class LibrosIvaSvController extends Controller
         // Transformar gastos
         $devolucionesData = $devoluciones->map(function ($devolucion) {
             $proveedor = optional($devolucion->proveedor()->first());
-
+            $tipoDocumento = LibroIvaMontosHelper::tipoDocumentoCompraParaLibro($devolucion);
 
             $data = [
                 'fecha'                 => $devolucion->fecha,
                 'clase_documento'       => 1,
-                'tipo_documento'        => $devolucion->tipo_documento,
+                'tipo_documento'        => $tipoDocumento,
                 'num_documento'         => $devolucion->referencia,
                 'nit_nrc'               => $proveedor->ncr ?? $proveedor->nit,
                 'nombre_proveedor'      => $devolucion->nombre_proveedor,
@@ -592,7 +594,7 @@ class LibrosIvaSvController extends Controller
                 'origen' => $devolucion->origen,
             ];
 
-            switch ($devolucion->tipo_documento) {
+            switch ($tipoDocumento) {
                 case 'Sujeto excluido':
                     $data['sujeto_excluido'] = $devolucion->total * -1;
                     break;
@@ -680,7 +682,7 @@ class LibrosIvaSvController extends Controller
                 'codigo_generacion' => $codGen,
                 'serie' => $compra->num_serie,  // serie física o auxiliar
                 'referencia' => $compra->referencia,  // F - NUMERO DE DOCUMENTO
-                'total' => $compra->total,  // G - MONTO DE LA OPERACIÖN
+                'total' => SujetosExcluidosDteHelper::montoOperacionBruto($compra),  // G - MONTO DE LA OPERACIÖN (bruto)
                 'iva' => $compra->iva,  // H - MONTO DE LA RETENCIÖN IVA 13%
                 'renta_retenida' => (float) ($compra->renta_retenida ?? 0),
                 'tipo_operacion' => $compra->exenta > 0 ? 'Exenta' : 'Gravada',  // I - TIPO DE OPERACIÖN
@@ -726,7 +728,7 @@ class LibrosIvaSvController extends Controller
                 'codigo_generacion' => $codGen,
                 'serie' => '',
                 'referencia' => $gasto->referencia,
-                'total' => $gasto->total,
+                'total' => SujetosExcluidosDteHelper::montoOperacionBruto($gasto),
                 'iva' => $gasto->iva,
                 'renta_retenida' => (float) ($gasto->renta_retenida ?? 0),
                 'tipo_operacion' => $gasto->exenta > 0 ? 'Exenta' : 'Gravada',  // I - TIPO DE OPERACIÖN
