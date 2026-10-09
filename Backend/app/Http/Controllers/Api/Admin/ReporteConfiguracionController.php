@@ -343,6 +343,7 @@ class ReporteConfiguracionController extends Controller
         // se antepone al binario y Content-Length recorta el final del xlsx.
         if (ob_get_length() > 0) {
             ob_end_clean();
+            ob_start();
         }
 
         return response()->download($path, $nombre, [
