@@ -10,6 +10,7 @@ use App\Models\Inventario\Producto;
 use App\Models\Admin\Bomba;
 use App\Models\Admin\Tanque;
 use App\Models\Inventario\Inventario;
+use App\Http\Requests\Ventas\Detalles\AsignarProductoDetalleRequest;
 use App\Http\Requests\Ventas\Detalles\StoreDetalleRequest;
 
 class DetallesController extends Controller
@@ -68,6 +69,33 @@ class DetallesController extends Controller
 
         return Response()->json($detalle, 200);
 
+    }
+
+    public function asignarProducto(AsignarProductoDetalleRequest $request, $id)
+    {
+        $detalle = Detalle::findOrFail($id);
+
+        if ((int) $detalle->id_producto !== 0 && $detalle->producto) {
+            return Response()->json([
+                'titulo' => 'No permitido',
+                'error' => 'Este detalle ya tiene un producto asignado.',
+                'code' => 400,
+            ], 400);
+        }
+
+        $producto = Producto::findOrFail($request->input('id_producto'));
+        if (($producto->tipo ?? '') !== 'Servicio') {
+            return Response()->json([
+                'titulo' => 'No permitido',
+                'error' => 'Solo puede asignar un servicio a líneas importadas sin producto (no productos de inventario).',
+                'code' => 400,
+            ], 400);
+        }
+
+        $detalle->id_producto = $producto->id;
+        $detalle->save();
+
+        return Response()->json($detalle->load('producto'), 200);
     }
 
     public function delete($id)

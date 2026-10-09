@@ -12,6 +12,8 @@ use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Models\Inventario\Categorias\Cuenta as CuentaCategoria;
 use App\Services\Contabilidad\Partidas\ReglaCuentaIva;
 use App\Services\Contabilidad\Partidas\ReglaIngresoVenta;
+use App\Services\Ventas\VincularProductoDetalleVentaService;
+use App\Exceptions\PartidaDetalleSinProductoException;
 use Illuminate\Support\Facades\DB;
 use Exception;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -52,6 +54,11 @@ class VentasService
         }
 
         Partida::assertNoExisteParaOrigen('Venta', $venta->id, 'Ya existen partidas contables generadas para esta venta.');
+
+        $payloadSinProducto = app(VincularProductoDetalleVentaService::class)->resolverAntesDePartida($venta);
+        if ($payloadSinProducto !== null) {
+            throw new PartidaDetalleSinProductoException($payloadSinProducto);
+        }
 
         $refDocumento = $venta->referenciaDocumentoContable();
         $concepto = 'Ingresos por ventas. ' . $refDocumento;
@@ -383,7 +390,7 @@ class VentasService
                 'success' => true,
                 'message' => 'Partidas contables de venta creadas exitosamente',
                 'partida_ingresos_id' => $partida_ingresos->id,
-                'partida_costos_id' => $partida_costos->id
+                'partida_costos_id' => $partida_costos->id,
             ];
 
         } catch (Exception $e) {

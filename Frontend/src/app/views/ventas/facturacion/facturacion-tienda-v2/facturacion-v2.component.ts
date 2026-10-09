@@ -37,6 +37,7 @@ import { MHService } from '@services/MH.service';
 import { RestauranteService } from '@services/restaurante.service';
 import Swal from 'sweetalert2';
 import { CountryI18nService } from '@services/country-i18n.service';
+import { PartidaVentaFlowService } from '@services/contabilidad/partida-venta-flow.service';
 import {
   acumularImpuestosVentaConCierreResidual,
   calcularMontosLineaDetalle,
@@ -223,6 +224,7 @@ export class FacturacionV2Component implements OnInit {
     private fidelizacionService: FidelizacionService,
     private giftCardsService: GiftCardsService,
     private countryI18n: CountryI18nService,
+    private partidaVentaFlow: PartidaVentaFlowService,
   ) {
     this.router.routeReuseStrategy.shouldReuseRoute = function () {
       return false;
@@ -2693,7 +2695,7 @@ export class FacturacionV2Component implements OnInit {
     if (this.apiService.auth_user().empresa.generar_partidas !== 'Auto') {
       return;
     }
-    this.apiService.store('contabilidad/partida/venta', ventaGuardada).subscribe({
+    this.partidaVentaFlow.generarPartida(ventaGuardada).subscribe({
       next: () => {},
       error: (error) => {
         this.alertService.error(error);

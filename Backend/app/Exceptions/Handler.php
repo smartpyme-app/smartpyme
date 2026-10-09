@@ -164,6 +164,13 @@ class Handler extends ExceptionHandler
                 );
             }
 
+            if ($exception instanceof PartidaDetalleSinProductoException) {
+                return $this->applyCorsToApi(
+                    $request,
+                    response()->json($exception->payload, $exception->statusCode())
+                );
+            }
+
             if ($exception instanceof HttpException) {
                 return $this->applyCorsToApi(
                     $request,

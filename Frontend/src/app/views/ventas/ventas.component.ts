@@ -48,6 +48,7 @@ import {
 } from '../../helpers/export-period.helper';
 import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { VentaRecurrenciaConfigComponent } from '@shared/modals/venta-recurrencia-config/venta-recurrencia-config.component';
+import { PartidaVentaFlowService } from '@services/contabilidad/partida-venta-flow.service';
 
 export type VentasExportPeriodoTipo = 'detalles' | 'ventas' | 'general';
 
@@ -245,7 +246,8 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     private sharedDataService: SharedDataService,
     private funcionalidadesService: FuncionalidadesService,
     private boxfulApiService: BoxfulApiService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private partidaVentaFlow: PartidaVentaFlowService
   ) {
     super(apiService, alertService, modalManager, {
       endpoint: 'venta',
@@ -1985,12 +1987,17 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       }, error => { this.alertService.error(error); });
   }
 
-  generarPartidaContable(venta:any){
-    this.apiService.store('contabilidad/partida/venta', venta)
+  generarPartidaContable(venta: any) {
+    this.partidaVentaFlow.generarPartida(venta)
       .pipe(this.untilDestroyed())
-      .subscribe(venta => {
-        this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
-      },error => {this.alertService.error(error);});
+      .subscribe({
+        next: () => {
+          this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+        },
+        error: (error) => {
+          this.alertService.error(error);
+        },
+      });
   }
 
   verificarAccesoCreditosClientes() {
