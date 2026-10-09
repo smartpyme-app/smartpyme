@@ -158,12 +158,36 @@ export class PermissionService {
 
   // Métodos de verificación de roles basados en tipo de usuario (legacy)
   isAdmin(): boolean {
-    let usuario = this.getAuthUser();
+    const usuario = this.getAuthUser();
     if (!usuario) return false;
-    return usuario.tipo == 'Administrador' || 
-           usuario.tipo == 'Contador' || 
-           usuario.tipo == 'Supervisor' || 
-           usuario.tipo == 'Supervisor Limitado';
+    if (
+      usuario.tipo == 'Administrador' ||
+      usuario.tipo == 'Contador' ||
+      usuario.tipo == 'Supervisor' ||
+      usuario.tipo == 'Supervisor Limitado'
+    ) {
+      return true;
+    }
+
+    const stored = localStorage.getItem('SP_user_permissions');
+    if (!stored) {
+      return false;
+    }
+    try {
+      const role = JSON.parse(stored).role;
+      if (typeof role !== 'string' || !role) {
+        return false;
+      }
+      return (
+        role === 'admin' ||
+        role === 'usuario_contador' ||
+        role === 'usuario_supervisor' ||
+        role === 'usuario_supervisor_limitado' ||
+        role === 'supervisor_limitado'
+      );
+    } catch {
+      return false;
+    }
   }
 
   isAdminCreate(): boolean {
