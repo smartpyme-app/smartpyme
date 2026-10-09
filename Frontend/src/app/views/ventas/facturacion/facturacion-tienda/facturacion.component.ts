@@ -47,6 +47,7 @@ import { pedirPinDescuentoSiAplica } from '../venta-descuento-autorizacion.util'
 import Swal from 'sweetalert2';
 import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
 import { CountryI18nService } from '@services/country-i18n.service';
+import { PartidaVentaFlowService } from '@services/contabilidad/partida-venta-flow.service';
 
 import * as moment from 'moment';
 import {
@@ -243,6 +244,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
   private cdr = inject(ChangeDetectorRef);
   private countryI18n = inject(CountryI18nService);
+  private partidaVentaFlow = inject(PartidaVentaFlowService);
 
   constructor(
     public apiService: ApiService,
@@ -2985,7 +2987,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     if (this.apiService.auth_user().empresa.generar_partidas !== 'Auto') {
       return;
     }
-    this.apiService.store('contabilidad/partida/venta', ventaGuardada).pipe(this.untilDestroyed()).subscribe({
+    this.partidaVentaFlow.generarPartida(ventaGuardada).pipe(this.untilDestroyed()).subscribe({
       next: () => { this.cdr.markForCheck(); },
       error: (error) => {
         this.alertService.error(error);

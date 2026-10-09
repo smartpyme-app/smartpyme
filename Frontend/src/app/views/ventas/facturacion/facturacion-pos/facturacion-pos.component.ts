@@ -13,6 +13,7 @@ import { RestauranteService } from '@services/restaurante.service';
 import { FidelizacionService } from '@services/fidelizacion.service';
 import { GiftCardsService } from '@services/gift-cards.service';
 import { CountryI18nService } from '@services/country-i18n.service';
+import { PartidaVentaFlowService } from '@services/contabilidad/partida-venta-flow.service';
 import { PosMenuVentasProducto, PosMenuVentasService } from '@services/pos-menu-ventas.service';
 import { SumPipe } from '@pipes/sum.pipe';
 import { FilterPipe } from '@pipes/filter.pipe';
@@ -88,6 +89,7 @@ export class FacturacionPosComponent extends FacturacionV2Component {
       inject(FidelizacionService),
       inject(GiftCardsService),
       inject(CountryI18nService),
+      inject(PartidaVentaFlowService),
     );
   }
 
