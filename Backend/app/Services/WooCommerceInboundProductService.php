@@ -17,9 +17,15 @@ class WooCommerceInboundProductService
     /** @var ImpuestosService */
     private $impuestosService;
 
-    public function __construct(ImpuestosService $impuestosService)
-    {
+    /** @var WooCommerceProductImageSyncService */
+    private $wooProductImageSync;
+
+    public function __construct(
+        ImpuestosService $impuestosService,
+        WooCommerceProductImageSyncService $wooProductImageSync
+    ) {
         $this->impuestosService = $impuestosService;
+        $this->wooProductImageSync = $wooProductImageSync;
     }
 
     /**
@@ -138,6 +144,9 @@ class WooCommerceInboundProductService
             $producto = new Producto();
         }
 
+        $wooImages = isset($p['images']) && is_array($p['images']) ? $p['images'] : null;
+        $imageSync = $this->wooProductImageSync;
+
         return Model::withoutEvents(function () use (
             $producto,
             $esNuevo,
@@ -158,7 +167,9 @@ class WooCommerceInboundProductService
             $marca,
             $stock,
             $enable,
-            $costoWoo
+            $costoWoo,
+            $wooImages,
+            $imageSync
         ) {
             $producto->nombre = $nombre;
             $producto->descripcion = $descripcion;
@@ -211,6 +222,10 @@ class WooCommerceInboundProductService
                     'id_usuario' => $user->id,
                 ]);
                 $inventario->kardex($ajuste, $ajuste->ajuste);
+            }
+
+            if ($wooImages !== null) {
+                $imageSync->syncFromPayload((int) $producto->id, $wooImages);
             }
 
             return [

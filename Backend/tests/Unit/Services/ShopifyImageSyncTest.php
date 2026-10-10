@@ -6,11 +6,13 @@ use App\Models\Admin\Empresa;
 use App\Models\Inventario\Imagen;
 use App\Models\Inventario\Producto;
 use App\Services\ShopifyApiClient;
+use App\Services\ProductImageStorage;
 use App\Services\ShopifyImageService;
 use App\Http\Controllers\Api\Webhook\ShopifyController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ShopifyImageSyncTest extends TestCase
@@ -47,6 +49,9 @@ class ShopifyImageSyncTest extends TestCase
             $table->timestamps();
         });
 
+        Storage::fake('s3_productos');
+        config(['product_images.disk' => 's3_productos']);
+
         Schema::create('productos_imagenes', function ($table) {
             $table->id();
             $table->unsignedBigInteger('id_producto');
@@ -57,7 +62,7 @@ class ShopifyImageSyncTest extends TestCase
             $table->timestamps();
         });
 
-        $this->imageService = new ShopifyImageService();
+        $this->imageService = new ShopifyImageService(new ProductImageStorage());
 
         // Create temporary test image in public_path('img/productos')
         $dir = public_path('img/productos');

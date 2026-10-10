@@ -11,7 +11,7 @@
             (click)="selectProducto(producto)" *ngFor="let producto of productos">
 
             <img *ngIf="producto.img" style="width:40px;height:40px;object-fit:cover;flex-shrink:0"
-                src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle img-fluid">
+                src="{{ apiService.productoImagenUrl(producto.img) }}" class="rounded-circle img-fluid">
 
             <span class="flex-fill min-w-0 ps-1">
                 <span class="fw-semibold">

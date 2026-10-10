@@ -32,7 +32,7 @@
                     </td>
                 </tr>
                 <tr *ngFor="let producto of productos | filter:(isComponenteQuimicoHabilitado() ? ['nombre', 'componente_quimico'] : ['nombre']):buscador">
-                    <td><img src="{{ apiService.baseUrl + '/img/' + producto.img }}" width="50px"></td>
+                    <td><img src="{{ apiService.productoImagenUrl(producto.img) }}" width="50px"></td>
                     <td>
                         {{ producto.nombre }}
                         <small *ngIf="isComponenteQuimicoHabilitado() && producto.componente_quimico" class="text-muted d-block">Comp. químico: {{ producto.componente_quimico }}</small>

@@ -103,7 +103,7 @@
                     <tr *ngFor="let detalle of compra.detalles; let i=index">
                         <!-- <td> {{ i + 1 }} </td> -->
                         <td>
-                            <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
+                            <img src="{{ apiService.productoImagenUrl(detalle.img) }}" class="rounded-circle" height="50px" width="50px"> 
                             {{ detalle.nombre_producto }}
                             <br>
                             <small *ngIf="detalle.codigo" class="text-muted">SKU: {{ detalle.codigo }}</small>

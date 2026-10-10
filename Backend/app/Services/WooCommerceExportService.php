@@ -197,12 +197,13 @@ class WooCommerceExportService
             ];
         }
 
-        // // Preparar imagen si existe
         $images = [];
+        $imageStorage = app(ProductImageStorage::class);
         if (!empty($producto->img)) {
-            $images[] = [
-                'src' => url('/img/' . $producto->img)
-            ];
+            $publicUrl = $imageStorage->url($producto->img);
+            if ($publicUrl) {
+                $images[] = ['src' => $publicUrl];
+            }
         }
 
         // Calcular precio con IVA si está habilitado
