@@ -205,9 +205,17 @@ class ProductImageStorage
             return null;
         }
 
-        $relative = str_replace('/', DIRECTORY_SEPARATOR, $key);
+        $root = str_replace('\\', '/', rtrim($this->localImgRoot(), '/\\'));
+        $keyNorm = str_replace('\\', '/', $key);
 
-        return $this->localImgRoot() . DIRECTORY_SEPARATOR . $relative;
+        // Si PRODUCT_IMAGES_LOCAL_ROOT apunta a .../img/productos pero img en BD es /productos/hash.jpg
+        if (preg_match('#/productos$#', $root) && str_starts_with($keyNorm, 'productos/')) {
+            $suffix = substr($keyNorm, strlen('productos/'));
+
+            return str_replace('/', DIRECTORY_SEPARATOR, $root . '/' . $suffix);
+        }
+
+        return str_replace('/', DIRECTORY_SEPARATOR, $root . '/' . $keyNorm);
     }
 
     /**
