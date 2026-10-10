@@ -34,6 +34,11 @@ final class ParsesProductoExcelColumnsTest extends TestCase
             {
                 return $this->parseSubcategoriaExcelValue($row['subcategoria'] ?? null);
             }
+
+            public function filaCompleta(array $row): bool
+            {
+                return $this->filaImportacionTieneRequeridos($row);
+            }
         };
     }
 
@@ -85,6 +90,44 @@ final class ParsesProductoExcelColumnsTest extends TestCase
         $this->assertNull($this->parser->subcategoriaFromRow([
             'nombre' => 'Producto',
             'categoria' => 'Alimentos',
+        ]));
+    }
+
+    public function test_fila_con_costo_cero_es_valida(): void
+    {
+        $this->assertTrue($this->parser->filaCompleta([
+            'nombre' => 'JABON LIQUIDO CARBON ACTIVADO KREAMGEL',
+            'precio_sin_iva' => 8.8495,
+            'costo' => 0,
+            'categoria' => 'KREAMGEL',
+        ]));
+        $this->assertTrue($this->parser->filaCompleta([
+            'nombre' => 'Producto',
+            'precio_sin_iva' => '0',
+            'costo' => '0',
+            'categoria' => 'KREAMGEL',
+        ]));
+    }
+
+    public function test_fila_sin_nombre_o_categoria_no_es_valida(): void
+    {
+        $this->assertFalse($this->parser->filaCompleta([
+            'nombre' => '',
+            'precio_sin_iva' => 8,
+            'costo' => 0,
+            'categoria' => 'KREAMGEL',
+        ]));
+        $this->assertFalse($this->parser->filaCompleta([
+            'nombre' => 'Producto',
+            'precio_sin_iva' => 8,
+            'costo' => 0,
+            'categoria' => '   ',
+        ]));
+        $this->assertFalse($this->parser->filaCompleta([
+            'nombre' => 'Producto',
+            'precio_sin_iva' => null,
+            'costo' => 1,
+            'categoria' => 'KREAMGEL',
         ]));
     }
 }

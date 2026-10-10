@@ -59,6 +59,23 @@ trait ParsesProductoExcelColumns
     }
 
     /**
+     * 0 es un costo/precio válido. empty(0) en PHP es true y saltaba la fila.
+     *
+     * @param  array<string, mixed>  $row
+     */
+    protected function filaImportacionTieneRequeridos(array $row): bool
+    {
+        foreach (['nombre', 'precio_sin_iva', 'costo', 'categoria'] as $campo) {
+            $valor = $row[$campo] ?? null;
+            if ($valor === null || trim((string) $valor) === '') {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Aplica impuesto solo si la celda trae valor. Vacío = no error y no borra impuestos existentes.
      *
      * @param  mixed  $rawValue

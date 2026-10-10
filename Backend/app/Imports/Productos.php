@@ -102,7 +102,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
 
     public function model(array $row)
     {
-        if (empty($row['nombre']) || empty($row['precio_sin_iva']) || empty($row['costo']) || empty($row['categoria'])) {
+        if (! $this->filaImportacionTieneRequeridos($row)) {
             return null;
         }
 
@@ -174,7 +174,6 @@ class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
 
         if (!$producto) {
             $producto = new Producto();
-            ++$this->numRows;
         }
 
         $producto->nombre = $row['nombre'];
@@ -204,10 +203,14 @@ class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
         $producto->barcode = $row['codigo_de_barra'];
         $producto->enable  = true;
         $producto->id_empresa =  $this->usuario->id_empresa;
+        if (empty($producto->tipo)) {
+            $producto->tipo = 'Producto';
+        }
         $genera = $this->parseGeneraComanda($row['genera_comanda'] ?? null);
         $producto->genera_comanda = $genera;
         $producto->destino_comanda = $this->parseDestinoComanda($row['destino_comanda'] ?? null, $genera);
         $producto->save();
+        ++$this->numRows;
 
         $this->applyImpuestoExcelToProducto(
             $producto,
