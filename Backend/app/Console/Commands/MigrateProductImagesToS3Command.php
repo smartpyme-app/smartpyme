@@ -14,14 +14,21 @@ class MigrateProductImagesToS3Command extends Command
     protected $signature = 'imagenes:migrate-to-s3
                             {--dry-run : No escribe en S3 ni borra archivos locales}
                             {--limit= : Máximo de filas a procesar}
-                            {--empresa= : Solo productos de esta id_empresa}';
+                            {--empresa= : Solo productos de esta id_empresa}
+                            {--local-root= : Carpeta img legacy (contiene productos/); override de PRODUCT_IMAGES_LOCAL_ROOT}';
 
     protected $description = 'Sube imágenes de productos desde el VPS a S3 y elimina copias locales tras éxito.';
 
     public function handle(ProductImageStorage $storage): int
     {
+        $localRootOption = $this->option('local-root');
+        if (is_string($localRootOption) && trim($localRootOption) !== '') {
+            config(['product_images.local_root' => trim($localRootOption)]);
+        }
+
         $disk = $storage->diskName();
         $dry = (bool) $this->option('dry-run');
+        $this->line('Carpeta local de imágenes: ' . $storage->localImgRoot());
         $bucket = config('filesystems.disks.' . $disk . '.bucket');
         if (empty($bucket) && ! $dry) {
             $this->error('Bucket no configurado (AWS_PRODUCT_IMAGES_BUCKET / disco ' . $disk . ').');
@@ -90,7 +97,7 @@ class MigrateProductImagesToS3Command extends Command
                 }
 
                 if ($localPath === null || ! is_file($localPath) || ! is_readable($localPath)) {
-                    $this->warn("Sin archivo local ni S3: imagen#{$imagen->id} {$key}");
+                    $this->warn("Sin archivo local ni S3: imagen#{$imagen->id} {$key} (buscado: {$localPath})");
                     $errors++;
                     continue;
                 }

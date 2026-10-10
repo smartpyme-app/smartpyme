@@ -180,6 +180,24 @@ class ProductImageStorage
         }
     }
 
+    /**
+     * Directorio local que contiene productos/*.jpg (equivalente a public/img en dev).
+     */
+    public function localImgRoot(): string
+    {
+        $custom = config('product_images.local_root');
+        if (is_string($custom) && trim($custom) !== '') {
+            $root = trim($custom);
+            if (! str_starts_with($root, '/') && ! preg_match('#^[A-Za-z]:\\\\#', $root)) {
+                $root = base_path($root);
+            }
+
+            return rtrim($root, '/\\');
+        }
+
+        return rtrim(public_path('img'), '/\\');
+    }
+
     public function localAbsolutePath(?string $img): ?string
     {
         $key = $this->objectKeyFromImg($img);
@@ -187,7 +205,9 @@ class ProductImageStorage
             return null;
         }
 
-        return public_path('img/' . $key);
+        $relative = str_replace('/', DIRECTORY_SEPARATOR, $key);
+
+        return $this->localImgRoot() . DIRECTORY_SEPARATOR . $relative;
     }
 
     /**
