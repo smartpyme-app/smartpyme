@@ -266,7 +266,7 @@
                         <td *ngIf="usuario.empresa.vendedor_detalle_venta"> {{ detalle?.vendedor?.name }} </td>
                         <td class="d-flex">
                             <div>
-                                <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle"
+                                <img src="{{ apiService.productoImagenUrl(detalle.img) }}" class="rounded-circle"
                                     [class.product-zoom-img]="hasImage(detalle.img)"
                                     (click)="zoomImage(detalle.img, imageDialog)"
                                     height="50px" width="50px">

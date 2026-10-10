@@ -7,11 +7,13 @@ use App\Models\Inventario\Imagen;
 use App\Models\Inventario\Producto;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Intervention\Image\ImageManagerStatic as Image;
-
 class ShopifyImageService
 {
+    public function __construct(
+        private ProductImageStorage $productImageStorage
+    ) {
+    }
+
     /**
      * Sincroniza las imágenes de un producto desde Shopify.
      *
@@ -194,18 +196,9 @@ class ShopifyImageService
     private function procesar(string $contenido): ?array
     {
         try {
-            $encoded = Image::make($contenido)->resize(750, 750)->encode('jpg', 50);
-            $hash = md5($encoded->__toString());
-            $path = "productos/{$hash}.jpg";
+            $stored = $this->productImageStorage->storeJpgFromBinary($contenido, 50);
 
-            $dir = public_path('img/productos');
-            if (!file_exists($dir)) {
-                mkdir($dir, 0755, true);
-            }
-
-            $encoded->save(public_path('img/' . $path));
-
-            return ['path' => $path, 'hash' => $hash];
+            return ['path' => $stored['path'], 'hash' => $stored['hash']];
         } catch (\Exception $e) {
             Log::channel('shopify')->error('ShopifyImageService: error procesando imagen', [
                 'error' => $e->getMessage(),
@@ -221,20 +214,7 @@ class ShopifyImageService
      */
     private function eliminarArchivo(?string $img, ?int $excludeId = null): void
     {
-        if (empty($img) || $img === 'productos/default.jpg') {
-            return;
-        }
-
-        $query = Imagen::where('img', $img);
-        if ($excludeId !== null) {
-            $query->where('id', '!=', $excludeId);
-        }
-
-        if ($query->exists()) {
-            return;
-        }
-
-        Storage::delete($img);
+        $this->productImageStorage->deleteIfUnreferenced($img, $excludeId);
     }
 
     /**
@@ -242,11 +222,11 @@ class ShopifyImageService
      */
     private function existeArchivo(?string $img): bool
     {
-        if (empty($img) || $img === 'productos/default.jpg') {
+        if ($this->productImageStorage->isDefaultImage($img)) {
             return true;
         }
 
-        return file_exists(public_path('img' . $img));
+        return $this->productImageStorage->exists($img);
     }
 
     /**
@@ -286,22 +266,18 @@ class ShopifyImageService
                 return false;
             }
 
-            $rawPath = ltrim((string) $imagen->img, '/');
-            $filePath = public_path('img/' . $rawPath);
-            if (!file_exists($filePath)) {
-                $filePath = public_path($rawPath);
-            }
-
-            if (!file_exists($filePath) || is_dir($filePath)) {
-                Log::channel('shopify')->warning('ShopifyImageService: archivo local no encontrado para subir a Shopify', [
+            $binary = $this->productImageStorage->get($imagen->img);
+            if ($binary === null || $binary === '') {
+                Log::channel('shopify')->warning('ShopifyImageService: imagen no encontrada para subir a Shopify', [
                     'imagen_id' => $imagen->id,
-                    'path' => $filePath,
+                    'img' => $imagen->img,
                 ]);
                 return false;
             }
 
-            $attachment = base64_encode(file_get_contents($filePath));
-            $filename = basename($filePath);
+            $rawPath = ltrim((string) $imagen->img, '/');
+            $attachment = base64_encode($binary);
+            $filename = basename($rawPath);
 
             $payload = [
                 'image' => [
@@ -342,7 +318,7 @@ class ShopifyImageService
                     $imagen->src = $imageData['src'];
                 }
                 if (empty($imagen->hash)) {
-                    $imagen->hash = md5_file($filePath);
+                    $imagen->hash = md5($binary);
                 }
                 $imagen->saveQuietly();
 

@@ -250,11 +250,13 @@ class WooCommerceStockService
             }
 
             if (!empty($producto->imagenes)) {
+                $imageStorage = app(ProductImageStorage::class);
                 $images = [];
                 foreach ($producto->imagenes as $imagen) {
-                    $images[] = [
-                        'src' => url('/img' . $imagen->img),
-                    ];
+                    $publicUrl = $imageStorage->url($imagen->img);
+                    if ($publicUrl) {
+                        $images[] = ['src' => $publicUrl];
+                    }
                 }
                 if (!empty($images)) {
                     $productData['images'] = $images;

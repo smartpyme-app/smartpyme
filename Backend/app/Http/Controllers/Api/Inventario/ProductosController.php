@@ -2848,14 +2848,9 @@ class ProductosController extends Controller
         try {
             $imagenesExistentes = \App\Models\Inventario\Imagen::where('id_producto', $productoId)->get();
 
+            $imageStorage = app(\App\Services\ProductImageStorage::class);
             foreach ($imagenesExistentes as $imagen) {
-                // Eliminar archivo físico si existe
-                $rutaImagen = public_path('img' . $imagen->img);
-                if (file_exists($rutaImagen)) {
-                    unlink($rutaImagen);
-                }
-
-                // Eliminar registro de la base de datos
+                $imageStorage->deleteIfUnreferenced($imagen->img, $imagen->id);
                 $imagen->delete();
             }
 
@@ -2889,20 +2884,6 @@ class ProductosController extends Controller
                 return;
             }
 
-            // Crear directorio si no existe
-            $directorioProductos = public_path('img/productos');
-            if (!file_exists($directorioProductos)) {
-                mkdir($directorioProductos, 0755, true);
-            }
-
-            // Generar nombre único para la imagen
-            $extension = pathinfo(parse_url($urlImagen, PHP_URL_PATH), PATHINFO_EXTENSION);
-            $extension = $extension ?: 'jpg'; // Default a jpg si no se puede determinar
-
-            $nombreArchivo = 'producto_' . $producto->id . '_' . $index . '_' . time() . '.' . $extension;
-            $rutaCompleta = $directorioProductos . '/' . $nombreArchivo;
-
-            // Descargar imagen
             $imagenContenido = $this->descargarImagenDesdeUrl($urlImagen);
             if (!$imagenContenido) {
                 Log::warning("No se pudo descargar la imagen", [
@@ -2913,29 +2894,22 @@ class ProductosController extends Controller
                 return;
             }
 
-            // Guardar archivo
-            if (file_put_contents($rutaCompleta, $imagenContenido) === false) {
-                Log::error("Error guardando archivo de imagen", [
-                    'producto_id' => $producto->id,
-                    'ruta_archivo' => $rutaCompleta,
-                    'url_imagen' => $urlImagen
-                ]);
-                return;
-            }
+            $imageStorage = app(\App\Services\ProductImageStorage::class);
+            $stored = $imageStorage->storeJpgFromBinary($imagenContenido, 50);
 
-            // Guardar en base de datos
             $imagen = new \App\Models\Inventario\Imagen();
             $imagen->id_producto = $producto->id;
-            $imagen->img = '/productos/' . $nombreArchivo;
+            $imagen->img = $stored['img'];
+            $imagen->hash = $stored['hash'];
+            $imagen->src = $urlImagen;
             $imagen->shopify_image_id = $imagenShopify['id'] ?? null;
             $imagen->save();
 
             Log::info("Imagen descargada y guardada exitosamente", [
                 'producto_id' => $producto->id,
-                'nombre_archivo' => $nombreArchivo,
+                'img' => $stored['img'],
                 'url_original' => $urlImagen,
                 'shopify_image_id' => $imagenShopify['id'] ?? null,
-                'tamaño_archivo' => filesize($rutaCompleta)
             ]);
         } catch (\Exception $e) {
             Log::error("Error descargando y guardando imagen: " . $e->getMessage(), [
