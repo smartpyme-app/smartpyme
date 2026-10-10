@@ -323,7 +323,7 @@
                             }
                             <td class="d-flex">
                                 <div>
-                                    <img [appLazyImage]="apiService.baseUrl + '/img/' + detalle.img" class="rounded-circle"
+                                    <img [appLazyImage]="apiService.productoImagenUrl(detalle.img)" class="rounded-circle"
                                         [class.product-zoom-img]="hasImage(detalle.img)"
                                         (click)="zoomImage(detalle.img, imageDialog)"
                                         height="50px" width="50px">

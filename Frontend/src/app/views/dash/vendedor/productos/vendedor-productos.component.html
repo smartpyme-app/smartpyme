@@ -88,7 +88,7 @@
                     @for (producto of productos?.data; track producto.id) {
                         <tr>
                             <td>
-                                <img [appLazyImage]="apiService.baseUrl + '/img/' + producto.img" class="rounded-circle" width="50px">
+                                <img [appLazyImage]="apiService.productoImagenUrl(producto.img)" class="rounded-circle" width="50px">
                                 {{ producto.nombre }}
                             </td>
                             <td class="d-none d-lg-table-cell">

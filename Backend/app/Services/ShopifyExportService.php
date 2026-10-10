@@ -445,19 +445,18 @@ class ShopifyExportService
     private function formatearImagenesParaExport($imagenes)
     {
         $images = [];
+        $storage = app(ProductImageStorage::class);
         if (!empty($imagenes)) {
             foreach ($imagenes as $imagen) {
-                $rawPath = ltrim((string) $imagen->img, '/');
-                $filePath = public_path('img/' . $rawPath);
-                if (!file_exists($filePath)) {
-                    $filePath = public_path($rawPath);
-                }
-
-                if (file_exists($filePath) && !is_dir($filePath)) {
+                $binary = $storage->get($imagen->img);
+                if ($binary !== null && $binary !== '') {
+                    $rawPath = ltrim((string) $imagen->img, '/');
                     $images[] = [
-                        'attachment' => base64_encode(file_get_contents($filePath)),
-                        'filename' => basename($filePath),
+                        'attachment' => base64_encode($binary),
+                        'filename' => basename($rawPath),
                     ];
+                } elseif ($publicUrl = $storage->url($imagen->img)) {
+                    $images[] = ['src' => $publicUrl];
                 } elseif (!empty($imagen->src)) {
                     $images[] = ['src' => $imagen->src];
                 }

@@ -5,15 +5,18 @@ namespace App\Http\Controllers\Api\Inventario;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Storage;
 use App\Models\Inventario\Imagen;
 use App\Models\Inventario\Producto;
+use App\Services\ProductImageStorage;
 use App\Services\ShopifyImageService;
-use Intervention\Image\ImageManagerStatic as Image;
 use App\Http\Requests\Inventario\Imagenes\StoreImagenRequest;
 
 class ImagenesController extends Controller
 {
+    public function __construct(
+        private ProductImageStorage $productImageStorage
+    ) {
+    }
 
     public function store(StoreImagenRequest $request)
     {
@@ -26,16 +29,12 @@ class ImagenesController extends Controller
         $imagen->fill($request->all());
 
         if ($request->hasFile('file')) {
-            if ($imagen->id && $imagen->img && $imagen->img != 'productos/default.jpg') {
-                Storage::delete($imagen->img);
+            if ($imagen->id && $imagen->img && !$this->productImageStorage->isDefaultImage($imagen->img)) {
+                $this->productImageStorage->deleteIfUnreferenced($imagen->img, $imagen->id);
             }
-            $path   = $request->file('file');
-            $resize = Image::make($path)->resize(750,750)->encode('jpg', 75);
-            $hash = md5($resize->__toString());
-            $path = "productos/{$hash}.jpg";
-            $resize->save(public_path('img/'.$path), 50);
-            $imagen->img = "/" . $path;
-            $imagen->hash = $hash;
+            $stored = $this->productImageStorage->storeJpgFromUploadedFile($request->file('file'), 75);
+            $imagen->img = $stored['img'];
+            $imagen->hash = $stored['hash'];
         }
 
         $imagen->save();
@@ -73,8 +72,9 @@ class ImagenesController extends Controller
             ]);
         }
 
-        if ($imagen->img)
-            Storage::delete($imagen->img);
+        if ($imagen->img) {
+            $this->productImageStorage->deleteIfUnreferenced($imagen->img, $imagen->id);
+        }
         $imagen->delete();
 
         return Response()->json($imagen, 201);

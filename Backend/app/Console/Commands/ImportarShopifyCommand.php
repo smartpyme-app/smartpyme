@@ -297,15 +297,9 @@ class ImportarShopifyCommand extends Command
                 $this->info("Imagen diferente detectada, reemplazando todas las imágenes existentes");
                 
                 // Eliminar TODAS las imágenes existentes
+                $imageStorage = app(\App\Services\ProductImageStorage::class);
                 foreach ($imagenesExistentes as $imagenExistente) {
-                    // Eliminar archivo físico existente
-                    $rutaImagenExistente = public_path('img' . $imagenExistente->img);
-                    if (file_exists($rutaImagenExistente)) {
-                        unlink($rutaImagenExistente);
-                        $this->info("Archivo de imagen anterior eliminado: {$rutaImagenExistente}");
-                    }
-                    
-                    // Eliminar registro de la base de datos
+                    $imageStorage->deleteIfUnreferenced($imagenExistente->img, $imagenExistente->id);
                     $imagenExistente->delete();
                 }
                 
@@ -317,46 +311,28 @@ class ImportarShopifyCommand extends Command
             $this->info("Descargando nueva imagen para producto: {$producto->nombre}");
             $this->info("URL de imagen: {$imagenUrl}");
 
-            // Crear directorio para las imágenes del producto
-            $directorioImagenes = public_path('img/productos');
-            if (!file_exists($directorioImagenes)) {
-                mkdir($directorioImagenes, 0755, true);
-            }
-
-            // Generar nombre único para la imagen
-            $extension = pathinfo(parse_url($imagenUrl, PHP_URL_PATH), PATHINFO_EXTENSION);
-            if (empty($extension)) {
-                $extension = 'jpg'; // Default extension
-            }
-            
-            $nombreImagen = 'producto_' . $producto->id . '_' . time() . '.' . $extension;
-            $rutaCompleta = $directorioImagenes . '/' . $nombreImagen;
-
-            // Descargar la imagen usando cURL para mejor control
             $imagenContenido = $this->descargarImagenDesdeUrl($imagenUrl);
             if (!$imagenContenido) {
                 $this->error("No se pudo descargar la imagen para el producto: {$producto->nombre}");
                 return;
             }
 
-            // Guardar la imagen
-            if (file_put_contents($rutaCompleta, $imagenContenido) === false) {
-                $this->error("No se pudo guardar la imagen para el producto: {$producto->nombre}");
-                return;
-            }
+            $imageStorage = app(\App\Services\ProductImageStorage::class);
+            $stored = $imageStorage->storeJpgFromBinary($imagenContenido, 50);
 
-            // Crear registro en la tabla productos_imagenes
             $imagen = new \App\Models\Inventario\Imagen();
             $imagen->id_producto = $producto->id;
-            $imagen->img = '/productos/' . $nombreImagen;
+            $imagen->img = $stored['img'];
+            $imagen->hash = $stored['hash'];
+            $imagen->src = $imagenUrl;
             $imagen->shopify_image_id = $shopifyImageId;
-            
+
             $this->info("Guardando nueva imagen en base de datos para producto {$producto->id}");
-            
+
             $imagen->save();
 
             $this->info("Imagen guardada exitosamente para producto: {$producto->nombre}");
-            $this->info("Ruta de imagen: /productos/{$nombreImagen}");
+            $this->info("Ruta de imagen: {$stored['img']}");
 
         } catch (\Exception $e) {
             $this->error("Error descargando imagen para producto {$producto->nombre}: " . $e->getMessage());

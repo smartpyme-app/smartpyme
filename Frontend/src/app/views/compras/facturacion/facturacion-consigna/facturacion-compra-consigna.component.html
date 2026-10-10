@@ -91,7 +91,7 @@
                     @for (detalle of compra?.detalles; track detalle.id || $index) {
                       <tr>
                         <td>
-                            <img [appLazyImage]="apiService.baseUrl + '/img/' + detalle.img" class="rounded-circle" height="50px" width="50px">
+                            <img [appLazyImage]="apiService.productoImagenUrl(detalle.img)" class="rounded-circle" height="50px" width="50px">
                             {{ detalle.nombre_producto }}
                             <br>
                             <small *ngIf="detalle.codigo" class="text-muted">SKU: {{ detalle.codigo }}</small>
@@ -294,7 +294,7 @@
                         style="cursor: pointer;">
                         <div class="d-flex align-items-center">
                             <img
-                                [src]="apiService.baseUrl + '/img/' + (producto.img || 'default-product.png')"
+                                [src]="apiService.productoImagenUrl(producto.img || 'default-product.png')"
                                 class="rounded-circle me-3"
                                 height="40px"
                                 width="40px"

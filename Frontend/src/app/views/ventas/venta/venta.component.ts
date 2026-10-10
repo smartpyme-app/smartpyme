@@ -349,7 +349,7 @@ export class VentaComponent implements OnInit {
 
     public zoomImage(img: any, dialog: any) {
         if (this.hasImage(img)) {
-            this.zoomImageUrl = this.apiService.baseUrl + '/img/' + img;
+            this.zoomImageUrl = this.apiService.productoImagenUrl(img);
             dialog.showModal();
         }
     }

@@ -130,7 +130,7 @@
                     <td>
                         <div class="d-flex gap-3" *ngIf="!usuario.empresa.editar_descripcion_venta">
                             <div>
-                                <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle"
+                                <img src="{{ apiService.productoImagenUrl(detalle.img) }}" class="rounded-circle"
                                     [class.product-zoom-img]="hasImage(detalle.img)"
                                     (click)="zoomImage(detalle.img, imageDialog)"
                                     height="50px" width="50px">

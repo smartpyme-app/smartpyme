@@ -27,35 +27,15 @@
     if ($imgRel && (strpos($imgRel, 'default') !== false)) {
         $imgRel = null;
     }
-    $imgAbs = $imgRel ? public_path('img/' . $imgRel) : null;
-    // $imgOk = $imgAbs && @file_exists($imgAbs); comentamos el anterior
-
-    
-    //aqui empieza el nuevo codigo
-    // DomPDF suele cargar bien URLs remotas (como asset() del logo) pero falla con rutas
-    // absolutas según chroot/open_basedir. Data URI evita HTTP y rutas en el HTML.
     $imgSrc = null;
-    if ($imgAbs && is_file($imgAbs) && is_readable($imgAbs)) {
-        $ext = strtolower(pathinfo($imgAbs, PATHINFO_EXTENSION));
-        $mimePorExt = [
-            'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png',
-            'gif' => 'image/gif', 'webp' => 'image/webp',
-        ];
-        $mime = $mimePorExt[$ext] ?? null;
-        if (! $mime && function_exists('mime_content_type')) {
-            $detectado = @mime_content_type($imgAbs);
-            if ($detectado && stripos($detectado, 'image/') === 0) {
-                $mime = $detectado;
-            }
-        }
-        $mime = $mime ?: 'image/jpeg';
-        $binario = @file_get_contents($imgAbs);
-        if ($binario !== false && $binario !== '') {
-            $imgSrc = 'data:' . $mime . ';base64,' . base64_encode($binario);
+    if ($imgRel) {
+        $imgPathForStorage = str_starts_with($imgRel, '/') ? $imgRel : '/' . ltrim($imgRel, '/');
+        $binario = app(\App\Services\ProductImageStorage::class)->get($imgPathForStorage);
+        if ($binario !== null && $binario !== '') {
+            $imgSrc = 'data:image/jpeg;base64,' . base64_encode($binario);
         }
     }
     $imgOk = $imgSrc !== null;
-    // aqui termina el nuevo codigo
 
     $producto = $detalle->producto;
     $textoDetalleProducto = '';

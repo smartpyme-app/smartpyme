@@ -55,6 +55,25 @@ export class ApiService {
     private injector: Injector
   ) {}
 
+  /** URL pública de imagen de producto (S3 o fallback API para default/legacy). */
+  productoImagenUrl(img: string | null | undefined): string {
+    if (img == null || img === '' || img === 'null' || img === 'undefined') {
+      return `${this.baseUrl}/img/productos/default.jpg`;
+    }
+    if (/^https?:\/\//i.test(img)) {
+      return img;
+    }
+    const normalized = img.replace(/^\//, '');
+    if (normalized === 'productos/default.jpg') {
+      return `${this.baseUrl}/img/${normalized}`;
+    }
+    const cdnBase = (environment as { productImagesUrl?: string }).productImagesUrl?.replace(/\/$/, '');
+    if (!cdnBase) {
+      return `${this.baseUrl}/img/${normalized}`;
+    }
+    return `${cdnBase}/${normalized}`;
+  }
+
   // ========== Métodos HTTP (delegados a HttpService) ==========
   getToUrl(url: string): Observable<any> {
     return this.httpService.getToUrl(url);
