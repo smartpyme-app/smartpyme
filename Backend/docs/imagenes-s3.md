@@ -13,8 +13,21 @@ Las imágenes de productos se almacenan en el bucket **`sp-imagenes-productos`**
 | `AWS_PRODUCT_IMAGES_BUCKET` | `sp-imagenes-productos` |
 | `AWS_PRODUCT_IMAGES_URL` | URL base pública, ej. `https://sp-imagenes-productos.s3.us-east-2.amazonaws.com` |
 | `AWS_PRODUCT_IMAGES_DISK` | Disco Laravel (defecto: `s3_productos`) |
+| `PRODUCT_IMAGES_LOCAL_ROOT` | Carpeta **`img`** en el VPS (dentro va `productos/`). No es `Backend/public/img` si el sitio sirve desde `api/img`. |
 
 **No** usar `AWS_BUCKET` para imágenes de productos.
+
+En producción, si las fotos están en `api/img/productos/`, configura la ruta **hasta `img`** (sin `productos`):
+
+```env
+PRODUCT_IMAGES_LOCAL_ROOT=/ruta/completa/al/api/img
+```
+
+Prueba rápida en el VPS (debe existir el archivo):
+
+```bash
+ls /ruta/completa/al/api/img/productos/e3c52001f8b367e2408c4419cae187b9.jpg
+```
 
 Tras cambiar `.env`:
 
@@ -114,6 +127,9 @@ Ajustar `AllowedOrigins` según dominios reales del frontend.
 | `--dry-run` | Solo imprime acciones; no sube ni borra local. |
 | `--limit=` | Máximo de filas a procesar. |
 | `--empresa=` | Solo imágenes de productos con `id_empresa` dado. |
+| `--local-root=` | Ruta a la carpeta `img` (override puntual de `PRODUCT_IMAGES_LOCAL_ROOT`). |
+
+Al iniciar, el comando imprime `Carpeta local de imágenes: ...` para verificar la ruta.
 
 **Idempotencia:** Si el objeto ya existe en S3, no re-sube; si el archivo local sigue presente, lo borra.
 
