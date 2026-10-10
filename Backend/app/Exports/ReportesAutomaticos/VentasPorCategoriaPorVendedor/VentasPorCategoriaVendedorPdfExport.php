@@ -4,6 +4,8 @@ namespace App\Exports\ReportesAutomaticos\VentasPorCategoriaPorVendedor;
 
 use App\Models\Admin\Sucursal;
 use Illuminate\Support\Facades\DB;
+use App\Exports\Support\DevolucionesEnReporteQuery;
+use App\Exports\Support\RangoFecha;
 use App\Services\Ventas\VentaMontosPorVendedorService;
 use Illuminate\Support\Facades\Log;
 
@@ -90,9 +92,8 @@ class VentasPorCategoriaVendedorPdfExport
                 ->join('users as us', function ($join) {
                     $join->on('us.id', '=', DB::raw(VentaMontosPorVendedorService::sqlIdVendedorEfectivo('dv', 'vv')));
                 })
-                ->where('vv.estado', '!=', 'Anulada')
-                ->where('vv.id_empresa', $this->id_empresa)
-                ->whereBetween('vv.fecha', [$this->fechaInicio, $this->fechaFin]);
+                ->where('vv.id_empresa', $this->id_empresa);
+            RangoFecha::ventasDelPeriodo($query, 'vv', $this->fechaInicio, $this->fechaFin);
     
             if (!empty($categoriasIds)) {
                 $query->whereIn('cat.id', $categoriasIds);
@@ -112,7 +113,14 @@ class VentasPorCategoriaVendedorPdfExport
             )
                 ->groupBy('cat.id', 'cat.nombre', 'us.name', 'us.id')
                 ->orderBy('us.name')
-                ->get();
+                ->get()
+                ->concat(DevolucionesEnReporteQuery::porCategoriaVendedor(
+                    $this->id_empresa,
+                    $this->fechaInicio,
+                    $this->fechaFin,
+                    $this->sucursales,
+                    $categoriasIds
+                ));
     
             // Obtener categorías y vendedores por ID (no usar unique() sobre valores: elimina IDs distintos con el mismo nombre)
             $categorias = $ventasData->pluck('nombre_categoria', 'id_categoria');
@@ -198,7 +206,7 @@ class VentasPorCategoriaVendedorPdfExport
                 }
     
                 // Asignar valor a la celda correspondiente
-                $resultadoFormateado[$idVendedor][$nombreConPorcentaje] = $total;
+                $resultadoFormateado[$idVendedor][$nombreConPorcentaje] += $total;
     
                 // Actualizar total por vendedor
                 $resultadoFormateado[$idVendedor]['TOTAL'] += $total;
@@ -247,9 +255,8 @@ class VentasPorCategoriaVendedorPdfExport
                 ->join('productos as pro', 'dv.id_producto', '=', 'pro.id')
                 ->join('categorias as cat', 'pro.id_categoria', '=', 'cat.id')
                 ->join('ventas as vv', 'dv.id_venta', '=', 'vv.id')
-                ->where('vv.estado', '!=', 'Anulada')
-                ->where('vv.id_empresa', $this->id_empresa)
-                ->whereBetween('vv.fecha', [$this->fechaInicio, $this->fechaFin]);
+                ->where('vv.id_empresa', $this->id_empresa);
+            RangoFecha::ventasDelPeriodo($categorias, 'vv', $this->fechaInicio, $this->fechaFin);
 
             if (!empty($categoriasIds)) {
                 $categorias->whereIn('cat.id', $categoriasIds);

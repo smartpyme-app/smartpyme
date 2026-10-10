@@ -2,7 +2,9 @@
 
 namespace App\Exports;
 
+use App\Exports\Support\DevolucionEnReporte;
 use App\Models\Ventas\Venta;
+use App\Services\Ventas\VentaMontosPorVendedorService;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -10,8 +12,9 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
 /**
- * Export de ventas totales por factura.
- * El vendedor mostrado es el de la venta (cabecera), no el del detalle de línea.
+ * Ventas del período, una fila por vendedor de línea.
+ * Los montos de la cabecera se parten según el peso de cada vendedor.
+ * Las devoluciones del período se restan con el mismo reparto de la venta original.
  */
 class VentasDesglosadasPorVendedorExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize
 {
@@ -34,35 +37,105 @@ class VentasDesglosadasPorVendedorExport implements FromCollection, WithHeadings
 
     public function collection()
     {
-        $ventas = $this->baseExport->query()
-            ->with(['vendedor'])
-            ->get();
+        $filas = collect();
 
-        return $ventas->map(function (Venta $venta) {
-            $venta->loadMissing(['vendedor']);
+        foreach ($this->baseExport->query()->get() as $venta) {
+            if ($venta->estado === 'Anulada') {
+                $filas->push((object) [
+                    'venta' => $venta,
+                    'venta_origen' => null,
+                    'es_devolucion' => false,
+                    'grupo' => $this->grupoCero($venta),
+                ]);
+                continue;
+            }
 
-            $subTotal = (float) ($venta->sub_total ?? 0);
-            $descuento = (float) ($venta->descuento ?? 0);
-            $iva = (float) ($venta->iva ?? 0);
-            $total = (float) ($venta->total ?? 0);
-            $totalCosto = (float) ($venta->total_costo ?? 0);
+            foreach (VentaMontosPorVendedorService::montosPorVendedor($venta) as $grupo) {
+                $filas->push((object) [
+                    'venta' => $venta,
+                    'venta_origen' => null,
+                    'es_devolucion' => false,
+                    'grupo' => $this->escalarCabecera($venta, $grupo),
+                ]);
+            }
+        }
 
-            return (object) [
-                'venta' => $venta,
-                'grupo' => [
-                    'vendedor_id' => (int) ($venta->id_vendedor ?? 0),
-                    'vendedor_nombre' => $venta->vendedor?->name ?? 'Sin vendedor',
-                    'total_costo' => $totalCosto,
-                    'sub_total' => $subTotal,
-                    'descuento' => $descuento,
-                    'iva' => $iva,
-                    'total_sin_iva' => max(0, $subTotal - $descuento),
-                    'total' => $total,
-                    'utilidad' => $total - $totalCosto - $iva,
+        foreach ($this->baseExport->queryDevoluciones()->get() as $devolucion) {
+            if ($devolucion->relationLoaded('detalles')) {
+                $devolucion->total_costo = $devolucion->detalles->sum(function ($detalle) {
+                    return ((float) $detalle->cantidad) * ((float) $detalle->costo);
+                });
+            }
+
+            $montos = DevolucionEnReporte::montosVentaNegados($devolucion);
+            $origen = $devolucion->venta;
+            $grupos = $origen
+                ? VentaMontosPorVendedorService::montosPorVendedor($origen)
+                : [[
+                    'vendedor_id' => 0,
+                    'vendedor_nombre' => 'Sin vendedor',
                     'share' => 1.0,
-                ],
-            ];
-        });
+                ]];
+
+            foreach ($grupos as $grupo) {
+                $share = (float) ($grupo['share'] ?? 1);
+                $filas->push((object) [
+                    'venta' => $devolucion,
+                    'venta_origen' => $origen,
+                    'es_devolucion' => true,
+                    'grupo' => [
+                        'vendedor_nombre' => $grupo['vendedor_nombre'],
+                        'total_costo' => $montos['costo'] * $share,
+                        'sub_total' => $montos['sub_total'] * $share,
+                        'descuento' => $montos['descuento'] * $share,
+                        'iva' => $montos['iva'] * $share,
+                        'total_sin_iva' => $montos['total_sin_iva'] * $share,
+                        'total' => $montos['total'] * $share,
+                        'utilidad' => $montos['utilidad'] * $share,
+                        'share' => -$share,
+                    ],
+                ]);
+            }
+        }
+
+        return $filas;
+    }
+
+    private function grupoCero(Venta $venta): array
+    {
+        return [
+            'vendedor_nombre' => $venta->vendedor?->name ?? 'Sin vendedor',
+            'total_costo' => 0.0,
+            'sub_total' => 0.0,
+            'descuento' => 0.0,
+            'iva' => 0.0,
+            'total_sin_iva' => 0.0,
+            'total' => 0.0,
+            'utilidad' => 0.0,
+            'share' => 1.0,
+        ];
+    }
+
+    private function escalarCabecera(Venta $venta, array $grupo): array
+    {
+        $share = (float) $grupo['share'];
+        $subTotal = (float) ($venta->sub_total ?? 0);
+        $descuento = (float) ($venta->descuento ?? 0);
+        $iva = (float) ($venta->iva ?? 0);
+        $total = (float) ($venta->total ?? 0);
+        $totalCosto = (float) ($venta->total_costo ?? 0);
+
+        return [
+            'vendedor_nombre' => $grupo['vendedor_nombre'],
+            'total_costo' => $totalCosto * $share,
+            'sub_total' => $subTotal * $share,
+            'descuento' => $descuento * $share,
+            'iva' => $iva * $share,
+            'total_sin_iva' => max(0, $subTotal - $descuento) * $share,
+            'total' => $total * $share,
+            'utilidad' => ($total - $totalCosto - $iva) * $share,
+            'share' => $share,
+        ];
     }
 
     public function map($row): array
@@ -87,10 +160,18 @@ class VentasDesglosadasPorVendedorExport implements FromCollection, WithHeadings
                 : trim($cliente->nombre . ' ' . $cliente->apellido);
         }
 
+        $esDevolucion = !empty($row->es_devolucion);
+        $origen = $row->venta_origen ?? null;
+        $datosVenta = ($esDevolucion && $origen) ? $origen : $venta;
+        if ($esDevolucion && $origen) {
+            $canal = $origen->relationLoaded('canal') ? $origen->canal : null;
+            $proyecto = $origen->relationLoaded('proyecto') ? $origen->proyecto : null;
+        }
+
         $share = (float) ($grupo['share'] ?? 1);
         $cuentaTerceros = ($venta->cuenta_a_terceros ?? 0) * $share;
         $propina = ($venta->propina ?? 0) * $share;
-        $anulada = $venta->estado === 'Anulada';
+        $anulada = !$esDevolucion && $venta->estado === 'Anulada';
 
         $fila = [
             $venta->fecha,
@@ -99,13 +180,14 @@ class VentasDesglosadasPorVendedorExport implements FromCollection, WithHeadings
             $cliente ? $cliente->dui : '',
             $cliente ? $cliente->nit : '',
             $cliente ? $cliente->direccion : '',
-            ($documento && isset($documento->nombre)) ? $documento->nombre : '',
+            ($documento && isset($documento->nombre)) ? $documento->nombre : ($esDevolucion ? 'Devolución' : ''),
             ($proyecto && isset($proyecto->nombre)) ? $proyecto->nombre : '',
-            $venta->num_identificacion,
+            $datosVenta->num_identificacion ?? '',
             $venta->correlativo,
-            $venta->forma_pago,
-            $venta->detalle_banco,
-            $venta->estado,
+            $datosVenta->forma_pago ?? '',
+            $datosVenta->detalle_banco ?? '',
+            $esDevolucion ? DevolucionEnReporte::ESTADO : $venta->estado,
+            VentasExport::motivoAnulacionParaExport($esDevolucion ? ($origen ?: $venta) : $venta),
             ($canal && isset($canal->nombre)) ? $canal->nombre : '',
             $anulada ? '0.0' : round($grupo['total_costo'], 2),
             round($cuentaTerceros, 2),

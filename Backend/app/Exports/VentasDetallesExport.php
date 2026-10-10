@@ -4,6 +4,7 @@ namespace App\Exports;
 
 use App\Constants\OrigenStockVentaConstants;
 use App\Exports\Support\DevolucionEnReporte;
+use App\Exports\Support\RangoFecha;
 use App\Helpers\CountryTermsHelper;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Paquete;
@@ -188,11 +189,8 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
                     ->when(!empty($request->sucursales) && is_array($request->sucursales), function ($q) use ($request) {
                         $q->whereIn('ventas.id_sucursal', $request->sucursales);
                     })
-                    ->when($request->inicio, function ($query) use ($request) {
-                        return $query->where('fecha', '>=', $request->inicio);
-                    })
-                    ->when($request->fin, function ($query) use ($request) {
-                        return $query->where('fecha', '<=', $request->fin);
+                    ->where(function ($query) use ($request) {
+                        RangoFecha::aplicar($query, 'fecha', $request->inicio, $request->fin);
                     })
                     ->when($request->recurrente !== null, function ($q) use ($request) {
                         $q->where('recurrente', !!$request->recurrente);
@@ -332,11 +330,8 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
                     ->when(!empty($request->sucursales) && is_array($request->sucursales), function ($q) use ($request) {
                         $q->whereIn('id_sucursal', $request->sucursales);
                     })
-                    ->when($request->inicio, function ($q) use ($request) {
-                        return $q->where('fecha', '>=', $request->inicio);
-                    })
-                    ->when($request->fin, function ($q) use ($request) {
-                        return $q->where('fecha', '<=', $request->fin);
+                    ->where(function ($q) use ($request) {
+                        RangoFecha::aplicar($q, 'fecha', $request->inicio, $request->fin);
                     })
                     ->when($request->id_sucursal, function ($q) use ($request) {
                         return $q->where('id_sucursal', $request->id_sucursal);

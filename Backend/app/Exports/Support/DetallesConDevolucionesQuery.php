@@ -19,10 +19,9 @@ class DetallesConDevolucionesQuery
 
         $ventas = DB::table('detalles_venta as dv')
             ->join('ventas as v', 'v.id', '=', 'dv.id_venta')
-            ->where('v.id_empresa', $idEmpresa)
-            ->where('v.estado', '!=', 'Anulada')
-            ->where('v.cotizacion', 0)
-            ->whereBetween('v.fecha', [$fechaInicio, $fechaFin])
+            ->where('v.id_empresa', $idEmpresa);
+        RangoFecha::ventasDelPeriodo($ventas, 'v', $fechaInicio, $fechaFin);
+        $ventas = $ventas
             ->when($sucursales, function ($query) use ($sucursales) {
                 return $query->whereIn('v.id_sucursal', $sucursales);
             })
@@ -38,8 +37,9 @@ class DetallesConDevolucionesQuery
         $devoluciones = DB::table('detalles_devolucion_venta as ddv')
             ->join('devoluciones_venta as d', 'd.id', '=', 'ddv.id_devolucion_venta')
             ->where('d.id_empresa', $idEmpresa)
-            ->where('d.enable', 1)
-            ->whereBetween('d.fecha', [$fechaInicio, $fechaFin])
+            ->where('d.enable', 1);
+        RangoFecha::aplicar($devoluciones, 'd.fecha', $fechaInicio, $fechaFin);
+        $devoluciones = $devoluciones
             ->when($sucursales, function ($query) use ($sucursales) {
                 return $query->whereIn('d.id_sucursal', $sucursales);
             })
@@ -63,8 +63,9 @@ class DetallesConDevolucionesQuery
         $compras = DB::table('detalles_compra as dc')
             ->join('compras as c', 'c.id', '=', 'dc.id_compra')
             ->where('c.id_empresa', $idEmpresa)
-            ->where('c.cotizacion', 0)
-            ->whereBetween('c.fecha', [$fechaInicio, $fechaFin])
+            ->where('c.cotizacion', 0);
+        RangoFecha::aplicar($compras, 'c.fecha', $fechaInicio, $fechaFin);
+        $compras = $compras
             ->when($sucursales, function ($query) use ($sucursales) {
                 return $query->whereIn('c.id_sucursal', $sucursales);
             })
@@ -81,8 +82,9 @@ class DetallesConDevolucionesQuery
         $devoluciones = DB::table('detalles_devolucion_compra as ddc')
             ->join('devoluciones_compra as d', 'd.id', '=', 'ddc.id_devolucion_compra')
             ->where('d.id_empresa', $idEmpresa)
-            ->where('d.enable', 1)
-            ->whereBetween('d.fecha', [$fechaInicio, $fechaFin])
+            ->where('d.enable', 1);
+        RangoFecha::aplicar($devoluciones, 'd.fecha', $fechaInicio, $fechaFin);
+        $devoluciones = $devoluciones
             ->when($sucursales, function ($query) use ($sucursales) {
                 return $query->whereIn('d.id_sucursal', $sucursales);
             })
