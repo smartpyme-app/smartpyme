@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Exports\Support\DevolucionEnReporte;
+use App\Exports\Support\RangoFecha;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Venta;
@@ -214,11 +215,8 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             ->when($anio !== null, function ($query) use ($anio) {
                 return $query->whereYear('fecha', $anio);
             })
-            ->when($anio === null && $request->inicio, function ($query) use ($request) {
-                return $query->where('fecha', '>=', $request->inicio);
-            })
-            ->when($anio === null && $request->fin, function ($query) use ($request) {
-                return $query->where('fecha', '<=', $request->fin);
+            ->when($anio === null, function ($query) use ($request) {
+                return RangoFecha::aplicar($query, 'fecha', $request->inicio, $request->fin);
             })
             ->when($request->recurrente !== null, function ($q) use ($request) {
                 $q->where('recurrente', !!$request->recurrente);
@@ -348,11 +346,8 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             ->when($anio !== null, function ($query) use ($anio) {
                 return $query->whereYear('fecha', $anio);
             })
-            ->when($anio === null && $request->inicio, function ($query) use ($request) {
-                return $query->where('fecha', '>=', $request->inicio);
-            })
-            ->when($anio === null && $request->fin, function ($query) use ($request) {
-                return $query->where('fecha', '<=', $request->fin);
+            ->when($anio === null, function ($query) use ($request) {
+                return RangoFecha::aplicar($query, 'fecha', $request->inicio, $request->fin);
             })
             ->when($request->id_sucursal, function ($query) use ($request) {
                 return $query->where('id_sucursal', $request->id_sucursal);

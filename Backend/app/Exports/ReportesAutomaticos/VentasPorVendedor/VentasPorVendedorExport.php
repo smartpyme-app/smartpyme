@@ -2,7 +2,10 @@
 
 namespace App\Exports\ReportesAutomaticos\VentasPorVendedor;
 
+use App\Exports\Support\DevolucionEnReporte;
+use App\Exports\Support\RangoFecha;
 use App\Models\Ventas\Detalle;
+use App\Models\Ventas\Devoluciones\Detalle as DetalleDevolucion;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -105,11 +108,8 @@ class VentasPorVendedorExport implements FromCollection, WithHeadings, WithMappi
         $fechaFin = $this->fechaFin;
         $id_empresa = $this->id_empresa;
 
-        return Detalle::whereHas('venta', function ($query) use ($fechaInicio, $fechaFin, $id_empresa) {
-            $query->where('fecha', '>=', $fechaInicio)
-                ->where('fecha', '<=', $fechaFin)
-                ->where('cotizacion', 0)
-                ->where('estado', '!=', 'Anulada');
+        $detalles = Detalle::whereHas('venta', function ($query) use ($fechaInicio, $fechaFin, $id_empresa) {
+            RangoFecha::ventasDelPeriodo($query, 'ventas', $fechaInicio, $fechaFin);
 
             if ($id_empresa) {
                 $query->where('id_empresa', $id_empresa);
@@ -118,10 +118,33 @@ class VentasPorVendedorExport implements FromCollection, WithHeadings, WithMappi
             ->orderBy('id_vendedor', 'asc')
             ->orderBy('id', 'asc')
             ->get();
+
+        $devoluciones = DetalleDevolucion::with([
+            'producto.categoria',
+            'venta.cliente',
+            'venta.documento',
+            'venta.sucursal.empresa',
+            'venta.usuario',
+            'venta.venta.vendedor',
+            'venta.venta.canal',
+            'venta.venta.documento',
+        ])->whereHas('venta', function ($query) use ($fechaInicio, $fechaFin, $id_empresa) {
+            $query->where('enable', 1);
+            RangoFecha::aplicar($query, 'fecha', $fechaInicio, $fechaFin);
+            if ($id_empresa) {
+                $query->where('id_empresa', $id_empresa);
+            }
+        })->get();
+
+        return $detalles->concat($devoluciones);
     }
 
     public function map($row): array
     {
+        if ($row instanceof DetalleDevolucion) {
+            return $this->mapDevolucion($row);
+        }
+
         $venta = $row->venta()->first();
         $hora = $venta ? Carbon::parse($venta->created_at)->format('H:i:s') : '';
         $iva = $this->calcularIvaDetalle($row, $venta);
@@ -157,6 +180,43 @@ class VentasPorVendedorExport implements FromCollection, WithHeadings, WithMappi
         ];
 
         return $fields;
+    }
+
+    private function mapDevolucion(DetalleDevolucion $row): array
+    {
+        $devolucion = $row->venta;
+        $venta = $devolucion ? $devolucion->venta : null;
+        $hora = $devolucion ? Carbon::parse($devolucion->created_at)->format('H:i:s') : '';
+        $vendedor = ($venta && $venta->vendedor) ? $venta->vendedor->name : 'Sin vendedor';
+
+        return [
+            $devolucion ? $devolucion->fecha : '',
+            $devolucion ? ($devolucion->nombre_cliente ?? 'Consumidor Final') : 'Consumidor Final',
+            $devolucion && $devolucion->cliente ? $devolucion->cliente->dui : '',
+            $devolucion && $devolucion->cliente ? $devolucion->cliente->nit : '',
+            $row->producto ? $row->producto->nombre : ($row->descripcion ?? ''),
+            $row->producto ? $row->producto->codigo : '',
+            $row->producto ? $row->producto->marca : '',
+            $row->producto && $row->producto->categoria ? $row->producto->categoria->nombre : '',
+            $devolucion && $devolucion->documento ? $devolucion->documento->nombre : 'Devolución',
+            $devolucion ? $devolucion->correlativo : '',
+            $venta ? $venta->forma_pago : '',
+            $venta ? $venta->detalle_banco : '',
+            'Devolución',
+            $venta && $venta->canal ? $venta->canal->nombre : '',
+            -abs((float) $row->cantidad),
+            round((float) $row->costo, 2),
+            round((float) $row->precio, 2),
+            DevolucionEnReporte::negar($row->descuento),
+            0,
+            DevolucionEnReporte::negar((float) $row->total - ((float) $row->costo * (float) $row->cantidad)),
+            DevolucionEnReporte::negar($row->total),
+            $devolucion && $devolucion->sucursal && $devolucion->sucursal->empresa ? $devolucion->sucursal->empresa->nombre : '',
+            $devolucion ? $devolucion->observaciones : '',
+            $devolucion && $devolucion->usuario ? $devolucion->usuario->name : '',
+            $vendedor,
+            $hora,
+        ];
     }
 
     private function nombreVendedorDetalle(Detalle $row, $venta): string

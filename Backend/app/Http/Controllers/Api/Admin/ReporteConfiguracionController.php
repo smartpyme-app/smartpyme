@@ -339,6 +339,13 @@ class ReporteConfiguracionController extends Controller
         $nombre = $exportacion->nombre_archivo ?: basename($path);
         $mime = $this->mimeFromNombre($nombre);
 
+        // Mismo criterio que Maatwebsite\Excel::download: si queda salida previa,
+        // se antepone al binario y Content-Length recorta el final del xlsx.
+        if (ob_get_length() > 0) {
+            ob_end_clean();
+            ob_start();
+        }
+
         return response()->download($path, $nombre, [
             'Content-Type' => $mime,
         ]);

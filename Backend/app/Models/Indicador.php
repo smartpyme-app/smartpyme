@@ -419,52 +419,139 @@ class Indicador extends Model
         return $this->getTotalVentas() - $this->getTotalGastos();
     }
 
+    /**
+     * La devolución no tiene canal: sale de la venta ligada.
+     */
+    public static function filtrarDevolucionesPorVenta($devoluciones, string $campo, $valor)
+    {
+        return collect($devoluciones)->filter(function ($devolucion) use ($campo, $valor) {
+            $venta = $devolucion->venta ?? null;
+
+            return $venta && ($venta->{$campo} ?? null) == $valor;
+        })->values();
+    }
+
     public function getVentasByCanal(){
 
         return $this->ventas->where('estado', '!=', 'Anulada')->groupBy('id_canal')->map(function ($group) {
+                    $idCanal = $group->first()['id_canal'];
+                    $devoluciones = self::filtrarDevolucionesPorVenta($this->devoluciones_ventas, 'id_canal', $idCanal);
+
                     return [
                         'id' => $group->first()['id'],
                         'nombre' => $group->first()->canal()->pluck('nombre')->first(),
-                        'cantidad' => $group->count() - $this->devoluciones_ventas->where('id_canal', $group->first()['id_canal'])->count(),
-                        'total' => $group->sum('total') - $this->devoluciones_ventas->where('id_canal', $group->first()['id_canal'])->sum('total'),
+                        'cantidad' => $group->count() - $devoluciones->count(),
+                        'total' => $group->sum('total') - $devoluciones->sum('total'),
                     ];
                 })->sortByDesc('total')->values()->all();
     }
 
-    public function getVentasByFormaPago(){
+    /**
+     * Venta no anulada menos devoluciones. El método sale de la cabecera.
+     * Multiple se reparte una vez entre sus líneas; la devolución usa el mismo reparto.
+     */
+    public static function acumularFormasPago($ventas, $devoluciones, $metodosPorVenta): array
+    {
+        $totales = [];
+        $sumar = function (string $nombre, float $monto) use (&$totales) {
+            if ($nombre === '') {
+                $nombre = 'Sin definir';
+            }
+            $totales[$nombre] = ($totales[$nombre] ?? 0) + $monto;
+        };
 
-        $formasDePago = [];
+        foreach (collect($ventas) as $venta) {
+            if (($venta->estado ?? null) === 'Anulada') {
+                continue;
+            }
+            self::repartirMontoPorForma(
+                $venta,
+                self::metodosDeVenta($metodosPorVenta, $venta->id ?? null),
+                (float) ($venta->total ?? 0),
+                $sumar
+            );
+        }
 
-        $ventas = $this->ventas_pagadas->where('forma_pago', '!=', 'Multiple')->groupBy('forma_pago')->map(function ($group) {
-                    return [
-                        'id' => $group->first()['id'],
-                        'nombre' => $group->first()['forma_pago'],
-                        'cantidad' => $group->count() - $this->devoluciones_ventas->where('forma_pago', $group->first()['forma_pago'])->count(),
-                        'total' => $group->sum('total') - $this->devoluciones_ventas->where('forma_pago', $group->first()['forma_pago'])->sum('total'),
-                    ];
-                 })->sortByDesc('total')->values()->all();
+        foreach (collect($devoluciones) as $devolucion) {
+            $venta = $devolucion->venta ?? null;
+            if (!$venta) {
+                continue;
+            }
+            $id = $devolucion->id_venta ?? ($venta->id ?? null);
+            self::repartirMontoPorForma(
+                $venta,
+                self::metodosDeVenta($metodosPorVenta, $id),
+                -1 * (float) ($devolucion->total ?? 0),
+                $sumar
+            );
+        }
 
-        $detalles = $this->detalles_metodos_de_pago->groupBy('nombre')->map(function ($group) {
-                    return [
-                        'id' => $group->first()['id'],
-                        'nombre' => $group->first()['nombre'],
-                        'cantidad' => $group->count(),
-                        'total' => $group->sum('total'),
-                    ];
-                 })->sortByDesc('total')->values()->all();
+        return collect($totales)
+            ->reject(function ($total) {
+                return round((float) $total, 2) == 0.0;
+            })
+            ->map(function ($total, $nombre) {
+                return [
+                    'id' => null,
+                    'nombre' => $nombre,
+                    'cantidad' => 0,
+                    'total' => round((float) $total, 2),
+                ];
+            })
+            ->sortByDesc('total')
+            ->values()
+            ->all();
+    }
 
-        $ventasYDetalles = collect(array_merge($ventas, $detalles));
+    private static function metodosDeVenta($metodosPorVenta, $idVenta)
+    {
+        if ($idVenta === null) {
+            return collect();
+        }
+        $map = collect($metodosPorVenta);
 
-        $resultado = $ventasYDetalles->groupBy('nombre')->map(function ($group) {
-                    return [
-                        'id' => $group->first()['id'],
-                        'nombre' => $group->first()['nombre'],
-                        'cantidad' => $group->count(),
-                        'total' => $group->sum('total'),
-                    ];
-                 })->sortByDesc('total')->values()->all();
+        return collect($map->get($idVenta, $map->get((string) $idVenta, [])));
+    }
 
-        return $resultado;
+    private static function repartirMontoPorForma($venta, $metodos, float $monto, callable $sumar): void
+    {
+        $lineas = collect($metodos)->values();
+        $esMultiple = ($venta->forma_pago ?? '') === 'Multiple';
+        $sumaLineas = (float) $lineas->sum('total');
+
+        if (!$esMultiple || $lineas->isEmpty() || $sumaLineas <= 0) {
+            $sumar((string) ($venta->forma_pago ?? ''), $monto);
+
+            return;
+        }
+
+        $restante = round($monto, 2);
+        $ultimo = $lineas->count() - 1;
+        foreach ($lineas as $i => $linea) {
+            if ($i === $ultimo) {
+                $parte = $restante;
+            } else {
+                $parte = round($monto * ((float) $linea->total / $sumaLineas), 2);
+                $restante = round($restante - $parte, 2);
+            }
+            $sumar((string) ($linea->nombre ?? ''), $parte);
+        }
+    }
+
+    public function getVentasByFormaPago()
+    {
+        $ventas = $this->ventas->where('estado', '!=', 'Anulada')->values();
+        $ids = $ventas->pluck('id')->merge(
+            $this->devoluciones_ventas->map(function ($d) {
+                return $d->id_venta ?? optional($d->venta)->id;
+            })
+        )->filter()->unique()->values();
+
+        $metodos = $ids->isEmpty()
+            ? collect()
+            : MetodoDePago::whereIn('id_venta', $ids->all())->get()->groupBy('id_venta');
+
+        return self::acumularFormasPago($ventas, $this->devoluciones_ventas, $metodos);
     }
 
     public function getAbonosByFormaPago(){

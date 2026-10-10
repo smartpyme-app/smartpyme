@@ -4,6 +4,8 @@ namespace App\Exports\ReportesAutomaticos\DetalleVentasPorVendedor;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Exports\Support\DevolucionesEnReporteQuery;
+use App\Exports\Support\RangoFecha;
 use App\Services\Ventas\VentaMontosPorVendedorService;
 use Exception;
 use Mpdf\Mpdf;
@@ -554,9 +556,8 @@ class DetalleVentasVendedorPdfExport
                 ->join('users as us', function ($join) {
                     $join->on('us.id', '=', DB::raw(VentaMontosPorVendedorService::sqlIdVendedorEfectivo('dv', 'vv')));
                 })
-                ->where('vv.estado', '!=', 'Anulada')
-                ->where('vv.id_empresa', $this->id_empresa)
-                ->whereBetween('vv.fecha', [$this->fechaInicio, $this->fechaFin]);
+                ->where('vv.id_empresa', $this->id_empresa);
+            RangoFecha::ventasDelPeriodo($query, 'vv', $this->fechaInicio, $this->fechaFin);
     
             // Aplicar filtro de sucursales si está definido
             if (!empty($this->sucursales)) {
@@ -580,6 +581,28 @@ class DetalleVentasVendedorPdfExport
                 ->orderBy('vv.fecha')
                 ->orderBy('vv.correlativo')
                 ->get();
+
+            $ventasData = $ventasData->concat(
+                DevolucionesEnReporteQuery::filasDetalleVendedor(
+                    $this->id_empresa,
+                    $this->fechaInicio,
+                    $this->fechaFin,
+                    $this->sucursales
+                )->map(function ($fila) {
+                    return (object) [
+                        'vendedor' => $fila->nombre_vendedor,
+                        'correlativo' => $fila->correlativo,
+                        'fecha' => $fila->fecha,
+                        'producto' => $fila->nombre_producto,
+                        'cantidad' => $fila->cantidad,
+                        'precio' => $fila->precio,
+                        'descuento' => $fila->descuento,
+                        'iva' => $fila->iva,
+                        'subtotal' => $fila->subtotal,
+                        'total' => $fila->total_con_descuento,
+                    ];
+                })
+            );
     
             // Si no hay datos, devolver colección vacía
             if ($ventasData->isEmpty()) {
