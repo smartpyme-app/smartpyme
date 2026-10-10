@@ -17,11 +17,13 @@ Las imágenes de productos se almacenan en el bucket **`sp-imagenes-productos`**
 
 **No** usar `AWS_BUCKET` para imágenes de productos.
 
-En producción, si las fotos están en `api/img/productos/`, configura la ruta **hasta `img`** (sin `productos`):
+En producción, si las fotos están en `api/img/productos/`, lo recomendado es la ruta **hasta `img`** (sin `productos`):
 
 ```env
-PRODUCT_IMAGES_LOCAL_ROOT=/ruta/completa/al/api/img
+PRODUCT_IMAGES_LOCAL_ROOT=/home/smartpyme/public_html/api/img
 ```
+
+También funciona si apuntas a `.../api/img/productos` (el código evita duplicar `productos/productos/`).
 
 Prueba rápida en el VPS (debe existir el archivo):
 

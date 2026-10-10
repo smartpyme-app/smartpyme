@@ -31,6 +31,19 @@ class ProductImageStorageTest extends TestCase
         $this->assertTrue($storage->isDefaultImage('/productos/default.jpg'));
     }
 
+    public function test_local_path_avoids_duplicate_productos_segment(): void
+    {
+        config(['product_images.local_root' => '/home/smartpyme/public_html/api/img/productos']);
+
+        $storage = new ProductImageStorage();
+        $path = $storage->localAbsolutePath('/productos/abc123.jpg');
+
+        $this->assertSame(
+            '/home/smartpyme/public_html/api/img/productos/abc123.jpg',
+            str_replace('\\', '/', $path)
+        );
+    }
+
     public function test_put_and_get_on_fake_disk(): void
     {
         Storage::fake('s3_productos');
