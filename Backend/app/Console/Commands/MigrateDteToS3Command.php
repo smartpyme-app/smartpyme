@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Compras\Compra;
 use App\Models\Ventas\Venta;
+use App\Support\FacturacionElectronica\CostaRicaFeDteDocumento;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -27,7 +28,7 @@ class MigrateDteToS3Command extends Command
                             {--desde= : Inicio de rango fecha (Y-m-d); usar junto con --hasta}
                             {--hasta= : Fin de rango fecha (Y-m-d); usar junto con --desde}';
 
-    protected $description = 'Sube JSON de DTE desde compras/ventas a S3 y vacía la columna local.';
+    protected $description = 'Sube DTE (JSON El Salvador o XML Costa Rica) desde compras/ventas a S3 y vacía la columna local.';
 
     public function handle(): int
     {
@@ -145,7 +146,13 @@ class MigrateDteToS3Command extends Command
             return false;
         }
 
-        $path = $this->buildObjectKey($table, $row, $jsonCol);
+        $bytes = is_string($raw) ? $raw : json_encode($raw);
+        if ($bytes === false || $bytes === '') {
+            return false;
+        }
+
+        $format = $this->dteS3ObjectFormat($bytes);
+        $path = $this->buildObjectKey($table, $row, $jsonCol, $format['ext']);
 
         if ($dry) {
             $this->line("[dry-run] {$table}#{$row->id} -> {$path}");
@@ -153,15 +160,10 @@ class MigrateDteToS3Command extends Command
             return false;
         }
 
-        $bytes = is_string($raw) ? $raw : json_encode($raw);
-        if ($bytes === false || $bytes === '') {
-            return false;
-        }
-
         try {
             Storage::disk($disk)->put($path, $bytes, [
                 'visibility' => 'private',
-                'ContentType' => 'application/json',
+                'ContentType' => $format['contentType'],
             ]);
         } catch (\Throwable $e) {
             Log::error('dte:migrate-to-s3 put falló', [
@@ -197,10 +199,11 @@ class MigrateDteToS3Command extends Command
     /**
      * Ruta en S3 alineada al bucket: ventas/ o compras/, empresa, año/mes, archivo.
      * Ej.: ventas/12-mi-empresa-slug/2026/05/registro-88421-documento.json
+     *      ventas/12-mi-empresa-slug/2026/05/registro-88421-documento.xml
      *
      * @param  Venta|Compra  $row
      */
-    protected function buildObjectKey(string $table, $row, string $column): string
+    protected function buildObjectKey(string $table, $row, string $column, string $ext = 'json'): string
     {
         $id = (int) $row->id;
         $idEmpresa = (int) ($row->getAttribute('id_empresa') ?? 0);
@@ -217,8 +220,21 @@ class MigrateDteToS3Command extends Command
 
         $tipoArchivo = $column === 'dte_invalidacion' ? 'invalidacion' : 'documento';
         $prefijoRaiz = $table === 'ventas' ? 'ventas' : 'compras';
+        $ext = $ext === 'xml' ? 'xml' : 'json';
 
-        return $prefijoRaiz . '/' . $empresaSegment . '/' . $year . '/' . $month . '/registro-' . $id . '-' . $tipoArchivo . '.json';
+        return $prefijoRaiz . '/' . $empresaSegment . '/' . $year . '/' . $month . '/registro-' . $id . '-' . $tipoArchivo . '.' . $ext;
+    }
+
+    /**
+     * @return array{ext: string, contentType: string}
+     */
+    protected function dteS3ObjectFormat(string $bytes): array
+    {
+        if (CostaRicaFeDteDocumento::esXmlComprobante($bytes)) {
+            return ['ext' => 'xml', 'contentType' => 'application/xml'];
+        }
+
+        return ['ext' => 'json', 'contentType' => 'application/json'];
     }
 
     protected function empresaPathSegment(int $idEmpresa): string

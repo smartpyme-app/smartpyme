@@ -6,7 +6,7 @@ Este documento describe los comandos relacionados con la migración de JSON de D
 
 ## 1. `php artisan dte:migrate-to-s3`
 
-**Qué hace:** Para cada fila elegible, lee el JSON en `dte` y/o `dte_invalidacion`, lo sube al disco configurado (por defecto `s3`), guarda la clave en `dte_s3_key` / `dte_invalidacion_s3_key`, marca `dte_migrated_at` / `dte_invalidacion_migrated_at` y deja en `NULL` la columna JSON correspondiente en la base de datos.
+**Qué hace:** Para cada fila elegible, lee el contenido en `dte` y/o `dte_invalidacion` (JSON de El Salvador o XML de Costa Rica), lo sube al disco configurado (por defecto `s3`) con la extensión y `ContentType` que correspondan (`.json` / `application/json` o `.xml` / `application/xml`), guarda la clave en `dte_s3_key` / `dte_invalidacion_s3_key`, marca `dte_migrated_at` / `dte_invalidacion_migrated_at` y deja en `NULL` la columna correspondiente en la base de datos.
 
 **Requisitos:** Variables AWS y `AWS_BUCKET` en `.env` (excepto en `--dry-run`, donde el bucket puede estar vacío). La migración de esquema (columnas nuevas) debe estar aplicada.
 
@@ -49,7 +49,7 @@ php artisan dte:migrate-to-s3 --table=both --mes=2025-03 --skip-invalidacion
 
 ### Convención de claves en S3 (referencia)
 
-- Ventas: `ventas/{id_empresa}-{slug-nombre}/AAAA/MM/registro-{id}-documento.json` (e invalidación: `...-invalidacion.json`).
+- Ventas: `ventas/{id_empresa}-{slug-nombre}/AAAA/MM/registro-{id}-documento.json` (El Salvador) o `.xml` (Costa Rica). Invalidación: `...-invalidacion.json` o `.xml`.
 - Compras: `compras/...` (misma idea).
 
 El slug del nombre se obtiene de la tabla `empresas` para el `id_empresa` de la fila.
