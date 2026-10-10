@@ -130,8 +130,34 @@ Ajustar `AllowedOrigins` según dominios reales del frontend.
 | `--limit=` | Máximo de filas a procesar. |
 | `--empresa=` | Solo imágenes de productos con `id_empresa` dado. |
 | `--local-root=` | Ruta a la carpeta `img` (override puntual de `PRODUCT_IMAGES_LOCAL_ROOT`). |
+| `--recover-from-src` | Si no hay archivo en disco, intenta bajar desde la columna `src` (Shopify/Woo). |
+| `--skip-missing` | Las filas huérfanas no fallan el comando (exit 0); se cuentan en «Sin archivo». |
 
 Al iniciar, el comando imprime `Carpeta local de imágenes: ...` para verificar la ruta.
+
+### Filas «Sin archivo local ni S3»
+
+Significa que en `productos_imagenes` hay un registro, pero el `.jpg` **no está** en el VPS y **tampoco** en S3. Suele pasar si borraron archivos a mano, limpiaron disco o quedó un registro duplicado/obsoleto.
+
+1. **Recuperar** (si tienen URL en `src`):
+
+   ```bash
+   php artisan imagenes:migrate-to-s3 --recover-from-src --dry-run --limit=20
+   ```
+
+2. **Migrar el resto e ignorar huérfanas** (revisar el contador «Sin archivo»):
+
+   ```bash
+   php artisan imagenes:migrate-to-s3 --skip-missing
+   ```
+
+3. **Revisar en MySQL** una fila concreta:
+
+   ```sql
+   SELECT id, id_producto, img, src FROM productos_imagenes WHERE id = 242;
+   ```
+
+   Si no hay `src` y el archivo no existe, puedes eliminar el registro o volver a subir la imagen desde inventario / sync Shopify.
 
 **Idempotencia:** Si el objeto ya existe en S3, no re-sube; si el archivo local sigue presente, lo borra.
 
