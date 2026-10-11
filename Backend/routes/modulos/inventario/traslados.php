@@ -34,5 +34,3 @@ use App\Http\Controllers\Api\Inventario\TrasladosController;
 
 //     Route::get('/reporte/traslado/{id}',    [TrasladosController::class, 'generarDoc']);
 
-?>
-

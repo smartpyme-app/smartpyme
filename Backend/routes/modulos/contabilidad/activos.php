@@ -66,7 +66,3 @@ Route::middleware(['verificar.funcionalidad:contabilidad'])->group(function () {
 
 });
 
-
-
-?>
-
