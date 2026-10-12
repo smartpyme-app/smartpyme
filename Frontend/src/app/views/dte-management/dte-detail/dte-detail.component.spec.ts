@@ -110,4 +110,12 @@ describe('DteDetailComponent - proceso compra/gasto', () => {
       expect(payload.id_categoria).toBe(4);
     });
   });
+
+  describe('goBack', () => {
+    it('usa location.back para conservar filtros del listado', () => {
+      const location = { back: jasmine.createSpy('back') };
+      invocar('goBack', { location });
+      expect(location.back).toHaveBeenCalled();
+    });
+  });
 });
