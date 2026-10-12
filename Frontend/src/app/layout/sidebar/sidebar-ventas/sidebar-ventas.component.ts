@@ -9,8 +9,8 @@ import { FuncionalidadesService } from '@services/functionalities.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { filter as rxFilter } from 'rxjs/operators';
 import { RestauranteSidebarLinksComponent } from '../restaurante-sidebar-links.component';
-import { LazyImageDirective } from '../../directives/lazy-image.directive';
-import { syncLayoutSidebarInset } from '../layout-sidebar-inset';
+import { LazyImageDirective } from '../../../directives/lazy-image.directive';
+import { syncLayoutSidebarInset } from '../../layout-sidebar-inset';
 
 @Component({
     selector: 'app-sidebar-ventas',
