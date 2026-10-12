@@ -8,10 +8,27 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::create('contador_empresa_accesos', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('id_usuario_contador');
+            $table->unsignedInteger('id_empresa');
+            $table->string('estado', 20)->default('activo');
+            $table->json('permisos')->nullable();
+            $table->unsignedBigInteger('invitado_por_user_id')->nullable();
+            $table->timestamp('revoked_at')->nullable();
+            $table->timestamps();
+
+            $table->unique(['id_usuario_contador', 'id_empresa'], 'contador_empresa_accesos_unique');
+            $table->foreign('id_usuario_contador')->references('id')->on('users')->cascadeOnDelete();
+            $table->foreign('id_empresa')->references('id')->on('empresas')->cascadeOnDelete();
+            $table->foreign('invitado_por_user_id')->references('id')->on('users')->nullOnDelete();
+        });
+
         Schema::create('contador_empresa_documentos', function (Blueprint $table) {
             $table->id();
             $table->unsignedInteger('id_empresa');
             $table->string('slug', 64);
+            $table->string('titulo', 255)->nullable();
             $table->string('ruta', 512);
             $table->string('nombre_archivo', 255);
             $table->string('mime', 128)->nullable();
@@ -20,7 +37,7 @@ return new class extends Migration
             $table->unsignedBigInteger('id_usuario_carga')->nullable();
             $table->timestamps();
 
-            $table->unique(['id_empresa', 'slug'], 'contador_empresa_documentos_empresa_slug');
+            $table->index('id_empresa', 'contador_empresa_documentos_id_empresa_idx');
             $table->foreign('id_empresa')->references('id')->on('empresas')->cascadeOnDelete();
             $table->foreign('id_usuario_carga')->references('id')->on('users')->nullOnDelete();
         });
@@ -48,5 +65,6 @@ return new class extends Migration
     {
         Schema::dropIfExists('contador_obligaciones_fiscales');
         Schema::dropIfExists('contador_empresa_documentos');
+        Schema::dropIfExists('contador_empresa_accesos');
     }
 };
