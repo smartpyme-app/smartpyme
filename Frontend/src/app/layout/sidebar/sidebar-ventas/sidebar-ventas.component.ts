@@ -9,12 +9,14 @@ import { FuncionalidadesService } from '@services/functionalities.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { filter as rxFilter } from 'rxjs/operators';
 import { RestauranteSidebarLinksComponent } from '../restaurante-sidebar-links.component';
+import { LazyImageDirective } from '../../directives/lazy-image.directive';
+import { syncLayoutSidebarInset } from '../layout-sidebar-inset';
 
 @Component({
     selector: 'app-sidebar-ventas',
     templateUrl: './sidebar-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, TooltipModule, CollapseModule, RestauranteSidebarLinksComponent],
+    imports: [CommonModule, RouterModule, TooltipModule, CollapseModule, RestauranteSidebarLinksComponent, LazyImageDirective],
 })
 export class SidebarVentasComponent implements OnInit {
     public sidebarCollapsed:boolean = false;
@@ -57,6 +59,7 @@ export class SidebarVentasComponent implements OnInit {
         }else{
             this.sidebarCollapsed = JSON.parse(localStorage.getItem('sidebarCollapsed')!);
         }
+        syncLayoutSidebarInset();
         if (!localStorage.getItem('productosIsCollapsed')) {
             localStorage.setItem('productosIsCollapsed', this.productosIsCollapsed.toString());
         }else{
@@ -168,6 +171,7 @@ export class SidebarVentasComponent implements OnInit {
     toggleSidebar() {
         this.sidebarCollapsed = !this.sidebarCollapsed;
         localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed.toString());
+        syncLayoutSidebarInset();
 
         if (this.sidebarCollapsed) {
             this.productosIsCollapsed = true;
