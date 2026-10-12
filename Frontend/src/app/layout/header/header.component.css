@@ -1,0 +1,40 @@
+/* Mismo inset horizontal que `.content` (p-2 / px-lg-4 en layout). */
+.app-main-header .header-main-inner {
+  --bs-gutter-x: 0;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+@media (min-width: 992px) {
+  .app-main-header .header-main-inner {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+.app-main-header {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: var(--app-sidebar-inset, 280px);
+  /* Sin width:100%: con left+inset, w-100 usa el viewport entero y empuja acciones fuera de pantalla. */
+  width: auto;
+  height: 65px;
+  z-index: 1055;
+  background: #fff;
+  overflow: visible;
+}
+
+.app-main-header .dropdown-menu {
+  z-index: 1060;
+}
+
+.app-header-profile-menu {
+  min-width: 210px;
+}
+
+@media (max-width: 767.98px) {
+  .app-main-header {
+    left: 0;
+  }
+}

@@ -10,6 +10,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { ContadoresPortalService } from '@services/contadores-portal.service';
 
 import * as moment from 'moment';
 
@@ -39,7 +40,8 @@ export class AdminDashComponent extends BaseModalComponent implements OnInit {
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
         private cdr: ChangeDetectorRef,
-        private translate: TranslateService
+        private translate: TranslateService,
+        private contadoresPortal: ContadoresPortalService,
     ) {
         super(modalManager, alertService);
     }
@@ -49,24 +51,43 @@ export class AdminDashComponent extends BaseModalComponent implements OnInit {
           .pipe(this.untilDestroyed())
           .subscribe(() => this.cdr.markForCheck());
 
-        this.saludo  = this.apiService.saludar();
-        this.usuario  = this.apiService.auth_user();
-        this.filtro.inicio  = this.apiService.date();
-        this.filtro.fin     = this.apiService.date();
-        this.filtro.id_sucursal = this.apiService.auth_user().id_sucursal;
-        
+        this.inicializarFiltros();
+        this.cargarSucursales();
+        this.onFiltrar();
+
+        this.contadoresPortal.contextoSesionActualizado$
+          .pipe(this.untilDestroyed())
+          .subscribe(() => this.refrescarTrasCambioEmpresa());
+    }
+
+    private inicializarFiltros(): void {
+        this.saludo = this.apiService.saludar();
+        this.usuario = this.apiService.auth_user();
+        this.filtro.inicio = this.apiService.date();
+        this.filtro.fin = this.apiService.date();
+        this.filtro.id_sucursal = this.apiService.auth_user()?.id_sucursal ?? '';
         this.filtro.time = 'day';
         this.filtro.inicio = moment().startOf(this.filtro.time).format('YYYY-MM-DD');
         this.filtro.fin = moment().endOf(this.filtro.time).format('YYYY-MM-DD');
-        this.onFiltrar();
+    }
 
+    private cargarSucursales(): void {
         this.apiService.getAll('sucursales/list')
           .pipe(this.untilDestroyed())
-          .subscribe(sucursales => { 
-            this.sucursales = sucursales;
-            this.cdr.markForCheck();
-        }, error => {this.alertService.error(error); });
+          .subscribe({
+            next: (sucursales) => {
+              this.sucursales = sucursales;
+              this.cdr.markForCheck();
+            },
+            error: (error) => { this.alertService.error(error); },
+          });
+    }
 
+    private refrescarTrasCambioEmpresa(): void {
+        this.inicializarFiltros();
+        this.cargarSucursales();
+        this.onFiltrar();
+        this.cdr.markForCheck();
     }
 
     public setTime($time:any){

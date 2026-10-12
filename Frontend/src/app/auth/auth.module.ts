@@ -11,6 +11,7 @@ import { LoginComponent } from './../auth/login/login.component';
 import { LoginAbacoComponent } from './../auth/login/login-abaco.component';
 import { LoginSivarEconomicsComponent } from './../auth/login/login-sivar-economics.component';
 import { LoginOnvoComponent } from './../auth/login/login-onvo.component';
+import { LoginContadoresComponent } from './../auth/login/login-contadores.component';
 import { LoginEntryComponent } from './../auth/login/login-entry.component';
 import { LockComponent } from './../auth/lock/lock.component';
 import { RegisterComponent } from './../auth/register/register.component';
@@ -38,6 +39,7 @@ import { HeroVideoAutoplayDirective } from './shared/hero-video-autoplay.directi
     PipesModule,
     NgxMaskDirective, NgxMaskPipe,
     LoginComponent,
+    LoginContadoresComponent,
     LockComponent,
     ForgetComponent,
     RegisterComponent,

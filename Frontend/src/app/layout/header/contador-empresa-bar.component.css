@@ -1,0 +1,163 @@
+.contador-empresa-pill {
+  position: relative;
+  z-index: 1;
+}
+
+.contador-empresa-pill__trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(420px, 58vw);
+  padding: 3px 10px 3px 3px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.contador-empresa-pill__trigger:hover:not(:disabled) {
+  border-color: #cbd5e1;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+}
+
+.contador-empresa-pill__trigger:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.contador-empresa-pill__avatar {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.contador-empresa-pill__avatar--sm {
+  width: 28px;
+  height: 28px;
+  font-size: 10px;
+}
+
+.contador-empresa-pill__text {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.contador-empresa-pill__kicker {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.contador-empresa-pill__nombre {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contador-empresa-pill__chevron {
+  flex-shrink: 0;
+  margin-left: 2px;
+  font-size: 11px;
+  color: #475569;
+  transition: transform 0.15s ease;
+}
+
+.contador-empresa-pill__chevron--open {
+  transform: rotate(180deg);
+}
+
+.contador-empresa-pill__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 280px;
+  max-width: min(360px, 90vw);
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.contador-empresa-pill__option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.contador-empresa-pill__option:hover {
+  background: #f1f5f9;
+}
+
+.contador-empresa-pill__option--active {
+  background: #eff6ff;
+}
+
+.contador-empresa-pill__option-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contador-empresa-pill__menu-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 4px;
+  padding: 8px 10px 4px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.contador-empresa-pill__link {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1775e5;
+  text-decoration: none;
+}
+
+.contador-empresa-pill__link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 767.98px) {
+  .contador-empresa-pill__kicker {
+    display: none;
+  }
+
+  .contador-empresa-pill__nombre {
+    font-size: 13px;
+    max-width: 140px;
+  }
+}

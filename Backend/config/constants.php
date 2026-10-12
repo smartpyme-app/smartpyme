@@ -118,6 +118,7 @@ return [
     'ROL_USUARIO'              => 'usuario',
     'ROL_CONTADOR_SUPERIOR'    => 'contador_superior',
     'ROL_CONTADOR_AUXILIAR'    => 'contador_auxiliar',
+    'ROL_ADMIN_CONTADOR'       => 'admin_contador',
     'ROL_GERENTE_COMPRAS'      => 'gerente_compras',
     'ROL_GERENTE_VENTAS'       => 'gerente_ventas',
     'ROL_GERENTE_OPERACIONES'  => 'gerente_operaciones',

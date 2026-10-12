@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService } from '@services/api.service';
 import { AppConstants } from '../constants/app.constants';
+import { loginHostFromHostname } from '../auth/login/login-host';
 
 @Injectable({
   providedIn: 'root'
@@ -20,8 +21,20 @@ export class SubscriptionGuard  {
       return false;
     }
 
+    // El portal contador opera sobre empresas cliente; no debe bloquearse por la suscripción de cada PYME.
+    if (this.apiService.esPortalContador()) {
+      return true;
+    }
+    if (
+      typeof window !== 'undefined' &&
+      loginHostFromHostname(window.location.hostname) === 'contadores' &&
+      this.apiService.autenticated()
+    ) {
+      return true;
+    }
+
     // Asegurémonos de comparar usando minúsculas para evitar inconsistencias
-    const estadoSuscripcion = userData.estado_suscripcion.toLowerCase();
+    const estadoSuscripcion = String(userData.estado_suscripcion ?? '').toLowerCase();
 
     // Verificar si está en prueba y sin días restantes
     if (estadoSuscripcion === 'en prueba') {

@@ -22,6 +22,7 @@ import { DteDocumentService } from '@services/dte-management/dte-document.servic
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { SLUG_DESCARGA_AUTOMATIZADA_DTES } from '@guards/funcionalidad.guard';
 import { TranslatePipe } from '@ngx-translate/core';
+import { ContadoresPortalService } from '@services/contadores-portal.service';
 
 @Component({
     selector: 'app-layout',
@@ -68,16 +69,40 @@ export class LayoutComponent implements OnInit {
     private router: Router,
     private dteDocumentService: DteDocumentService,
     private funcionalidadesService: FuncionalidadesService,
-    private countryI18n: CountryI18nService
+    private countryI18n: CountryI18nService,
+    private contadoresPortal: ContadoresPortalService,
   ) {}
 
   ngOnInit() {
-    this.usuario = this.apiService.auth_user();
-    this.countryI18n.applyForEmpresa(this.usuario?.empresa).subscribe();
+    this.refrescarUsuarioLayout();
     this.mostrarAlertaSuscripcion();
+
+    this.contadoresPortal.contextoSesionActualizado$
+      .pipe(this.untilDestroyed())
+      .subscribe(() => {
+        this.refrescarUsuarioLayout();
+        this.recargarVistaSiCambioEmpresaContador();
+      });
 
     this.getAlertSuscription();
     this.checkDtePendingReviewAlert();
+  }
+
+  private refrescarUsuarioLayout(): void {
+    this.usuario = this.apiService.auth_user() ?? {};
+    this.countryI18n.applyForEmpresa(this.usuario?.empresa).subscribe({ error: () => {} });
+  }
+
+  /** Tras cambiar "Trabajando en…", remontar la vista sin tocar cada módulo (p. ej. clientes). */
+  private recargarVistaSiCambioEmpresaContador(): void {
+    if (!this.apiService.esPortalContador() || typeof window === 'undefined') {
+      return;
+    }
+    const path = this.router.url.split('?')[0] ?? '';
+    if (path === '/contadores') {
+      return;
+    }
+    window.location.reload();
   }
 
   private checkDtePendingReviewAlert(): void {

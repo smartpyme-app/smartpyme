@@ -1,0 +1,132 @@
+<div class="contadores-page">
+    @if (loading) {
+      <p class="text-muted p-4">Cargando cartera…</p>
+    }
+    @if (!loading && error) {
+      <p class="text-danger p-4">{{ error }}</p>
+    }
+
+    @if (!loading && !error) {
+      <div class="contadores-dash__content">
+        <section class="contadores-dash__center">
+          <div class="contadores-dash__title-row">
+            <h1 class="contadores-dash__title">Cartera de clientes</h1>
+            <div class="contadores-dash__top-meta">
+              <label class="contadores-dash__periodo mb-0">
+                <span class="visually-hidden">Periodo</span>
+                <select
+                  class="form-select form-select-sm contadores-dash__periodo-select"
+                  [ngModel]="periodoKey"
+                  (ngModelChange)="onPeriodoKeyChange($event)"
+                >
+                  @for (p of opcionesPeriodo; track p.mes + '-' + p.anio) {
+                    <option [value]="p.mes + '-' + p.anio">{{ p.label }}</option>
+                  }
+                </select>
+              </label>
+              @if (periodoEnCierre) {
+                <span class="contadores-dash__pill contadores-dash__pill--warn">Periodo en cierre</span>
+              }
+            </div>
+          </div>
+          <p class="contadores-dash__subtitle">{{ subtituloFiscal }}</p>
+
+          <div class="contadores-dash__kpis">
+            <div class="contadores-dash__kpi">
+              <span class="contadores-dash__kpi-label">Empresas asignadas</span>
+              <strong class="contadores-dash__kpi-value">{{ totalEmpresas }}</strong>
+            </div>
+            <div class="contadores-dash__kpi">
+              <span class="contadores-dash__kpi-label">Listas para declarar</span>
+              <strong class="contadores-dash__kpi-value">{{ listasParaDeclarar }} de {{ totalEmpresas }}</strong>
+            </div>
+            <div class="contadores-dash__kpi">
+              <span class="contadores-dash__kpi-label">Por contabilizar</span>
+              <strong class="contadores-dash__kpi-value">
+                {{ totalPorContabilizar }}
+                <span class="contadores-dash__kpi-unit">transacciones</span>
+              </strong>
+            </div>
+            <div class="contadores-dash__kpi">
+              <span class="contadores-dash__kpi-label">IVA a pagar de la cartera</span>
+              <strong class="contadores-dash__kpi-value">{{ formatoMoneda(ivaCartera) }}</strong>
+            </div>
+          </div>
+
+          <input
+            type="search"
+            class="form-control form-control-sm contadores-dash__search mb-3"
+            placeholder="Buscar empresa"
+            [(ngModel)]="buscador"
+          />
+
+          @if (empresasTabla.length === 0) {
+            <p class="text-muted">Ninguna empresa coincide con la búsqueda.</p>
+          }
+
+          <div class="table-responsive contadores-dash__table-wrap">
+            <table class="table contadores-dash__table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Empresa</th>
+                  <th class="text-end">Registradas</th>
+                  <th class="text-end">Con partida</th>
+                  <th class="contadores-dash__th-avance">Avance</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (e of empresasTabla; track e.id) {
+                  @if (metricas(e); as m) {
+                    <tr (click)="irCumplimiento(e)" role="button">
+                      <td>
+                        <div class="d-flex align-items-center gap-2 contadores-dash__empresa-cell">
+                          @if (mostrarLogoEmpresa(e)) {
+                            <img
+                              class="contadores-dash__avatar contadores-dash__avatar--img"
+                              [src]="logoUrl(e.logo)"
+                              [alt]="e.nombre"
+                              (error)="onLogoError(e.id)"
+                            />
+                          } @else {
+                            <span class="contadores-dash__avatar" [style.background]="colorMarca(e.nombre)">{{ iniciales(e.nombre) }}</span>
+                          }
+                          <div class="min-w-0">
+                            <div class="contadores-dash__empresa-nombre">{{ e.nombre }}</div>
+                            @if (e.giro) {
+                              <div class="contadores-dash__empresa-giro">{{ e.giro }}</div>
+                            }
+                          </div>
+                        </div>
+                      </td>
+                      <td class="text-end contadores-dash__num">{{ m.registradas }}</td>
+                      <td class="text-end contadores-dash__num">{{ m.conPartida }}</td>
+                      <td>
+                        <div class="contadores-dash__avance-cell">
+                          <div class="contadores-dash__progress">
+                            <div
+                              class="contadores-dash__progress-bar"
+                              [class.contadores-dash__progress-bar--warn]="m.estado === 'atrasada'"
+                              [class.contadores-dash__progress-bar--casi]="m.estado === 'casi'"
+                              [style.width.%]="m.avance"
+                            ></div>
+                          </div>
+                          <span class="contadores-dash__avance-pct">{{ m.avance }}%</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="contadores-dash__estado contadores-dash__estado--{{ m.estado }}">
+                          @if (m.estado === 'lista') { ✓ }
+                          {{ etiquetaEstado(m.estado) }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    }
+</div>

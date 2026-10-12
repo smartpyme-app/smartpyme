@@ -1,0 +1,106 @@
+<div class="contadores-page">
+  @if (loading) {
+    <p class="text-muted p-4">Cargando libros de IVA…</p>
+  }
+  @if (!loading && error) {
+    <p class="text-danger p-4">{{ error }}</p>
+  }
+
+  @if (!loading && !error && vista; as v) {
+    <div class="contadores-cump__body contadores-liva__body">
+      <div class="contadores-liva__title-row">
+        <h1 class="contadores-liva__page-title">Libros de IVA</h1>
+        <select
+          class="form-select form-select-sm contadores-dash__periodo-select"
+          [ngModel]="periodoKey"
+          (ngModelChange)="onPeriodoKeyChange($event)"
+        >
+          @for (p of opcionesPeriodo; track p.mes + '-' + p.anio) {
+            <option [value]="p.mes + '-' + p.anio">{{ p.label }}</option>
+          }
+        </select>
+      </div>
+
+      <p class="contadores-liva__lede">
+        Resumen del período y descarga de libros fiscales y anexos en los mismos formatos que Contabilidad.
+      </p>
+
+      <div class="contadores-liva__kpis">
+        <div class="contadores-liva__kpi">
+          <span>Débito fiscal</span>
+          <strong>{{ formatoMoneda(v.resumen.debito_fiscal) }}</strong>
+        </div>
+        <div class="contadores-liva__kpi">
+          <span>Crédito fiscal</span>
+          <strong>{{ formatoMoneda(v.resumen.credito_fiscal) }}</strong>
+        </div>
+        <div class="contadores-liva__kpi">
+          <span>Retenciones y percepciones 1%</span>
+          <strong>{{ formatoMoneda(v.resumen.retenciones) }}</strong>
+        </div>
+        <div class="contadores-liva__kpi">
+          <span>IVA a pagar</span>
+          <strong>{{ formatoMoneda(v.resumen.iva_a_pagar) }}</strong>
+        </div>
+      </div>
+
+      <section class="contadores-liva__downloads" aria-labelledby="liva-descargas-title">
+        <div class="contadores-liva__downloads-head">
+          <h2 id="liva-descargas-title" class="contadores-liva__section-title">Descargas</h2>
+          @if (v.actualizado_hoy) {
+            <span class="contadores-liva__badge-ok">Actualizado hoy</span>
+          }
+        </div>
+
+        @for (modulo of modulosDescarga(v); track modulo.titulo) {
+          <div class="contadores-liva__module">
+            <h3 class="contadores-liva__module-title">{{ modulo.titulo }}</h3>
+            <div class="contadores-liva__module-rows">
+              @for (fila of modulo.filas; track fila.item.clave) {
+                <div class="contadores-liva__module-row">
+                  <div class="contadores-liva__module-row-main">
+                    <span class="contadores-liva__fila-tipo">{{ fila.etiqueta }}</span>
+                    <span class="contadores-liva__fila-desc">{{ fila.item.descripcion }}</span>
+                    <span class="contadores-liva__fila-meta">{{ fila.item.total_documentos }} documentos</span>
+                  </div>
+                  <div class="contadores-liva__download-actions">
+                    @if (fila.item.soporta_pdf) {
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-primary"
+                        [disabled]="estaDescargando(fila.item.clave, 'pdf')"
+                        (click)="descargar(fila.item.clave, 'pdf')"
+                      >
+                        PDF
+                      </button>
+                    }
+                    @if (fila.item.soporta_excel) {
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary"
+                        [disabled]="estaDescargando(fila.item.clave, 'excel')"
+                        (click)="descargar(fila.item.clave, 'excel')"
+                      >
+                        Excel
+                      </button>
+                    }
+                    @if (fila.item.soporta_csv) {
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        [disabled]="estaDescargando(fila.item.clave, 'csv')"
+                        (click)="descargar(fila.item.clave, 'csv')"
+                      >
+                        CSV
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </section>
+    </div>
+  }
+</div>

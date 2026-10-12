@@ -1,0 +1,477 @@
+<section class="d-flex justify-content-between align-items-center bg-white p-4 rounded mb-3">
+
+  <div>
+
+    <h2 class="page-heading mb-1">Contadores</h2>
+
+    <p class="text-muted mb-0 small">Portal multiempresa · asignación de empresas por contador.</p>
+
+  </div>
+
+  <div class="d-flex gap-2 flex-wrap">
+    <button type="button" class="btn btn-default" (click)="abrirIncluirContador(modalIncluirContador)">
+      <i class="fa fa-user-plus"></i> Incluir contador existente
+    </button>
+    <button type="button" class="btn btn-primary" (click)="abrirNuevoContador(modalNuevoContador)">
+      <i class="fa fa-plus"></i> Nuevo contador
+    </button>
+  </div>
+
+</section>
+
+
+
+<section class="bg-white p-4 rounded">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+
+    <h3 class="h5 mb-0">Contadores con empresas asociadas</h3>
+
+    <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="loading" (click)="cargarAccesos()">
+
+      <i class="fa fa-refresh"></i> Actualizar
+
+    </button>
+
+  </div>
+
+
+
+  <div class="table-responsive">
+
+    <table class="table table-hover align-middle mb-0">
+
+      <thead>
+
+        <tr>
+
+          <th>Contador</th>
+
+          <th>Empresas</th>
+
+          <th class="text-end" style="width: 180px">Acciones</th>
+
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        @if (loading) {
+
+          <tr><td colspan="3">Cargando…</td></tr>
+
+        }
+
+        @if (!loading && contadoresConEmpresas.length === 0) {
+
+          <tr>
+
+            <td colspan="3" class="text-muted py-4">
+
+              No hay contadores con empresas asociadas.
+
+              Crea un contador y usa <strong>Asociar</strong> para agregar empresas.
+
+            </td>
+
+          </tr>
+
+        }
+
+        @for (fila of contadoresConEmpresas; track fila.contador.id) {
+
+          <tr>
+
+            <td>
+
+              <div class="fw-semibold">{{ fila.contador.name }}</div>
+
+              <small class="text-muted">{{ fila.contador.email }}</small>
+
+            </td>
+
+            <td>
+
+              <div class="d-flex flex-wrap gap-1">
+
+                @for (a of fila.accesosActivos; track a.id) {
+
+                  <span class="badge bg-light text-dark border">{{ a.empresa?.nombre ?? 'Empresa #' + a.empresa?.id }}</span>
+
+                }
+
+              </div>
+
+            </td>
+
+            <td class="text-end">
+
+              <button
+
+                type="button"
+
+                class="btn btn-sm btn-primary me-1"
+
+                (click)="abrirAgregarEmpresas(fila.contador, modalAgregarEmpresas)"
+
+              >
+
+                Asociar
+
+              </button>
+
+              <div class="btn-group d-inline-block">
+
+                <button
+
+                  type="button"
+
+                  class="btn btn-sm btn-outline-secondary dropdown-toggle"
+
+                  data-bs-toggle="dropdown"
+
+                  aria-expanded="false"
+
+                >
+
+                  Opciones
+
+                </button>
+
+                <ul class="dropdown-menu dropdown-menu-end">
+
+                  <li>
+
+                    <button
+
+                      type="button"
+
+                      class="dropdown-item"
+
+                      (click)="abrirAgregarEmpresas(fila.contador, modalAgregarEmpresas)"
+
+                    >
+
+                      Agregar empresas
+
+                    </button>
+
+                  </li>
+
+                </ul>
+
+              </div>
+
+            </td>
+
+          </tr>
+
+        }
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+  @if (contadoresSinEmpresas.length > 0) {
+    <div class="mt-4 pt-3 border-top">
+      <h3 class="h6 text-muted mb-2">Contadores del portal sin empresas</h3>
+      <ul class="list-group list-group-flush border rounded">
+        @for (c of contadoresSinEmpresas; track c.id) {
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>
+              <span class="fw-semibold">{{ c.name }}</span>
+              <small class="text-muted ms-2">{{ c.email }}</small>
+            </span>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-primary"
+              (click)="abrirAgregarEmpresas(c, modalAgregarEmpresas)"
+            >
+              Asociar empresas
+            </button>
+          </li>
+        }
+      </ul>
+    </div>
+  }
+
+</section>
+
+
+
+<ng-template #modalIncluirContador>
+  <div class="modal-header">
+    <h4 class="modal-title">Incluir contador existente</h4>
+    <button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrarModal()"></button>
+  </div>
+  <div class="modal-body">
+    <p class="text-muted small">
+      Busca un usuario ya registrado: se le agrega el rol de portal contador sin cambiar su tipo en la app PYME. Luego asócialo a empresas.
+    </p>
+    <form class="row g-2 mb-3" (ngSubmit)="buscarUsuariosPlataforma()">
+      <div class="col">
+        <input
+          class="form-control"
+          type="search"
+          placeholder="Nombre o correo…"
+          [(ngModel)]="buscadorUsuario"
+          name="buscadorUsuario"
+        />
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-outline-primary" [disabled]="buscandoUsuarios">
+          @if (!buscandoUsuarios) { Buscar }
+          @if (buscandoUsuarios) { Buscando… }
+        </button>
+      </div>
+    </form>
+
+    @if (usuariosBusqueda.length > 0) {
+      <div class="list-group list-group-flush border rounded mb-0" style="max-height: 280px; overflow-y: auto">
+        @for (u of usuariosBusqueda; track u.id) {
+          <button
+            type="button"
+            class="list-group-item list-group-item-action text-start d-flex gap-2 align-items-start mb-0"
+            [class.active]="idUsuarioIncluir === u.id"
+            (click)="seleccionarUsuarioIncluir(u)"
+          >
+            <span class="form-check-input mt-1 flex-shrink-0" [class.checked]="idUsuarioIncluir === u.id" aria-hidden="true"></span>
+            <span class="flex-grow-1">
+              <span class="fw-semibold d-block">{{ u.name }}</span>
+              <small class="text-muted">{{ u.email }}</small>
+              @if (u.empresa?.nombre || u.tipo) {
+                <small class="d-block text-muted">
+                  {{ u.empresa?.nombre }}{{ u.tipo ? ' · ' + u.tipo : '' }}
+                </small>
+              }
+              @if (esContadorPortal(u.id)) {
+                <span class="badge bg-secondary mt-1">Ya es contador del portal</span>
+              }
+            </span>
+          </button>
+        }
+      </div>
+    }
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline-secondary" (click)="cerrarModal()">Cancelar</button>
+    <button
+      type="button"
+      class="btn btn-primary"
+      [disabled]="incluyendo || idUsuarioIncluir == null"
+      (click)="incluirContadorExistente(modalAgregarEmpresas)"
+    >
+      @if (!incluyendo) { Continuar }
+      @if (incluyendo) { Incluyendo… }
+    </button>
+  </div>
+</ng-template>
+
+<ng-template #modalNuevoContador>
+
+  <div class="modal-header">
+
+    <h4 class="modal-title">Nuevo contador</h4>
+
+    <button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrarModal()"></button>
+
+  </div>
+
+  <form (ngSubmit)="crearContador(modalAgregarEmpresas)" #formContador="ngForm">
+
+    <div class="modal-body">
+
+      <div class="row g-3">
+
+        <div class="col-md-6">
+
+          <label class="form-label">Nombre</label>
+
+          <input class="form-control" name="name" [(ngModel)]="nuevo.name" required />
+
+        </div>
+
+        <div class="col-md-6">
+
+          <label class="form-label">Correo</label>
+
+          <input class="form-control" type="email" name="email" [(ngModel)]="nuevo.email" required />
+
+        </div>
+
+        <div class="col-md-6">
+
+          <label class="form-label">Contraseña</label>
+
+          <input class="form-control" type="password" name="password" [(ngModel)]="nuevo.password" required minlength="8" />
+
+        </div>
+
+        <div class="col-md-6">
+
+          <label class="form-label">Confirmar contraseña</label>
+
+          <input
+
+            class="form-control"
+
+            type="password"
+
+            name="password_confirmation"
+
+            [(ngModel)]="nuevo.password_confirmation"
+
+            required
+
+            minlength="8"
+
+          />
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+
+      <button type="button" class="btn btn-outline-secondary" (click)="cerrarModal()">Cancelar</button>
+
+      <button type="submit" class="btn btn-primary" [disabled]="creando || !formContador.valid">
+
+        @if (!creando) { Crear y asociar empresas }
+
+        @if (creando) { Creando… }
+
+      </button>
+
+    </div>
+
+  </form>
+
+</ng-template>
+
+
+
+<ng-template #modalAgregarEmpresas>
+
+  <div class="modal-header">
+
+    <h4 class="modal-title">Agregar empresas</h4>
+
+    <button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrarModal()"></button>
+
+  </div>
+
+  <div class="modal-body">
+
+    @if (contadorModal) {
+
+      <p class="mb-3">
+
+        <span class="text-muted">Contador:</span>
+
+        <strong>{{ contadorModal.name }}</strong>
+
+        <span class="text-muted"> · {{ contadorModal.email }}</span>
+
+      </p>
+
+    }
+
+
+
+    <div class="row g-2 align-items-end mb-4">
+
+      <div class="col">
+
+        <label class="form-label">Empresa</label>
+
+        <ng-select
+          name="idEmpresaModal"
+          class="form-select p-0"
+          [(ngModel)]="idEmpresaModal"
+          [items]="empresasDisponiblesModal"
+          bindLabel="nombre"
+          bindValue="id"
+          [clearable]="true"
+          placeholder="Buscar empresa…"
+          notFoundText="Sin resultados"
+          appendTo="body"
+        ></ng-select>
+
+        @if (empresasDisponiblesModal.length === 0 && empresas.length > 0) {
+
+          <small class="text-muted">Todas las empresas del listado ya están asociadas.</small>
+
+        }
+
+      </div>
+
+      <div class="col-auto">
+
+        <button
+
+          type="button"
+
+          class="btn btn-primary"
+
+          [disabled]="guardando || !idEmpresaModal"
+
+          (click)="asignarEmpresa()"
+
+        >
+
+          @if (!guardando) { Agregar }
+
+          @if (guardando) { Guardando… }
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+
+    <h5 class="h6 text-muted mb-2">Empresas asociadas</h5>
+
+    @if (accesosActivosModal.length === 0) {
+
+      <p class="text-muted small mb-0">Aún no hay empresas para este contador.</p>
+
+    }
+
+    @if (accesosActivosModal.length > 0) {
+
+      <ul class="list-group list-group-flush border rounded">
+
+        @for (a of accesosActivosModal; track a.id) {
+
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+
+            <span>{{ a.empresa?.nombre }}</span>
+
+            <button type="button" class="btn btn-sm btn-outline-danger" (click)="revocar(a)">Quitar</button>
+
+          </li>
+
+        }
+
+      </ul>
+
+    }
+
+  </div>
+
+  <div class="modal-footer">
+
+    <button type="button" class="btn btn-primary" (click)="cerrarModal()">Listo</button>
+
+  </div>
+
+</ng-template>
+

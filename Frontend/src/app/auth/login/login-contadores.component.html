@@ -1,0 +1,60 @@
+<div id="login-box" class="contadores-login">
+  <div class="contadores-login__hero d-none d-md-flex">
+    <img src="assets/img/smartpyme.png" alt="SmartPyme" class="contadores-login__logo" />
+    <div class="contadores-login__hero-copy">
+      <h1>Un solo ingreso para todas las empresas que usted atiende.</h1>
+      <ul class="contadores-login__features">
+        <li>SmartPyme para Contadores le muestra el avance contable de cada cliente, sus vencimientos y sus documentos, sin cambiar de cuenta.</li>
+        <li>Cada empresa conserva sus datos y su logo, para que siempre sepa en cuál está registrando.</li>
+        <li>El dueño de cada PYME decide qué contadores tienen acceso y puede revocarlo cuando quiera.</li>
+        <li>Una partida aprobada bloquea la transacción hasta que usted la revierta.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="contadores-login__form">
+    <div class="contadores-login__card">
+      <app-notificaciones-container></app-notificaciones-container>
+      <img src="assets/img/smartpyme.png" alt="SmartPyme" class="contadores-login__logo d-md-none mb-4" />
+
+      <p class="contadores-login__step">Paso 1 de 2 · Ingreso</p>
+      <h2>Ingresar como Admin Contador</h2>
+      <p class="contadores-login__lede">Use el correo y la contraseña de su despacho. En el siguiente paso elige la empresa.</p>
+
+      <form class="mt-4" name="form" (ngSubmit)="f.form.valid && submit()" #f="ngForm" novalidate>
+        <div class="form-group mb-4" [ngClass]="{ 'has-error': f.submitted && !email.valid }">
+          <label for="contadores-correo">Correo electrónico</label>
+          <input id="contadores-correo" type="email" class="form-control" name="correo" [(ngModel)]="user.email" #email="ngModel" placeholder="contadora@sudespacho.com" required />
+        </div>
+        <div class="form-group mb-3" [ngClass]="{ 'has-error': f.submitted && !password.valid }">
+          <label for="contadores-password">Contraseña</label>
+          <div class="input-group">
+            <input id="contadores-password" [type]="showpassword ? 'text' : 'password'" class="form-control" name="password" [(ngModel)]="user.password" placeholder="Su contraseña" #password="ngModel" required />
+            <button class="btn btn-light" type="button" (click)="mostrarPassword()" aria-label="Mostrar contraseña">
+              <i class="fa" [ngClass]="{ 'fa-eye-slash': !showpassword, 'fa-eye': showpassword }"></i>
+            </button>
+          </div>
+        </div>
+        <div class="text-end mb-4">
+          <a routerLink="/restablecer-cuenta" class="btn btn-link py-0 text-decoration-none contadores-login__forgot">Olvidé mi contraseña</a>
+        </div>
+        <div class="d-grid">
+          <button type="submit" [disabled]="loading" class="btn btn-primary contadores-login__submit">
+            @if (!loading) {
+              <span>Entrar</span>
+            }
+            @if (loading) {
+              <span>Verificando...</span>
+            }
+          </button>
+        </div>
+      </form>
+
+      <p class="contadores-login__owner-note">
+        ¿Es dueño de una PYME? Ingrese desde
+        <a href="https://www.smartpyme.app" target="_blank" rel="noopener noreferrer">smartpyme.app</a>
+        con su cuenta de empresa.
+      </p>
+    </div>
+  </div>
+</div>

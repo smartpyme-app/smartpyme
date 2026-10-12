@@ -1,0 +1,145 @@
+<div class="contadores-shell">
+  <header class="contadores-shell__topbar bg-white border-bottom">
+    <div class="contadores-shell__topbar-inner d-flex align-items-center justify-content-between gap-3">
+      <a routerLink="/contadores" class="contadores-shell__brand flex-shrink-0">
+        <img src="assets/img/smartpyme.png" alt="SmartPyme" height="32" />
+      </a>
+      <div class="d-flex align-items-center gap-3 ms-auto">
+        <span class="contadores-shell__avatar flex-shrink-0">{{ iniciales(usuario?.name ?? 'AC') }}</span>
+        <div class="contadores-shell__user-text d-none d-md-flex flex-column">
+          <strong>{{ usuario?.name ?? 'Admin Contador' }}</strong>
+          <span>{{ despachoNombre }}</span>
+        </div>
+        <button type="button" class="btn btn-link contadores-shell__logout p-0" (click)="cerrarSesion()">
+          Cerrar sesión
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="contadores-portafolio">
+    <div class="contadores-portafolio__intro d-flex flex-column flex-lg-row align-items-lg-start justify-content-lg-between gap-3 mb-4">
+      <div>
+        <p class="contadores-portafolio__kicker">Paso 2 de 2 · Empresa</p>
+        <h1 class="contadores-portafolio__title">¿Con qué empresa trabajamos hoy?</h1>
+        <p class="contadores-portafolio__lede mb-0">
+          Aquí aparecen solo las empresas cuyos dueños le dieron acceso.
+        </p>
+      </div>
+      <button type="button" class="btn btn-primary contadores-portafolio__cta flex-shrink-0" (click)="irACarteraCompleta()">
+        Ver la cartera completa →
+      </button>
+    </div>
+
+    @if (loading) {
+      <p class="text-muted">Cargando empresas…</p>
+    }
+
+    @if (!loading && error) {
+      <p class="text-danger">{{ error }}</p>
+    }
+
+    @if (!loading && !error && empresas.length === 0) {
+      <p class="text-muted">Aún no tienes empresas asignadas. Pide a SmartPyme que te vinculen desde super admin.</p>
+    }
+
+    @if (!loading && empresas.length > 0) {
+      @if (recientesConEmpresa().length > 0) {
+        <section class="contadores-portafolio__recientes mb-4">
+          <h2 class="contadores-portafolio__section-label">Abiertas recientemente</h2>
+          <div class="d-flex flex-wrap gap-2">
+            @for (item of recientesConEmpresa(); track item.rec.id) {
+              <button type="button" class="contadores-portafolio__reciente" (click)="elegirEmpresa(item.empresa)">
+                <span class="contadores-portafolio__icon contadores-portafolio__icon--sm" [style.background]="colorMarca(item.empresa.nombre)">
+                  {{ iniciales(item.empresa.nombre) }}
+                </span>
+                <span class="contadores-portafolio__reciente-body">
+                  <strong>{{ item.empresa.nombre }}</strong>
+                  <small>Último acceso {{ ultimoAccesoReciente(item.rec) }}</small>
+                </span>
+              </button>
+            }
+          </div>
+        </section>
+      }
+
+      <section class="contadores-portafolio__todas" #seccionTodas>
+        <div class="contadores-portafolio__todas-head d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+          <div class="contadores-portafolio__todas-title">
+            <h2 class="contadores-portafolio__section-title mb-0">Todas las empresas</h2>
+            <span class="contadores-portafolio__count">{{ totalAsignadas }} asignadas</span>
+          </div>
+          <div class="contadores-portafolio__toolbar d-flex flex-wrap align-items-center justify-content-end gap-2">
+            <div class="contadores-portafolio__filters d-flex flex-wrap gap-2">
+              <button
+                type="button"
+                class="contadores-portafolio__filter"
+                [class.contadores-portafolio__filter--active]="filtro === 'todas'"
+                (click)="filtro = 'todas'"
+              >
+                Todas <span>{{ totalAsignadas }}</span>
+              </button>
+              <button
+                type="button"
+                class="contadores-portafolio__filter"
+                [class.contadores-portafolio__filter--active]="filtro === 'pendiente'"
+                (click)="filtro = 'pendiente'"
+              >
+                Por contabilizar <span>{{ countPendiente }}</span>
+              </button>
+              <button
+                type="button"
+                class="contadores-portafolio__filter"
+                [class.contadores-portafolio__filter--active]="filtro === 'al_dia'"
+                (click)="filtro = 'al_dia'"
+              >
+                Al día <span>{{ countAlDia }}</span>
+              </button>
+            </div>
+            <input
+              type="search"
+              class="form-control contadores-portafolio__search"
+              placeholder="Buscar empresa"
+              [(ngModel)]="buscador"
+            />
+          </div>
+        </div>
+
+        @if (empresasVisibles.length === 0) {
+          <p class="text-muted">Ninguna empresa coincide con el filtro o la búsqueda.</p>
+        }
+
+        <div class="row g-3">
+          @for (empresa of empresasVisibles; track empresa.id) {
+            <div class="col-12 col-md-6 col-xl-4">
+              <button type="button" class="contadores-portafolio__card w-100 h-100" (click)="elegirEmpresa(empresa)">
+                <div class="contadores-portafolio__card-head">
+                  <span class="contadores-portafolio__icon contadores-portafolio__icon--lg" [style.background]="colorMarca(empresa.nombre)">
+                    {{ iniciales(empresa.nombre) }}
+                  </span>
+                  <div class="contadores-portafolio__card-titles min-w-0">
+                    <h3>{{ empresa.nombre }}</h3>
+                    @if (empresa.giro) {
+                      <p class="mb-0">{{ empresa.giro }}</p>
+                    }
+                  </div>
+                </div>
+                @if (estaAlDia(empresa)) {
+                  <span class="contadores-portafolio__badge contadores-portafolio__badge--ok">✓ Al día</span>
+                } @else {
+                  <span class="contadores-portafolio__badge contadores-portafolio__badge--pending">
+                    {{ pendientesCount(empresa) }} por contabilizar
+                  </span>
+                }
+                <div class="contadores-portafolio__card-meta">
+                  <span><strong>Permiso:</strong> {{ etiquetaPermiso(empresa.permisos) }}</span>
+                  <span><strong>Último acceso:</strong> {{ ultimoAccesoTexto(empresa) }}</span>
+                </div>
+              </button>
+            </div>
+          }
+        </div>
+      </section>
+    }
+  </main>
+</div>

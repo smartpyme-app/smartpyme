@@ -13,6 +13,7 @@ import { Estado } from '../../../models/estado.interface';
 import { firstValueFrom } from 'rxjs';
 import { ThreedsModalComponent } from '../../../auth/register/pago/modal/threeds-modal.component';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { loginHostFromHostname } from '../../../auth/login/login-host';
 
 @Component({
     selector: 'app-paywall',
@@ -78,6 +79,12 @@ export class PaywallComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    const enHostContadores =
+      typeof window !== 'undefined' && loginHostFromHostname(window.location.hostname) === 'contadores';
+    if (this.apiService.esPortalContador() || enHostContadores) {
+      this.router.navigate(['/contadores']);
+      return;
+    }
     this.loadUserData();
   }
 

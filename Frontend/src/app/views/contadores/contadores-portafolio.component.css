@@ -1,0 +1,306 @@
+:host {
+  display: block;
+  font-family: inherit;
+}
+
+.contadores-shell {
+  min-height: 100vh;
+  background: #eef1f6;
+  color: #16324f;
+}
+
+.contadores-shell__topbar {
+  width: 100%;
+}
+
+.contadores-shell__topbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 14px 24px;
+}
+
+.contadores-shell__brand {
+  text-decoration: none;
+}
+
+.contadores-shell__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #16324f;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.contadores-shell__user-text {
+  line-height: 1.25;
+  font-size: 13px;
+  text-align: left;
+}
+
+.contadores-shell__user-text strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: #16324f;
+}
+
+.contadores-shell__user-text span {
+  color: #5c7190;
+}
+
+.contadores-shell__logout {
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.contadores-portafolio {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px 24px 48px;
+}
+
+.contadores-portafolio__kicker {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #1775e5;
+}
+
+.contadores-portafolio__title {
+  margin: 0 0 8px;
+  font-size: clamp(1.5rem, 2.5vw, 1.75rem);
+  font-weight: 700;
+  color: #16324f;
+}
+
+.contadores-portafolio__lede {
+  max-width: 540px;
+  color: #5c7190;
+  font-size: 15px;
+}
+
+.contadores-portafolio__cta {
+  padding: 10px 18px;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+.contadores-portafolio__section-label {
+  margin: 0 0 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a9bb3;
+}
+
+.contadores-portafolio__section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #16324f;
+}
+
+.contadores-portafolio__count {
+  font-size: 13px;
+  color: #8a9bb3;
+}
+
+.contadores-portafolio__reciente {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 240px;
+  max-width: 320px;
+  padding: 12px 14px;
+  border: 1px solid #dbe5f0;
+  border-radius: 10px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.contadores-portafolio__reciente-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  min-width: 0;
+}
+
+.contadores-portafolio__reciente-body strong {
+  font-size: 14px;
+  color: #16324f;
+}
+
+.contadores-portafolio__reciente-body small {
+  color: #8a9bb3;
+}
+
+.contadores-portafolio__filter {
+  border: 1px solid #dbe5f0;
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: #5c7190;
+  cursor: pointer;
+  line-height: 1.3;
+}
+
+.contadores-portafolio__filter span {
+  margin-left: 4px;
+  font-weight: 700;
+  color: #16324f;
+}
+
+.contadores-portafolio__filter--active {
+  border-color: #1775e5;
+  background: #eef4fc;
+  color: #1775e5;
+}
+
+.contadores-portafolio__filter--active span {
+  color: #1775e5;
+}
+
+.contadores-portafolio__todas-title {
+  min-width: 160px;
+}
+
+.contadores-portafolio__toolbar {
+  flex: 1 1 auto;
+  min-width: 280px;
+}
+
+.contadores-portafolio__search {
+  width: 200px;
+  max-width: 100%;
+  border-radius: 999px;
+  font-size: 14px;
+  border-color: #dbe5f0;
+}
+
+@media (max-width: 575.98px) {
+  .contadores-portafolio__search {
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+.contadores-portafolio__card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #dbe5f0;
+  border-radius: 12px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  appearance: none;
+  box-shadow: 0 1px 2px rgba(22, 50, 79, 0.04);
+}
+
+.contadores-portafolio__card:hover {
+  border-color: #1775e5;
+  box-shadow: 0 8px 24px rgba(23, 117, 229, 0.12);
+}
+
+.contadores-portafolio__card-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.contadores-portafolio__icon {
+  border-radius: 50%;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.contadores-portafolio__icon--sm {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  font-size: 12px;
+}
+
+.contadores-portafolio__icon--lg {
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  font-size: 14px;
+}
+
+.contadores-portafolio__card-titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.contadores-portafolio__card-titles h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #16324f;
+}
+
+.contadores-portafolio__card-titles p {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #8a9bb3;
+  line-height: 1.35;
+}
+
+.contadores-portafolio__badge {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.contadores-portafolio__badge--ok {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.contadores-portafolio__badge--pending {
+  background: #eef4fc;
+  color: #1775e5;
+}
+
+.contadores-portafolio__card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  font-size: 12px;
+  color: #5c7190;
+  padding-top: 12px;
+  border-top: 1px solid #eef2f7;
+  line-height: 1.4;
+}
+
+.contadores-portafolio__card-meta strong {
+  color: #16324f;
+  font-weight: 600;
+}

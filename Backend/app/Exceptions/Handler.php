@@ -146,7 +146,7 @@ class Handler extends ExceptionHandler
             if ($exception instanceof JWTException) {
                 return $this->applyCorsToApi(
                     $request,
-                    response()->json(['error' => $exception->getMessage(), 'code' => $exception])
+                    response()->json(['error' => $exception->getMessage(), 'code' => 401], 401)
                 );
             }
 
