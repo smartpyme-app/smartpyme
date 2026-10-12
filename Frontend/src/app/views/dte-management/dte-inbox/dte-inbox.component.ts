@@ -40,6 +40,8 @@ export class DteInboxComponent implements OnInit {
   documentoProcesar: DteDocument | null = null;
   destinoSeleccionado: 'compra' | 'gasto' = 'compra';
   procesando = false;
+  mensajeProcesar: string | null = null;
+  errorProcesar: string | null = null;
 
   constructor(
     private dteService: DteDocumentService,
@@ -107,6 +109,8 @@ export class DteInboxComponent implements OnInit {
     this.documentoProcesar = doc;
     this.destinoSeleccionado = (doc.destino || (doc.pais === 'CR' ? 'gasto' : 'compra')) as 'compra' | 'gasto';
     this.procesando = false;
+    this.mensajeProcesar = null;
+    this.errorProcesar = null;
     this.modalProcesarRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
   }
 
@@ -119,15 +123,16 @@ export class DteInboxComponent implements OnInit {
       destino: this.destinoSeleccionado,
     }).subscribe({
       next: (res) => {
-        this.alertService.success('Éxito', res.message || this.countryI18n.fe('processedDefault'));
-        this.modalProcesarRef?.hide();
-        this.documentoProcesar = null;
+        // ponytail: alerta in-modal; AlertService.success hace scroll al tope de la página
+        this.mensajeProcesar = res.message || this.countryI18n.fe('processedDefault');
+        this.errorProcesar = null;
         this.procesando = false;
         this.loadDocuments();
       },
       error: (err) => {
         const msg = err?.error?.error || err?.error?.reason || 'Error al procesar';
-        this.alertService.error(typeof msg === 'string' ? { error: { message: msg } } : err);
+        this.errorProcesar = typeof msg === 'string' ? msg : 'Error al procesar';
+        this.mensajeProcesar = null;
         this.procesando = false;
       }
     });

@@ -1,5 +1,5 @@
 import { Component, OnInit, TemplateRef, inject, DestroyRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
@@ -72,6 +72,7 @@ export class DteDetailComponent implements OnInit {
     private funcionalidadesService: FuncionalidadesService,
     private route: ActivatedRoute,
     private router: Router,
+    private location: Location,
     private modalService: BsModalService,
     private sanitizer: DomSanitizer
   ) {}
@@ -197,7 +198,7 @@ export class DteDetailComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/dte-management/dtes']);
+    this.location.back();
   }
 
   downloadJson(): void {

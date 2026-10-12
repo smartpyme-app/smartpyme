@@ -14,10 +14,8 @@
         th, td { padding: 4px 6px; border: 1px solid #dee2e6; }
         th { background: #f1f3f5; font-weight: bold; }
         .text-right { text-align: right; }
-        .cards { width: 100%; margin-bottom: 12px; }
-        .cards td { border: 1px solid #dee2e6; padding: 8px; vertical-align: top; width: 33%; }
-        .card-label { color: #6c757d; font-size: 9px; margin-bottom: 4px; }
-        .card-value { font-size: 13px; font-weight: bold; }
+        .kv th, .kv td { border: 1px solid #dee2e6; }
+        .kv th { background: #e2e8f0; text-align: left; }
         .muted { color: #6c757d; font-size: 9px; }
     </style>
 </head>
@@ -37,32 +35,37 @@
 
 <h1>RESUMEN FISCAL</h1>
 <h2>{{ $empresa->nombre ?? '' }}</h2>
-<p class="muted" style="text-align: center;">
+<table class="kv">
     @if (!empty($resumen['pais']))
-        <strong>País:</strong> {{ $resumen['pais'] }} —
+        <tr>
+            <th style="width: 40%;">País</th>
+            <td>{{ $resumen['pais'] }}</td>
+        </tr>
     @endif
-    <strong>Período:</strong>
-    @if ($inicio && $fin)
-        {{ ucfirst(\Carbon\Carbon::parse($inicio)->translatedFormat('F Y')) }}
-        ({{ \Carbon\Carbon::parse($inicio)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($fin)->format('d/m/Y') }})
-    @endif
-</p>
+    <tr>
+        <th style="width: 40%;">Período</th>
+        <td>
+            @if ($inicio && $fin)
+                {{ ucfirst(\Carbon\Carbon::parse($inicio)->translatedFormat('F Y')) }}
+                ({{ \Carbon\Carbon::parse($inicio)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($fin)->format('d/m/Y') }})
+            @endif
+        </td>
+    </tr>
+</table>
 
 <h3>Resumen del periodo</h3>
-<table class="cards">
+<table class="kv">
     <tr>
-        <td>
-            <div class="card-label">Total ventas</div>
-            <div class="card-value">{{ $fmt($totales['ventas'] ?? 0) }}</div>
-        </td>
-        <td>
-            <div class="card-label">Total compras</div>
-            <div class="card-value">{{ $fmt($totales['compras'] ?? 0) }}</div>
-        </td>
-        <td>
-            <div class="card-label">Total gastos</div>
-            <div class="card-value">{{ $fmt($totales['gastos'] ?? 0) }}</div>
-        </td>
+        <th style="width: 40%;">Total ventas</th>
+        <td class="text-right">{{ $fmt($totales['ventas'] ?? 0) }}</td>
+    </tr>
+    <tr>
+        <th>Total compras</th>
+        <td class="text-right">{{ $fmt($totales['compras'] ?? 0) }}</td>
+    </tr>
+    <tr>
+        <th>Total gastos</th>
+        <td class="text-right">{{ $fmt($totales['gastos'] ?? 0) }}</td>
     </tr>
 </table>
 
@@ -93,20 +96,18 @@
 @endphp
 
 <h3>Resumen de impuestos</h3>
-<table class="cards">
+<table class="kv">
     <tr>
-        <td>
-            <div class="card-label">Crédito</div>
-            <div class="card-value">{{ $fmt($iva['iva_a_favor'] ?? 0) }}</div>
-        </td>
-        <td>
-            <div class="card-label">Débito</div>
-            <div class="card-value">{{ $fmt($iva['iva_en_contra'] ?? 0) }}</div>
-        </td>
-        <td>
-            <div class="card-label">{{ isset($iva['iva_a_pagar']) ? 'Débito − crédito' : 'Diferencia' }}</div>
-            <div class="card-value">{{ $fmt($iva['diferencia_estimada_pago_iva'] ?? 0) }}</div>
-        </td>
+        <th style="width: 40%;">Crédito</th>
+        <td class="text-right">{{ $fmt($iva['iva_a_favor'] ?? 0) }}</td>
+    </tr>
+    <tr>
+        <th>Débito</th>
+        <td class="text-right">{{ $fmt($iva['iva_en_contra'] ?? 0) }}</td>
+    </tr>
+    <tr>
+        <th>{{ isset($iva['iva_a_pagar']) ? 'Débito − crédito' : 'Diferencia' }}</th>
+        <td class="text-right">{{ $fmt($iva['diferencia_estimada_pago_iva'] ?? 0) }}</td>
     </tr>
 </table>
 @if (isset($iva['iva_a_pagar']))

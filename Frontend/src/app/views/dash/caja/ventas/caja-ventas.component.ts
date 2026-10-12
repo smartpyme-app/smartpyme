@@ -166,9 +166,14 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
 
     // Editar
 
+    public override openModal(template: TemplateRef<any>, item?: any, modalConfig?: any): void {
+        if (item != null) {
+            this.venta = item;
+        }
+        this.modalRef = this.modalManager.openModal(template, modalConfig);
+    }
+
     public openModalEdit(template: TemplateRef<any>, venta:any) {
-        this.venta = venta;
-        
         this.apiService.getAll('documentos')
           .pipe(this.untilDestroyed())
           .subscribe(documentos => {
@@ -181,7 +186,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
             this.formaPagos = formaPagos;
         }, error => {this.alertService.error(error); });
 
-        this.openModal(template);
+        this.openModal(template, venta);
     }
     
     public openFilter(template: TemplateRef<any>) {
@@ -294,19 +299,31 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
 
 
     public openAbono(template: TemplateRef<any>, venta:any){
-        this.venta = venta;
-        this.openModal(template);
+        this.openModal(template, venta);
     }
 
     // DTE
 
-    openDTE(template: TemplateRef<any>, venta:any){
-        this.venta = venta;
-        this.correoEnvioDte = '';
-        this.openModal(template);
-        if(!this.venta.dte){
-            this.emitirDTE();
+    openDTE(template: TemplateRef<any>, venta: any) {
+        const abrir = (v: any) => {
+            this.correoEnvioDte = '';
+            this.openModal(template, v);
+            if (!this.venta.dte && !this.venta.dte_en_s3) {
+                this.emitirDTE();
+            }
+        };
+
+        if (venta.dte_en_s3 && !venta.dte) {
+            this.apiService.read('venta/', venta.id)
+                .pipe(this.untilDestroyed())
+                .subscribe({
+                    next: (v: any) => abrir(v),
+                    error: (e) => this.alertService.error(e),
+                });
+            return;
         }
+
+        abrir(venta);
     }
 
     imprimirDTEPDF(venta: any, tipoDte?: string) {

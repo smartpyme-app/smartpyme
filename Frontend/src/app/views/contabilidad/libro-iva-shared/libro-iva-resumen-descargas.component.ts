@@ -52,10 +52,17 @@ export class LibroIvaResumenDescargasComponent {
 
   descargarPdf(): void {
     this.sincronizarFiltros();
-    const token = this.apiService.auth_token();
-    const query = new URLSearchParams(this.filtros as Record<string, string>).toString();
-    const url = `${this.apiService.baseUrl}/api/libro-iva/resumen-fiscal?${query}&formato=pdf&token=${token}`;
-    window.open(url, '_blank');
+    this.downloading = true;
+    this.apiService.export('libro-iva/resumen-fiscal', { ...this.filtros, formato: 'pdf' }).subscribe({
+      next: (data: Blob) => {
+        descargarBlob(data, 'application/pdf', 'Resumen-fiscal.pdf');
+        this.downloading = false;
+      },
+      error: (error) => {
+        manejarErrorDescargaLibroIva(error, this.alertService);
+        this.downloading = false;
+      },
+    });
   }
 
   private sincronizarFiltros(): void {
