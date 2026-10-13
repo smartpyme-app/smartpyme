@@ -93,6 +93,22 @@ class ClinicaPacientesRoutesTest extends TestCase
             'verificar.funcionalidad:clinica-pacientes',
             'permission:clinica.medicamentos.configurar',
         ]);
+        $this->assertRoute('api/clinica/pacientes/{id}/recetas', 'POST', [
+            'verificar.funcionalidad:clinica-pacientes',
+            'permission:clinica.recetas.crear',
+        ]);
+        $this->assertRoute('api/clinica/pacientes/{id}/recetas/{idReceta}/emitir', 'PATCH', [
+            'verificar.funcionalidad:clinica-pacientes',
+            'permission:clinica.recetas.editar',
+        ]);
+        $this->assertRoute('api/clinica/pacientes/{id}/vacunas', 'POST', [
+            'verificar.funcionalidad:clinica-pacientes',
+            'permission:clinica.vacunas.crear',
+        ]);
+        $this->assertRoute('api/clinica/vacunas-catalogo', 'POST', [
+            'verificar.funcionalidad:clinica-pacientes',
+            'permission:clinica.vacunas.configurar',
+        ]);
     }
 
     public function test_no_hay_ruta_para_borrar_pacientes(): void
