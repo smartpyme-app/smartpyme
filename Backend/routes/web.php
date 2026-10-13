@@ -46,11 +46,10 @@ Route::get('/inventariostock', function(){
 
 Route::get('/ventassintipodte', function () {
     $ventas = App\Models\Ventas\Venta::whereNull('tipo_dte')
-        ->where(function ($q) {
-            $q->whereNotNull('dte');
-        })
-        ->whereYear('fecha', 2027)
+        ->whereNotNull('dte')
+        ->whereYear('fecha', 2026)
         ->get();
+   
 
     $ventasProcesadas = 0;
 
