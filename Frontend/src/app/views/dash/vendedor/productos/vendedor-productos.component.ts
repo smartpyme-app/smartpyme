@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AlertService } from '@services/alert.service';
@@ -12,7 +13,7 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
     selector: 'app-vendedor-productos',
     templateUrl: './vendedor-productos.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective],
+    imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective, CurrencyPipe],
     
 })
 export class VendedorProductosComponent extends BaseCrudComponent<any> implements OnInit {

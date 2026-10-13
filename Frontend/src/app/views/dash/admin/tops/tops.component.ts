@@ -1,5 +1,6 @@
 import { Component, OnInit, Input, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -14,7 +15,7 @@ import { SumPipe } from '../../../../pipes/sum.pipe';
     selector: 'app-tops',
     templateUrl: './tops.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, SumPipe],
+    imports: [CommonModule, RouterModule, SumPipe, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
