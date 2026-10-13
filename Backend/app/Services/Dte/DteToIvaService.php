@@ -298,7 +298,6 @@ class DteToIvaService
                     'id_producto' => $producto->id,
                     'cantidad' => $detalleData['cantidad'],
                     'costo' => $detalleData['costo'],
-                    'subtotal' => $detalleData['subtotal'],
                     'total' => $detalleData['total'],
                     'iva' => $detalleData['iva'],
                     'no_sujeta' => $detalleData['no_sujeta'],
@@ -366,7 +365,6 @@ class DteToIvaService
         return [
             'cantidad' => $cantidad,
             'costo' => $precioUni,
-            'subtotal' => max(0, $totalFinal - $ivaItem),
             'total' => $totalFinal,
             'iva' => max(0, $ivaItem),
             'no_sujeta' => $ventaNoSuj,
