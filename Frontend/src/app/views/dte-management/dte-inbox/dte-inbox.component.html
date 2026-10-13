@@ -168,6 +168,8 @@
     <button type="button" class="btn-close" (click)="modalProcesarRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body" *ngIf="documentoProcesar">
+    <div class="alert alert-success py-2" *ngIf="mensajeProcesar">{{ mensajeProcesar }}</div>
+    <div class="alert alert-danger py-2" *ngIf="errorProcesar">{{ errorProcesar }}</div>
     <p class="text-muted mb-3">
       {{ documentoProcesar.issuer_name }} — {{ documentoProcesar.dte_number }}
       ({{ formatMoney(documentoProcesar.total_amount) }})
@@ -185,8 +187,10 @@
     </p>
   </div>
   <div class="modal-footer">
-    <button type="button" class="btn btn-light" (click)="modalProcesarRef.hide()" [disabled]="procesando">Cancelar</button>
-    <button type="button" class="btn btn-primary" (click)="confirmarProcesar()" [disabled]="procesando">
+    <button type="button" class="btn btn-light" (click)="modalProcesarRef.hide()" [disabled]="procesando">
+      {{ mensajeProcesar ? 'Cerrar' : 'Cancelar' }}
+    </button>
+    <button type="button" class="btn btn-primary" (click)="confirmarProcesar()" [disabled]="procesando || !!mensajeProcesar">
       <span *ngIf="procesando">Procesando...</span>
       <span *ngIf="!procesando">Procesar</span>
     </button>
