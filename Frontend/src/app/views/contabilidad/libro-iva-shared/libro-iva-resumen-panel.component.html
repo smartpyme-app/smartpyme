@@ -221,12 +221,17 @@
     </div>
   </div>
 
-  @if (detalleImpuestoCr && (ventasPorImpuesto.length > 0 || comprasPorImpuesto.length > 0)) {
+  @if (detalleImpuestoCr) {
     <div class="card border-0 shadow-sm mb-4">
       <div class="card-body p-0">
         <div class="px-3 pt-3 pb-2 border-bottom bg-light bg-opacity-50">
           <h6 class="text-dark mb-0 fw-semibold">Detalle por tipo de impuestos</h6>
         </div>
+        @if (ventasPorImpuesto.length === 0 && comprasPorImpuesto.length === 0) {
+          <p class="text-muted small px-3 py-3 mb-0">
+            No hay movimientos con desglose por tipo de impuesto en este periodo.
+          </p>
+        }
         @if (ventasPorImpuesto.length > 0) {
           <div class="px-3 pt-3 pb-1">
             <h6 class="text-dark small fw-semibold mb-2">Ventas</h6>

@@ -127,6 +127,7 @@ final class LibroIvaResumenFiscalService
         );
 
         $comprasLibro = $this->comprasLibroFiscal($request);
+        $gastosLibro = $this->gastosLibroFiscal($request);
 
         return [
             'pais' => $paisNombre,
@@ -143,7 +144,7 @@ final class LibroIvaResumenFiscalService
                 $devoluciones,
                 true
             ),
-            'compras_por_impuesto' => $this->comprasPorImpuestoDesdeCompraImpuestos($comprasLibro, true),
+            'compras_por_impuesto' => $this->comprasPorImpuestoDesdeComprasYGastos($comprasLibro, $gastosLibro, true),
             'iva' => [
                 'iva_a_favor' => $ctxCompras['iva_credito'],
                 'credito_fiscal_compras' => $ctxCompras['credito_compras'],
@@ -775,6 +776,18 @@ final class LibroIvaResumenFiscalService
      */
     private function comprasPorImpuestoDesdeCompraImpuestos(Collection $compras, bool $etiquetasCr = false): array
     {
+        return $this->comprasPorImpuestoDesdeComprasYGastos($compras, collect(), $etiquetasCr);
+    }
+
+    /**
+     * CR: compras del libro + gastos (egresos), que aportan crédito fiscal pero no estaban en el desglose.
+     *
+     * @param  Collection<int, Compra>  $compras
+     * @param  Collection<int, Gasto>  $gastos
+     * @return array<int, array{tarifa: string, etiqueta: string, impuesto: string, base: float, iva: float, documentos: int}>
+     */
+    private function comprasPorImpuestoDesdeComprasYGastos(Collection $compras, Collection $gastos, bool $etiquetasCr = false): array
+    {
         /** @var array<string, array{nombre: string, porcentaje: float, base: float, iva: float, documentos: int}> */
         $buckets = [];
 
@@ -782,7 +795,26 @@ final class LibroIvaResumenFiscalService
             $this->aplicarCompraAlDesgloseImpuestos($compra, $buckets, 1.0);
         }
 
+        foreach ($gastos as $gasto) {
+            $this->aplicarGastoAlDesgloseImpuestos($gasto, $buckets, 1.0);
+        }
+
         return $this->formatearBucketsDesgloseImpuestos($buckets, $etiquetasCr);
+    }
+
+    /**
+     * @return Collection<int, Gasto>
+     */
+    private function gastosLibroFiscal(BaseLibroIVARequest $request): Collection
+    {
+        return Gasto::query()
+            ->where('estado', '!=', 'Cancelado')
+            ->where('estado', '!=', 'Anulada')
+            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->orderBy('fecha')
+            ->orderBy('id')
+            ->get();
     }
 
     /**
@@ -836,6 +868,73 @@ final class LibroIvaResumenFiscalService
             );
         }
         $this->contarDocumentosEnBuckets($buckets, $keysDocumento);
+    }
+
+    private function aplicarGastoAlDesgloseImpuestos(Gasto $gasto, array &$buckets, float $signo): void
+    {
+        $keysDocumento = [];
+        $filaLibro = $this->filaLibroSinGastoImpuestos($gasto);
+        if ($filaLibro === null) {
+            return;
+        }
+        if (abs($filaLibro['iva']) > 0.00001) {
+            $this->acumularIvaDesglose(
+                $buckets,
+                $filaLibro['key'],
+                $filaLibro['etiqueta'],
+                $filaLibro['porcentaje'],
+                $signo * $filaLibro['iva'],
+                $keysDocumento
+            );
+        } else {
+            $this->acumularBaseDesglose(
+                $buckets,
+                $filaLibro['key'],
+                $filaLibro['etiqueta'],
+                $signo * $filaLibro['base'],
+                $keysDocumento
+            );
+        }
+        $this->contarDocumentosEnBuckets($buckets, $keysDocumento);
+    }
+
+    /**
+     * @return array{key: string, etiqueta: string, porcentaje: float, base: float, iva: float}|null
+     */
+    private function filaLibroSinGastoImpuestos(Gasto $gasto): ?array
+    {
+        $iva = $this->crcMontoLibroCr($gasto, 'iva');
+        $subBase = (float) ($gasto->sub_total ?? 0) * $this->tasaCambioLibroCr($gasto);
+
+        if ($iva > 0.00001) {
+            $pct = $subBase > 0.00001
+                ? round($iva / $subBase * 100, 2)
+                : $this->porcentajeIvaEmpresa();
+            if ($pct <= 0.0001) {
+                $pct = $this->porcentajeIvaEmpresa();
+            }
+            $base = $subBase > 0.00001 ? $subBase : ($pct > 0 ? $iva / ($pct / 100.0) : 0.0);
+
+            return [
+                'key' => 'gasto_i'.(int) round($pct * 100),
+                'etiqueta' => 'Gravadas (gastos)',
+                'porcentaje' => $pct,
+                'base' => $base,
+                'iva' => $iva,
+            ];
+        }
+
+        if (abs($subBase) < 0.00001) {
+            return null;
+        }
+
+        return [
+            'key' => 'gasto_ex',
+            'etiqueta' => 'Exentas (gastos)',
+            'porcentaje' => 0.0,
+            'base' => $subBase,
+            'iva' => 0.0,
+        ];
     }
 
     /**
