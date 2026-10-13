@@ -45,31 +45,35 @@ Route::get('/inventariostock', function(){
 });
 
 Route::get('/ventassintipodte', function () {
-    $ventas = App\Models\Ventas\Venta::withoutGlobalScopes()->whereNull('tipo_dte')
-        ->whereNotNull('dte')
-        ->whereYear('fecha', 2026)
-        ->get();
-   
+    set_time_limit(0);
 
     $ventasProcesadas = 0;
 
-    foreach ($ventas as $venta) {
-        $tipoDte = data_get($venta->dte, 'identificacion.tipoDte');
+    App\Models\Ventas\Venta::withoutGlobalScopes()
+        ->whereNull('tipo_dte')
+        ->whereHasDtePayload()
+        ->whereYear('fecha', 2026)
+        ->chunkById(100, function ($ventas) use (&$ventasProcesadas) {
+            foreach ($ventas as $venta) {
+                // Columna dte, o el JSON en S3 si ya se vació (HasOffloadedDte).
+                $dte = $venta->dte;
+                $tipoDte = data_get($dte, 'identificacion.tipoDte');
 
-        if (!$tipoDte) {
-            continue;
-        }
+                if (!$tipoDte) {
+                    continue;
+                }
 
-        $venta->tipo_dte = $tipoDte;
-        if ($venta->codigo_generacion === null) {
-            $venta->codigo_generacion = data_get($venta->dte, 'identificacion.codigoGeneracion');
-        }
-        if ($venta->numero_control === null) {
-            $venta->numero_control = data_get($venta->dte, 'identificacion.numeroControl');
-        }
-        $venta->save();
-        $ventasProcesadas++;
-    }
+                $venta->tipo_dte = $tipoDte;
+                if ($venta->codigo_generacion === null) {
+                    $venta->codigo_generacion = data_get($dte, 'identificacion.codigoGeneracion');
+                }
+                if ($venta->numero_control === null) {
+                    $venta->numero_control = data_get($dte, 'identificacion.numeroControl');
+                }
+                $venta->save();
+                $ventasProcesadas++;
+            }
+        });
 
     return "Se procesaron {$ventasProcesadas} ventas";
 });
