@@ -17,6 +17,9 @@ use App\Http\Requests\WhatsApp\GetSessionMessagesWhatsAppRequest;
 
 class WebhookController extends Controller
 {
+    /** Empresa de plataforma que puede ver estadísticas de todas las empresas. */
+    private const EMPRESA_STATS_GLOBALES = 2;
+
     protected $whatsAppService;
 
     public function __construct(WhatsAppService $whatsAppService)
@@ -105,28 +108,28 @@ class WebhookController extends Controller
     {
         try {
             $days = $request->get('days', 30);
-            $empresaId = $request->get('empresa_id');
+            $empresaId = $this->empresaIdParaStats();
 
             $stats = [
                 'sessions' => [
-                    'total' => WhatsAppSession::count(),
-                    'active' => WhatsAppSession::where('last_message_at', '>=', now()->subHours(24))->count(),
-                    'connected' => WhatsAppSession::where('status', 'connected')->count(),
-                    'pending' => WhatsAppSession::whereIn('status', ['pending_code', 'pending_user'])->count(),
+                    'total' => $this->sesionesStats($empresaId)->count(),
+                    'active' => $this->sesionesStats($empresaId)->where('last_message_at', '>=', now()->subHours(24))->count(),
+                    'connected' => $this->sesionesStats($empresaId)->where('status', 'connected')->count(),
+                    'pending' => $this->sesionesStats($empresaId)->whereIn('status', ['pending_code', 'pending_user'])->count(),
                 ],
                 'messages' => [
-                    'total' => WhatsAppMessage::where('created_at', '>=', now()->subDays($days))->count(),
-                    'incoming' => WhatsAppMessage::where('message_type', 'incoming')
+                    'total' => $this->mensajesStats($empresaId)->where('created_at', '>=', now()->subDays($days))->count(),
+                    'incoming' => $this->mensajesStats($empresaId)->where('message_type', 'incoming')
                         ->where('created_at', '>=', now()->subDays($days))->count(),
-                    'outgoing' => WhatsAppMessage::where('message_type', 'outgoing')
+                    'outgoing' => $this->mensajesStats($empresaId)->where('message_type', 'outgoing')
                         ->where('created_at', '>=', now()->subDays($days))->count(),
-                    'ai_generated' => WhatsAppMessage::whereJsonContains('metadata->ai_generated', true)
+                    'ai_generated' => $this->mensajesStats($empresaId)->whereJsonContains('metadata->ai_generated', true)
                         ->where('created_at', '>=', now()->subDays($days))->count(),
                 ],
                 'companies' => [
-                    'total_with_sessions' => WhatsAppSession::distinct('id_empresa')->count(),
-                    'active_today' => WhatsAppSession::where('last_message_at', '>=', now()->startOfDay())
-                        ->distinct('id_empresa')->count(),
+                    'total_with_sessions' => $this->sesionesStats($empresaId)->distinct('id_empresa')->count('id_empresa'),
+                    'active_today' => $this->sesionesStats($empresaId)->where('last_message_at', '>=', now()->startOfDay())
+                        ->distinct('id_empresa')->count('id_empresa'),
                 ]
             ];
 
@@ -134,14 +137,14 @@ class WebhookController extends Controller
                 $stats['empresa_specific'] = $this->getEmpresaStats($empresaId, $days);
             }
 
-            $stats['daily_activity'] = WhatsAppMessage::selectRaw('DATE(created_at) as date, COUNT(*) as messages')
+            $stats['daily_activity'] = $this->mensajesStats($empresaId)->selectRaw('DATE(created_at) as date, COUNT(*) as messages')
                 ->where('created_at', '>=', now()->subDays(7))
                 ->groupBy('date')
                 ->orderBy('date')
                 ->get();
 
 
-            $stats['top_companies'] = WhatsAppSession::join('empresas', 'whatsapp_sessions.id_empresa', '=', 'empresas.id')
+            $stats['top_companies'] = $this->sesionesStats($empresaId)->join('empresas', 'whatsapp_sessions.id_empresa', '=', 'empresas.id')
                 ->selectRaw('empresas.nombre, empresas.id, COUNT(whatsapp_sessions.id) as session_count')
                 ->where('whatsapp_sessions.created_at', '>=', now()->subDays($days))
                 ->groupBy('empresas.id', 'empresas.nombre')
@@ -179,7 +182,7 @@ class WebhookController extends Controller
             $page = $request->get('page', 1);
 
             $status = $request->get('status');
-            $empresaId = $request->get('empresa_id') ?: $request->get('id_empresa'); 
+            $empresaId = $this->empresaIdParaStats();
             $usuarioId = $request->get('id_usuario');
             $search = $request->get('search') ?: $request->get('buscador'); 
             $whatsappNumber = $request->get('whatsapp_number');
@@ -194,12 +197,17 @@ class WebhookController extends Controller
             $direccion = $request->get('direccion', 'desc');
 
 
-            $query = WhatsAppSession::with(['empresa', 'usuario']);
+            $query = WhatsAppSession::withoutGlobalScope('empresa')->with(['empresa', 'usuario']);
+            if ($empresaId) {
+                $query->where('id_empresa', $empresaId);
+            }
 
             $validOrders = ['created_at', 'last_message_at', 'message_count', 'whatsapp_number', 'status'];
             if (in_array($orden, $validOrders)) {
                 if ($orden === 'message_count') {
-                    $query->withCount(['messages as message_count']);
+                    $query->withCount(['messages as message_count' => function ($q) {
+                        $q->whereColumn('whatsapp_messages.id_empresa', 'whatsapp_sessions.id_empresa');
+                    }]);
                     $query->orderBy('message_count', $direccion);
                 } else {
                     $query->orderBy($orden, $direccion);
@@ -252,7 +260,9 @@ class WebhookController extends Controller
       
             $sessions->getCollection()->transform(function ($session) {
                 $messageCount = $session->message_count ??
-                    WhatsAppMessage::where('whatsapp_number', $session->whatsapp_number)->count();
+                    WhatsAppMessage::where('whatsapp_number', $session->whatsapp_number)
+                        ->where('id_empresa', $session->id_empresa)
+                        ->count();
 
                 return [
                     'id' => $session->id,
@@ -342,6 +352,47 @@ class WebhookController extends Controller
         ];
 
         return $labels[$status] ?? ucfirst($status);
+    }
+
+    public static function veEstadisticasGlobales(int $idEmpresa, bool $esSuperAdmin): bool
+    {
+        return $esSuperAdmin && $idEmpresa === self::EMPRESA_STATS_GLOBALES;
+    }
+
+    /** null = todas las empresas. Solo el super admin de la empresa 2. */
+    private function empresaIdParaStats(): ?int
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return 0;
+        }
+
+        $esSuperAdmin = $user->hasRole(config('constants.ROL_SUPER_ADMIN', 'super_admin'));
+        if (self::veEstadisticasGlobales((int) $user->id_empresa, $esSuperAdmin)) {
+            return null;
+        }
+
+        return (int) $user->id_empresa;
+    }
+
+    private function sesionesStats(?int $empresaId)
+    {
+        $query = WhatsAppSession::withoutGlobalScope('empresa');
+        if ($empresaId) {
+            $query->where('whatsapp_sessions.id_empresa', $empresaId);
+        }
+
+        return $query;
+    }
+
+    private function mensajesStats(?int $empresaId)
+    {
+        $query = WhatsAppMessage::query();
+        if ($empresaId) {
+            $query->where('id_empresa', $empresaId);
+        }
+
+        return $query;
     }
 
     private function getEmpresaStats(int $empresaId, int $days): array
@@ -473,27 +524,20 @@ class WebhookController extends Controller
     {
         try {
             $days = $request->get('days', 7);
-            $empresaId = $request->get('empresa_id');
+            $empresaId = $this->empresaIdParaStats();
 
-
-            $baseQuery = $empresaId ? ['id_empresa' => $empresaId] : [];
 
             $summary = [
                 'period' => $days,
                 'overview' => [
-                    'total_sessions' => WhatsAppSession::when($empresaId, function ($query) use ($empresaId) {
-                        return $query->where('id_empresa', $empresaId);
-                    })->count(),
+                    'total_sessions' => $this->sesionesStats($empresaId)->count(),
 
-                    'active_sessions_today' => WhatsAppSession::when($empresaId, function ($query) use ($empresaId) {
-                        return $query->where('id_empresa', $empresaId);
-                    })->where('last_message_at', '>=', now()->startOfDay())->count(),
+                    'active_sessions_today' => $this->sesionesStats($empresaId)
+                        ->where('last_message_at', '>=', now()->startOfDay())->count(),
 
-                    'messages_today' => WhatsAppMessage::when($empresaId, function ($query) use ($empresaId) {
-                        return $query->where('id_empresa', $empresaId);
-                    })->whereDate('created_at', today())->count(),
+                    'messages_today' => $this->mensajesStats($empresaId)->whereDate('created_at', today())->count(),
 
-                    'companies_using' => $empresaId ? 1 : WhatsAppSession::distinct('id_empresa')->count()
+                    'companies_using' => $empresaId ? 1 : $this->sesionesStats(null)->distinct()->count('id_empresa')
                 ],
                 'trends' => [
                     'messages_growth' => $this->calculateGrowthRate('messages', $days, $empresaId),
@@ -533,24 +577,17 @@ class WebhookController extends Controller
 
     private function calculateGrowthRate(string $type, int $days, ?int $empresaId = null): float
     {
-        $baseQuery = function ($query) use ($empresaId) {
-            if ($empresaId) {
-                return $query->where('id_empresa', $empresaId);
-            }
-            return $query;
-        };
-
         if ($type === 'messages') {
-            $currentPeriod = WhatsAppMessage::where($baseQuery)
+            $currentPeriod = $this->mensajesStats($empresaId)
                 ->where('created_at', '>=', now()->subDays($days))->count();
 
-            $previousPeriod = WhatsAppMessage::where($baseQuery)
+            $previousPeriod = $this->mensajesStats($empresaId)
                 ->whereBetween('created_at', [now()->subDays($days * 2), now()->subDays($days)])->count();
         } else {
-            $currentPeriod = WhatsAppSession::where($baseQuery)
+            $currentPeriod = $this->sesionesStats($empresaId)
                 ->where('created_at', '>=', now()->subDays($days))->count();
 
-            $previousPeriod = WhatsAppSession::where($baseQuery)
+            $previousPeriod = $this->sesionesStats($empresaId)
                 ->whereBetween('created_at', [now()->subDays($days * 2), now()->subDays($days)])->count();
         }
 
@@ -560,12 +597,8 @@ class WebhookController extends Controller
 
     private function calculateEngagementRate(int $days, ?int $empresaId = null): float
     {
-        $query = WhatsAppSession::when($empresaId, function ($q) use ($empresaId) {
-            return $q->where('id_empresa', $empresaId);
-        });
-
-        $totalSessions = $query->where('created_at', '>=', now()->subDays($days))->count();
-        $activeSessions = $query->where('last_message_at', '>=', now()->subDays($days))->count();
+        $totalSessions = $this->sesionesStats($empresaId)->where('created_at', '>=', now()->subDays($days))->count();
+        $activeSessions = $this->sesionesStats($empresaId)->where('last_message_at', '>=', now()->subDays($days))->count();
 
         if ($totalSessions === 0) return 0;
         return round(($activeSessions / $totalSessions) * 100, 2);
@@ -573,9 +606,7 @@ class WebhookController extends Controller
 
     private function getBusiestHour(int $days, ?int $empresaId = null): int
     {
-        $messages = WhatsAppMessage::when($empresaId, function ($query) use ($empresaId) {
-            return $query->where('id_empresa', $empresaId);
-        })
+        $messages = $this->mensajesStats($empresaId)
             ->where('created_at', '>=', now()->subDays($days))
             ->selectRaw('HOUR(created_at) as hour, COUNT(*) as count')
             ->groupBy('hour')
@@ -587,7 +618,7 @@ class WebhookController extends Controller
 
     private function getMostActiveCompany(int $days): ?array
     {
-        $company = WhatsAppSession::join('empresas', 'whatsapp_sessions.id_empresa', '=', 'empresas.id')
+        $company = $this->sesionesStats(null)->join('empresas', 'whatsapp_sessions.id_empresa', '=', 'empresas.id')
             ->where('whatsapp_sessions.created_at', '>=', now()->subDays($days))
             ->selectRaw('empresas.nombre, empresas.id, COUNT(whatsapp_sessions.id) as session_count')
             ->groupBy('empresas.id', 'empresas.nombre')
@@ -604,9 +635,7 @@ class WebhookController extends Controller
     private function getAverageResponseTime(int $days, ?int $empresaId = null): float
     {
         try {
-            $conversations = WhatsAppMessage::when($empresaId, function ($query) use ($empresaId) {
-                return $query->where('id_empresa', $empresaId);
-            })
+            $conversations = $this->mensajesStats($empresaId)
                 ->where('created_at', '>=', now()->subDays($days))
                 ->orderBy('whatsapp_number')
                 ->orderBy('created_at')
@@ -642,16 +671,14 @@ class WebhookController extends Controller
 
     private function getPeakDay(int $days, ?int $empresaId = null): ?string
     {
-        $peakDay = WhatsAppMessage::when($empresaId, function ($query) use ($empresaId) {
-            return $query->where('id_empresa', $empresaId);
-        })
+        $peakDay = $this->mensajesStats($empresaId)
             ->where('created_at', '>=', now()->subDays($days))
             ->selectRaw('DATE(created_at) as date, COUNT(*) as message_count')
             ->groupBy('date')
             ->orderByDesc('message_count')
             ->first();
 
-        return $peakDay->date;
+        return $peakDay?->date;
     }
 
     private function generateInsights(int $days, ?int $empresaId = null): array

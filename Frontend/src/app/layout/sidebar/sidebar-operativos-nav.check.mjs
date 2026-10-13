@@ -42,6 +42,7 @@ assert.match(sidebar, /organizacion\.usuarios\.ver/);
 assert.match(sidebar, /administracion\.sucursales\.ver/);
 assert.match(sidebar, /validateRole\('admin', true\)/);
 assert.doesNotMatch(sidebar, /<li \*ngIf="apiService\.auth_user\(\)\.tipo != 'Contador'"/);
+assert.match(sidebar, /validateRole\('admin', true\) \|\| apiService\.isAdminCreate\(\)\) && usuario\.empresa\?\.acces_chatbot_whatsapp/);
 assert.match(sidebar, /acces_chatbot_whatsapp/);
 assert.match(sidebar, /\[routerLink\]="\['\/whatsapp'\]"/);
 assert.match(sidebarAdmin, /acces_chatbot_whatsapp/);

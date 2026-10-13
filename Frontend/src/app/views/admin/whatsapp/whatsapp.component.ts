@@ -3,11 +3,16 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { TruncatePipe } from '@pipes/truncate.pipe';
 import { interval } from 'rxjs';
 import { BaseComponent } from '@shared/base/base.component';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -15,7 +20,7 @@ import Swal from 'sweetalert2';
     templateUrl: './whatsapp.component.html',
     styleUrls: ['./whatsapp.component.scss'],
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, TooltipModule],
+    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, NgSelectModule, TruncatePipe, PaginationComponent, NotificacionesContainerComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
@@ -426,14 +431,12 @@ export class WhatsAppComponent extends BaseComponent implements OnInit {
   }
 
   refreshData() {
-    console.log('🔄 Refrescando datos...');
     this.refreshing = true;
     Promise.all([
       this.loadStats(),
       this.loadSessions()
     ]).finally(() => {
       this.refreshing = false;
-      console.log('✅ Datos refrescados');
       this.cdr.markForCheck();
     });
   }
