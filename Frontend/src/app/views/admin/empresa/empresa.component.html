@@ -384,6 +384,11 @@
             </section>
         </form>
     </tab>
+    @if (esAdminEmpresa()) {
+      <tab heading="Despacho contable" [active]="activeTabSlug === 'despacho-contable'" (selectTab)="onTabSelect($event)">
+        <app-empresa-despacho-contador />
+      </tab>
+    }
     <tab heading="Preferencias del sistema" [active]="activeTabSlug === 'preferencias'" (selectTab)="onTabSelect($event)">
         <form name="form" (ngSubmit)="onSubmit()">
             <section class="bg-white p-4 rounded mb-3">

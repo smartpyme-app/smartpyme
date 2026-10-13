@@ -1,0 +1,123 @@
+<div class="inv-despacho vh-100">
+  <div class="container-fluid h-100">
+    <div class="row d-flex align-items-center h-100">
+      <div
+        class="col-sm-8 col-md-6 d-none d-md-flex justify-content-center align-items-center inv-despacho__hero"
+      ></div>
+      <div class="col-12 col-md-6">
+        <div class="card border-0 px-4 px-lg-5 mx-0 mx-lg-2 shadow-none">
+          <div class="card-body py-4">
+            <app-notificaciones-container></app-notificaciones-container>
+
+            @if (loading) {
+              <p class="text-muted mb-0">Cargando invitación…</p>
+            }
+
+            @if (!loading && error) {
+              <h2 class="mb-3">Invitación no disponible</h2>
+              <p class="text-muted">{{ error }}</p>
+              <a routerLink="/login" class="btn btn-primary mt-2">Ir a iniciar sesión</a>
+            }
+
+            @if (!loading && !error && vista) {
+              @if (completado === 'aceptada') {
+                <div class="inv-despacho__result inv-despacho__result--ok">
+                  <h2 class="mb-2">¡Listo!</h2>
+                  <p class="text-muted">
+                    Autorizaste a <strong>{{ vista.empresa_despacho?.nombre }}</strong> para gestionar
+                    <strong>{{ vista.empresa_cliente?.nombre }}</strong> en SmartPyme.
+                  </p>
+                  @if (sesionActiva) {
+                    <button type="button" class="btn btn-primary" (click)="irCuentaDespacho()">
+                      Ver en Cuenta
+                    </button>
+                  } @else {
+                    <a routerLink="/login" class="btn btn-primary">Iniciar sesión</a>
+                  }
+                </div>
+              } @else if (completado === 'rechazada') {
+                <div class="inv-despacho__result">
+                  <h2 class="mb-2">Invitación rechazada</h2>
+                  <p class="text-muted mb-0">No se otorgó acceso al despacho contable.</p>
+                </div>
+              } @else if (!puedeResponder) {
+                <h2 class="mb-3">Invitación no vigente</h2>
+                <p class="text-muted">
+                  Esta solicitud ya fue respondida o expiró. Si necesitas ayuda, contacta a tu despacho o ingresa a
+                  SmartPyme con tu cuenta de administrador.
+                </p>
+                @if (sesionActiva) {
+                  <button type="button" class="btn btn-outline-primary" (click)="irCuentaDespacho()">
+                    Cuenta → Despacho contable
+                  </button>
+                } @else {
+                  <button type="button" class="btn btn-primary" (click)="irLogin()">Iniciar sesión</button>
+                }
+              } @else {
+                <p class="inv-despacho__eyebrow mb-1">Gestión contable</p>
+                <h2 class="mb-3">Autorizar despacho</h2>
+                <p class="text-muted">
+                  <strong>{{ vista.empresa_despacho?.nombre }}</strong> solicita acceso para apoyarte con cumplimiento,
+                  documentos y avance contable de tu empresa.
+                </p>
+
+                <div class="inv-despacho__card mb-4">
+                  <div class="inv-despacho__card-row">
+                    <span class="inv-despacho__label">Tu empresa</span>
+                    <strong>{{ vista.empresa_cliente?.nombre }}</strong>
+                  </div>
+                  <div class="inv-despacho__card-row">
+                    <span class="inv-despacho__label">Despacho</span>
+                    <strong>{{ vista.empresa_despacho?.nombre }}</strong>
+                  </div>
+                  @if (vista.email_admin) {
+                    <div class="inv-despacho__card-row">
+                      <span class="inv-despacho__label">Administrador invitado</span>
+                      <strong>{{ vista.email_admin }}</strong>
+                    </div>
+                  }
+                  @if (vista.expira_en) {
+                    <div class="inv-despacho__card-row inv-despacho__card-row--muted">
+                      <span class="inv-despacho__label">Vence</span>
+                      <span>{{ formatoExpira(vista.expira_en) }}</span>
+                    </div>
+                  }
+                </div>
+
+                <p class="small text-muted">
+                  Al aceptar, se revocará el acceso de cualquier otro despacho activo y se habilitará la cartera de este
+                  despacho para tu empresa.
+                </p>
+
+                <div class="d-flex flex-wrap gap-2 mt-4">
+                  <button type="button" class="btn btn-primary" [disabled]="procesando" (click)="aceptar()">
+                    @if (!procesando) {
+                      Aceptar invitación
+                    } @else {
+                      Procesando…
+                    }
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary" [disabled]="procesando" (click)="rechazar()">
+                    Rechazar
+                  </button>
+                </div>
+
+                @if (!sesionActiva) {
+                  <p class="small text-muted mt-3 mb-0">
+                    Si prefieres revisarla dentro de la app,
+                    <button type="button" class="btn btn-link p-0 align-baseline" (click)="irLogin()">inicia sesión</button>
+                    con el correo invitado.
+                  </p>
+                }
+              }
+            }
+          </div>
+          <div class="text-center pb-4">
+            <img src="assets/img/smartpyme.png" width="140" alt="SmartPyme" />
+            <p class="text-muted small mb-0">&copy; {{ anio }} SmartPyme</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

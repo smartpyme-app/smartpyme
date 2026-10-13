@@ -1,0 +1,59 @@
+.empresa-despacho__lede {
+  max-width: 42rem;
+  font-size: 14px;
+}
+
+.empresa-despacho__panel {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-top: 16px;
+}
+
+.empresa-despacho__panel--pending {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.empresa-despacho__panel--active {
+  background: #f8fafc;
+}
+
+.empresa-despacho__panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-bottom: 10px;
+}
+
+.empresa-despacho__logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.empresa-despacho__logo-placeholder {
+  display: inline-flex;
+  width: 48px;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #1775e5;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.empresa-despacho__empty {
+  margin-top: 16px;
+  padding: 20px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  font-size: 14px;
+}

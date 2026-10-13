@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Contadores\ContadorPortalController;
+use App\Http\Controllers\Api\Contadores\ContadorPortalInvitacionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/contadores/empresas', [ContadorPortalController::class, 'empresas']);
@@ -14,3 +15,7 @@ Route::post('/contadores/cumplimiento/presentado', [ContadorPortalController::cl
 Route::get('/contadores/cartera/empresa/{idEmpresa}', [ContadorPortalController::class, 'carteraEmpresa']);
 Route::post('/contadores/empresas/{idEmpresa}/contexto', [ContadorPortalController::class, 'contexto']);
 Route::post('/contadores/contexto/despacho', [ContadorPortalController::class, 'contextoDespacho']);
+Route::get('/contadores/invitaciones', [ContadorPortalInvitacionController::class, 'index']);
+Route::post('/contadores/invitaciones', [ContadorPortalInvitacionController::class, 'store']);
+Route::post('/contadores/invitaciones/{id}/reenviar', [ContadorPortalInvitacionController::class, 'reenviar']);
+Route::delete('/contadores/invitaciones/{id}', [ContadorPortalInvitacionController::class, 'destroy']);

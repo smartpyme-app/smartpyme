@@ -1,0 +1,51 @@
+.inv-despacho {
+  background: #fff;
+}
+
+.inv-despacho__hero {
+  background-image: url('/assets/img/login.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  height: 100vh;
+}
+
+.inv-despacho__eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.inv-despacho__card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 4px 0;
+}
+
+.inv-despacho__card-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.inv-despacho__card-row:last-child {
+  border-bottom: 0;
+}
+
+.inv-despacho__card-row--muted {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.inv-despacho__label {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.inv-despacho__result--ok h2 {
+  color: #0d9488;
+}

@@ -5,11 +5,13 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import {
   ContadorEmpresaPortafolio,
+  ContadorInvitacionPendiente,
   ContadorMetricasEmpresa,
   ContadoresPortalService,
   EstadoCarteraContador,
 } from '@services/contadores-portal.service';
 import { ApiService } from '@services/api.service';
+import { AlertService } from '@services/alert.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import {
   mesAnioDesdeQuery,
@@ -54,6 +56,12 @@ export class ContadoresDashboardComponent implements OnInit {
   abriendoEmpresaId: number | null = null;
   readonly logoFallo = new Set<number>();
 
+  invitacionesPendientes: ContadorInvitacionPendiente[] = [];
+  modalInvitarAbierto = false;
+  emailInvitar = '';
+  invitando = false;
+  accionInvitacionId: number | null = null;
+
   private metricasPorEmpresa = new Map<number, MetricasEmpresa>();
 
   private destroyRef = inject(DestroyRef);
@@ -62,6 +70,7 @@ export class ContadoresDashboardComponent implements OnInit {
   constructor(
     private contadoresPortal: ContadoresPortalService,
     private api: ApiService,
+    private alertService: AlertService,
     private router: Router,
     private route: ActivatedRoute,
   ) {}
@@ -258,6 +267,100 @@ export class ContadoresDashboardComponent implements OnInit {
     return new Intl.NumberFormat('es-SV', { style: 'currency', currency: 'USD' }).format(monto);
   }
 
+  abrirModalInvitar(): void {
+    this.emailInvitar = '';
+    this.modalInvitarAbierto = true;
+  }
+
+  cerrarModalInvitar(): void {
+    if (this.invitando) {
+      return;
+    }
+    this.modalInvitarAbierto = false;
+  }
+
+  enviarInvitacion(): void {
+    const email = this.emailInvitar.trim();
+    if (!email || this.invitando) {
+      return;
+    }
+    this.invitando = true;
+    this.contadoresPortal
+      .invitarEmpresaPorEmail(email)
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (res) => {
+          this.invitando = false;
+          this.modalInvitarAbierto = false;
+          this.alertService.success(
+            'Invitación enviada',
+            `Se notificó al administrador en ${res.invitacion?.email_admin ?? email}.`,
+          );
+          this.cargarInvitacionesPendientes();
+          this.cargarDatos();
+        },
+        error: (err) => {
+          this.invitando = false;
+          this.alertService.error(err);
+        },
+      });
+  }
+
+  reenviarInvitacion(inv: ContadorInvitacionPendiente, event: Event): void {
+    event.stopPropagation();
+    if (this.accionInvitacionId != null) {
+      return;
+    }
+    this.accionInvitacionId = inv.id;
+    this.contadoresPortal
+      .reenviarInvitacion(inv.id)
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: () => {
+          this.accionInvitacionId = null;
+          this.alertService.success('Listo', 'Correo reenviado.');
+          this.cargarInvitacionesPendientes();
+        },
+        error: (err) => {
+          this.accionInvitacionId = null;
+          this.alertService.error(err);
+        },
+      });
+  }
+
+  cancelarInvitacion(inv: ContadorInvitacionPendiente, event: Event): void {
+    event.stopPropagation();
+    if (this.accionInvitacionId != null) {
+      return;
+    }
+    this.accionInvitacionId = inv.id;
+    this.contadoresPortal
+      .cancelarInvitacion(inv.id)
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: () => {
+          this.accionInvitacionId = null;
+          this.invitacionesPendientes = this.invitacionesPendientes.filter((i) => i.id !== inv.id);
+          this.alertService.success('Listo', 'Invitación cancelada.');
+        },
+        error: (err) => {
+          this.accionInvitacionId = null;
+          this.alertService.error(err);
+        },
+      });
+  }
+
+  formatoExpiraInvitacion(iso?: string): string {
+    if (!iso) {
+      return '';
+    }
+    try {
+      return new Intl.DateTimeFormat('es-SV', { dateStyle: 'medium' }).format(new Date(iso));
+    } catch {
+      return iso;
+    }
+  }
+
   etiquetaPermiso(permisos: string[]): string {
     const set = new Set((permisos ?? []).map((p) => p.toLowerCase()));
     if (set.has('aprobar')) {
@@ -282,10 +385,11 @@ export class ContadoresDashboardComponent implements OnInit {
         mes: this.periodoMes,
         anio: this.periodoAnio,
       }),
+      invitaciones: this.contadoresPortal.listarInvitacionesPendientes(),
     })
       .pipe(this.untilDestroyed())
       .subscribe({
-        next: ({ empresas, cartera }) => {
+        next: ({ empresas, cartera, invitaciones }) => {
           this.empresas = empresas?.empresas ?? [];
           this.periodoLabel = cartera?.periodo?.label ?? '';
           if (cartera?.periodo?.mes) {
@@ -297,6 +401,7 @@ export class ContadoresDashboardComponent implements OnInit {
           this.periodoEnCierre = !!cartera?.periodo?.en_cierre;
           this.subtituloFiscal = textoVencimientoIva(this.periodoMes, this.periodoAnio);
           this.metricasPorEmpresa = this.mapearMetricas(cartera?.metricas ?? {});
+          this.invitacionesPendientes = invitaciones?.invitaciones ?? [];
           this.loading = false;
         },
         error: (err) => {
@@ -304,6 +409,18 @@ export class ContadoresDashboardComponent implements OnInit {
           const raw = err?.error?.error;
           this.error = Array.isArray(raw) ? raw.join(', ') : (raw ?? 'No se pudo cargar la cartera.');
         },
+      });
+  }
+
+  private cargarInvitacionesPendientes(): void {
+    this.contadoresPortal
+      .listarInvitacionesPendientes()
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (res) => {
+          this.invitacionesPendientes = res?.invitaciones ?? [];
+        },
+        error: () => {},
       });
   }
 

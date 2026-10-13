@@ -1,0 +1,68 @@
+<section class="bg-white p-4 rounded mb-3 empresa-despacho">
+  <h5 class="mb-2">Despacho contable</h5>
+  <p class="text-muted empresa-despacho__lede">
+    Autoriza a un despacho externo para ver cumplimiento, documentos y avance contable. Solo puede haber un despacho
+    activo por empresa.
+  </p>
+
+  @if (loading) {
+    <p class="text-muted mb-0">Cargando…</p>
+  }
+
+  @if (!loading) {
+    @if (invitacion) {
+      <div class="empresa-despacho__panel empresa-despacho__panel--pending">
+        <div class="empresa-despacho__panel-head">
+          <span class="badge bg-warning text-dark">Invitación pendiente</span>
+          @if (invitacion.expira_en) {
+            <span class="small text-muted">Vence {{ formatoExpira(invitacion.expira_en) }}</span>
+          }
+        </div>
+        <p class="mb-2">
+          <strong>{{ invitacion.despacho?.nombre ?? 'Un despacho' }}</strong> solicita gestionar tu empresa.
+        </p>
+        <p class="small text-muted mb-3">Correo invitado: {{ invitacion.email_admin }}</p>
+        <div class="d-flex flex-wrap gap-2">
+          <button type="button" class="btn btn-primary btn-sm" [disabled]="procesando" (click)="aceptarInvitacion()">
+            Aceptar
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-sm"
+            [disabled]="procesando"
+            (click)="rechazarInvitacion()"
+          >
+            Rechazar
+          </button>
+        </div>
+      </div>
+    }
+
+    @if (accesoActivo) {
+      <div class="empresa-despacho__panel empresa-despacho__panel--active">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+          @if (logoUrl(accesoActivo.despacho?.logo ?? null); as url) {
+            <img class="empresa-despacho__logo" [src]="url" [alt]="accesoActivo.despacho?.nombre ?? 'Despacho'" />
+          } @else {
+            <span class="empresa-despacho__logo-placeholder" aria-hidden="true">DC</span>
+          }
+          <div class="flex-grow-1">
+            <span class="badge bg-success mb-1">Despacho activo</span>
+            <div class="fw-semibold">{{ accesoActivo.despacho?.nombre ?? 'Despacho contable' }}</div>
+            <p class="small text-muted mb-0">Puede acceder a tu empresa desde su portal de contadores.</p>
+          </div>
+          <button type="button" class="btn btn-outline-danger btn-sm" [disabled]="procesando" (click)="revocarDespacho()">
+            Revocar acceso
+          </button>
+        </div>
+      </div>
+    }
+
+    @if (!invitacion && !accesoActivo) {
+      <div class="empresa-despacho__empty text-muted">
+        No hay invitaciones pendientes ni despacho autorizado. Tu contador puede enviarte una invitación desde su cartera
+        en SmartPyme.
+      </div>
+    }
+  }
+</section>

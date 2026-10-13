@@ -146,6 +146,24 @@ export interface ContadorContextoEmpresa {
   permisos: string[];
 }
 
+export interface ContadorInvitacionPendiente {
+  id: number;
+  email_admin: string;
+  estado: string;
+  expira_en: string;
+  empresa_cliente?: { id: number; nombre: string };
+  created_at?: string;
+}
+
+export interface ContadorInvitacionPublicaVista {
+  estado: string;
+  vigente: boolean;
+  expira_en?: string;
+  email_admin?: string;
+  empresa_cliente?: { id: number; nombre: string; logo?: string | null };
+  empresa_despacho?: { id: number; nombre: string; logo?: string | null };
+}
+
 export interface ContadorLibrosIvaResponse {
   empresa: { id: number; nombre: string; logo: string | null; giro?: string | null; pais?: string | null };
   modulo_pais?: 'sv' | 'cr' | 'hd' | 'general';
@@ -439,5 +457,33 @@ export class ContadoresPortalService {
       ...prev.filter((r) => r.id !== empresa.id),
     ].slice(0, 3);
     localStorage.setItem(KEY_RECIENTES, JSON.stringify(next));
+  }
+
+  listarInvitacionesPendientes(): Observable<{ invitaciones: ContadorInvitacionPendiente[] }> {
+    return this.api.get('contadores/invitaciones');
+  }
+
+  invitarEmpresaPorEmail(email: string): Observable<{ ok: boolean; invitacion: ContadorInvitacionPendiente }> {
+    return this.api.store('contadores/invitaciones', { email });
+  }
+
+  reenviarInvitacion(id: number): Observable<{ ok: boolean }> {
+    return this.api.store(`contadores/invitaciones/${id}/reenviar`, {});
+  }
+
+  cancelarInvitacion(id: number): Observable<{ ok: boolean }> {
+    return this.api.delete('contadores/invitaciones/', id);
+  }
+
+  vistaInvitacionPublica(token: string): Observable<ContadorInvitacionPublicaVista> {
+    return this.api.get(`contadores/invitacion/${encodeURIComponent(token)}`);
+  }
+
+  aceptarInvitacionPublica(token: string): Observable<{ ok: boolean }> {
+    return this.api.store(`contadores/invitacion/${encodeURIComponent(token)}/aceptar`, {});
+  }
+
+  rechazarInvitacionPublica(token: string): Observable<{ ok: boolean }> {
+    return this.api.store(`contadores/invitacion/${encodeURIComponent(token)}/rechazar`, {});
   }
 }

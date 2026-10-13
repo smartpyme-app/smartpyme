@@ -1,5 +1,6 @@
 <?php 
 
+use App\Http\Controllers\Api\Admin\EmpresaDespachoContadorController;
 use App\Http\Controllers\Api\Admin\EmpresasController;
 use App\Http\Controllers\Api\Admin\DashboardsController;
 use App\Http\Controllers\Api\Admin\ReportesController;
@@ -10,6 +11,11 @@ use Illuminate\Support\Facades\Route;
 
     Route::get('/empresas',        	        [EmpresasController::class, 'index'])->middleware('role:super_admin');
     Route::get('/empresas/list',            [EmpresasController::class, 'list'])->middleware('role:super_admin');
+
+    Route::get('/empresa/despacho-contador', [EmpresaDespachoContadorController::class, 'estado'])->middleware('role:admin');
+    Route::post('/empresa/despacho-contador/invitacion/{id}/aceptar', [EmpresaDespachoContadorController::class, 'aceptarInvitacion'])->middleware('role:admin');
+    Route::post('/empresa/despacho-contador/invitacion/{id}/rechazar', [EmpresaDespachoContadorController::class, 'rechazarInvitacion'])->middleware('role:admin');
+    Route::post('/empresa/despacho-contador/revocar', [EmpresaDespachoContadorController::class, 'revocarDespacho'])->middleware('role:admin');
 
     Route::get('/empresa/get-alert',     [EmpresasController::class, 'getAlertSuscription']);
     Route::get('/empresa/isvisible-alert', [EmpresasController::class, 'isVisibleAlertSuscription']);

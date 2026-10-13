@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\Admin\EmpresasController;
 use App\Http\Controllers\Api\Admin\EmpresasFuncionalidadesController;
 use App\Http\Controllers\Api\Admin\SuscripcionesController;
 use App\Http\Controllers\Api\CertificadoController;
+use App\Http\Controllers\Api\Contadores\ContadorPortalInvitacionController;
 use App\Http\Controllers\Api\Constants\ConstantsController;
 use App\Http\Controllers\n1co\EstadoController;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +38,10 @@ require base_path('routes/modulos/auth.php');
 
 // Gmail OAuth callback - no JWT (Google redirects user here)
 Route::get('/email-accounts/gmail/callback', [App\Http\Controllers\Api\DteManagement\GmailAuthController::class, 'callback']);
+
+Route::get('/contadores/invitacion/{token}', [ContadorPortalInvitacionController::class, 'vistaPublica']);
+Route::post('/contadores/invitacion/{token}/aceptar', [ContadorPortalInvitacionController::class, 'aceptarPublica']);
+Route::post('/contadores/invitacion/{token}/rechazar', [ContadorPortalInvitacionController::class, 'rechazarPublica']);
 
 Route::group(['middleware' => ['jwt.auth']], function () {
 

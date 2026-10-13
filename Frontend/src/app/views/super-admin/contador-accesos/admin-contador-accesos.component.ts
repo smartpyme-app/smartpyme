@@ -55,7 +55,10 @@ export class AdminContadorAccesosComponent implements OnInit {
 
   contadorModal: PortalContador | null = null;
   idEmpresaModal: number | null = null;
+  /** Lista estable para ng-select (evita getter que recrea el array en cada CD). */
+  empresasDisponiblesModal: EmpresaLite[] = [];
 
+  buscadorTabla = '';
   buscadorUsuario = '';
   usuariosBusqueda: UsuarioBusqueda[] = [];
   idUsuarioIncluir: number | null = null;
@@ -88,33 +91,40 @@ export class AdminContadorAccesosComponent implements OnInit {
     this.cargarAccesos();
   }
 
-  get contadoresConEmpresas(): ContadorConEmpresas[] {
-    const activos = this.accesos.filter((a) => a.estado === 'activo');
-    const map = new Map<number, ContadorConEmpresas>();
-
-    for (const acceso of activos) {
+  /** Todos los contadores del portal con sus empresas (tabla única). */
+  get filasContadoresTabla(): ContadorConEmpresas[] {
+    const accesosPorContador = new Map<number, ContadorAccesoRow[]>();
+    for (const acceso of this.accesos) {
+      if (acceso.estado !== 'activo') {
+        continue;
+      }
       const idContador = acceso.contador?.id ?? acceso.id_usuario_contador;
       if (!idContador) {
         continue;
       }
-      let row = map.get(idContador);
-      if (!row) {
-        const contador =
-          acceso.contador ??
-          this.contadores.find((c) => c.id === idContador) ?? {
-            id: idContador,
-            name: '—',
-            email: '',
-          };
-        row = { contador, accesosActivos: [] };
-        map.set(idContador, row);
-      }
-      row.accesosActivos.push(acceso);
+      const list = accesosPorContador.get(idContador) ?? [];
+      list.push(acceso);
+      accesosPorContador.set(idContador, list);
     }
 
-    return [...map.values()].sort((a, b) =>
-      a.contador.name.localeCompare(b.contador.name, 'es'),
-    );
+    let filas: ContadorConEmpresas[] = this.contadores.map((c) => ({
+      contador: c,
+      accesosActivos: accesosPorContador.get(c.id) ?? [],
+    }));
+
+    const q = this.buscadorTabla.trim().toLowerCase();
+    if (q) {
+      filas = filas.filter((f) => {
+        const match = (text: string) => text.toLowerCase().includes(q);
+        return (
+          match(f.contador.name) ||
+          match(f.contador.email) ||
+          f.accesosActivos.some((a) => match(a.empresa?.nombre ?? ''))
+        );
+      });
+    }
+
+    return filas.sort((a, b) => a.contador.name.localeCompare(b.contador.name, 'es'));
   }
 
   get accesosActivosModal(): ContadorAccesoRow[] {
@@ -128,18 +138,13 @@ export class AdminContadorAccesosComponent implements OnInit {
     );
   }
 
-  get empresasDisponiblesModal(): EmpresaLite[] {
-    const asignadas = new Set(this.accesosActivosModal.map((a) => a.empresa?.id));
-    return this.empresas.filter((e) => !asignadas.has(e.id));
-  }
-
   get idsContadoresPortal(): Set<number> {
     return new Set(this.contadores.map((c) => c.id));
   }
 
-  /** Contadores del portal aún sin empresas activas (no aparecen en la tabla principal). */
-  get contadoresSinEmpresas(): PortalContador[] {
-    return this.contadores.filter((c) => !(c.empresas_activas_count ?? 0));
+  recargarTabla(): void {
+    this.cargarContadores();
+    this.cargarAccesos();
   }
 
   cargarContadores(): void {
@@ -162,7 +167,11 @@ export class AdminContadorAccesosComponent implements OnInit {
       .pipe(this.untilDestroyed())
       .subscribe({
         next: (data) => {
-          this.empresas = Array.isArray(data) ? data : [];
+          this.empresas = (Array.isArray(data) ? data : []).map((e) => ({
+            id: Number(e.id),
+            nombre: e.nombre,
+          }));
+          this.refrescarEmpresasDisponiblesModal();
         },
         error: (err) => this.alert.error(err),
       });
@@ -177,6 +186,7 @@ export class AdminContadorAccesosComponent implements OnInit {
         next: (data) => {
           this.accesos = data?.data ?? [];
           this.loading = false;
+          this.refrescarEmpresasDisponiblesModal();
         },
         error: (err) => {
           this.loading = false;
@@ -200,6 +210,7 @@ export class AdminContadorAccesosComponent implements OnInit {
   abrirAgregarEmpresas(contador: PortalContador, template: TemplateRef<unknown>): void {
     this.contadorModal = contador;
     this.idEmpresaModal = null;
+    this.refrescarEmpresasDisponiblesModal();
     this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
   }
 
@@ -366,5 +377,14 @@ export class AdminContadorAccesosComponent implements OnInit {
         },
         error: (err) => this.alert.error(err),
       });
+  }
+
+  private refrescarEmpresasDisponiblesModal(): void {
+    const asignadas = new Set(
+      this.accesosActivosModal
+        .map((a) => a.empresa?.id)
+        .filter((id): id is number => id != null),
+    );
+    this.empresasDisponiblesModal = this.empresas.filter((e) => !asignadas.has(e.id));
   }
 }

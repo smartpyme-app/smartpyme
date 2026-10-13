@@ -59,6 +59,14 @@ export const routes: Routes = [
       title: 'Nueva contraseña'
     },
     {
+      path: 'invitacion-despacho',
+      loadComponent: () =>
+        import('./views/contadores/invitacion-despacho/invitacion-despacho.component').then(
+          (m) => m.InvitacionDespachoComponent,
+        ),
+      title: 'Invitación despacho contable',
+    },
+    {
       path: 'lock',
       loadComponent: () => import('./auth/lock/lock.component').then(m => m.LockComponent)
     },

@@ -487,3 +487,72 @@
     border-top: 1px solid #e5ebf2;
   }
 }
+
+.contadores-dash__invites {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #e5ebf2;
+}
+
+.contadores-dash__invites-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin: 0 0 10px;
+}
+
+.contadores-dash__invites-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 10px 0;
+  border-top: 1px solid #eef2f7;
+}
+
+.contadores-dash__invites-item:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.contadores-dash__invites-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.contadores-dash__invites-expira {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.contadores-dash__invites-actions {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.contadores-dash__modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 1040;
+}
+
+.contadores-dash__modal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1050;
+  width: min(440px, calc(100vw - 32px));
+  padding: 20px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.18);
+}

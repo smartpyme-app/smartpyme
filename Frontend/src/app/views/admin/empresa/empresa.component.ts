@@ -41,13 +41,14 @@ import {
     configIdentificacionTipos,
     tiposPorUso,
 } from '@utils/identificacion-tipos.util';
+import { EmpresaDespachoContadorComponent } from './empresa-despacho-contador.component';
 
 @Component({
     selector: 'app-empresa',
     templateUrl: './empresa.component.html',
     styleUrls: ['./empresa.component.css'],
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, FilterPipe, TabsModule, NgxMaskDirective, LazyImageDirective, TranslatePipe, SharedModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, FilterPipe, TabsModule, NgxMaskDirective, LazyImageDirective, TranslatePipe, SharedModule, EmpresaDespachoContadorComponent],
 
 })
 export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -2665,9 +2666,14 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
             'Integraciones': 'integraciones',
             'WooCommerce': 'woocommerce',
             'Shopify': 'shopify',
-            'Integración BoxFul': 'boxful'
+            'Integración BoxFul': 'boxful',
+            'Despacho contable': 'despacho-contable',
         };
         return headingMap[heading] ?? null;
+    }
+
+    public esAdminEmpresa(): boolean {
+        return this.apiService.auth_user()?.tipo === 'Administrador';
     }
 
     public verificarAccesoPropina() {

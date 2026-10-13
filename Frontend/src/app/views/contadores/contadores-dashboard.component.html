@@ -12,6 +12,9 @@
           <div class="contadores-dash__title-row">
             <h1 class="contadores-dash__title">Cartera de clientes</h1>
             <div class="contadores-dash__top-meta">
+              <button type="button" class="btn btn-primary btn-sm" (click)="abrirModalInvitar()">
+                Invitar empresa
+              </button>
               <label class="contadores-dash__periodo mb-0">
                 <span class="visually-hidden">Periodo</span>
                 <select
@@ -52,6 +55,43 @@
               <strong class="contadores-dash__kpi-value">{{ formatoMoneda(ivaCartera) }}</strong>
             </div>
           </div>
+
+          @if (invitacionesPendientes.length > 0) {
+            <section class="contadores-dash__invites mb-3" aria-label="Invitaciones pendientes">
+              <h2 class="contadores-dash__invites-title">Invitaciones pendientes</h2>
+              <ul class="contadores-dash__invites-list list-unstyled mb-0">
+                @for (inv of invitacionesPendientes; track inv.id) {
+                  <li class="contadores-dash__invites-item">
+                    <div class="contadores-dash__invites-main">
+                      <strong>{{ inv.empresa_cliente?.nombre ?? 'Empresa' }}</strong>
+                      <span class="text-muted small">{{ inv.email_admin }}</span>
+                      @if (inv.expira_en) {
+                        <span class="contadores-dash__invites-expira">Vence {{ formatoExpiraInvitacion(inv.expira_en) }}</span>
+                      }
+                    </div>
+                    <div class="contadores-dash__invites-actions">
+                      <button
+                        type="button"
+                        class="btn btn-link btn-sm p-0"
+                        [disabled]="accionInvitacionId === inv.id"
+                        (click)="reenviarInvitacion(inv, $event)"
+                      >
+                        Reenviar
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-link btn-sm p-0 text-danger"
+                        [disabled]="accionInvitacionId === inv.id"
+                        (click)="cancelarInvitacion(inv, $event)"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
 
           <input
             type="search"
@@ -130,3 +170,41 @@
       </div>
     }
 </div>
+
+@if (modalInvitarAbierto) {
+  <div class="contadores-dash__modal-backdrop" role="presentation" (click)="cerrarModalInvitar()"></div>
+  <div
+    class="contadores-dash__modal"
+    role="dialog"
+    aria-labelledby="dash-invitar-title"
+    (click)="$event.stopPropagation()"
+  >
+    <h3 id="dash-invitar-title" class="h6 mb-2">Invitar empresa a la cartera</h3>
+    <p class="small text-muted mb-3">
+      Ingresa el correo del usuario <strong>administrador</strong> de la PYME en SmartPyme. Solo se envía la invitación si
+      ese correo existe.
+    </p>
+    <label class="form-label small mb-1" for="dash-invitar-email">Correo del administrador</label>
+    <input
+      id="dash-invitar-email"
+      type="email"
+      class="form-control form-control-sm mb-3"
+      [(ngModel)]="emailInvitar"
+      placeholder="admin@miempresa.com"
+      [disabled]="invitando"
+      (keydown.enter)="enviarInvitacion(); $event.preventDefault()"
+    />
+    <div class="d-flex justify-content-end gap-2">
+      <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="invitando" (click)="cerrarModalInvitar()">
+        Cerrar
+      </button>
+      <button type="button" class="btn btn-primary btn-sm" [disabled]="invitando || !emailInvitar.trim()" (click)="enviarInvitacion()">
+        @if (!invitando) {
+          Enviar invitación
+        } @else {
+          Enviando…
+        }
+      </button>
+    </div>
+  </div>
+}
