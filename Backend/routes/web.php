@@ -46,12 +46,11 @@ Route::get('/inventariostock', function(){
 });
 
 Route::get('/ventassintipodte', function () {
-    $ventas = App\Models\Ventas\Venta::whereNull('tipo_dte')
-        ->where(function ($q) {
-            $q->whereNotNull('dte')->orWhereNotNull('dte_s3_key');
-        })
+    $ventas = App\Models\Ventas\Venta::withoutGlobalScopes()->whereNull('tipo_dte')
+        ->whereNotNull('dte')
         ->whereYear('fecha', 2026)
         ->get();
+   
 
     $ventasProcesadas = 0;
 
@@ -63,6 +62,12 @@ Route::get('/ventassintipodte', function () {
         }
 
         $venta->tipo_dte = $tipoDte;
+        if ($venta->codigo_generacion === null) {
+            $venta->codigo_generacion = data_get($venta->dte, 'identificacion.codigoGeneracion');
+        }
+        if ($venta->numero_control === null) {
+            $venta->numero_control = data_get($venta->dte, 'identificacion.numeroControl');
+        }
         $venta->save();
         $ventasProcesadas++;
     }
