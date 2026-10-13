@@ -489,14 +489,19 @@ class ContadorPortalController extends Controller
     /** Empresa firma del despacho (no una PYME cliente de la cartera). */
     private function resolverEmpresaDespachoHome(User $user): int
     {
-        $cached = Cache::get($this->cacheKeyDespachoHome($user->id));
-        if ($cached) {
-            return (int) $cached;
+        $user = User::withoutGlobalScopes()->find($user->id) ?? $user;
+
+        if ($user->id_empresa_firma_contador) {
+            return (int) $user->id_empresa_firma_contador;
         }
 
         $carteraIds = $this->idsEmpresasCarteraActivas($user->id);
         $current = (int) $user->id_empresa;
         if (!$carteraIds->contains($current)) {
+            User::withoutGlobalScopes()
+                ->whereKey($user->id)
+                ->update(['id_empresa_firma_contador' => $current]);
+
             return $current;
         }
 

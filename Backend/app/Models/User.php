@@ -41,6 +41,7 @@ class User extends Authenticatable implements JWTSubject
         'email',
         'password',
         'id_empresa',
+        'id_empresa_firma_contador',
         'enable',
         'tour_bienvenida',
         'codigo',

@@ -78,6 +78,7 @@ class ContadorAccesosController extends Controller
         $usuario->email = $request->email;
         $usuario->password = Hash::make($request->password);
         $usuario->id_empresa = self::EMPRESA_PORTAL_HOME;
+        $usuario->id_empresa_firma_contador = self::EMPRESA_PORTAL_HOME;
         $usuario->id_sucursal = $idSucursal;
         $usuario->id_bodega = $idBodega;
         $usuario->enable = true;
@@ -106,6 +107,11 @@ class ContadorAccesosController extends Controller
         if (!$usuario->hasRole($rol->name)) {
             $usuario->assignRole($rol);
             app(PermissionRegistrar::class)->forgetCachedPermissions();
+        }
+
+        if (!$usuario->id_empresa_firma_contador && $usuario->id_empresa) {
+            $usuario->id_empresa_firma_contador = (int) $usuario->id_empresa;
+            $usuario->save();
         }
 
         // ponytail: no syncTipoFromRole — conserva tipo para entrar a la app PYME; el portal valida por rol.
