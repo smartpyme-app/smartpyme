@@ -130,6 +130,7 @@ final class LibroIvaResumenFiscalService
 
         return [
             'pais' => $paisNombre,
+            'detalle_impuesto_cr' => true,
             'periodo' => ['inicio' => $request->inicio, 'fin' => $request->fin],
             'totales' => [
                 'ventas' => $totalVentas,
@@ -139,9 +140,10 @@ final class LibroIvaResumenFiscalService
             ],
             'ventas_por_impuesto' => $this->ventasPorImpuestoDesdeVentaImpuestos(
                 $ventas,
-                $devoluciones
+                $devoluciones,
+                true
             ),
-            'compras_por_impuesto' => $this->comprasPorImpuestoDesdeCompraImpuestos($comprasLibro),
+            'compras_por_impuesto' => $this->comprasPorImpuestoDesdeCompraImpuestos($comprasLibro, true),
             'iva' => [
                 'iva_a_favor' => $ctxCompras['iva_credito'],
                 'credito_fiscal_compras' => $ctxCompras['credito_compras'],
@@ -486,11 +488,11 @@ final class LibroIvaResumenFiscalService
      *
      * @param  Collection<int, Venta>  $ventas
      * @param  Collection<int, DevolucionVenta>  $devoluciones
-     * @return array<int, array{tarifa: string, etiqueta: string, base: float, iva: float}>
+     * @return array<int, array{tarifa: string, etiqueta: string, impuesto: string, base: float, iva: float, documentos: int}>
      */
-    private function ventasPorImpuestoDesdeVentaImpuestos(Collection $ventas, Collection $devoluciones): array
+    private function ventasPorImpuestoDesdeVentaImpuestos(Collection $ventas, Collection $devoluciones, bool $etiquetasCr = false): array
     {
-        /** @var array<string, array{nombre: string, porcentaje: float, base: float, iva: float}> */
+        /** @var array<string, array{nombre: string, porcentaje: float, base: float, iva: float, documentos: int}> */
         $buckets = [];
 
         foreach ($ventas as $venta) {
@@ -501,36 +503,7 @@ final class LibroIvaResumenFiscalService
             $this->aplicarDevolucionAlDesgloseImpuestos($devolucion, $buckets);
         }
 
-        $out = [];
-        foreach ($buckets as $key => $b) {
-            $base = round($b['base'], 2);
-            $iva = round($b['iva'], 2);
-            if (abs($base) < 0.00001 && abs($iva) < 0.00001) {
-                continue;
-            }
-            $pct = (float) $b['porcentaje'];
-            $tarifa = $pct > 0.0001
-                ? (abs($pct - round($pct)) < 0.01 ? (string) (int) round($pct).'%' : round($pct, 2).'%')
-                : strtoupper($key);
-            $out[] = [
-                'tarifa' => $tarifa,
-                'etiqueta' => $b['nombre'],
-                'base' => $base,
-                'iva' => $iva,
-            ];
-        }
-
-        usort($out, function (array $a, array $b) {
-            $pa = (float) rtrim($a['tarifa'], '%');
-            $pb = (float) rtrim($b['tarifa'], '%');
-            if ($pa !== $pb) {
-                return $pb <=> $pa;
-            }
-
-            return strcmp($a['etiqueta'], $b['etiqueta']);
-        });
-
-        return $out;
+        return $this->formatearBucketsDesgloseImpuestos($buckets, $etiquetasCr);
     }
 
     /**
@@ -538,6 +511,7 @@ final class LibroIvaResumenFiscalService
      */
     private function aplicarVentaAlDesgloseImpuestos(Venta $venta, array &$buckets, float $signo): void
     {
+        $keysDocumento = [];
         $lineas = $venta->impuestos;
         if ($lineas->isNotEmpty()) {
             foreach ($lineas as $linea) {
@@ -551,9 +525,11 @@ final class LibroIvaResumenFiscalService
                     $key,
                     $nombre !== '' ? $nombre : 'Impuesto',
                     $pct,
-                    $montoIva
+                    $montoIva,
+                    $keysDocumento
                 );
             }
+            $this->contarDocumentosEnBuckets($buckets, $keysDocumento);
 
             return;
         }
@@ -568,16 +544,19 @@ final class LibroIvaResumenFiscalService
                 $filaLibro['key'],
                 $filaLibro['etiqueta'],
                 $filaLibro['porcentaje'],
-                $signo * $filaLibro['iva']
+                $signo * $filaLibro['iva'],
+                $keysDocumento
             );
         } else {
             $this->acumularBaseDesglose(
                 $buckets,
                 $filaLibro['key'],
                 $filaLibro['etiqueta'],
-                $signo * $filaLibro['base']
+                $signo * $filaLibro['base'],
+                $keysDocumento
             );
         }
+        $this->contarDocumentosEnBuckets($buckets, $keysDocumento);
     }
 
     /**
@@ -638,6 +617,7 @@ final class LibroIvaResumenFiscalService
      */
     private function aplicarDevolucionAlDesgloseImpuestos(DevolucionVenta $devolucion, array &$buckets): void
     {
+        $keysDocumento = [];
         $venta = $devolucion->venta;
         $lineas = $venta ? $venta->impuestos : collect();
         $ivaNc = (float) $devolucion->iva;
@@ -657,10 +637,12 @@ final class LibroIvaResumenFiscalService
                         $key,
                         $nombre !== '' ? $nombre.' (NC)' : 'Impuesto (NC)',
                         $pct,
-                        round($montoNc * $proporcion, 5)
+                        round($montoNc * $proporcion, 5),
+                        $keysDocumento
                     );
                 }
             }
+            $this->contarDocumentosEnBuckets($buckets, $keysDocumento);
 
             return;
         }
@@ -670,18 +652,22 @@ final class LibroIvaResumenFiscalService
 
         if (abs($montoNc) > 0.00001) {
             $pct = $this->porcentajeIvaEmpresa();
-            $this->acumularIvaDesglose($buckets, 'libro_grav_nc', 'Gravadas (libro NC)', $pct, $montoNc);
+            $this->acumularIvaDesglose($buckets, 'libro_grav_nc', 'Gravadas (libro NC)', $pct, $montoNc, $keysDocumento);
         } elseif (abs($subTotal) >= 0.01) {
-            $this->acumularBaseDesglose($buckets, 'libro_grav_nc', 'Gravadas (libro NC)', $subTotal);
+            $this->acumularBaseDesglose($buckets, 'libro_grav_nc', 'Gravadas (libro NC)', $subTotal, $keysDocumento);
         } elseif (abs($exenta) >= 0.01) {
-            $this->acumularBaseDesglose($buckets, 'libro_ex_nc', 'Exentas (libro NC)', $exenta);
+            $this->acumularBaseDesglose($buckets, 'libro_ex_nc', 'Exentas (libro NC)', $exenta, $keysDocumento);
         }
+        $this->contarDocumentosEnBuckets($buckets, $keysDocumento);
     }
 
     /**
      * @param  array<string, array{nombre: string, porcentaje: float, base: float, iva: float}>  $buckets
      */
-    private function acumularIvaDesglose(array &$buckets, string $key, string $nombre, float $porcentaje, float $montoIva): void
+    /**
+     * @param  array<int, string>  $keysDocumento
+     */
+    private function acumularIvaDesglose(array &$buckets, string $key, string $nombre, float $porcentaje, float $montoIva, ?array &$keysDocumento = null): void
     {
         if (abs($montoIva) < 0.00001) {
             return;
@@ -692,18 +678,23 @@ final class LibroIvaResumenFiscalService
                 'porcentaje' => $porcentaje,
                 'base' => 0.0,
                 'iva' => 0.0,
+                'documentos' => 0,
             ];
         }
         $buckets[$key]['iva'] += $montoIva;
         $buckets[$key]['base'] += $porcentaje > 0.0001
             ? $montoIva / ($porcentaje / 100.0)
             : 0.0;
+        if ($keysDocumento !== null && ! in_array($key, $keysDocumento, true)) {
+            $keysDocumento[] = $key;
+        }
     }
 
     /**
-     * @param  array<string, array{nombre: string, porcentaje: float, base: float, iva: float}>  $buckets
+     * @param  array<string, array{nombre: string, porcentaje: float, base: float, iva: float, documentos: int}>  $buckets
+     * @param  array<int, string>  $keysDocumento
      */
-    private function acumularBaseDesglose(array &$buckets, string $key, string $nombre, float $base): void
+    private function acumularBaseDesglose(array &$buckets, string $key, string $nombre, float $base, ?array &$keysDocumento = null): void
     {
         if (abs($base) < 0.00001) {
             return;
@@ -714,9 +705,40 @@ final class LibroIvaResumenFiscalService
                 'porcentaje' => 0.0,
                 'base' => 0.0,
                 'iva' => 0.0,
+                'documentos' => 0,
             ];
         }
         $buckets[$key]['base'] += $base;
+        if ($keysDocumento !== null && ! in_array($key, $keysDocumento, true)) {
+            $keysDocumento[] = $key;
+        }
+    }
+
+    /**
+     * @param  array<string, array{nombre: string, porcentaje: float, base: float, iva: float, documentos: int}>  $buckets
+     * @param  array<int, string>  $keysDocumento
+     */
+    private function contarDocumentosEnBuckets(array &$buckets, array $keysDocumento): void
+    {
+        foreach ($keysDocumento as $key) {
+            if (isset($buckets[$key])) {
+                $buckets[$key]['documentos']++;
+            }
+        }
+    }
+
+    private function etiquetaImpuestoCr(string $nombre, float $porcentaje): string
+    {
+        $nombre = trim($nombre);
+        if ($porcentaje > 0.0001) {
+            $pctLabel = abs($porcentaje - round($porcentaje)) < 0.01
+                ? (string) (int) round($porcentaje)
+                : (string) round($porcentaje, 2);
+
+            return 'IVA '.$pctLabel;
+        }
+
+        return $nombre !== '' ? $nombre : 'Impuesto';
     }
 
     private function porcentajeIvaEmpresa(): float
@@ -749,18 +771,18 @@ final class LibroIvaResumenFiscalService
      * Desglose IVA desde compra_impuestos; solo compras registradas (sin devoluciones).
      *
      * @param  Collection<int, Compra>  $compras
-     * @return array<int, array{tarifa: string, etiqueta: string, base: float, iva: float}>
+     * @return array<int, array{tarifa: string, etiqueta: string, impuesto: string, base: float, iva: float, documentos: int}>
      */
-    private function comprasPorImpuestoDesdeCompraImpuestos(Collection $compras): array
+    private function comprasPorImpuestoDesdeCompraImpuestos(Collection $compras, bool $etiquetasCr = false): array
     {
-        /** @var array<string, array{nombre: string, porcentaje: float, base: float, iva: float}> */
+        /** @var array<string, array{nombre: string, porcentaje: float, base: float, iva: float, documentos: int}> */
         $buckets = [];
 
         foreach ($compras as $compra) {
             $this->aplicarCompraAlDesgloseImpuestos($compra, $buckets, 1.0);
         }
 
-        return $this->formatearBucketsDesgloseImpuestos($buckets);
+        return $this->formatearBucketsDesgloseImpuestos($buckets, $etiquetasCr);
     }
 
     /**
@@ -768,6 +790,7 @@ final class LibroIvaResumenFiscalService
      */
     private function aplicarCompraAlDesgloseImpuestos(Compra $compra, array &$buckets, float $signo): void
     {
+        $keysDocumento = [];
         $lineas = $compra->impuestos;
         if ($lineas->isNotEmpty()) {
             foreach ($lineas as $linea) {
@@ -781,9 +804,11 @@ final class LibroIvaResumenFiscalService
                     $key,
                     $nombre !== '' ? $nombre : 'Impuesto',
                     $pct,
-                    $montoIva
+                    $montoIva,
+                    $keysDocumento
                 );
             }
+            $this->contarDocumentosEnBuckets($buckets, $keysDocumento);
 
             return;
         }
@@ -798,16 +823,19 @@ final class LibroIvaResumenFiscalService
                 $filaLibro['key'],
                 $filaLibro['etiqueta'],
                 $filaLibro['porcentaje'],
-                $signo * $filaLibro['iva']
+                $signo * $filaLibro['iva'],
+                $keysDocumento
             );
         } else {
             $this->acumularBaseDesglose(
                 $buckets,
                 $filaLibro['key'],
                 $filaLibro['etiqueta'],
-                $signo * $filaLibro['base']
+                $signo * $filaLibro['base'],
+                $keysDocumento
             );
         }
+        $this->contarDocumentosEnBuckets($buckets, $keysDocumento);
     }
 
     /**
@@ -845,10 +873,10 @@ final class LibroIvaResumenFiscalService
     }
 
     /**
-     * @param  array<string, array{nombre: string, porcentaje: float, base: float, iva: float}>  $buckets
-     * @return array<int, array{tarifa: string, etiqueta: string, base: float, iva: float}>
+     * @param  array<string, array{nombre: string, porcentaje: float, base: float, iva: float, documentos: int}>  $buckets
+     * @return array<int, array{tarifa: string, etiqueta: string, impuesto: string, base: float, iva: float, documentos: int}>
      */
-    private function formatearBucketsDesgloseImpuestos(array $buckets): array
+    private function formatearBucketsDesgloseImpuestos(array $buckets, bool $etiquetasCr = false): array
     {
         $out = [];
         foreach ($buckets as $key => $b) {
@@ -861,11 +889,14 @@ final class LibroIvaResumenFiscalService
             $tarifa = $pct > 0.0001
                 ? (abs($pct - round($pct)) < 0.01 ? (string) (int) round($pct).'%' : round($pct, 2).'%')
                 : strtoupper($key);
+            $nombre = (string) $b['nombre'];
             $out[] = [
                 'tarifa' => $tarifa,
-                'etiqueta' => $b['nombre'],
+                'etiqueta' => $nombre,
+                'impuesto' => $etiquetasCr ? $this->etiquetaImpuestoCr($nombre, $pct) : $nombre,
                 'base' => $base,
                 'iva' => $iva,
+                'documentos' => (int) ($b['documentos'] ?? 0),
             ];
         }
 

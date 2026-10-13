@@ -95,6 +95,7 @@ class LibroIvaResumenFiscalExport implements FromArray, WithEvents, WithTitle
                 $row = $this->writeLabelValue($sheet, $row, $lastCol, 'Total gastos', (float) ($totales['gastos'] ?? 0));
                 $row = $this->blankRow($sheet, $row, 10);
 
+                $detalleImpuestoCr = ! empty($this->resumen['detalle_impuesto_cr']);
                 $row = $this->writeDesgloseTable(
                     $sheet,
                     $row,
@@ -126,6 +127,17 @@ class LibroIvaResumenFiscalExport implements FromArray, WithEvents, WithTitle
                     }
                 } else {
                     $row = $this->writeLabelValue($sheet, $row, $lastCol, 'Diferencia', (float) ($iva['diferencia_estimada_pago_iva'] ?? 0), true);
+                }
+
+                if ($detalleImpuestoCr) {
+                    $ventasImp = $this->resumen['ventas_por_impuesto'] ?? [];
+                    $comprasImp = $this->resumen['compras_por_impuesto'] ?? [];
+                    if ($ventasImp !== [] || $comprasImp !== []) {
+                        $row = $this->blankRow($sheet, $row, 10);
+                        $row = $this->writeSectionTitle($sheet, $row, $lastCol, 'Detalle por tipo de impuestos');
+                        $row = $this->writeDetalleImpuestoCrTable($sheet, $row, $lastCol, 'Ventas', $ventasImp, true);
+                        $row = $this->writeDetalleImpuestoCrTable($sheet, $row, $lastCol, 'Compras', $comprasImp, false);
+                    }
                 }
 
                 $pago = $this->resumen['pago_a_cuenta_iva'] ?? [];
@@ -314,6 +326,95 @@ class LibroIvaResumenFiscalExport implements FromArray, WithEvents, WithTitle
         $sheet->getStyle("A{$firstDataRow}:A{$totalRow}")->getAlignment()->setWrapText(true);
 
         return $this->blankRow($sheet, $row, 12);
+    }
+
+    /**
+     * @param  array<int, array{impuesto?: string, etiqueta?: string, base?: float, iva?: float, documentos?: int}>  $desglose
+     */
+    private function writeDetalleImpuestoCrTable($sheet, int $row, string $lastCol, string $subtitulo, array $desglose, bool $esVentas): int
+    {
+        if ($desglose === []) {
+            return $row;
+        }
+
+        $sheet->setCellValue('A'.$row, $subtitulo);
+        $sheet->mergeCells("A{$row}:{$lastCol}{$row}");
+        $sheet->getStyle("A{$row}:{$lastCol}{$row}")->applyFromArray([
+            'font' => ['bold' => true, 'size' => 10],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => self::FILL_HEADER],
+            ],
+        ]);
+        $sheet->getRowDimension($row)->setRowHeight(20);
+        $row++;
+
+        $headerRow = $row;
+        $sheet->setCellValue('A'.$headerRow, 'Impuesto');
+        $sheet->setCellValue('B'.$headerRow, $esVentas ? '# de ventas' : '# compras');
+        $sheet->setCellValue('C'.$headerRow, $esVentas ? '$ Vendido' : '$ Comprado');
+        $sheet->setCellValue('D'.$headerRow, '$ IVA');
+        $sheet->getStyle("A{$headerRow}:{$lastCol}{$headerRow}")->applyFromArray([
+            'font' => ['bold' => true],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => self::FILL_HEADER],
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+        ]);
+        $row++;
+
+        $firstDataRow = $row;
+        $sumaDocs = 0;
+        $sumaBase = 0.0;
+        $sumaIva = 0.0;
+        foreach ($desglose as $item) {
+            $docs = (int) ($item['documentos'] ?? 0);
+            $base = (float) ($item['base'] ?? 0);
+            $iva = (float) ($item['iva'] ?? 0);
+            $sumaDocs += $docs;
+            $sumaBase += $base;
+            $sumaIva += $iva;
+            $label = (string) ($item['impuesto'] ?? $item['etiqueta'] ?? '');
+            $sheet->setCellValue('A'.$row, $label);
+            $sheet->setCellValue('B'.$row, $docs);
+            $sheet->setCellValue('C'.$row, $base);
+            $sheet->setCellValue('D'.$row, $iva);
+            $sheet->getRowDimension($row)->setRowHeight(20);
+            $row++;
+        }
+
+        $totalRow = $row;
+        $sheet->setCellValue('A'.$totalRow, 'Total');
+        $sheet->setCellValue('B'.$totalRow, $sumaDocs);
+        $sheet->setCellValue('C'.$totalRow, round($sumaBase, 2));
+        $sheet->setCellValue('D'.$totalRow, round($sumaIva, 2));
+        $sheet->getStyle("A{$totalRow}:{$lastCol}{$totalRow}")->applyFromArray([
+            'font' => ['bold' => true],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => self::FILL_TOTAL],
+            ],
+        ]);
+        $row++;
+
+        $this->applyMoneyFormat($sheet, "C{$firstDataRow}:D{$totalRow}");
+        $sheet->getStyle("B{$firstDataRow}:B{$totalRow}")->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle("B{$firstDataRow}:D{$totalRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        $sheet->getStyle("A{$firstDataRow}:{$lastCol}{$totalRow}")->applyFromArray([
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                    'color' => ['rgb' => 'DEE2E6'],
+                ],
+            ],
+            'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
+        ]);
+
+        return $this->blankRow($sheet, $row, 8);
     }
 
     private function applyMoneyFormat($sheet, string $range): void
