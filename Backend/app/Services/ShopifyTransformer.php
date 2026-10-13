@@ -152,8 +152,14 @@ class ShopifyTransformer
         }
 
         $taxesIncluded = $shopifyData['taxes_included'] ?? false;
+        $ventaExenta = filter_var($shopifyData['tax_exempt'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-        if ($taxesIncluded) {
+        if ($ventaExenta) {
+            $totalAPagar = floatval($shopifyData['current_total_price'] ?? $shopifyData['total_price'] ?? 0);
+            $totalIVA = 0.0;
+            $totalGravada = 0.0;
+            $totalExenta = round($totalAPagar, 2);
+        } elseif ($taxesIncluded) {
             $totalAPagar       = floatval($shopifyData['current_total_price'] ?? $shopifyData['total_price'] ?? 0);
             $totalIVA          = floatval($shopifyData['current_total_tax'] ?? $shopifyData['total_tax'] ?? 0);
             $totalEnvio        = floatval(Arr::get($shopifyData, 'total_shipping_price_set.shop_money.amount', 0));
@@ -218,7 +224,7 @@ class ShopifyTransformer
 
         $descuento = 0.0;
         foreach ($shopifyData['line_items'] ?? [] as $item) {
-            $detalle = $this->transformarDetallesVenta($item, 0, $empresaId, (bool) $taxesIncluded);
+            $detalle = $this->transformarDetallesVenta($item, 0, $empresaId, (bool) $taxesIncluded, $ventaExenta);
             $descuento += (float) ($detalle['descuento'] ?? 0);
         }
 
@@ -231,7 +237,7 @@ class ShopifyTransformer
             'fecha_pago' => date('Y-m-d', strtotime($shopifyData['processed_at'] ?? $shopifyData['created_at'])),
             'total_costo' => 0,
             'total' => $totalAPagar,
-            'sub_total' => $totalGravada,
+            'sub_total' => $ventaExenta ? $totalExenta : $totalGravada,
             'gravada' => $totalGravada,
             'exenta' => $totalExenta,
             'cuenta_a_terceros' => 0,
@@ -309,10 +315,11 @@ class ShopifyTransformer
         return [$subtotal, $iva, $total];
     }
 
-    public function transformarDetallesVenta($lineItem, $ventaId, $empresaId = null, $taxesIncluded = false)
+    public function transformarDetallesVenta($lineItem, $ventaId, $empresaId = null, $taxesIncluded = false, $ventaExenta = false)
     {
         $precio = floatval($lineItem['price']);
         $cantidad = floatval($lineItem['quantity'] ?? 1);
+        $esExenta = $ventaExenta || (array_key_exists('taxable', $lineItem) && !filter_var($lineItem['taxable'], FILTER_VALIDATE_BOOLEAN));
 
         $descuentoTotal = 0;
         foreach ($lineItem['discount_allocations'] ?? [] as $da) {
@@ -321,7 +328,11 @@ class ShopifyTransformer
 
         $totalConIva = ($precio * $cantidad) - $descuentoTotal;
 
-        if ($taxesIncluded) {
+        if ($esExenta) {
+            $subtotalLinea = round($totalConIva, 2);
+            $ivaLinea = 0.0;
+            $totalLinea = $subtotalLinea;
+        } elseif ($taxesIncluded) {
             // Precios incluyen IVA: usar tax_lines de Shopify como IVA de la línea (ya calculado por Shopify)
             $ivaLinea = 0.0;
             foreach ($lineItem['tax_lines'] ?? [] as $tl) {
@@ -352,7 +363,7 @@ class ShopifyTransformer
         // El descuento de Shopify (código o monto personalizado) llega en discount_allocations.
         // Se guarda aparte: el precio queda de lista y el descuento se ve en la venta.
         if ($descuentoTotal > 0) {
-            if ($taxesIncluded) {
+            if ($taxesIncluded && !$esExenta) {
                 // El monto de Shopify ya incluye IVA. Se divide por el factor, sin
                 // restar bases redondeadas: eso convertía $11.00 en $11.01 en pantalla.
                 $factor = $this->factorIva($empresaId);
@@ -378,10 +389,11 @@ class ShopifyTransformer
             'total_costo' => 0,
             'descuento' => $descuentoSinIva,
             'no_sujeta' => 0,
-            'exenta' => 0,
+            'exenta' => $esExenta ? $subtotalLinea : 0,
             'cuenta_a_terceros' => 0,
             'subtotal' => $subtotalLinea,
-            'gravada' => $subtotalLinea,
+            'tipo_gravado' => $esExenta ? 'exenta' : 'gravada',
+            'gravada' => $esExenta ? 0 : $subtotalLinea,
             'iva' => $ivaLinea,
             'descripcion' => $lineItem['title'],
             'id_producto' => null,

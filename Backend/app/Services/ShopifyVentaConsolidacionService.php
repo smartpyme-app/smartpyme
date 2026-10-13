@@ -94,6 +94,7 @@ class ShopifyVentaConsolidacionService
     private function aplicarLineas(Venta $venta, array $lineas, array $shopifyOrder, User $usuario): void
     {
         $taxesIncluded = (bool) ($shopifyOrder['taxes_included'] ?? false);
+        $ventaExenta = filter_var($shopifyOrder['tax_exempt'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         foreach ($lineas as $item) {
             $producto = $this->resolverProducto($item, $venta, $usuario);
@@ -104,7 +105,7 @@ class ShopifyVentaConsolidacionService
             $cantidad = (float) $item['current_quantity'];
             $item = $this->prorratearImpuestoLinea($item, $cantidad);
             $item['quantity'] = $cantidad;
-            $datos = $this->transformer->transformarDetallesVenta($item, $venta->id, $venta->id_empresa, $taxesIncluded);
+            $datos = $this->transformer->transformarDetallesVenta($item, $venta->id, $venta->id_empresa, $taxesIncluded, $ventaExenta);
             $datos['id_producto'] = $producto->id;
             $datos['cantidad'] = $cantidad;
             if (array_key_exists('subtotal', $datos)) {

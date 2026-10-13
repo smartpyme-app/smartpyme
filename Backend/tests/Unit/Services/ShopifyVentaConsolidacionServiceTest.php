@@ -392,6 +392,58 @@ class ShopifyVentaConsolidacionServiceTest extends TestCase
         $this->assertEquals(2, (float) Inventario::where('id_producto', $calcetines->id)->value('stock'));
     }
 
+    public function test_edicion_partially_paid_actualiza_lineas_y_conserva_pagada(): void
+    {
+        $this->empresa->update([
+            'woocommerce_api_key' => 'token_webhook_123',
+            'shopify_status' => 'connected',
+        ]);
+        User::where('id', $this->usuario->id)->update(['shopify_status' => 'connected']);
+
+        $calcetines = Producto::create([
+            'nombre' => 'Calcetines',
+            'tipo' => 'Producto',
+            'id_empresa' => $this->empresa->id,
+            'shopify_variant_id' => 111,
+            'precio' => 12,
+            'costo' => 1,
+        ]);
+        Inventario::create(['id_producto' => $calcetines->id, 'id_bodega' => 1, 'stock' => 10]);
+
+        $venta = Venta::create([
+            'id_empresa' => $this->empresa->id,
+            'id_bodega' => 1,
+            'estado' => 'Pagada',
+            'referencia_shopify' => 'SHOPIFY-17148162310514',
+            'total' => 1,
+        ]);
+        $venta->created_at = now()->subMinute();
+        $venta->save();
+        Detalle::create([
+            'id_venta' => $venta->id,
+            'id_producto' => $calcetines->id,
+            'cantidad' => 1,
+            'precio' => 1,
+            'total' => 1,
+            'descripcion' => 'Calcetines',
+        ]);
+
+        $pedido = $this->pedidoShopify();
+        $pedido['financial_status'] = 'partially_paid';
+        $pedido['updated_at'] = now()->addMinute()->toIso8601String();
+        $pedido['line_items'][0]['quantity'] = 3;
+        $pedido['line_items'][0]['current_quantity'] = 3;
+
+        $request = Request::create('/api/webhook/shopify/token_webhook_123/orders/updated', 'POST', $pedido);
+        $response = app(ShopifyController::class)->procesarVentaActualizada('token_webhook_123', $request);
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $venta->refresh();
+        $this->assertSame('Pagada', $venta->estado);
+        $this->assertEquals(3, (float) $venta->detalles()->where('id_producto', $calcetines->id)->value('cantidad'));
+        $this->assertEquals(8, (float) Inventario::where('id_producto', $calcetines->id)->value('stock'));
+    }
+
     public function test_endpoint_consolida_la_venta_de_la_empresa(): void
     {
         $this->empresa->update([

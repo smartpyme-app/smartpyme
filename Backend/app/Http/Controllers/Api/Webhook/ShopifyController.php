@@ -351,13 +351,6 @@ class ShopifyController extends Controller
             $productoData['id_categoria'] = $categoria->id;
 
             if ($producto) {
-                // España Dev: Si la sincronización local está activa para este producto, omitir webhook entrante para prevenir bucles y reseteos a 0
-                if ($this->cache->isLocked($producto->id) || Cache::has("shopify_syncing_inv_{$producto->id}")) {
-                    Log::channel('shopify')->info("ShopifyController: Omitiendo webhook para producto #{$producto->id} porque la sincronización local está activa (lockSync)");
-                    $this->procesarImagenes($request, $producto->id, $variantImageId);
-                    continue;
-                }
-
                 $isDifferent = $this->cache->isShopifyDataDifferent($producto, $productoData);
                 
                 // España Dev: detectar si el stock total o por sucursal difiere para sincronizarlo
@@ -392,9 +385,10 @@ class ShopifyController extends Controller
                 // validando URL y reemplazando solo si la URL o el hash cambiaron.
                 $this->procesarImagenes($request, $producto->id, $variantImageId);
             } else {
-                // El SKU repetido solo bloquea si pertenece a otro producto.
-                // Las variantes del mismo producto de Shopify pueden compartir el SKU de la compra.
-                $duplicadoPorSKU = !empty($productoData['codigo']) &&
+                // El SKU repetido bloquea una ficha simple que ya existe en otro producto.
+                // Una variante real se crea igual: otro producto puede tener el mismo codigo.
+                $duplicadoPorSKU = empty($productoData['nombre_variante'])
+                    && !empty($productoData['codigo']) &&
                     Producto::where('codigo', $productoData['codigo'])
                         ->where('id_empresa', $empresa->id)
                         ->where('enable', '!=', '0')
@@ -1844,7 +1838,8 @@ class ShopifyController extends Controller
                 }
 
                 $taxesIncluded = $request->taxes_included ?? false;
-                $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa, $taxesIncluded);
+                $ventaExenta = filter_var($request->input('tax_exempt', false), FILTER_VALIDATE_BOOLEAN);
+                $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa, $taxesIncluded, $ventaExenta);
                 $detalleData['id_producto'] = $producto->id;
                 $venta->detalles()->create($detalleData);
 
@@ -3729,6 +3724,20 @@ class ShopifyController extends Controller
      * @param string $shopifyStatus
      * @return string
      */
+    private function edicionPosteriorALaVenta(Request $request, Venta $venta): bool
+    {
+        $marca = $request->input('updated_at');
+        if (!$marca || !$venta->updated_at) {
+            return false;
+        }
+
+        try {
+            return \Carbon\Carbon::parse($marca)->greaterThan($venta->updated_at);
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
     private function mapearEstado($shopifyStatus)
     {
         $mapeo = [
@@ -3939,7 +3948,8 @@ class ShopifyController extends Controller
             // Si no existe el detalle, crearlo (producto nuevo agregado al pedido)
             if (!$detalle) {
                 $taxesIncluded = $request->taxes_included ?? false;
-                $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa, $taxesIncluded);
+                $ventaExenta = filter_var($request->input('tax_exempt', false), FILTER_VALIDATE_BOOLEAN);
+                $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa, $taxesIncluded, $ventaExenta);
                 $detalleData['id_producto'] = $producto->id;
                 $detalleData['cantidad'] = $currentQuantity;
                 $detalle = $venta->detalles()->create($detalleData);
@@ -4428,7 +4438,7 @@ class ShopifyController extends Controller
             // pending/authorized/partially_paid (riesgo, envío, reintento) puede llegar
             // después del paid y bajar la venta a Pendiente. Reembolso y anulación siguen.
             $degradaPago = $venta->estado === 'Pagada' && $nuevoEstado === 'Pendiente';
-            if ($degradaPago) {
+            if ($degradaPago && !$this->edicionPosteriorALaVenta($request, $venta)) {
                 ShopifyHelper::log('orders/updated: se conserva Pagada; el financial_status entrante no la degrada', [
                     'venta_id' => $venta->id,
                     'financial_status' => $financialStatus,
@@ -4446,6 +4456,11 @@ class ShopifyController extends Controller
             app(\App\Services\ShopifyVentaConsolidacionService::class)
                 ->consolidar($venta, $request->all(), $usuario);
             $venta->refresh();
+
+            if ($degradaPago && $venta->estado !== 'Pagada') {
+                $venta->estado = 'Pagada';
+                $venta->saveQuietly();
+            }
 
             return response()->json([
                 'status' => 'success',
@@ -4737,7 +4752,8 @@ class ShopifyController extends Controller
 
                     // Crear detalle de venta
                     $taxesIncluded = $request->taxes_included ?? false;
-                    $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa, $taxesIncluded);
+                    $ventaExenta = filter_var($request->input('tax_exempt', false), FILTER_VALIDATE_BOOLEAN);
+                    $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa, $taxesIncluded, $ventaExenta);
                     $detalleData['id_producto'] = $producto->id;
                     $venta->detalles()->create($detalleData);
 
