@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\Contadores;
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Sucursal;
 use App\Models\Contadores\ContadorEmpresaAcceso;
+use App\Models\Contadores\ContadorEmpresaInvitacion;
 use App\Models\Inventario\Bodega;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use App\Services\Auth\AuthService;
 use App\Services\Contadores\ContadorCarteraMetricasService;
 use App\Services\Contadores\ContadorCumplimientoService;
@@ -378,7 +380,10 @@ class ContadorPortalController extends Controller
 
     public function contextoDespacho(): JsonResponse
     {
-        return $this->aplicarContextoEmpresa(self::EMPRESA_DESPACHO_HOME, false);
+        $user = JWTAuth::parseToken()->authenticate();
+        $idDespacho = $this->resolverEmpresaDespachoHome($user);
+
+        return $this->aplicarContextoEmpresa($idDespacho, false);
     }
 
     private function aplicarContextoEmpresa(int $idEmpresa, bool $exigirAccesoCartera): JsonResponse
@@ -413,8 +418,12 @@ class ContadorPortalController extends Controller
                 'giro' => $acceso->empresa->giro,
                 'permisos' => $acceso->permisos ?? ContadorEmpresaAcceso::permisosPorDefecto(),
             ];
-        } elseif ($idEmpresa !== self::EMPRESA_DESPACHO_HOME) {
-            return response()->json(['error' => 'Contexto de despacho no válido.', 'code' => 422], 422);
+
+            $carteraIds = $this->idsEmpresasCarteraActivas($user->id);
+            $idEmpresaActual = (int) $user->id_empresa;
+            if (!$carteraIds->contains($idEmpresaActual) && $carteraIds->contains($idEmpresa)) {
+                Cache::forever($this->cacheKeyDespachoHome($user->id), $idEmpresaActual);
+            }
         }
 
         [$idSucursal, $idBodega] = $this->defaultsEmpresaOperativa($idEmpresa);
@@ -432,6 +441,10 @@ class ContadorPortalController extends Controller
                 'id_sucursal' => $idSucursal,
                 'id_bodega' => $idBodega,
             ]);
+
+        if (!$exigirAccesoCartera) {
+            Cache::forever($this->cacheKeyDespachoHome($user->id), $idEmpresa);
+        }
 
         $user = User::withoutGlobalScopes()->findOrFail($user->id);
         $user = $this->authService->cargarDatosUsuario($user);
@@ -466,5 +479,45 @@ class ContadorPortalController extends Controller
             ->value('id');
 
         return [$idSucursal, $idBodega];
+    }
+
+    private function cacheKeyDespachoHome(int $userId): string
+    {
+        return "contador_despacho_home_empresa:{$userId}";
+    }
+
+    /** Empresa firma del despacho (no una PYME cliente de la cartera). */
+    private function resolverEmpresaDespachoHome(User $user): int
+    {
+        $cached = Cache::get($this->cacheKeyDespachoHome($user->id));
+        if ($cached) {
+            return (int) $cached;
+        }
+
+        $carteraIds = $this->idsEmpresasCarteraActivas($user->id);
+        $current = (int) $user->id_empresa;
+        if (!$carteraIds->contains($current)) {
+            return $current;
+        }
+
+        $fromInvite = ContadorEmpresaInvitacion::query()
+            ->where('id_usuario_invito', $user->id)
+            ->orderByDesc('id')
+            ->value('id_empresa_despacho');
+        if ($fromInvite) {
+            return (int) $fromInvite;
+        }
+
+        return self::EMPRESA_DESPACHO_HOME;
+    }
+
+    /** @return \Illuminate\Support\Collection<int, int> */
+    private function idsEmpresasCarteraActivas(int $idUsuarioContador)
+    {
+        return ContadorEmpresaAcceso::query()
+            ->where('id_usuario_contador', $idUsuarioContador)
+            ->where('estado', ContadorEmpresaAcceso::ESTADO_ACTIVO)
+            ->pluck('id_empresa')
+            ->map(fn ($id) => (int) $id);
     }
 }
