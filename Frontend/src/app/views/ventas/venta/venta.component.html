@@ -474,12 +474,12 @@
                 <h6 class="col-12">{{ 'country.tax.fe.detailSectionTitle' | translate }}</h6>
                 <div class="form-group col-lg-4">
                     <label class="fw-medium">Tipo de dte</label>
-                    <p>{{ venta.tipo_dte || '-' }}</p>
+                    <p>{{ venta.tipo_dte || venta.dte?.identificacion?.tipoDte || '-' }}</p>
                 </div>
                 @if (esFeCostaRica()) {
                     <div class="form-group col-lg-4">
                         <label class="fw-medium">Clave</label>
-                        <p>{{ venta.codigo_generacion || venta.sello_mh || '-' }}</p>
+                        <p>{{ venta.codigo_generacion || venta.dte?.identificacion?.codigoGeneracion || venta.sello_mh || '-' }}</p>
                     </div>
                 } @else {
                     <div class="form-group col-lg-4">
@@ -488,11 +488,11 @@
                     </div>
                     <div class="form-group col-lg-4">
                         <label class="fw-medium">Codigo de Generación</label>
-                        <p>{{ venta.codigo_generacion || '-' }}</p>
+                        <p>{{ venta.codigo_generacion || venta.dte?.identificacion?.codigoGeneracion || '-' }}</p>
                     </div>
                     <div class="form-group col-lg-4">
                         <label class="fw-medium">Numero de control</label>
-                        <p>{{ venta.numero_control || '-' }}</p>
+                        <p>{{ venta.numero_control || venta.dte?.identificacion?.numeroControl || '-' }}</p>
                     </div>
                 }
             </div>
