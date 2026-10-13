@@ -1221,34 +1221,13 @@ class ShopifyConsolidationService
                     ->where('id_bodega', $locMap->id_bodega)
                     ->value('stock') ?? 0;
 
-                $resInv = $client->post('inventory_levels/set.json', [
-                    'location_id' => $locMap->shopify_location_id,
-                    'inventory_item_id' => $producto->shopify_inventory_item_id,
-                    'available' => (int) round((float) $stockBodega),
-                ]);
-                $this->controlarRateLimit($resInv);
+                app(ShopifyInventarioCantidad::class)->fijarOnHand(
+                    $client,
+                    (int) $producto->shopify_inventory_item_id,
+                    (int) $locMap->shopify_location_id,
+                    (int) round((float) $stockBodega)
+                );
             } catch (\Throwable $e) {
-                if (str_contains($e->getMessage(), 'tracking enabled') || str_contains($e->getMessage(), 'inventory tracking')) {
-                    // España Dev: Activar seguimiento de inventario en Shopify si estaba desactivado y reintentar
-                    try {
-                        $client->put("inventory_items/{$producto->shopify_inventory_item_id}.json", [
-                            'inventory_item' => [
-                                'id' => (int) $producto->shopify_inventory_item_id,
-                                'tracked' => true,
-                            ]
-                        ]);
-                        $resInv = $client->post('inventory_levels/set.json', [
-                            'location_id' => $locMap->shopify_location_id,
-                            'inventory_item_id' => $producto->shopify_inventory_item_id,
-                            'available' => (int) round((float) $stockBodega),
-                        ]);
-                        $this->controlarRateLimit($resInv);
-                        continue;
-                    } catch (\Throwable $t2) {
-                        Log::channel('shopify_consolidacion')->warning("No se pudo activar tracking para item #{$producto->shopify_inventory_item_id}: " . $t2->getMessage());
-                    }
-                }
-
                 Log::channel('shopify_consolidacion')->warning(
                     "Error actualizando stock para producto #{$producto->id} en ubicación #{$locMap->shopify_location_id}: " . $e->getMessage()
                 );

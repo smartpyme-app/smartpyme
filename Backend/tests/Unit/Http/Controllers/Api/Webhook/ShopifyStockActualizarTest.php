@@ -3,6 +3,10 @@
 namespace Tests\Unit\Http\Controllers\Api\Webhook;
 
 use App\Http\Controllers\Api\Webhook\ShopifyController;
+use App\Models\Admin\Empresa;
+use App\Models\Admin\ShopifyLocation;
+use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Producto;
 use App\Models\Ventas\Venta;
 use App\Services\ImpuestosService;
 use App\Services\ShippingService;
@@ -10,6 +14,8 @@ use App\Services\ShopifyImageService;
 use App\Services\ShopifySyncCache;
 use App\Services\ShopifyTransformer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use ReflectionClass;
 use Tests\TestCase;
 
@@ -197,5 +203,286 @@ class ShopifyStockActualizarTest extends TestCase
 
         $method = $reflector->getMethod('sincronizarStockDesdeShopifyMultiSucursal');
         $this->assertTrue($method->isPrivate());
+    }
+
+    public function test_actualizacion_de_producto_no_baja_el_stock_de_una_cotizacion(): void
+    {
+        Schema::table('shopify_locations', function ($table) {
+            $table->unsignedBigInteger('id_bodega')->nullable();
+            $table->boolean('sincronizar_stock')->default(false);
+        });
+        Schema::create('empresas', function ($table) {
+            $table->id();
+            $table->string('nombre')->nullable();
+            $table->string('woocommerce_status')->nullable();
+        });
+        Schema::create('productos', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('id_empresa')->nullable();
+            $table->string('nombre')->nullable();
+            $table->decimal('precio', 10, 2)->default(0);
+            $table->decimal('costo', 10, 2)->default(0);
+            $table->softDeletes();
+            $table->timestamps();
+        });
+        Schema::create('inventario', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('id_producto');
+            $table->unsignedBigInteger('id_bodega');
+            $table->decimal('stock', 10, 2)->default(0);
+            $table->softDeletes();
+            $table->timestamps();
+        });
+
+        $producto = Producto::create(['nombre' => 'goofy de peluche', 'id_empresa' => 1, 'precio' => 15]);
+        Inventario::create(['id_producto' => $producto->id, 'id_bodega' => 689, 'stock' => 10]);
+        Schema::create('ventas', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('id_empresa')->nullable();
+            $table->unsignedBigInteger('id_bodega')->nullable();
+            $table->unsignedTinyInteger('cotizacion')->default(0);
+            $table->string('estado')->nullable();
+        });
+        Schema::create('detalles_venta', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('id_venta')->nullable();
+            $table->unsignedBigInteger('id_producto')->nullable();
+            $table->decimal('cantidad', 10, 2)->default(0);
+        });
+        $ventaId = \Illuminate\Support\Facades\DB::table('ventas')->insertGetId([
+            'id_empresa' => 1,
+            'id_bodega' => 689,
+            'cotizacion' => 1,
+            'estado' => 'Pendiente',
+        ]);
+        \Illuminate\Support\Facades\DB::table('detalles_venta')->insert([
+            'id_venta' => $ventaId,
+            'id_producto' => $producto->id,
+            'cantidad' => 3,
+        ]);
+        ShopifyLocation::create([
+            'id_empresa' => 1,
+            'shopify_location_id' => 116424671602,
+            'id_bodega' => 689,
+            'sincronizar_stock' => true,
+        ]);
+
+        $empresa = new Empresa();
+        $empresa->id = 1;
+        $empresa->shopify_store_url = 'https://tienda.myshopify.com';
+        $empresa->shopify_consumer_secret = 'shpat_test';
+
+        Http::fake([
+            'https://tienda.myshopify.com/admin/api/2024-01/inventory_levels.json*' => Http::response([
+                'inventory_levels' => [[
+                    'location_id' => 116424671602,
+                    'available' => 15,
+                ]],
+            ], 200),
+        ]);
+
+        $usuario = new \App\Models\User();
+        $usuario->id = 1;
+
+        $method = (new ReflectionClass(ShopifyController::class))->getMethod('sincronizarStockDesdeShopifyMultiSucursal');
+        $method->setAccessible(true);
+        $method->invoke($this->controller, $producto, 64442868662642, $empresa, $usuario, 0, 'actualizacion_shopify');
+
+        $this->assertEquals(10, (float) Inventario::where('id_producto', $producto->id)->where('id_bodega', 689)->value('stock'));
+    }
+
+    public function test_baja_de_inventario_shopify_no_revienta_y_no_descuenta(): void
+    {
+        Schema::create('empresas', function ($table) {
+            $table->id();
+            $table->string('nombre')->nullable();
+            $table->string('woocommerce_status')->nullable();
+        });
+        Schema::create('productos', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('id_empresa')->nullable();
+            $table->string('nombre')->nullable();
+            $table->unsignedBigInteger('shopify_inventory_item_id')->nullable();
+            $table->decimal('precio', 10, 2)->default(0);
+            $table->softDeletes();
+            $table->timestamps();
+        });
+        Schema::create('inventario', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('id_producto');
+            $table->unsignedBigInteger('id_bodega');
+            $table->decimal('stock', 10, 2)->default(0);
+            $table->softDeletes();
+            $table->timestamps();
+        });
+        Schema::create('ventas', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('id_empresa')->nullable();
+            $table->unsignedBigInteger('id_bodega')->nullable();
+            $table->unsignedTinyInteger('cotizacion')->default(0);
+            $table->string('estado')->nullable();
+            $table->timestamp('created_at')->nullable();
+        });
+        Schema::create('detalles_venta', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('id_venta')->nullable();
+            $table->unsignedBigInteger('id_producto')->nullable();
+            $table->decimal('cantidad', 10, 2)->default(0);
+        });
+
+        $producto = Producto::create([
+            'nombre' => 'goofy de peluche',
+            'id_empresa' => 1,
+            'shopify_inventory_item_id' => 64442868662642,
+        ]);
+        Inventario::create(['id_producto' => $producto->id, 'id_bodega' => 689, 'stock' => 981]);
+        $ventaId = \Illuminate\Support\Facades\DB::table('ventas')->insertGetId([
+            'id_empresa' => 1,
+            'id_bodega' => 689,
+            'cotizacion' => 1,
+            'estado' => 'Pendiente',
+        ]);
+        \Illuminate\Support\Facades\DB::table('detalles_venta')->insert([
+            'id_venta' => $ventaId,
+            'id_producto' => $producto->id,
+            'cantidad' => 3,
+        ]);
+
+        $empresa = new Empresa();
+        $empresa->id = 1;
+        $empresa->shopify_store_url = 'https://tienda.myshopify.com';
+        $empresa->shopify_consumer_secret = 'shpat_test';
+        $usuario = new \App\Models\User();
+        $usuario->id = 1;
+        $usuario->id_bodega = 689;
+
+        Http::fake([
+            'https://tienda.myshopify.com/admin/api/2026-10/graphql.json' => Http::response([
+                'data' => ['inventoryItem' => ['inventoryLevel' => ['quantities' => [
+                    ['name' => 'on_hand', 'quantity' => 981],
+                    ['name' => 'available', 'quantity' => 978],
+                    ['name' => 'committed', 'quantity' => 3],
+                ]]]],
+            ], 200),
+        ]);
+
+        $request = new Request([
+            'inventory_item_id' => 64442868662642,
+            'location_id' => 116424671602,
+            'available' => 978,
+        ]);
+
+        $method = (new ReflectionClass(ShopifyController::class))->getMethod('procesarInventarioActualizadoShopify');
+        $method->setAccessible(true);
+        $response = $method->invoke($this->controller, $request, $empresa, $usuario);
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('success', $response->getData(true)['status']);
+        $this->assertEquals(981, (float) Inventario::where('id_producto', $producto->id)->value('stock'));
+    }
+
+    public function test_ajuste_manual_de_shopify_baja_el_stock_si_no_hay_cotizacion(): void
+    {
+        Schema::create('empresas', function ($table) {
+            $table->id();
+            $table->string('nombre')->nullable();
+            $table->string('woocommerce_status')->nullable();
+        });
+        Schema::create('productos', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('id_empresa')->nullable();
+            $table->string('nombre')->nullable();
+            $table->unsignedBigInteger('shopify_inventory_item_id')->nullable();
+            $table->decimal('precio', 10, 2)->default(0);
+            $table->decimal('costo', 10, 2)->default(0);
+            $table->softDeletes();
+            $table->timestamps();
+        });
+        Schema::create('inventario', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('id_producto');
+            $table->unsignedBigInteger('id_bodega');
+            $table->decimal('stock', 10, 2)->default(0);
+            $table->softDeletes();
+            $table->timestamps();
+        });
+        Schema::create('ventas', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('id_empresa')->nullable();
+            $table->unsignedBigInteger('id_bodega')->nullable();
+            $table->unsignedTinyInteger('cotizacion')->default(0);
+            $table->string('estado')->nullable();
+        });
+        Schema::create('detalles_venta', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('id_venta')->nullable();
+            $table->unsignedBigInteger('id_producto')->nullable();
+            $table->decimal('cantidad', 10, 2)->default(0);
+        });
+        Schema::create('sucursal_bodegas', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('id_empresa')->nullable();
+        });
+        Schema::create('kardexs', function ($table) {
+            $table->id();
+            $table->date('fecha')->nullable();
+            $table->unsignedBigInteger('id_producto')->nullable();
+            $table->unsignedBigInteger('lote_id')->nullable();
+            $table->unsignedBigInteger('id_inventario')->nullable();
+            $table->string('detalle')->nullable();
+            $table->string('referencia')->nullable();
+            $table->decimal('precio_unitario', 10, 2)->nullable();
+            $table->decimal('costo_unitario', 10, 2)->nullable();
+            $table->decimal('entrada_cantidad', 10, 2)->nullable();
+            $table->decimal('entrada_valor', 10, 2)->nullable();
+            $table->decimal('salida_cantidad', 10, 2)->nullable();
+            $table->decimal('salida_valor', 10, 2)->nullable();
+            $table->decimal('total_cantidad', 10, 2)->nullable();
+            $table->decimal('total_valor', 10, 2)->nullable();
+            $table->unsignedBigInteger('id_usuario')->nullable();
+            $table->timestamps();
+        });
+
+        $producto = Producto::create([
+            'nombre' => 'soda de prueba sin azucar',
+            'id_empresa' => 1,
+            'shopify_inventory_item_id' => 64416012992882,
+            'precio' => 1,
+            'costo' => 1,
+        ]);
+        Inventario::create(['id_producto' => $producto->id, 'id_bodega' => 1074, 'stock' => 11]);
+
+        $empresa = new Empresa();
+        $empresa->id = 1;
+        $empresa->shopify_store_url = 'https://tienda.myshopify.com';
+        $empresa->shopify_consumer_secret = 'shpat_test';
+        $usuario = new \App\Models\User();
+        $usuario->id = 1;
+        $usuario->id_bodega = 1074;
+
+        \Illuminate\Support\Facades\Cache::put('sync_lock_1', true, 120);
+        Http::fake([
+            'https://tienda.myshopify.com/admin/api/2026-10/graphql.json' => Http::response([
+                'data' => ['inventoryItem' => ['inventoryLevel' => ['quantities' => [
+                    ['name' => 'on_hand', 'quantity' => 9],
+                    ['name' => 'available', 'quantity' => 9],
+                    ['name' => 'committed', 'quantity' => 0],
+                ]]]],
+            ], 200),
+        ]);
+
+        $request = new Request([
+            'inventory_item_id' => 64416012992882,
+            'location_id' => 116936409458,
+            'available' => 9,
+        ]);
+
+        $method = (new ReflectionClass(ShopifyController::class))->getMethod('procesarInventarioActualizadoShopify');
+        $method->setAccessible(true);
+        $response = $method->invoke($this->controller, $request, $empresa, $usuario);
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('success', $response->getData(true)['status']);
+        $this->assertEquals(9, (float) Inventario::where('id_producto', $producto->id)->where('id_bodega', 1074)->value('stock'));
     }
 }

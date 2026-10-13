@@ -50,6 +50,48 @@ class ShopifyApiClient
         return $this->request('DELETE', $endpoint, $params);
     }
 
+    public function graphql(string $query, array $variables = [], string $version = '2026-10'): array
+    {
+        $token = $this->resolveToken();
+        if (empty($token)) {
+            throw new \Exception('No se pudo obtener un access token de Shopify.');
+        }
+
+        $url = "{$this->shopDomain}/admin/api/{$version}/graphql.json";
+        Log::channel('shopify')->info('Enviando petición a Shopify API', [
+            'method' => 'POST',
+            'url' => $url,
+            'params' => [],
+        ]);
+
+        $response = $this->postGraphql($url, $token, $query, $variables);
+
+        if ($response->status() === 401 && $this->empresa && !empty($this->empresa->shopify_client_id)) {
+            $token = $this->resolveToken(true);
+            $response = $this->postGraphql($url, $token, $query, $variables);
+        }
+
+        if (!$response->successful()) {
+            throw new \Exception('Shopify GraphQL HTTP ' . $response->status());
+        }
+
+        $body = $response->json();
+        if (!empty($body['errors'])) {
+            throw new \Exception('Shopify GraphQL: ' . json_encode($body['errors']));
+        }
+
+        return $body['data'] ?? [];
+    }
+
+    private function postGraphql(string $url, ?string $token, string $query, array $variables)
+    {
+        return Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+            'X-Shopify-Access-Token' => $token,
+        ])->post($url, ['query' => $query, 'variables' => $variables]);
+    }
+
     /**
      * Resuelve el token a usar en el request.
      * Si hay empresa con client credentials, renueva automáticamente al vencer.
