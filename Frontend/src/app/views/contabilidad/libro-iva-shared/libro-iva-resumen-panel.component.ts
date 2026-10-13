@@ -19,6 +19,10 @@ import {
   mostrarVentasResumenContableLibroIva,
   totalesPorMonedaLibroIva,
   TotalesPorMonedaFila,
+  detalleImpuestoCrResumenLibroIva,
+  sumaDocumentosDesgloseLibroIva,
+  etiquetaFilaDesgloseImpuesto,
+  FilaDesgloseImpuestoResumen,
 } from './libro-iva-resumen.util';
 import { formatEmpresaCurrency } from '@helpers/currency-format.helper';
 
@@ -34,6 +38,11 @@ export class LibroIvaResumenPanelComponent {
   @Input() loading = false;
 
   readonly totalFilaDesglose = totalFilaDesgloseLibroIva;
+  readonly etiquetaImpuesto = etiquetaFilaDesgloseImpuesto;
+
+  get detalleImpuestoCr(): boolean {
+    return detalleImpuestoCrResumenLibroIva(this.fiscalResumen);
+  }
 
   get sinMovimientos(): boolean {
     return resumenPeriodoSinMovimientosLibroIva(this.fiscalResumen);
@@ -47,7 +56,7 @@ export class LibroIvaResumenPanelComponent {
     return comparativoVentasGastosLibroIva(this.fiscalResumen);
   }
 
-  get ventasPorImpuesto(): { tarifa: string; etiqueta: string; base: number; iva: number }[] {
+  get ventasPorImpuesto(): FilaDesgloseImpuestoResumen[] {
     return ventasPorImpuestoResumenLibroIva(this.fiscalResumen);
   }
 
@@ -63,8 +72,16 @@ export class LibroIvaResumenPanelComponent {
     return sumaVentasDesgloseLibroIva(this.ventasPorImpuesto);
   }
 
-  get comprasPorImpuesto(): { tarifa: string; etiqueta: string; base: number; iva: number }[] {
+  get comprasPorImpuesto(): FilaDesgloseImpuestoResumen[] {
     return comprasPorImpuestoResumenLibroIva(this.fiscalResumen);
+  }
+
+  get sumaDocumentosVentas(): number {
+    return sumaDocumentosDesgloseLibroIva(this.ventasPorImpuesto);
+  }
+
+  get sumaDocumentosCompras(): number {
+    return sumaDocumentosDesgloseLibroIva(this.comprasPorImpuesto);
   }
 
   get sumaBaseCompras(): number {

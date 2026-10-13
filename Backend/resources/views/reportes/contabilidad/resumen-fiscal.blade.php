@@ -70,6 +70,7 @@
 </table>
 
 @php
+    $detalleImpuestoCr = ! empty($resumen['detalle_impuesto_cr']);
     $renderDesglose = function (string $titulo, array $filas) use ($fmt) {
         if ($filas === []) {
             return;
@@ -89,6 +90,33 @@
             echo '<td class="text-right">' . $fmt($base + $imp) . '</td></tr>';
         }
         echo '<tr><th>Total</th><th class="text-right">' . $fmt($sumaBase) . '</th><th class="text-right">' . $fmt($sumaIva) . '</th><th class="text-right">' . $fmt($sumaBase + $sumaIva) . '</th></tr>';
+        echo '</tbody></table>';
+    };
+    $renderDesgloseCr = function (string $subtitulo, array $filas, bool $esVentas) use ($fmt) {
+        if ($filas === []) {
+            return;
+        }
+        $sumaDocs = 0;
+        $sumaBase = 0;
+        $sumaIva = 0;
+        echo '<h4 style="margin: 8px 0 4px;">' . e($subtitulo) . '</h4>';
+        echo '<table><thead><tr><th>Impuesto</th><th class="text-right">' . ($esVentas ? '# de ventas' : '# compras') . '</th>';
+        echo '<th class="text-right">' . ($esVentas ? '$ Vendido' : '$ Comprado') . '</th><th class="text-right">$ IVA</th></tr></thead><tbody>';
+        foreach ($filas as $row) {
+            $docs = (int) ($row['documentos'] ?? 0);
+            $base = (float) ($row['base'] ?? 0);
+            $imp = (float) ($row['iva'] ?? 0);
+            $sumaDocs += $docs;
+            $sumaBase += $base;
+            $sumaIva += $imp;
+            $label = (string) ($row['impuesto'] ?? $row['etiqueta'] ?? '');
+            echo '<tr><td>' . e($label) . '</td>';
+            echo '<td class="text-right">' . number_format($docs, 0, '.', ',') . '</td>';
+            echo '<td class="text-right">' . $fmt($base) . '</td>';
+            echo '<td class="text-right">' . $fmt($imp) . '</td></tr>';
+        }
+        echo '<tr><th>Total</th><th class="text-right">' . number_format($sumaDocs, 0, '.', ',') . '</th>';
+        echo '<th class="text-right">' . $fmt($sumaBase) . '</th><th class="text-right">' . $fmt($sumaIva) . '</th></tr>';
         echo '</tbody></table>';
     };
     $renderDesglose('Compras por impuesto', $resumen['compras_por_impuesto'] ?? []);
@@ -117,6 +145,18 @@
         <p class="muted">{{ $iva['remanente_nota'] }}</p>
     @endif
 @endif
+
+@php
+    if ($detalleImpuestoCr) {
+        $ventasImp = $resumen['ventas_por_impuesto'] ?? [];
+        $comprasImp = $resumen['compras_por_impuesto'] ?? [];
+        if ($ventasImp !== [] || $comprasImp !== []) {
+            echo '<h3>Detalle por tipo de impuestos</h3>';
+            $renderDesgloseCr('Ventas', $ventasImp, true);
+            $renderDesgloseCr('Compras', $comprasImp, false);
+        }
+    }
+@endphp
 
 @if (!empty($pago['aplica']))
     <h3>Pago a cuenta (ISR)</h3>

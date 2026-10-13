@@ -16,11 +16,22 @@ export function resumenTotalesLibroIva(fiscalResumen: unknown): {
   };
 }
 
-export function ventasPorImpuestoResumenLibroIva(
-  fiscalResumen: unknown
-): { tarifa: string; etiqueta: string; base: number; iva: number }[] {
+export type FilaDesgloseImpuestoResumen = {
+  tarifa: string;
+  etiqueta: string;
+  impuesto?: string;
+  base: number;
+  iva: number;
+  documentos?: number;
+};
+
+export function detalleImpuestoCrResumenLibroIva(fiscalResumen: unknown): boolean {
+  return Boolean((fiscalResumen as { detalle_impuesto_cr?: boolean })?.detalle_impuesto_cr);
+}
+
+export function ventasPorImpuestoResumenLibroIva(fiscalResumen: unknown): FilaDesgloseImpuestoResumen[] {
   const rows = (fiscalResumen as { ventas_por_impuesto?: unknown[] })?.ventas_por_impuesto;
-  return Array.isArray(rows) ? (rows as { tarifa: string; etiqueta: string; base: number; iva: number }[]) : [];
+  return Array.isArray(rows) ? (rows as FilaDesgloseImpuestoResumen[]) : [];
 }
 
 export function sumaBaseDesgloseLibroIva(rows: { base?: number; iva?: number }[]): number {
@@ -41,11 +52,17 @@ export function sumaVentasDesgloseLibroIva(
   return ventasPorImpuesto.reduce((s, r) => s + Number(r.base ?? 0) + Number(r.iva ?? 0), 0);
 }
 
-export function comprasPorImpuestoResumenLibroIva(
-  fiscalResumen: unknown
-): { tarifa: string; etiqueta: string; base: number; iva: number }[] {
+export function comprasPorImpuestoResumenLibroIva(fiscalResumen: unknown): FilaDesgloseImpuestoResumen[] {
   const rows = (fiscalResumen as { compras_por_impuesto?: unknown[] })?.compras_por_impuesto;
-  return Array.isArray(rows) ? (rows as { tarifa: string; etiqueta: string; base: number; iva: number }[]) : [];
+  return Array.isArray(rows) ? (rows as FilaDesgloseImpuestoResumen[]) : [];
+}
+
+export function sumaDocumentosDesgloseLibroIva(rows: { documentos?: number }[]): number {
+  return rows.reduce((s, r) => s + Number(r.documentos ?? 0), 0);
+}
+
+export function etiquetaFilaDesgloseImpuesto(row: FilaDesgloseImpuestoResumen): string {
+  return (row.impuesto ?? row.etiqueta ?? '').trim();
 }
 
 export function sumaComprasDesgloseLibroIva(

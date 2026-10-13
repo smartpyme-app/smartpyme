@@ -221,6 +221,86 @@
     </div>
   </div>
 
+  @if (detalleImpuestoCr && (ventasPorImpuesto.length > 0 || comprasPorImpuesto.length > 0)) {
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body p-0">
+        <div class="px-3 pt-3 pb-2 border-bottom bg-light bg-opacity-50">
+          <h6 class="text-dark mb-0 fw-semibold">Detalle por tipo de impuestos</h6>
+        </div>
+        @if (ventasPorImpuesto.length > 0) {
+          <div class="px-3 pt-3 pb-1">
+            <h6 class="text-dark small fw-semibold mb-2">Ventas</h6>
+          </div>
+          <div class="table-responsive px-2 pb-2">
+            <table class="table table-borderless table-hover align-middle mb-0">
+              <thead class="border-bottom">
+                <tr>
+                  <th class="text-muted small fw-semibold">Impuesto</th>
+                  <th class="text-end text-muted small fw-semibold"># de ventas</th>
+                  <th class="text-end text-muted small fw-semibold">$ Vendido</th>
+                  <th class="text-end text-muted small fw-semibold">$ IVA</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of ventasPorImpuesto; track row.tarifa + row.etiqueta + $index) {
+                  <tr>
+                    <td class="text-dark">{{ etiquetaImpuesto(row) }}</td>
+                    <td class="text-end">{{ row.documentos ?? 0 }}</td>
+                    <td class="text-end">{{ row.base | currency }}</td>
+                    <td class="text-end">{{ row.iva | currency }}</td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot class="border-top">
+                <tr class="fw-semibold">
+                  <td class="text-dark">Total</td>
+                  <td class="text-end">{{ sumaDocumentosVentas }}</td>
+                  <td class="text-end">{{ sumaBaseVentas | currency }}</td>
+                  <td class="text-end">{{ sumaImpuestoVentas | currency }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        }
+        @if (comprasPorImpuesto.length > 0) {
+          <div class="px-3 pt-2 pb-1">
+            <h6 class="text-dark small fw-semibold mb-2">Compras</h6>
+          </div>
+          <div class="table-responsive px-2 pb-2">
+            <table class="table table-borderless table-hover align-middle mb-0">
+              <thead class="border-bottom">
+                <tr>
+                  <th class="text-muted small fw-semibold">Impuesto</th>
+                  <th class="text-end text-muted small fw-semibold"># compras</th>
+                  <th class="text-end text-muted small fw-semibold">$ Comprado</th>
+                  <th class="text-end text-muted small fw-semibold">$ IVA</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of comprasPorImpuesto; track row.tarifa + row.etiqueta + $index) {
+                  <tr>
+                    <td class="text-dark">{{ etiquetaImpuesto(row) }}</td>
+                    <td class="text-end">{{ row.documentos ?? 0 }}</td>
+                    <td class="text-end">{{ row.base | currency }}</td>
+                    <td class="text-end">{{ row.iva | currency }}</td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot class="border-top">
+                <tr class="fw-semibold">
+                  <td class="text-dark">Total</td>
+                  <td class="text-end">{{ sumaDocumentosCompras }}</td>
+                  <td class="text-end">{{ sumaBaseCompras | currency }}</td>
+                  <td class="text-end">{{ sumaImpuestoCompras | currency }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
   @if (pagoCuenta.aplica) {
     <div class="card border-0 shadow-sm mb-0">
       <div class="card-body p-0">
