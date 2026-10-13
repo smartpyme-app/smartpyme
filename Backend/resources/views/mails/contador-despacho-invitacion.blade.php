@@ -12,9 +12,9 @@
         <td align="center">
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(15,23,42,0.08);">
                 <tr>
-                    <td style="background:linear-gradient(135deg,#1775e5 0%,#0d5bb5 100%);padding:28px 32px;text-align:center;">
-                        <img width="140" src="https://www.smartpyme.sv/wp-content/uploads/2022/09/logo-web-smartpyme-2022-new.png" alt="SmartPyme" style="display:block;margin:0 auto 12px;">
-                        <p style="margin:0;color:rgba(255,255,255,0.9);font-size:14px;letter-spacing:0.02em;">Portal de contadores</p>
+                    <td style="background:#ffffff;padding:28px 32px 20px;text-align:center;border-bottom:1px solid #e2e8f0;">
+                        <img width="150" src="https://www.smartpyme.sv/wp-content/uploads/2022/09/logo-web-smartpyme-2022-new.png" alt="SmartPyme" style="display:block;margin:0 auto 14px;">
+                        <p style="margin:0;color:#1775e5;font-size:14px;font-weight:600;letter-spacing:0.04em;">Portal de contadores</p>
                     </td>
                 </tr>
                 <tr>
