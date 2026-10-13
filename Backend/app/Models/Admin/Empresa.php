@@ -909,7 +909,7 @@ class Empresa extends Model
     }
 
     /**
-     * Actualizar una configuración específica (escribe solo en empresa_configuracion)
+     * Actualizar una configuración específica (empresa_configuracion + espejo en custom_empresa para sesión/Mi cuenta).
      */
     public function updateCustomConfig($section, $key, $value)
     {
@@ -926,6 +926,16 @@ class Empresa extends Model
 
         $current[$key] = $value;
         $service->set((int) $this->id, $section, $current, $pais);
+
+        if ($this->id) {
+            $legacyRoot = $this->ensureConfigArray($this->custom_empresa ?? null);
+            if (!isset($legacyRoot[$section]) || !is_array($legacyRoot[$section])) {
+                $legacyRoot[$section] = [];
+            }
+            $legacyRoot[$section][$key] = $value;
+            $this->custom_empresa = $legacyRoot;
+            $this->save();
+        }
 
         if ($section === 'configuraciones' && in_array($key, ['fidelizacion_activa', 'fidelizacion_completa', 'fidelizacion_enviar_correos'])) {
             cache()->forget("empresa_fidelizacion_{$this->id}");
