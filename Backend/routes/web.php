@@ -45,7 +45,7 @@ Route::get('/inventariostock', function(){
 });
 
 Route::get('/ventassintipodte', function () {
-    $ventas = App\Models\Ventas\Venta::withoutScopes()->whereNull('tipo_dte')
+    $ventas = App\Models\Ventas\Venta::withoutGlobalScopes()->whereNull('tipo_dte')
         ->whereNotNull('dte')
         ->whereYear('fecha', 2026)
         ->get();
