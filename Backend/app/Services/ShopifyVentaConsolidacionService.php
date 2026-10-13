@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Ventas\Detalle;
 use App\Models\Ventas\Impuesto;
 use App\Models\Ventas\Venta;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class ShopifyVentaConsolidacionService
@@ -338,6 +339,8 @@ class ShopifyVentaConsolidacionService
         if (!$inventario) {
             return;
         }
+
+        Cache::put("shopify_syncing_inv_{$producto->id}", true, 60);
 
         if ($delta > 0) {
             $inventario->decrement('stock', $delta);

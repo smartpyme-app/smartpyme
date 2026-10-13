@@ -658,13 +658,28 @@ class ShopifyController extends Controller
             'stock_smartpyme' => $stockLocal,
         ]);
 
-        if ((float) $onHand === $stockLocal) {
-            return response()->json(['status' => 'success', 'message' => 'Stock ya sincronizado'], 200);
+        $prevKey = "shopify_qty_{$empresa->id}_{$inventoryItemId}_{$bodegaId}";
+        $previo = Cache::get($prevKey);
+        $nuevoStock = $this->stockSegunMovimientoFisico($stockLocal, $cantidades, is_array($previo) ? $previo : null);
+        Cache::put($prevKey, [
+            'on_hand' => (float) $cantidades['on_hand'],
+            'available' => (float) $cantidades['available'],
+            'committed' => (float) $cantidades['committed'],
+        ], now()->addDays(30));
+
+        if ($nuevoStock === null || (float) $nuevoStock === $stockLocal) {
+            ShopifyHelper::log('inventory_levels/update: sin movimiento físico, el stock local se queda', [
+                'producto_id' => $producto->id,
+                'bodega_id' => $bodegaId,
+                'on_hand' => $onHand,
+                'stock_smartpyme' => $stockLocal,
+            ]);
+            return response()->json(['status' => 'success', 'message' => 'Sin movimiento físico'], 200);
         }
 
         $this->actualizarInventario(
             $producto->id,
-            $onHand,
+            $nuevoStock,
             $bodegaId,
             $usuario->id,
             ['origen' => 'shopify', 'tipo' => 'ajuste_inventario', 'stock_anterior' => $stockLocal, 'location_id' => $locationId]
@@ -675,6 +690,33 @@ class ShopifyController extends Controller
         }
 
         return response()->json(['status' => 'success', 'message' => 'Inventario actualizado'], 200);
+    }
+
+    /**
+     * Un pedido mueve available y committed, no el físico. Solo se copia a SmartPyme
+     * un cambio de on_hand que también mueve available (ajuste o reposición).
+     * El surtido baja on_hand y deja available igual: la venta ya descontó.
+     */
+    private function stockSegunMovimientoFisico(float $stockLocal, array $actual, ?array $previo): ?float
+    {
+        $onHand = (float) $actual['on_hand'];
+        $available = (float) $actual['available'];
+        $committed = (float) ($actual['committed'] ?? 0);
+
+        if ($previo === null) {
+            if ($committed > 0 || $onHand === $stockLocal) {
+                return null;
+            }
+            return $onHand;
+        }
+
+        $deltaOnHand = $onHand - (float) $previo['on_hand'];
+        $deltaAvailable = $available - (float) $previo['available'];
+        if (abs($deltaOnHand) < 0.00001 || abs($deltaOnHand - $deltaAvailable) >= 0.00001) {
+            return null;
+        }
+
+        return $stockLocal + $deltaOnHand;
     }
 
     /**
@@ -1850,7 +1892,8 @@ class ShopifyController extends Controller
                         ->where('id_bodega', $venta->id_bodega)
                         ->value('stock') ?? 0;
 
-                    // Actualizar inventario
+                    // La venta ya está en Shopify. No reescribir su on_hand con este descuento.
+                    Cache::put("shopify_syncing_inv_{$producto->id}", true, 60);
                     Inventario::where('id_producto', $producto->id)
                         ->where('id_bodega', $venta->id_bodega)
                         ->decrement('stock', $item['quantity']);
@@ -2276,6 +2319,43 @@ class ShopifyController extends Controller
     }
 
     /**
+     * El stock se lee antes de guardar: updateOrCreate deja getOriginal() en el valor nuevo y el delta salía 0.
+     */
+    private function fijarStockConsolidacionIndividual(Producto $producto, int $idBodega, float $stockDisponible, string $observacion): void
+    {
+        DB::transaction(function () use ($producto, $idBodega, $stockDisponible, $observacion) {
+            $stockAnterior = (float) (Inventario::where('id_producto', $producto->id)
+                ->where('id_bodega', $idBodega)
+                ->value('stock') ?? 0);
+
+            $inv = Inventario::withoutEvents(function () use ($producto, $idBodega, $stockDisponible) {
+                return Inventario::updateOrCreate(
+                    ['id_producto' => $producto->id, 'id_bodega' => $idBodega],
+                    ['stock' => $stockDisponible]
+                );
+            });
+
+            $delta = $stockDisponible - $stockAnterior;
+            if (abs($delta) <= 0.001) {
+                return;
+            }
+
+            $inv->kardex(
+                $producto,
+                $delta,
+                $producto->precio,
+                $producto->costo,
+                null,
+                [
+                    'origen' => 'shopify',
+                    'observacion' => $observacion,
+                    'id_usuario' => Auth::id(),
+                ]
+            );
+        });
+    }
+
+    /**
      * Sincroniza un producto individual entre SmartPyme y Shopify en la dirección seleccionada.
      */
     public function sincronizarProductoIndividual($id, Request $request)
@@ -2439,24 +2519,12 @@ class ShopifyController extends Controller
                         $locId = $locMap ? (string) $locMap->shopify_location_id : (string) $empresa->shopify_location_id;
                         $stockDisponible = isset($levelsMap[$locId]) ? $levelsMap[$locId] : 0.0;
 
-                        $inv = Inventario::withoutEvents(function () use ($producto, $idBodega, $stockDisponible) {
-                            return Inventario::updateOrCreate(
-                                ['id_producto' => $producto->id, 'id_bodega' => (int) $idBodega],
-                                ['stock' => $stockDisponible]
-                            );
-                        });
-
-                        $delta = $stockDisponible - ($inv->wasRecentlyCreated ? 0 : $inv->getOriginal('stock'));
-                        if (abs($delta) > 0.001) {
-                            $inv->kardex(
-                                $producto,
-                                $delta,
-                                $producto->precio,
-                                $producto->costo,
-                                null,
-                                ['origen' => 'shopify', 'observacion' => 'Ajuste individual desde Shopify']
-                            );
-                        }
+                        $this->fijarStockConsolidacionIndividual(
+                            $producto,
+                            (int) $idBodega,
+                            $stockDisponible,
+                            'Ajuste individual desde Shopify'
+                        );
                     } else {
                         // Sincronizar TODAS las sucursales mapeadas (1 a 1)
                         if ($ubicacionesMapeadas->isNotEmpty()) {
@@ -2464,48 +2532,24 @@ class ShopifyController extends Controller
                                 $locId = (string) $locMap->shopify_location_id;
                                 $stockDisponible = (float) ($levelsMap[$locId] ?? 0.0);
 
-                                $inv = Inventario::withoutEvents(function () use ($producto, $locMap, $stockDisponible) {
-                                    return Inventario::updateOrCreate(
-                                        ['id_producto' => $producto->id, 'id_bodega' => $locMap->id_bodega],
-                                        ['stock' => $stockDisponible]
-                                    );
-                                });
-
-                                $delta = $stockDisponible - ($inv->wasRecentlyCreated ? 0 : $inv->getOriginal('stock'));
-                                if (abs($delta) > 0.001) {
-                                    $inv->kardex(
-                                        $producto,
-                                        $delta,
-                                        $producto->precio,
-                                        $producto->costo,
-                                        null,
-                                        ['origen' => 'shopify', 'observacion' => "Ajuste individual desde Shopify ({$locMap->shopify_location_name})"]
-                                    );
-                                }
+                                $this->fijarStockConsolidacionIndividual(
+                                    $producto,
+                                    (int) $locMap->id_bodega,
+                                    $stockDisponible,
+                                    "Ajuste individual desde Shopify ({$locMap->shopify_location_name})"
+                                );
                             }
                         } else {
                             // Fallback mono-sucursal sin mapeo
                             $stockDisponible = (float) ($variantShopify['inventory_quantity'] ?? 0);
                             $bodegaDestino = $user->id_bodega ?: $producto->id_bodega;
                             if ($bodegaDestino) {
-                                $inv = Inventario::withoutEvents(function () use ($producto, $bodegaDestino, $stockDisponible) {
-                                    return Inventario::updateOrCreate(
-                                        ['id_producto' => $producto->id, 'id_bodega' => $bodegaDestino],
-                                        ['stock' => $stockDisponible]
-                                    );
-                                });
-
-                                $delta = $stockDisponible - ($inv->wasRecentlyCreated ? 0 : $inv->getOriginal('stock'));
-                                if (abs($delta) > 0.001) {
-                                    $inv->kardex(
-                                        $producto,
-                                        $delta,
-                                        $producto->precio,
-                                        $producto->costo,
-                                        null,
-                                        ['origen' => 'shopify', 'observacion' => 'Ajuste individual desde Shopify']
-                                    );
-                                }
+                                $this->fijarStockConsolidacionIndividual(
+                                    $producto,
+                                    (int) $bodegaDestino,
+                                    $stockDisponible,
+                                    'Ajuste individual desde Shopify'
+                                );
                             }
                         }
                     }
@@ -3654,6 +3698,7 @@ class ShopifyController extends Controller
                     ->where('id_bodega', $venta->id_bodega)
                     ->value('stock') ?? 0;
 
+                Cache::put("shopify_syncing_inv_{$producto->id}", true, 60);
                 Inventario::where('id_producto', $producto->id)
                     ->where('id_bodega', $venta->id_bodega)
                     ->decrement('stock', $detalle->cantidad);
