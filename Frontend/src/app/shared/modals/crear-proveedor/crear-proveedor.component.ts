@@ -13,7 +13,6 @@ import { BaseModalComponent } from '../../base/base-modal.component';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { TagInputModule } from 'ngx-chips';
 import { NgxMaskDirective } from 'ngx-mask';
-import { FilterPipe } from '@pipes/filter.pipe';
 import {
     alCambiarDistrito,
     alCambiarMunicipio,
@@ -44,7 +43,7 @@ import {
     selector: 'app-crear-proveedor',
     templateUrl: './crear-proveedor.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, FilterPipe, TranslatePipe, NgxMaskDirective],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, TranslatePipe, NgxMaskDirective],
     
 })
 export class CrearProveedorComponent extends BaseModalComponent implements OnInit {
