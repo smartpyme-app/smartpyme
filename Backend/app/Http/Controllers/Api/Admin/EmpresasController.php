@@ -189,6 +189,10 @@ class EmpresasController extends Controller
 
         $empresa->save();
 
+        if ($request->has('custom_empresa')) {
+            $empresa->syncCustomEmpresaToConfiguracion();
+        }
+
         if ($request->has('forma_pago')) {
             $metodoValidado = $request->input('forma_pago');
             if (!in_array($metodoValidado, [config('constants.METODO_PAGO_N1CO'), config('constants.METODO_PAGO_TRANSFERENCIA')])) {

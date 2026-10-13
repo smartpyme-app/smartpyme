@@ -777,6 +777,16 @@ class Empresa extends Model
             }
         }
 
+        // ponytail: Mi cuenta guarda lotes en custom_empresa; facturación lee empresa_configuracion
+        $legacy = $this->ensureConfigArray($this->attributes['custom_empresa'] ?? null);
+        if (!empty($legacy['configuraciones']) && is_array($legacy['configuraciones'])) {
+            foreach (['lotes_activo', 'lotes_metodologia', 'lotes_dias_anticipacion'] as $lotKey) {
+                if (array_key_exists($lotKey, $legacy['configuraciones'])) {
+                    $config['configuraciones'][$lotKey] = $legacy['configuraciones'][$lotKey];
+                }
+            }
+        }
+
         return $config;
     }
 
@@ -922,6 +932,42 @@ class Empresa extends Model
         }
 
         return $this;
+    }
+
+    /**
+     * Persiste custom_empresa (columna empresas) en empresa_configuracion tras guardar preferencias.
+     */
+    public function syncCustomEmpresaToConfiguracion(): void
+    {
+        if (!$this->id) {
+            return;
+        }
+
+        $legacy = $this->ensureConfigArray($this->custom_empresa ?? []);
+        if (!is_array($legacy) || $legacy === []) {
+            return;
+        }
+
+        $service = app(EmpresaConfiguracionService::class);
+        $pais = strtoupper($this->cod_pais ?: 'SV');
+
+        foreach (EmpresaConfiguracion::MODULOS_CUSTOM as $modulo) {
+            if (!isset($legacy[$modulo]) || !is_array($legacy[$modulo])) {
+                continue;
+            }
+
+            $incoming = $this->ensureConfigArray($legacy[$modulo]);
+            if ($incoming === []) {
+                continue;
+            }
+
+            $current = $service->get((int) $this->id, $modulo, $pais) ?? [];
+            if (!is_array($current)) {
+                $current = [];
+            }
+
+            $service->set((int) $this->id, $modulo, array_merge($current, $incoming), $pais);
+        }
     }
 
     /**
