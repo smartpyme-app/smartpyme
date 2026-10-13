@@ -161,15 +161,9 @@ export class FidelizacionService {
         url += `?${queryParams.toString()}`;
       }
     }
-    
-    // Agregar headers para evitar caché
-    const headers = {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
-    };
-    
-    return this.http.get<PaginatedResponse<TipoClienteEmpresa>>(url, { headers });
+
+    // ponytail: no Cache-Control en GET — dispara preflight y apiunificado no lo permite en CORS; _t en params basta
+    return this.http.get<PaginatedResponse<TipoClienteEmpresa>>(url);
   }
 
   /**
@@ -195,17 +189,9 @@ export class FidelizacionService {
    * Actualizar tipo de cliente
    */
   updateTipoCliente(id: number, data: UpdateTipoClienteRequest): Observable<ApiResponse<TipoClienteEmpresa>> {
-    // Agregar headers para evitar caché
-    const headers = {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
-    };
-    
     return this.http.put<ApiResponse<TipoClienteEmpresa>>(
       `${this.apiService.baseUrl}/api/fidelizacion/tipos-cliente/${id}`,
-      data,
-      { headers }
+      data
     );
   }
 
