@@ -93,32 +93,59 @@
             </section>
           }
 
-          <input
-            type="search"
-            class="form-control form-control-sm contadores-dash__search mb-3"
-            placeholder="Buscar empresa"
-            [(ngModel)]="buscador"
-          />
+          <section class="bg-white p-4 rounded mb-3">
+            <div class="row mb-3">
+              <div class="col-md-6 d-flex align-items-center">
+                @if (totalEmpresas > 0) {
+                  <span class="text-muted">
+                    {{ empresasTabla.length }} de {{ totalEmpresas }} empresas
+                  </span>
+                }
+              </div>
+              <div class="col-md-6">
+                <form class="d-flex input-group" autocomplete="off" (ngSubmit)="$event.preventDefault()">
+                  <div class="input-group">
+                    <div class="input-group-text bg-white border-end-0">
+                      <i class="fa fa-search text-muted"></i>
+                    </div>
+                    <input
+                      type="search"
+                      name="buscadorCartera"
+                      class="form-control border-start-0"
+                      placeholder="Buscar empresa"
+                      [(ngModel)]="buscador"
+                    />
+                  </div>
+                </form>
+              </div>
+            </div>
 
-          @if (empresasTabla.length === 0) {
-            <p class="text-muted">Ninguna empresa coincide con la búsqueda.</p>
-          }
-
-          <div class="table-responsive contadores-dash__table-wrap">
-            <table class="table contadores-dash__table align-middle mb-0">
-              <thead>
-                <tr>
-                  <th>Empresa</th>
-                  <th class="text-end">Registradas</th>
-                  <th class="text-end">Con partida</th>
-                  <th class="contadores-dash__th-avance">Avance</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (e of empresasTabla; track e.id) {
+            <div class="table-responsive">
+              <table class="table table-borderless table-hover mb-0 align-middle">
+                <thead>
+                  <tr>
+                    <th>Empresa</th>
+                    <th class="text-end">Registradas</th>
+                    <th class="text-end">Con partida</th>
+                    <th class="contadores-dash__th-avance">Avance</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @if (empresasTabla.length === 0) {
+                    <tr>
+                      <td colspan="5" class="text-center">
+                        @if (buscador.trim()) {
+                          <span class="text-muted">Ninguna empresa coincide con la búsqueda.</span>
+                        } @else {
+                          <span class="badge bg-primary">Sin empresas en la cartera</span>
+                        }
+                      </td>
+                    </tr>
+                  }
+                  @for (e of empresasTabla; track e.id) {
                   @if (metricas(e); as m) {
-                    <tr (click)="irCumplimiento(e)" role="button">
+                    <tr (click)="irCumplimiento(e)" role="button" class="cursor-pointer">
                       <td>
                         <div class="d-flex align-items-center gap-2 contadores-dash__empresa-cell">
                           @if (mostrarLogoEmpresa(e)) {
@@ -163,9 +190,10 @@
                     </tr>
                   }
                 }
-              </tbody>
-            </table>
-          </div>
+                </tbody>
+              </table>
+            </div>
+          </section>
         </section>
       </div>
     }

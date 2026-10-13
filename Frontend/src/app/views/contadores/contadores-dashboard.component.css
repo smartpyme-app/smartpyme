@@ -176,24 +176,6 @@
   margin-top: 2px;
 }
 
-.contadores-dash__table-wrap {
-  background: #fff;
-  border: 1px solid #e5ebf2;
-  border-radius: 12px;
-}
-
-.contadores-dash__table thead th {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #8a9bb3;
-  border-bottom-width: 1px;
-}
-
-.contadores-dash__table tbody tr {
-  cursor: pointer;
-}
-
 .contadores-dash__row--active {
   background: #eef4fc;
 }
@@ -201,10 +183,6 @@
 .contadores-dash__periodo-select {
   min-width: 180px;
   max-width: 220px;
-}
-
-.contadores-dash__search {
-  max-width: 280px;
 }
 
 .contadores-dash__avatar--img {

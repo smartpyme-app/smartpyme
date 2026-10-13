@@ -14,11 +14,12 @@ import {
 } from '@services/contadores-portal.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { mesAnioDesdeQuery, opcionesPeriodo, periodoCierrePorDefecto } from './contadores-periodo.util';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 @Component({
   selector: 'app-contadores-cumplimiento',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, TooltipModule],
   templateUrl: './contadores-cumplimiento.component.html',
   styleUrls: ['./contadores-dashboard.component.css', './contadores-cumplimiento.component.css'],
 })
@@ -254,17 +255,6 @@ export class ContadoresCumplimientoComponent implements OnInit {
     return `${doc.slug ?? 'slot'}-${index}`;
   }
 
-  abrirSelectorArchivoGeneral(): void {
-    const slot = this.vista?.documentos.find(
-      (d) => !d.id && d.subible !== false && d.estado === 'sin_cargar' && !d.es_otro,
-    );
-    if (slot?.slug) {
-      this.agregarDocumento(slot.slug, slot.nombre);
-      return;
-    }
-    this.agregarDocumento();
-  }
-
   cargarEnSlot(doc: { slug: string | null; nombre: string; subible?: boolean }): void {
     if (!doc.slug || doc.subible === false) {
       return;
@@ -366,19 +356,6 @@ export class ContadoresCumplimientoComponent implements OnInit {
     }
     this.archivoPendiente = file;
     this.cdr.markForCheck();
-  }
-
-  onDropArchivos(event: DragEvent): void {
-    event.preventDefault();
-    if (!this.vista?.capacidades?.subir_archivos || !this.idEmpresa) {
-      return;
-    }
-    const file = event.dataTransfer?.files?.[0];
-    if (!file) {
-      return;
-    }
-    this.abrirSelectorArchivoGeneral();
-    this.archivoPendiente = file;
   }
 
   private enviarArchivo(file: File): void {

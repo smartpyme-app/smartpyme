@@ -213,26 +213,7 @@ label.btn[disabled] {
 }
 
 .contadores-cump__docs-head {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 16px;
   margin-bottom: 16px;
-}
-
-.contadores-cump__dropzone {
-  border: 2px dashed #c7d8f0;
-  border-radius: 12px;
-  padding: 16px 20px;
-  text-align: center;
-  background: #f8fbff;
-  min-width: 220px;
-}
-
-.contadores-cump__drop-hint {
-  font-size: 11px;
-  color: #8a9bb3;
-  margin-top: 8px;
 }
 
 .contadores-cump__table thead th {

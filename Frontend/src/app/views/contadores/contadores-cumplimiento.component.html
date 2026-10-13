@@ -120,29 +120,25 @@
         </div>
 
         <section class="contadores-cump__panel contadores-cump__docs">
-          <div class="contadores-cump__docs-head">
+          <div class="contadores-cump__docs-head d-flex flex-wrap justify-content-between align-items-start gap-3">
             <div>
               <h2 class="contadores-cump__panel-title mb-1">Documentos de la empresa</h2>
               <p class="contadores-cump__panel-lede mb-0">Repositorio legal y operativo del cliente.</p>
             </div>
-            <div
-              class="contadores-cump__dropzone"
-              (dragover)="$event.preventDefault()"
-              (drop)="onDropArchivos($event)"
-            >
-              <p class="mb-2 small text-muted">Arrastre archivos aquí o</p>
+            @if (puedeSubirArchivos) {
               <button
                 type="button"
-                class="btn btn-sm btn-primary"
-                [disabled]="!puedeSubirArchivos || subiendo"
-                (click)="abrirSelectorArchivoGeneral()"
+                class="btn btn-default flex-shrink-0"
+                tooltip="Documento personalizado fuera del catálogo estándar"
+                [adaptivePosition]="false"
+                [disabled]="subiendo"
+                (click)="agregarDocumento()"
               >
-                {{ subiendo ? 'Subiendo…' : 'Seleccionar archivos' }}
+                <i class="fa fa-plus"></i> Agregar otro documento
               </button>
-              @if (!puedeSubirArchivos) {
-                <p class="contadores-cump__drop-hint mb-0">Permiso de registro requerido</p>
-              }
-            </div>
+            } @else {
+              <span class="small text-muted flex-shrink-0">Permiso de registro requerido</span>
+            }
           </div>
 
           <div class="table-responsive contadores-dash__table-wrap">
@@ -217,13 +213,6 @@
               </tbody>
             </table>
           </div>
-          @if (puedeSubirArchivos) {
-            <p class="small mb-0 mt-3">
-              <button type="button" class="btn btn-link btn-sm p-0" [disabled]="subiendo" (click)="agregarDocumento()">
-                + Agregar otro documento (personalizado)
-              </button>
-            </p>
-          }
         </section>
       </div>
     }
