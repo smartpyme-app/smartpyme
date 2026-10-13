@@ -7,6 +7,7 @@ import {
   ContadoresPortalService,
   ContadorEmpresaPortafolio,
   ContadorEmpresaReciente,
+  ContadorInvitacionPendiente,
 } from '@services/contadores-portal.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
@@ -26,6 +27,7 @@ export class ContadoresPortafolioComponent implements OnInit {
   @ViewChild('seccionTodas') seccionTodas?: ElementRef<HTMLElement>;
 
   empresas: ContadorEmpresaPortafolio[] = [];
+  invitacionesPendientes: ContadorInvitacionPendiente[] = [];
   recientes: ContadorEmpresaReciente[] = [];
   usuario: { name?: string; email?: string; empresa?: { nombre?: string } } | null = null;
 
@@ -51,18 +53,20 @@ export class ContadoresPortafolioComponent implements OnInit {
     this.usuario = this.api.auth_user();
     this.recientes = this.contadoresPortal.leerRecientes();
 
-    if (this.api.esPortalContador()) {
+    if (this.api.esPortalContador() && this.debeRestablecerContextoDespacho()) {
       this.contadoresPortal.restablecerContextoDespacho().pipe(this.untilDestroyed()).subscribe();
     }
 
     forkJoin({
       empresas: this.contadoresPortal.listarEmpresas(),
       cartera: this.contadoresPortal.carteraMetricas(),
+      invitaciones: this.contadoresPortal.listarInvitacionesPendientes(),
     })
       .pipe(this.untilDestroyed())
       .subscribe({
-        next: ({ empresas, cartera }) => {
+        next: ({ empresas, cartera, invitaciones }) => {
           this.empresas = empresas?.empresas ?? [];
+          this.invitacionesPendientes = invitaciones?.invitaciones ?? [];
           if (this.empresas.length) {
             localStorage.setItem(CONTADOR_PORTAL_STORAGE_KEY, '1');
           }
@@ -144,6 +148,20 @@ export class ContadoresPortafolioComponent implements OnInit {
 
   irACarteraCompleta(): void {
     this.router.navigate(['/despacho/cartera'], { queryParams: this.queryPeriodoCartera() });
+  }
+
+  irAInvitarEmpresa(): void {
+    this.router.navigate(['/despacho/cartera'], {
+      queryParams: { ...this.queryPeriodoCartera(), invitar: 1 },
+    });
+  }
+
+  /** Solo tras operar en una PYME cliente; no pisar la firma (Demo CR) al abrir el portafolio. */
+  private debeRestablecerContextoDespacho(): boolean {
+    return (
+      this.contadoresPortal.leerEmpresaActivaId() != null ||
+      this.contadoresPortal.leerContextoEmpresa() != null
+    );
   }
 
   private queryPeriodoCartera(empresaId?: number): Record<string, number> {

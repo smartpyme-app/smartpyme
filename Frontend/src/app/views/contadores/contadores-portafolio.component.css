@@ -304,3 +304,36 @@
   color: #16324f;
   font-weight: 600;
 }
+
+.contadores-portafolio__empty {
+  max-width: 36rem;
+  padding: 28px 24px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #e5ebf2;
+  box-shadow: 0 8px 32px rgba(22, 50, 79, 0.06);
+}
+
+.contadores-portafolio__empty-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #16324f;
+  margin-bottom: 0.75rem;
+}
+
+.contadores-portafolio__empty-text {
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.55;
+  margin-bottom: 1.25rem;
+}
+
+.contadores-portafolio__empty-pending {
+  padding-top: 1rem;
+  border-top: 1px solid #eef2f7;
+}
+
+.contadores-portafolio__empty-pending-item {
+  padding: 6px 0;
+  font-size: 14px;
+}

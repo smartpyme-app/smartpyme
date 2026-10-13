@@ -23,12 +23,14 @@
         <p class="contadores-portafolio__kicker">Paso 2 de 2 · Empresa</p>
         <h1 class="contadores-portafolio__title">¿Con qué empresa trabajamos hoy?</h1>
         <p class="contadores-portafolio__lede mb-0">
-          Aquí aparecen solo las empresas cuyos dueños le dieron acceso.
+          Elija una empresa autorizada o invite a una PYME desde su cartera. El administrador de la empresa debe aceptar la invitación.
         </p>
       </div>
-      <button type="button" class="btn btn-primary contadores-portafolio__cta flex-shrink-0" (click)="irACarteraCompleta()">
-        Ver la cartera completa →
-      </button>
+      @if (empresas.length > 0) {
+        <button type="button" class="btn btn-outline-primary contadores-portafolio__cta flex-shrink-0" (click)="irACarteraCompleta()">
+          Ver la cartera completa →
+        </button>
+      }
     </div>
 
     @if (loading) {
@@ -40,7 +42,33 @@
     }
 
     @if (!loading && !error && empresas.length === 0) {
-      <p class="text-muted">Aún no tienes empresas asignadas. Pide a SmartPyme que te vinculen desde super admin.</p>
+      <section class="contadores-portafolio__empty">
+        <h2 class="contadores-portafolio__empty-title">Aún no hay clientes en su cartera</h2>
+        <p class="contadores-portafolio__empty-text">
+          Invite al administrador de una PYME (correo con rol <strong>admin</strong> en SmartPyme). Cuando acepte, la empresa aparecerá aquí y en
+          <strong>Cartera de clientes</strong>.
+        </p>
+        <div class="d-flex flex-wrap gap-2">
+          <button type="button" class="btn btn-primary" (click)="irAInvitarEmpresa()">Invitar una empresa</button>
+          <button type="button" class="btn btn-outline-secondary" (click)="irACarteraCompleta()">Ir a la cartera</button>
+        </div>
+        @if (invitacionesPendientes.length > 0) {
+          <div class="contadores-portafolio__empty-pending mt-4">
+            <p class="contadores-portafolio__section-label mb-2">Invitaciones en espera de respuesta</p>
+            <ul class="list-unstyled mb-0">
+              @for (inv of invitacionesPendientes; track inv.id) {
+                <li class="contadores-portafolio__empty-pending-item">
+                  <strong>{{ inv.empresa_cliente?.nombre ?? 'Empresa' }}</strong>
+                  <span class="text-muted"> · {{ inv.email_admin }}</span>
+                </li>
+              }
+            </ul>
+            <button type="button" class="btn btn-link btn-sm ps-0 mt-1" (click)="irACarteraCompleta()">
+              Reenviar o cancelar en la cartera →
+            </button>
+          </div>
+        }
+      </section>
     }
 
     @if (!loading && empresas.length > 0) {

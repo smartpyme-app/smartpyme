@@ -336,8 +336,7 @@ class ContadorEmpresaInvitacionService
     private function enviarCorreo(ContadorEmpresaInvitacion $invitacion, User $admin, string $plainToken): void
     {
         $invitacion->loadMissing(['empresaCliente', 'empresaDespacho']);
-        $frontend = rtrim((string) env('FRONTEND_URL', env('APP_URL', 'https://smartpyme.app')), '/');
-        $aceptarUrl = $frontend.'/invitacion-despacho?token='.urlencode($plainToken);
+        $aceptarUrl = $this->urlPublicaInvitacionDespacho($plainToken);
 
         Mail::to($admin->email, $admin->name)->send(new ContadorDespachoInvitacionMail(
             $invitacion->empresaCliente,
@@ -478,5 +477,12 @@ class ContadorEmpresaInvitacionService
                 'estado' => ContadorEmpresaAcceso::ESTADO_REVOCADO,
                 'revoked_at' => now(),
             ]);
+    }
+
+    private function urlPublicaInvitacionDespacho(string $plainToken): string
+    {
+        $base = rtrim((string) config('contadores.portal_public_url', 'https://contadores.smartpyme.site'), '/');
+
+        return $base.'/invitacion-despacho?token='.urlencode($plainToken);
     }
 }

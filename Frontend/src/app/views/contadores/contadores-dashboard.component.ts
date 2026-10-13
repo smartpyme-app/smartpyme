@@ -90,6 +90,16 @@ export class ContadoresDashboardComponent implements OnInit {
         this.periodoAnio = anio;
         this.cargarDatos();
       }
+
+      if (params.get('invitar') === '1') {
+        this.abrirModalInvitar();
+        this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: { invitar: null },
+          queryParamsHandling: 'merge',
+          replaceUrl: true,
+        });
+      }
     });
   }
 
