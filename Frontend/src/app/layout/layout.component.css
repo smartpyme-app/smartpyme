@@ -1,3 +1,9 @@
+/* min-w-0 no existe en Bootstrap 5.2; sin esto la columna crece con la tabla y table-responsive no hace scroll. */
+.app-layout-main,
+.content {
+  min-width: 0;
+}
+
 .badge-prueba-gratuita {
   top: 10px;
   right: 10px;
