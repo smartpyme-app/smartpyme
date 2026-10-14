@@ -28,7 +28,7 @@ class GenerarFacturasSuscripciones extends Command
 {
     protected $signature = 'facturas:generar-suscripciones {empresa? : ID de la empresa para ejecutar una prueba específica}';
 
-    protected $description = 'Emite DTE de suscripciones activas con pago por transferencia: planes mensuales el día 1 de cada mes; planes anuales en la fecha de renovación. Excluye n1co (otro flujo) y empresas con campaña demo.';
+    protected $description = 'Emite DTE de suscripciones activas con pago por transferencia: planes mensuales el día 1 de cada mes; planes anuales en la fecha de renovación. La cadencia sale de frecuencia_pago de la empresa y, si está vacía, de tipo_plan de la suscripción. Excluye n1co (otro flujo) y empresas con campaña demo.';
 
     protected MhGovSvGatewayService $mhGateway;
 
@@ -95,7 +95,8 @@ public function handle()
                 continue;
             }
 
-            $esAnual = mb_strtolower((string) $suscripcion->tipo_plan) === 'anual';
+            $cadencia = $this->cadenciaCobro($suscripcion);
+            $esAnual = mb_strtolower($cadencia) === 'anual';
             
             if (!$esAnual) {
                 if (!$esModoPrueba && !$esDiaUno) {
@@ -121,7 +122,7 @@ public function handle()
                         'suscripcion_id' => $suscripcion->id,
                         'empresa_id' => $suscripcion->empresa_id,
                         'empresa_nombre' => $suscripcion->empresa->nombre ?? 'N/A',
-                        'tipo_plan' => $suscripcion->tipo_plan,
+                        'tipo_plan' => $cadencia,
                         'error' => 'fecha_proximo_pago no configurada',
                     ];
                     continue;
@@ -140,7 +141,7 @@ public function handle()
                     'suscripcion_id' => $suscripcion->id,
                     'empresa_id' => $suscripcion->empresa_id,
                     'empresa_nombre' => $suscripcion->empresa->nombre ?? 'N/A',
-                    'tipo_plan' => $suscripcion->tipo_plan,
+                    'tipo_plan' => $cadencia,
                     'monto' => $suscripcion->monto,
                     'venta_id' => $venta?->id,
                 ];
@@ -151,7 +152,7 @@ public function handle()
                     'suscripcion_id' => $suscripcion->id,
                     'empresa_id' => $suscripcion->empresa_id,
                     'empresa_nombre' => $suscripcion->empresa->nombre ?? 'N/A',
-                    'tipo_plan' => $suscripcion->tipo_plan,
+                    'tipo_plan' => $cadencia,
                     'error' => $e->getMessage(),
                 ];
             }
@@ -195,6 +196,16 @@ public function handle()
     private function esEmpresaDemo(?Empresa $empresa): bool
     {
         return mb_strtolower(trim((string) ($empresa->campania ?? ''))) === 'demo';
+    }
+
+    private function cadenciaCobro(Suscripcion $suscripcion): string
+    {
+        $frecuencia = trim((string) ($suscripcion->empresa?->frecuencia_pago ?? ''));
+        if ($frecuencia !== '') {
+            return $frecuencia;
+        }
+
+        return trim((string) ($suscripcion->tipo_plan ?? ''));
     }
 
     private function emitirFactura(Suscripcion $suscripcion): ?Venta
