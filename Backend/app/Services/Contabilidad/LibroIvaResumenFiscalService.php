@@ -334,41 +334,43 @@ final class LibroIvaResumenFiscalService
      *   ingresos_brutos_pago_cuenta: float
      * }
      */
+    private function ventasLibroElSalvador(BaseLibroIVARequest $request, array $documentos, bool $conSello): Collection
+    {
+        return Venta::query()
+            ->select(LibroIvaVentasPeriodo::columnasSinDte())
+            ->with(['documento:id,nombre', 'impuestos.impuesto'])
+            ->where('ventas.estado', '!=', 'Anulada')
+            ->whereHas('documento', fn ($q) => $q->whereIn('nombre', $documentos))
+            ->when($request->id_sucursal, fn ($q) => $q->where('ventas.id_sucursal', $request->id_sucursal))
+            ->whereBetween('ventas.fecha', [$request->inicio, $request->fin])
+            ->where('ventas.cotizacion', 0)
+            ->when($conSello, fn ($q) => $q->whereNotNull('ventas.sello_mh')->where('ventas.sello_mh', '!=', ''))
+            ->get();
+    }
+
     private function contextoLibrosVentasElSalvador(BaseLibroIVARequest $request): array
     {
-        $ventasCf = Venta::with(['cliente', 'documento', 'impuestos.impuesto'])
-            ->where('estado', '!=', 'Anulada')
-            ->whereHas('documento', function ($q) {
-                $q->where('nombre', 'Factura')
-                    ->orWhere('nombre', 'Factura de exportación');
-            })
-            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
-            ->whereBetween('fecha', [$request->inicio, $request->fin])
-            ->where('cotizacion', 0)
-            ->get();
+        $conSello = $this->feHelper->tieneFacturacionElectronica();
 
-        $ventasCf = $this->feHelper->filtrarVentasPorFacturacionElectronica($ventasCf);
-
-        $ventasContrib = Venta::with(['cliente', 'documento', 'impuestos.impuesto'])
-            ->where('estado', '!=', 'Anulada')
-            ->whereHas('documento', fn ($q) => $q->where('nombre', 'Crédito fiscal'))
-            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
-            ->whereBetween('fecha', [$request->inicio, $request->fin])
-            ->where('cotizacion', 0)
-            ->get();
-
-        $ventasContrib = $this->feHelper->filtrarVentasPorFacturacionElectronica($ventasContrib);
+        $ventasCf = $this->ventasLibroElSalvador($request, ['Factura', 'Factura de exportación'], $conSello);
+        $ventasContrib = $this->ventasLibroElSalvador($request, ['Crédito fiscal'], $conSello);
 
         $filasContrib = $ventasContrib->map(fn (Venta $v) => [
             'total' => (float) $v->total,
             'debito_fiscal' => (float) $v->iva,
         ]);
 
-        $devoluciones = DevolucionVenta::with(['cliente', 'venta.documento', 'venta.impuestos.impuesto'])
-            ->where('enable', true)
-            ->whereHas('venta', fn ($q) => $q->where('estado', '!=', 'Anulada'))
-            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
-            ->whereBetween('fecha', [$request->inicio, $request->fin])
+        $devoluciones = DevolucionVenta::query()
+            ->select(LibroIvaVentasPeriodo::columnasDevolucionSinDte())
+            ->with([
+                'venta' => fn ($q) => $q->select(LibroIvaVentasPeriodo::columnasSinDte()),
+                'venta.documento:id,nombre',
+                'venta.impuestos.impuesto',
+            ])
+            ->where('devoluciones_venta.enable', true)
+            ->whereHas('venta', fn ($q) => $q->where('ventas.estado', '!=', 'Anulada'))
+            ->when($request->id_sucursal, fn ($q) => $q->where('devoluciones_venta.id_sucursal', $request->id_sucursal))
+            ->whereBetween('devoluciones_venta.fecha', [$request->inicio, $request->fin])
             ->get();
 
         $devolucionesCreditoFiscal = $devoluciones->filter(

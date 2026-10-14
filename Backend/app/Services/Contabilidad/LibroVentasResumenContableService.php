@@ -30,17 +30,19 @@ final class LibroVentasResumenContableService
         /** @var array<int, array{nombre: string, gravadas: float, exentas: float, no_sujetas: float, debito: float, iva_retenido: float}> */
         $porDocumento = [];
 
-        $ventas = Venta::with(['documento'])
-            ->where('estado', '!=', 'Anulada')
-            ->where('cotizacion', 0)
-            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
-            ->whereBetween('fecha', [$request->inicio, $request->fin])
-            ->get();
-
         $empresa = $this->feHelper->obtenerEmpresa();
-        if (optional($empresa)->pais === 'El Salvador') {
-            $ventas = $this->feHelper->filtrarVentasPorFacturacionElectronica($ventas);
-        }
+        $conSello = optional($empresa)->pais === 'El Salvador'
+            && $empresa->facturacion_electronica === true;
+
+        $ventas = Venta::query()
+            ->select(LibroIvaVentasPeriodo::columnasSinDte())
+            ->with(['documento:id,nombre'])
+            ->where('ventas.estado', '!=', 'Anulada')
+            ->where('ventas.cotizacion', 0)
+            ->when($request->id_sucursal, fn ($q) => $q->where('ventas.id_sucursal', $request->id_sucursal))
+            ->whereBetween('ventas.fecha', [$request->inicio, $request->fin])
+            ->when($conSello, fn ($q) => $q->whereNotNull('ventas.sello_mh')->where('ventas.sello_mh', '!=', ''))
+            ->get();
 
         foreach ($ventas as $venta) {
             $this->acumularVenta($porDocumento, $venta, 1.0);
@@ -187,11 +189,16 @@ final class LibroVentasResumenContableService
      */
     private function devolucionesPeriodo(BaseLibroIVARequest $request)
     {
-        return DevolucionVenta::with(['venta.documento'])
-            ->where('enable', true)
-            ->whereHas('venta', fn ($q) => $q->where('estado', '!=', 'Anulada'))
-            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
-            ->whereBetween('fecha', [$request->inicio, $request->fin])
+        return DevolucionVenta::query()
+            ->select(LibroIvaVentasPeriodo::columnasDevolucionSinDte())
+            ->with([
+                'venta' => fn ($q) => $q->select(LibroIvaVentasPeriodo::columnasSinDte()),
+                'venta.documento:id,nombre',
+            ])
+            ->where('devoluciones_venta.enable', true)
+            ->whereHas('venta', fn ($q) => $q->where('ventas.estado', '!=', 'Anulada'))
+            ->when($request->id_sucursal, fn ($q) => $q->where('devoluciones_venta.id_sucursal', $request->id_sucursal))
+            ->whereBetween('devoluciones_venta.fecha', [$request->inicio, $request->fin])
             ->get();
     }
 
