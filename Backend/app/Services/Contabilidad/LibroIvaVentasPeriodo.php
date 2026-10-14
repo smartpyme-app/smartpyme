@@ -36,7 +36,6 @@ final class LibroIvaVentasPeriodo
             'devoluciones_venta.total',
             'devoluciones_venta.iva',
             'devoluciones_venta.iva_retenido',
-            'devoluciones_venta.iva_percibido',
             'devoluciones_venta.sub_total',
             'devoluciones_venta.exenta',
             'devoluciones_venta.no_sujeta',

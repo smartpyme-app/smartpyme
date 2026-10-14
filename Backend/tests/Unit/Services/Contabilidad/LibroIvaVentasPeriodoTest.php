@@ -17,4 +17,12 @@ class LibroIvaVentasPeriodoTest extends TestCase
         $this->assertNotContains('ventas.dte', $cols);
         $this->assertNotContains('ventas.dte_s3_key', $cols);
     }
+
+    public function test_columnas_devolucion_no_incluyen_iva_percibido(): void
+    {
+        $cols = LibroIvaVentasPeriodo::columnasDevolucionSinDte();
+
+        $this->assertNotContains('devoluciones_venta.iva_percibido', $cols);
+        $this->assertContains('devoluciones_venta.iva_retenido', $cols);
+    }
 }
