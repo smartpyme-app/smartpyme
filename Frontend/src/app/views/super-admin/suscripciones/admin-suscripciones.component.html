@@ -179,7 +179,7 @@
                 }}</span>
             </td>
             <td>
-              <span class="text-muted">{{ empresa?.tipo_plan }}</span>
+              <span class="text-muted">{{ empresa.suscripcion?.tipo_plan || empresa?.tipo_plan || '-' }}</span>
             </td>
             <td class="text-center">
               <span class="text-muted">{{ getMetodoPagoNombre(empresa?.metodo_pago) }}</span>
@@ -407,7 +407,7 @@
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Frecuencia de Pago:</label>
           <select class="form-select" [(ngModel)]="suscripcion.frecuencia_pago" name="frecuencia_pago"
-            (change)="onFrecuenciaPagoChange(suscripcion.frecuencia_pago, true)">
+            (ngModelChange)="onFrecuenciaPagoChange($event, true)">
             <option value="">Seleccione frecuencia</option>
             <option value="Mensual">Mensual</option>
             <option value="Trimestral">Trimestral</option>
@@ -661,7 +661,7 @@
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">Frecuencia de Pago:</label>
           <select class="form-select" [(ngModel)]="nuevaSuscripcion.frecuencia_pago" name="frecuencia_pago" required
-            (change)="onFrecuenciaPagoChange(nuevaSuscripcion.frecuencia_pago, false)">
+            (ngModelChange)="onFrecuenciaPagoChange($event, false)">
             <option value="">Seleccione frecuencia</option>
             <option value="Mensual">Mensual</option>
             <option value="Trimestral">Trimestral</option>
