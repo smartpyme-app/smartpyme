@@ -2,155 +2,102 @@
 
 namespace App\Exports\Contabilidad\ElSalvador;
 
-use App\Models\Ventas\Venta;
+use App\Models\Admin\Empresa;
+use App\Services\Contabilidad\LibroConsumidoresFilas;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Illuminate\Http\Request;
-use App\Services\Contabilidad\LibroIvaMontosHelper;
 
 class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustomCsvSettings
 {
-
     public $request;
+
+    private ?bool $facturacionElectronica = null;
+
+    private ?Empresa $empresa = null;
 
     public function filter(Request $request)
     {
         $this->request = $request;
+        $this->empresa = Auth::user()->empresa()->first();
     }
 
-    /**
-     * Verifica si la empresa tiene facturación electrónica habilitada
-     */
-    private function tieneFacturacionElectronica(): bool
+    private function feActiva(): bool
     {
-        $empresa = Auth::user()->empresa()->first();
-        return $empresa && $empresa->facturacion_electronica === true;
+        if ($this->facturacionElectronica === null) {
+            $this->facturacionElectronica = $this->empresa
+                && $this->empresa->facturacion_electronica === true;
+        }
+
+        return $this->facturacionElectronica;
     }
 
-    /**
-     * Obtiene la clase de documento (DTE o Impreso)
-     */
     private function obtenerClaseDocumento($venta): string
     {
-        if ($this->tieneFacturacionElectronica() && $venta->sello_mh) {
-            return '4'; // DTE
+        if ($this->feActiva() && ! empty($venta->sello_mh)) {
+            return '4';
         }
-        return '1'; // Impreso
+
+        return '1';
     }
 
     public function collection()
     {
-        $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
-        
-        $ventas = Venta::with(['cliente', 'documento', 'empresa', 'detalles.producto'])
-                        ->where('estado', '!=', 'Anulada')
-                        ->whereHas('documento', function($q) {
-                            $q->where('nombre', 'Factura')->orWhere('nombre', 'Factura de exportación');
-                        })
-                        ->when($request->id_sucursal, function ($query) use ($request) {
-                            return $query->where('id_sucursal', $request->id_sucursal);
-                        })
-                        ->whereBetween('fecha', [$request->inicio, $request->fin])
-                        ->where('cotizacion', 0)
-                        ->orderByDesc('fecha')
-                        ->get();
-        return $ventas;
-        
+        $fe = $this->feActiva();
+
+        return LibroConsumidoresFilas::consultaAnexo($this->request, $fe)
+            ->with([
+                'detalles' => fn ($q) => $q->select('id', 'id_venta', 'id_producto')->orderBy('id')->limit(1),
+                'detalles.producto:id,tipo',
+            ])
+            ->get();
     }
 
-    /**
-     * @return array{exenta: float, gravada: float, no_sujeta: float, total_propio: float, exportacion: float}
-     */
-    private function montosAnexoConsumidor(Venta $venta, bool $esFacturaExportacion): array
+    public function map($venta): array
     {
-        $totalPropio = LibroIvaMontosHelper::montoVentaPropioSinCuentaTerceros($venta);
-        $dte = is_array($venta->dte ?? null) ? $venta->dte : [];
-        $resumen = $dte['resumen'] ?? [];
+        setlocale(LC_NUMERIC, 'C');
 
-        if ($resumen !== []) {
-            return [
-                'exenta' => $esFacturaExportacion ? 0.0 : (float) ($resumen['totalExenta'] ?? 0),
-                'gravada' => $esFacturaExportacion ? 0.0 : (float) ($resumen['totalGravada'] ?? 0),
-                'no_sujeta' => (float) ($resumen['totalNoSuj'] ?? 0),
-                'total_propio' => $totalPropio,
-                'exportacion' => $esFacturaExportacion ? $totalPropio : 0.0,
-            ];
-        }
+        $nombreDoc = trim((string) ($venta->documento_nombre ?? ''));
+        $esFacturaExportacion = strtolower($nombreDoc) === 'factura de exportación';
+        $montos = LibroConsumidoresFilas::montosAnexoConsumidor($venta, $esFacturaExportacion);
 
-        if ($esFacturaExportacion) {
-            return [
-                'exenta' => 0.0,
-                'gravada' => 0.0,
-                'no_sujeta' => 0.0,
-                'total_propio' => $totalPropio,
-                'exportacion' => $totalPropio,
-            ];
-        }
-
-        if ((float) ($venta->iva ?? 0) > 0) {
-            return [
-                'exenta' => 0.0,
-                'gravada' => $totalPropio,
-                'no_sujeta' => LibroIvaMontosHelper::ventasNoSujetas($venta),
-                'total_propio' => $totalPropio,
-                'exportacion' => 0.0,
-            ];
-        }
+        $tieneFE = $this->feActiva() && ! empty($venta->sello_mh);
+        $codigoGeneracion = $tieneFE
+            ? LibroConsumidoresFilas::codigoAnexoSinGuiones($venta->codigo_generacion ?? '')
+            : '';
+        $numeroControl = $tieneFE
+            ? LibroConsumidoresFilas::codigoAnexoSinGuiones($venta->numero_control ?? '')
+            : '';
+        $sello = $tieneFE ? (string) ($venta->sello_mh ?? '') : '';
+        $correlativo = trim((string) $venta->correlativo);
 
         return [
-            'exenta' => $totalPropio,
-            'gravada' => 0.0,
-            'no_sujeta' => LibroIvaMontosHelper::ventasNoSujetas($venta),
-            'total_propio' => $totalPropio,
-            'exportacion' => 0.0,
+            \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y'),
+            $this->obtenerClaseDocumento($venta),
+            '01',
+            $numeroControl,
+            $sello,
+            $tieneFE ? $codigoGeneracion : $correlativo,
+            $tieneFE ? $codigoGeneracion : $correlativo,
+            $tieneFE ? '' : $correlativo,
+            $tieneFE ? '' : $correlativo,
+            null,
+            $montos['exenta'] > 0 ? number_format($montos['exenta'], 2, '.', '') : '0.00',
+            '0.00',
+            $montos['no_sujeta'] > 0 ? number_format($montos['no_sujeta'], 2, '.', '') : '0.00',
+            $esFacturaExportacion ? '0.00' : number_format($montos['gravada'], 2, '.', ''),
+            $esFacturaExportacion ? number_format($montos['exportacion'], 2, '.', '') : '0.00',
+            '0.00',
+            '0.00',
+            '0.00',
+            '0.00',
+            number_format($montos['total_propio'], 2, '.', ''),
+            $this->tipoOperacion($venta->tipo_operacion),
+            $this->tipoRentaVenta($venta),
+            2,
         ];
-    }
-
-    public function map($venta): array{
-            setlocale(LC_NUMERIC, 'C');
-
-            $documento = $venta->documento;
-            $esFacturaExportacion = $documento && strtolower(trim($documento->nombre ?? '')) === 'factura de exportación';
-            $montos = $this->montosAnexoConsumidor($venta, $esFacturaExportacion);
-
-           // Según guía de Hacienda:
-           // Para documentos IMPRESOS (sin FE): F y G = correlativo, H e I = correlativo
-           // Para documentos DTE (con FE): F y G = código generación, H e I = vacío o código generación
-           $tieneFE = $this->tieneFacturacionElectronica() && $venta->sello_mh;
-           $codigoGeneracion = $tieneFE && isset($venta->dte['identificacion']['codigoGeneracion']) 
-               ? str_replace('-', '', $venta->dte['identificacion']['codigoGeneracion']) 
-               : '';
-           $correlativo = trim($venta->correlativo);
-           
-           $fields = [
-                \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y'), //A Fecha
-                $this->obtenerClaseDocumento($venta), //B Clase DTE o Impreso,
-                '01', //C Tipo
-                $tieneFE ? str_replace('-', '', $venta->dte['identificacion']['numeroControl'] ?? '') : '', //D Resolucion (vacío si impreso)
-                $tieneFE ? ($venta->dte['sello'] ?? '') : '', //E Serie (vacío si impreso)
-                $tieneFE ? $codigoGeneracion : $correlativo, //F Numero Interno del (código generación si DTE, correlativo si impreso)
-                $tieneFE ? $codigoGeneracion : $correlativo, //G Numero Interno al (código generación si DTE, correlativo si impreso)
-                $tieneFE ? '' : $correlativo, //H Numero Control (vacío si DTE, correlativo si impreso)
-                $tieneFE ? '' : $correlativo, //I Numero Control (vacío si DTE, correlativo si impreso)
-                NULL, //J Caja registradora
-                $montos['exenta'] > 0 ? number_format($montos['exenta'], 2, '.', '') : '0.00', //K Exentas
-                '0.00', //L No Exentas no sujetas a proporcionalidad
-                $montos['no_sujeta'] > 0 ? number_format($montos['no_sujeta'], 2, '.', '') : '0.00', //M No Sujetas (sin cobro a terceros)
-                $esFacturaExportacion ? '0.00' : number_format($montos['gravada'], 2, '.', ''), //N Gravadas'
-                $esFacturaExportacion ? number_format($montos['exportacion'], 2, '.', ''): '0.00', //O Exportacion internas (propio, sin terceros)'
-                '0.00', //P Exportacion externas'
-                '0.00', //Q Exportacion servicios'
-                '0.00', //R Ventas zonas francas'
-                '0.00', //S Ventas a terceros — no aplica en anexo consumidor final
-                number_format($montos['total_propio'], 2, '.', ''), //T Total (sin cobro por cuenta de terceros)
-                $this->tipoOperacion($venta->tipo_operacion), //U Tipo operacion renta 1 Gravada 2 Exenta
-                $this->tipoRentaVenta($venta), //V Tipo ingreso renta
-                2, //W num de Anexo
-
-         ];
-        return $fields;
     }
 
     public function getCsvSettings(): array
@@ -162,7 +109,8 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
         ];
     }
 
-    function tipoOperacion($operacion) {
+    function tipoOperacion($operacion)
+    {
         switch ($operacion) {
             case 'Gravada': return 1;
             case 'No Gravada': return 2;
@@ -184,8 +132,8 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
 
     private function tipoRentaEmpresaFallback($venta): ?string
     {
-        $empresa = $venta->empresa ?? Auth::user()->empresa()->first();
-        if (!$empresa) {
+        $empresa = $this->empresa;
+        if (! $empresa) {
             return null;
         }
 
@@ -199,7 +147,8 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
         return $empresa->tipo_renta_productos;
     }
 
-    function tipoRenta($tipo) {
+    function tipoRenta($tipo)
+    {
         switch ($tipo) {
             case 'Profesiones, Artes y Oficios': return 1;
             case 'Actividades de Servicios': return 2;
@@ -216,6 +165,4 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
             default: return null;
         }
     }
-
-
 }

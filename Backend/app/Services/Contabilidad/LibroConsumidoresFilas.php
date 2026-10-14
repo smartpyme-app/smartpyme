@@ -4,6 +4,7 @@ namespace App\Services\Contabilidad;
 
 use App\Models\Ventas\Venta;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder;
 
 /**
@@ -14,19 +15,7 @@ class LibroConsumidoresFilas
 {
     public static function consulta(object $request, bool $facturacionElectronica): Builder
     {
-        return Venta::query()
-            ->join('documentos', 'documentos.id', '=', 'ventas.id_documento')
-            ->where('ventas.estado', '!=', 'Anulada')
-            ->whereIn('documentos.nombre', ['Factura', 'Factura de exportación'])
-            ->where('ventas.cotizacion', 0)
-            ->when($request->id_sucursal, function ($query) use ($request) {
-                $query->where('ventas.id_sucursal', $request->id_sucursal);
-            })
-            ->whereBetween('ventas.fecha', [$request->inicio, $request->fin])
-            ->when($facturacionElectronica, function ($query) {
-                $query->whereNotNull('ventas.sello_mh')
-                    ->where('ventas.sello_mh', '!=', '');
-            })
+        return self::queryConsumidor($request, $facturacionElectronica)
             ->select([
                 'ventas.fecha',
                 'ventas.correlativo',
@@ -41,6 +30,79 @@ class LibroConsumidoresFilas
                 'documentos.nombre as documento_nombre',
             ])
             ->toBase();
+    }
+
+    /** Ventas del anexo CSV (sin columna dte / S3). */
+    public static function consultaAnexo(object $request, bool $facturacionElectronica): EloquentBuilder
+    {
+        return self::queryConsumidor($request, $facturacionElectronica)
+            ->select([
+                'ventas.id',
+                'ventas.fecha',
+                'ventas.correlativo',
+                'ventas.codigo_generacion',
+                'ventas.numero_control',
+                'ventas.sello_mh',
+                'ventas.total',
+                'ventas.cuenta_a_terceros',
+                'ventas.exenta',
+                'ventas.gravada',
+                'ventas.sub_total',
+                'ventas.no_sujeta',
+                'ventas.iva',
+                'ventas.tipo_operacion',
+                'ventas.tipo_renta',
+                'documentos.nombre as documento_nombre',
+            ])
+            ->orderByDesc('ventas.fecha');
+    }
+
+    public static function codigoAnexoSinGuiones(?string $codigo): string
+    {
+        return str_replace('-', '', trim((string) $codigo));
+    }
+
+    /**
+     * @return array{exenta: float, gravada: float, no_sujeta: float, total_propio: float, exportacion: float}
+     */
+    public static function montosAnexoConsumidor(object $venta, bool $esFacturaExportacion): array
+    {
+        $totalPropio = LibroIvaMontosHelper::montoVentaPropioSinCuentaTerceros($venta);
+
+        if ($esFacturaExportacion) {
+            return [
+                'exenta' => 0.0,
+                'gravada' => 0.0,
+                'no_sujeta' => 0.0,
+                'total_propio' => $totalPropio,
+                'exportacion' => $totalPropio,
+            ];
+        }
+
+        return [
+            'exenta' => LibroIvaMontosHelper::ventasExentas($venta),
+            'gravada' => LibroIvaMontosHelper::ventasGravadas($venta),
+            'no_sujeta' => LibroIvaMontosHelper::ventasNoSujetas($venta),
+            'total_propio' => $totalPropio,
+            'exportacion' => 0.0,
+        ];
+    }
+
+    private static function queryConsumidor(object $request, bool $facturacionElectronica): EloquentBuilder
+    {
+        return Venta::query()
+            ->join('documentos', 'documentos.id', '=', 'ventas.id_documento')
+            ->where('ventas.estado', '!=', 'Anulada')
+            ->whereIn('documentos.nombre', ['Factura', 'Factura de exportación'])
+            ->where('ventas.cotizacion', 0)
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                $query->where('ventas.id_sucursal', $request->id_sucursal);
+            })
+            ->whereBetween('ventas.fecha', [$request->inicio, $request->fin])
+            ->when($facturacionElectronica, function ($query) {
+                $query->whereNotNull('ventas.sello_mh')
+                    ->where('ventas.sello_mh', '!=', '');
+            });
     }
 
     public static function codigo(object $venta, bool $facturacionElectronica): string

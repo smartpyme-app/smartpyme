@@ -36,6 +36,23 @@ class LibroConsumidoresFilasTest extends TestCase
         $this->assertSame('20', $filas[0]['correlativo_final']);
     }
 
+    public function test_montos_anexo_sin_leer_dte(): void
+    {
+        $venta = $this->venta('2026-10-01', '1', 'UUID', 'Factura', 113, 100);
+        $venta->dte = 'no-leer';
+
+        $montos = LibroConsumidoresFilas::montosAnexoConsumidor($venta, false);
+
+        $this->assertSame(100.0, $montos['gravada']);
+        $this->assertSame(113.0, $montos['total_propio']);
+        $this->assertSame(0.0, $montos['exportacion']);
+    }
+
+    public function test_codigo_anexo_quita_guiones(): void
+    {
+        $this->assertSame('AABBCC', LibroConsumidoresFilas::codigoAnexoSinGuiones('AA-BB-CC'));
+    }
+
     private function venta(string $fecha, string $correlativo, string $codigo, string $documento, float $total, float $gravada): object
     {
         return (object) [
