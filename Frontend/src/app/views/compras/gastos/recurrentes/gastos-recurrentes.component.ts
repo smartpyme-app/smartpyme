@@ -87,9 +87,10 @@ export class GastosRecurrentesComponent extends BaseCrudComponent<any> implement
         this.loadAll();
         this.apiService.getAll('proveedores/list')
           .pipe(this.untilDestroyed())
-          .subscribe(proveedores => { 
+          .subscribe(proveedores => {
             this.proveedores = proveedores;
-        }, error => {this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     public override loadAll() {
@@ -110,6 +111,7 @@ export class GastosRecurrentesComponent extends BaseCrudComponent<any> implement
 
     public filtrarGastos(){
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.getAll('gastos', this.filtros)
           .pipe(this.untilDestroyed())
           .subscribe({
@@ -117,10 +119,12 @@ export class GastosRecurrentesComponent extends BaseCrudComponent<any> implement
                   this.gastos = gastos;
                   this.loading = false;
                   this.closeModal();
+                  this.cdr.markForCheck();
               },
               error: (error) => {
                   this.alertService.error(error);
                   this.loading = false;
+                  this.cdr.markForCheck();
               }
           });
     }
@@ -165,9 +169,11 @@ export class GastosRecurrentesComponent extends BaseCrudComponent<any> implement
             this.gasto = {};
             this.loadAll();
             this.alertService.success('Gasto guardada', 'La gasto se marco como no recurrente exitosamente.');
+            this.cdr.markForCheck();
         } catch (error: any) {
             this.alertService.error(error);
             this.saving = false;
+            this.cdr.markForCheck();
         }
     }
 
@@ -193,6 +199,7 @@ export class GastosRecurrentesComponent extends BaseCrudComponent<any> implement
             this.alertService.error(error);
         } finally {
             this.loading = false;
+            this.cdr.markForCheck();
         }
     }
 
@@ -226,10 +233,12 @@ export class GastosRecurrentesComponent extends BaseCrudComponent<any> implement
               next: (gastos) => {
                   this.gastos = gastos;
                   this.loading = false;
+                  this.cdr.markForCheck();
               },
               error: (error) => {
                   this.alertService.error(error);
                   this.loading = false;
+                  this.cdr.markForCheck();
               }
           });
     }
@@ -314,6 +323,7 @@ export class GastosRecurrentesComponent extends BaseCrudComponent<any> implement
             this.downloadingGastos = false;
             this.saving = false;
             this.cerrarModalDescargar();
+            this.cdr.markForCheck();
           }, (error) => {
             if (esErrorTimeoutExport(error)) {
                 this.alertService.error(mensajeErrorTimeoutExport(MAX_DIAS_EXPORT_VENTAS));
@@ -322,6 +332,7 @@ export class GastosRecurrentesComponent extends BaseCrudComponent<any> implement
             }
             this.downloadingGastos = false;
             this.saving = false;
+            this.cdr.markForCheck();
           }
         );
     }
@@ -345,6 +356,7 @@ export class GastosRecurrentesComponent extends BaseCrudComponent<any> implement
             this.downloadingDetalles = false;
             this.saving = false;
             this.cerrarModalDescargar();
+            this.cdr.markForCheck();
           }, (error) => {
             if (esErrorTimeoutExport(error)) {
                 this.alertService.error(mensajeErrorTimeoutExport(MAX_DIAS_EXPORT_DETALLES));
@@ -353,6 +365,7 @@ export class GastosRecurrentesComponent extends BaseCrudComponent<any> implement
             }
             this.downloadingDetalles = false;
             this.saving = false;
+            this.cdr.markForCheck();
           }
         );
     }
