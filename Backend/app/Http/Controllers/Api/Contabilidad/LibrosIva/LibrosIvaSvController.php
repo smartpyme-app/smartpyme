@@ -40,6 +40,7 @@ use App\Services\Contabilidad\LibroIVAService;
 use App\Services\Contabilidad\LibroIvaResumenFiscalService;
 use App\Services\Contabilidad\CostaRica\ReporteDetalleIvaCrService;
 use App\Services\Contabilidad\LibrosIva\LibroIvaPaisResolver;
+use App\Services\Contabilidad\LibroConsumidoresFilas;
 use App\Services\Contabilidad\LibroIvaMontosHelper;
 
 class LibrosIvaSvController extends Controller
@@ -67,91 +68,9 @@ class LibrosIvaSvController extends Controller
     {
         $this->assertElSalvador();
 
-        $ventas = Venta::with(['cliente', 'documento'])
-            ->where('estado', '!=', 'Anulada')
-            ->whereHas('documento', function ($q) {
-                $q->where('nombre', 'Factura')
-                    ->orWhere('nombre', 'Factura de exportación');
-            })
-            ->when($request->id_sucursal, function ($query) use ($request) {
-                return $query->where('id_sucursal', $request->id_sucursal);
-            })
-            ->whereBetween('fecha', [$request->inicio, $request->fin])
-            ->where('cotizacion', 0)
-            ->get();
-
-        // Filtrar ventas según facturación electrónica
-        $ventasFiltradas = $this->facturacionElectronicaHelper->filtrarVentasPorFacturacionElectronica($ventas);
-
-        $libroconsumidores = $ventasFiltradas
-            ->groupBy(function ($venta) {
-                return Carbon::parse($venta->fecha)->format('Y-m-d');
-            })
-            ->map(function ($ventasDia, $fecha) {
-                $ventasOrdenadasPorCorrelativo = $ventasDia->sortBy(function ($venta) {
-                    return trim((string) $venta->correlativo);
-                });
-
-                $ventasOrdenadasPorCodigo = $ventasDia->sortBy(function ($venta) {
-                    return $this->facturacionElectronicaHelper->obtenerCodigoGeneracion($venta);
-                });
-
-                // Primero identificar exportaciones (sin importar el IVA)
-                $exportaciones = $ventasDia->sum(function ($venta) {
-                    $documentoNombre = trim(optional($venta->documento)->nombre ?? '');
-                    return strtolower($documentoNombre) === 'factura de exportación'
-                        ? $this->montoVentaPropioSinCuentaTerceros($venta)
-                        : 0;
-                });
-
-                // Luego clasificar las ventas restantes (excluyendo exportaciones)
-                $ventasExentas = $ventasDia->sum(function ($venta) {
-                    $documentoNombre = trim(optional($venta->documento)->nombre ?? '');
-                    if (strtolower($documentoNombre) === 'factura de exportación') {
-                        return 0;
-                    }
-
-                    return LibroIvaMontosHelper::ventasExentas($venta);
-                });
-
-                $ventasGravadas = $ventasDia->sum(function ($venta) {
-                    $documentoNombre = trim(optional($venta->documento)->nombre ?? '');
-                    if (strtolower($documentoNombre) === 'factura de exportación') {
-                        return 0;
-                    }
-
-                    return LibroIvaMontosHelper::ventasGravadas($venta);
-                });
-
-                $ventasTerceros = $ventasDia->sum(function ($venta) {
-                    return (float) $venta->cuenta_a_terceros;
-                });
-
-                $totalDiario = $ventasDia->sum(function ($venta) {
-                    return $this->montoVentaPropioSinCuentaTerceros($venta);
-                });
-
-                $primeraVenta = $ventasOrdenadasPorCodigo->first();
-                $ultimaVenta = $ventasOrdenadasPorCodigo->last();
-                $correlativoInicial = optional($ventasOrdenadasPorCorrelativo->first())->correlativo;
-
-                return [
-                    'fecha' => $fecha,
-                    'correlativo_inicial' => $primeraVenta ? $this->facturacionElectronicaHelper->obtenerCodigoGeneracion($primeraVenta) : null,
-                    'correlativo_final' => $ultimaVenta ? $this->facturacionElectronicaHelper->obtenerCodigoGeneracion($ultimaVenta) : null,
-                    'ventas_exentas' => round($ventasExentas, 2),
-                    'ventas_internas_gravadas' => round($ventasGravadas, 2),
-                    'exportaciones' => round($exportaciones, 2),
-                    'total_ventas_diarias_propias' => round($totalDiario, 2),
-                    'ventas_a_cuenta_de_terceros' => round($ventasTerceros, 2),
-                    'correlativo_orden' => trim((string) $correlativoInicial),
-                ];
-            })
-            ->sortBy(function ($item) {
-                return [$item['fecha'], $item['correlativo_orden'] ?? ''];
-            })
-            ->values()
-            ->all();
+        $facturacionElectronica = $this->facturacionElectronicaHelper->tieneFacturacionElectronica();
+        $ventas = LibroConsumidoresFilas::consulta($request, $facturacionElectronica)->get();
+        $libroconsumidores = LibroConsumidoresFilas::filas($ventas, $facturacionElectronica);
 
         $totalesConsumidores = collect($libroconsumidores)->reduce(function ($carry, $item) {
             $carry['ventas_exentas'] += $item['ventas_exentas'];

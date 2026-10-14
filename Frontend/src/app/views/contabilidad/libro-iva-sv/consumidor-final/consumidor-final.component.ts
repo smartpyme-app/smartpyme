@@ -80,8 +80,6 @@ export class ConsumidorFinalComponent extends BaseModalComponent implements OnIn
             },
             (error) => { this.alertService.error(error); }
         );
-
-        this.loadAll();
     }
 
     /** Solo para El Salvador: opciones de descarga ZIP y CSV (declaración MH) */
