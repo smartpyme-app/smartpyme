@@ -113,7 +113,14 @@
               }" class="click text-center">
               Método de pago
             </th>
-            <th>Monto</th>
+            <th (click)="setOrden('monto')" [ngClass]="{
+                'sorted-asc':
+                  filtros.orden == 'monto' && filtros.direccion == 'asc',
+                'sorted-desc':
+                  filtros.orden == 'monto' && filtros.direccion == 'desc'
+              }" class="click">
+              Monto
+            </th>
             <th (click)="setOrden('estado_suscripcion')" [ngClass]="{
                 'sorted-asc':
                   filtros.orden == 'estado_suscripcion' &&
@@ -1110,6 +1117,21 @@
           <small class="text-muted">
             Filtra clientes según el día del mes en que tienen programado su próximo pago
           </small>
+        </div>
+        <div class="form-group col-sm-12">
+          <label for="">Monto de la suscripción:</label>
+          <div class="row">
+            <div class="col-6">
+              <label class="form-label" for="filtros.monto_desde">Desde</label>
+              <input type="number" class="form-control" name="filtros.monto_desde" min="0" step="0.01"
+                [(ngModel)]="filtros.monto_desde" />
+            </div>
+            <div class="col-6">
+              <label class="form-label" for="filtros.monto_hasta">Hasta</label>
+              <input type="number" class="form-control" name="filtros.monto_hasta" min="0" step="0.01"
+                [(ngModel)]="filtros.monto_hasta" />
+            </div>
+          </div>
         </div>
         <div class="form-group col-12 col-md-6">
           <label for="filtros.plan">Plan:</label>

@@ -90,6 +90,16 @@ class SuscripcionesController extends Controller
                 })
                 ->when($request->campania, function ($q) use ($request) {
                     return $q->where('campania', 'like', '%' . $request->campania . '%');
+                })
+                ->when($request->filled('monto_desde'), function ($q) use ($request) {
+                    return $q->whereHas('suscripcion', function ($query) use ($request) {
+                        $query->where('monto', '>=', $request->monto_desde);
+                    });
+                })
+                ->when($request->filled('monto_hasta'), function ($q) use ($request) {
+                    return $q->whereHas('suscripcion', function ($query) use ($request) {
+                        $query->where('monto', '<=', $request->monto_hasta);
+                    });
                 });
 
             if (!$request->estado) {
@@ -173,6 +183,12 @@ class SuscripcionesController extends Controller
             case 'tipo_plan':
                 $query->leftJoin('suscripciones as s6', 'empresas.id', '=', 's6.empresa_id')
                     ->orderBy('s6.tipo_plan', $direccion)
+                    ->select('empresas.*');
+                break;
+
+            case 'monto':
+                $query->leftJoin('suscripciones as s7', 'empresas.id', '=', 's7.empresa_id')
+                    ->orderBy('s7.monto', $direccion)
                     ->select('empresas.*');
                 break;
 

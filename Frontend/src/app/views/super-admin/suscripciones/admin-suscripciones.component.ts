@@ -345,6 +345,8 @@ export class AdminSuscripcionesComponent implements OnInit {
       campania: '',
       fecha_pago_inicio: '',
       fecha_pago_fin: '',
+      monto_desde: '',
+      monto_hasta: '',
     };
 
     this.filtrarSuscripciones();

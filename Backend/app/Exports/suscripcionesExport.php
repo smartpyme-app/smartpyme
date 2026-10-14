@@ -89,6 +89,16 @@ class SuscripcionesExport implements FromCollection, WithHeadings, WithMapping, 
             })
             ->when($request->forma_pago, function ($q) use ($request) {
                 return $q->where('metodo_pago', $request->forma_pago);
+            })
+            ->when($request->filled('monto_desde'), function ($q) use ($request) {
+                return $q->whereHas('suscripcion', function ($query) use ($request) {
+                    $query->where('monto', '>=', $request->monto_desde);
+                });
+            })
+            ->when($request->filled('monto_hasta'), function ($q) use ($request) {
+                return $q->whereHas('suscripcion', function ($query) use ($request) {
+                    $query->where('monto', '<=', $request->monto_hasta);
+                });
             });
 
         $orden = $request->orden ?? 'created_at';
