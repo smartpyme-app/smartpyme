@@ -28,7 +28,7 @@ class GenerarFacturasSuscripciones extends Command
 {
     protected $signature = 'facturas:generar-suscripciones {empresa? : ID de la empresa para ejecutar una prueba específica}';
 
-    protected $description = 'Emite DTE de suscripciones activas con pago por transferencia: planes mensuales el día 1 de cada mes; planes anuales en la fecha de renovación. Excluye n1co (otro flujo).';
+    protected $description = 'Emite DTE de suscripciones activas con pago por transferencia: planes mensuales el día 1 de cada mes; planes anuales en la fecha de renovación. Excluye n1co (otro flujo) y empresas con campaña demo.';
 
     protected MhGovSvGatewayService $mhGateway;
 
@@ -87,6 +87,14 @@ public function handle()
         $fallidas = [];
 
         foreach ($suscripciones as $index => $suscripcion) {
+            if ($this->esEmpresaDemo($suscripcion->empresa)) {
+                $omitidas++;
+                $msgDemo = "Suscripción {$suscripcion->id} omitida: empresa {$suscripcion->empresa_id} con campaña demo.";
+                $this->info($msgDemo);
+                Log::channel('facturacion')->info($msgDemo);
+                continue;
+            }
+
             $esAnual = mb_strtolower((string) $suscripcion->tipo_plan) === 'anual';
             
             if (!$esAnual) {
@@ -183,6 +191,11 @@ public function handle()
         return 1;
     }
 }
+
+    private function esEmpresaDemo(?Empresa $empresa): bool
+    {
+        return mb_strtolower(trim((string) ($empresa->campania ?? ''))) === 'demo';
+    }
 
     private function emitirFactura(Suscripcion $suscripcion): ?Venta
     {
