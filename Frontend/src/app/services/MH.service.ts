@@ -9,6 +9,9 @@ import { ApiService } from '@services/api.service';
 
 export class MHService {
 
+    /** Si la sesión no trae mh_url_firmador (login antiguo o config BD vacía). */
+    private static readonly URL_FIRMADOR_SV_DEFAULT = 'https://facturadtesv.com:8113/firmardocumento/';
+
     public url_pruebas_estadisticas: string = 'mh/pruebas-masivas/estadisticas';
     public url_pruebas_documentos: string = 'mh/pruebas-masivas/documentos-base';
     public url_pruebas_ejecutar: string = 'mh/pruebas-masivas/ejecutar';
@@ -81,12 +84,7 @@ export class MHService {
         formData.passwordPri = user.empresa.mh_pwd_certificado;
         formData.dteJson = DTE;
 
-        const url = this.urlFirmadorDesdeSesion();
-        if (!url) {
-            return throwError(() => new Error('No hay URL de firmador configurada. Vuelva a iniciar sesión o contacte soporte.'));
-        }
-
-        return this.httpSinInterceptores.post<any>(url, formData, {
+        return this.httpSinInterceptores.post<any>(this.urlFirmadorDesdeSesion(), formData, {
             headers: new HttpHeaders({ 'Content-Type': 'application/json' }),
         });
     }
@@ -137,23 +135,19 @@ export class MHService {
 
     verificarFirmador(): Observable<any> {
         const url = this.urlFirmadorDesdeSesion();
-        if (!url) {
-            return throwError(() => new Error('No hay URL de firmador configurada. Vuelva a iniciar sesión o contacte soporte.'));
-        }
-
         return this.httpSinInterceptores.get<any>(`${url}status`, { observe: 'response' });
     }
 
-    private urlFirmadorDesdeSesion(): string | null {
+    private urlFirmadorDesdeSesion(): string {
         try {
             const user = JSON.parse(localStorage.getItem('SP_auth_user') || 'null');
             const raw = (user?.empresa?.mh_url_firmador ?? '').trim();
             if (!raw) {
-                return null;
+                return MHService.URL_FIRMADOR_SV_DEFAULT;
             }
             return raw.endsWith('/') ? raw : `${raw}/`;
         } catch {
-            return null;
+            return MHService.URL_FIRMADOR_SV_DEFAULT;
         }
     }
 
