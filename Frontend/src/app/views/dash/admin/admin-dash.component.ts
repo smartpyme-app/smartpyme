@@ -7,7 +7,8 @@ import * as moment from 'moment';
 
 @Component({
   selector: 'app-admin-dash',
-  templateUrl: './admin-dash.component.html'
+  templateUrl: './admin-dash.component.html',
+  styleUrls: ['./admin-dash.component.css']
 })
 export class AdminDashComponent implements OnInit {
 
