@@ -32,6 +32,7 @@ use App\Models\Promocional;
 use App\Models\Suscripcion;
 use App\Services\Suscripcion\SuscripcionService;
 use App\Services\Auth\AuthService;
+use App\Services\Contadores\ContadorSesionEmpresa;
 use App\Services\Payment\N1coService;
 use App\Services\Suscripcion\CancelacionSuscripcionService;
 use Illuminate\Support\Facades\Password;
@@ -46,17 +47,20 @@ class AuthJWTController extends Controller
     private $authService;
     private $n1coService;
     private $cancelacionSuscripcionService;
+    private $contadorSesionEmpresa;
 
     public function __construct(
         SuscripcionService $suscripcionService,
         AuthService $authService,
         N1coService $n1coService,
-        CancelacionSuscripcionService $cancelacionSuscripcionService
+        CancelacionSuscripcionService $cancelacionSuscripcionService,
+        ContadorSesionEmpresa $contadorSesionEmpresa
     ) {
         $this->suscripcionService = $suscripcionService;
         $this->authService = $authService;
         $this->n1coService = $n1coService;
         $this->cancelacionSuscripcionService = $cancelacionSuscripcionService;
+        $this->contadorSesionEmpresa = $contadorSesionEmpresa;
     }
 
     public function login(Request $request)
@@ -71,6 +75,11 @@ class AuthJWTController extends Controller
 
         if (!$token)
             return  Response()->json(['message' => 'Datos incorrectos, asegúrate de que tu usuario y contraseña estén escritos correctamente.', 'code' => 401], 401);
+
+        $this->contadorSesionEmpresa->aplicarEmpresaDeEntrada(
+            $user,
+            $request->headers->get('Origin') ?: $request->headers->get('Referer')
+        );
 
         if (!$user->enable)
             return  Response()->json(['message' => 'Lo sentimos, este usuario esta inactivo', 'code' => 401], 401);

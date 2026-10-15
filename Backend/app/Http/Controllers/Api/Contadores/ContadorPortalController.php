@@ -423,6 +423,12 @@ class ContadorPortalController extends Controller
             $idEmpresaActual = (int) $user->id_empresa;
             if (!$carteraIds->contains($idEmpresaActual) && $carteraIds->contains($idEmpresa)) {
                 Cache::forever($this->cacheKeyDespachoHome($user->id), $idEmpresaActual);
+                if (!$user->id_empresa_firma_contador) {
+                    User::withoutGlobalScopes()
+                        ->whereKey($user->id)
+                        ->update(['id_empresa_firma_contador' => $idEmpresaActual]);
+                    $user->id_empresa_firma_contador = $idEmpresaActual;
+                }
             }
         }
 
