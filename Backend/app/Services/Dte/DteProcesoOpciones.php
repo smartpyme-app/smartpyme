@@ -19,6 +19,8 @@ final class DteProcesoOpciones
         public readonly ?string $detalleBanco = null,
         public readonly bool $esRetaceo = false,
         public readonly array $lineMappings = [],
+        public readonly ?int $idSucursal = null,
+        public readonly ?int $idBodega = null,
     ) {}
 
     public static function fromArray(array $input): self
@@ -46,7 +48,31 @@ final class DteProcesoOpciones
             detalleBanco: $detalleBanco !== '' ? $detalleBanco : null,
             esRetaceo: filter_var($input['es_retaceo'] ?? false, FILTER_VALIDATE_BOOLEAN),
             lineMappings: $mappings,
+            idSucursal: self::enteroPositivo($input['id_sucursal'] ?? null),
+            idBodega: self::enteroPositivo($input['id_bodega'] ?? null),
         );
+    }
+
+    public function validarDestino(string $destino): void
+    {
+        if ($this->idSucursal === null) {
+            throw new InvalidArgumentException('Seleccione la sucursal.');
+        }
+
+        if ($destino === 'compra' && $this->idBodega === null) {
+            throw new InvalidArgumentException('Seleccione la bodega.');
+        }
+    }
+
+    private static function enteroPositivo(mixed $valor): ?int
+    {
+        if ($valor === null || $valor === '') {
+            return null;
+        }
+
+        $id = (int) $valor;
+
+        return $id > 0 ? $id : null;
     }
 
     public function omitirCompraPendienteClasificacion(string $status): bool

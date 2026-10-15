@@ -34,6 +34,7 @@ use Auth;
 use App\Services\ShopifyStockService;
 use App\Services\Inventario\ConversionInventarioService;
 use App\Services\Inventario\LoteAsignacionService;
+use App\Services\Inventario\LoteEnDescripcionDte;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use App\Constants\DocumentoConstants;
@@ -399,6 +400,17 @@ class ComprasController extends Controller
 
                     if ($producto && $producto->inventario_por_lotes && $lotesActivo) {
                         $asignacionManual = !empty($det['lotes_asignados']) ? $det['lotes_asignados'] : null;
+                        if (empty($asignacionManual)) {
+                            $pendiente = $det['lote_pendiente'] ?? LoteEnDescripcionDte::extraer($det['descripcion'] ?? null);
+                            if (is_array($pendiente) && !empty($pendiente['numero_lote'])) {
+                                $asignacionManual = LoteEnDescripcionDte::asignarOCrear(
+                                    $producto,
+                                    (int) $compra->id_bodega,
+                                    (float) $cantidadBaseInv,
+                                    $pendiente
+                                );
+                            }
+                        }
                         $lotePreferido = !empty($det['lote_id']) ? (int) $det['lote_id'] : null;
 
                         $asignaciones = LoteAsignacionService::resolverAsignacionesEntrada(

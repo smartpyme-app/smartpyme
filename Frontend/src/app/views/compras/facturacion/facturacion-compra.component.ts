@@ -44,7 +44,9 @@ import {
 } from '@services/compras/codigo-generacion.util';
 import {
   costoUnitarioDesdeLineaDte,
+  descripcionProductoSinLote,
   descuentoDesdeLineaDte,
+  lotePendienteDesdeDescripcion,
   totalLineaDesdeDte,
 } from '@services/compras/compra-detalle-desde-dte.util';
 import { esDocumentoCompraSinIvaFiscal, FACTURA_REMISION } from '../../../constants/documento.constants';
@@ -776,7 +778,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         if (!detalle?.inventario_por_lotes) {
             return false;
         }
-        return !(detalle.lotes_asignados?.length || detalle.lote_id);
+        return !(detalle.lotes_asignados?.length || detalle.lote_id || detalle.lote_pendiente?.numero_lote);
     }
 
     public normalizarDetallesLotes(): void {
@@ -1642,7 +1644,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
       // Búsqueda por nombre si no se encontró por código
       if (descripcion) {
-        const porNombre = await this.buscarPorNombre(descripcion)
+        const porNombre = await this.buscarPorNombre(descripcionProductoSinLote(descripcion))
           .pipe(this.untilDestroyed())
           .toPromise();
         if (porNombre && porNombre.length > 0) {
@@ -1755,6 +1757,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
       lote_id: null,
       lote: null,
       lotes_asignados: null,
+      lote_pendiente: lotePendienteDesdeDescripcion(item.descripcion),
       porcentaje_impuesto: snapshotPorcentajeImpuestoProducto(
         producto.porcentaje_impuesto,
         empresa?.iva,

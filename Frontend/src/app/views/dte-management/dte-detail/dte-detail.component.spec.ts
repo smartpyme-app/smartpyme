@@ -77,6 +77,8 @@ describe('DteDetailComponent - proceso compra/gasto', () => {
         fechaPago: '2026-09-15',
         detalleBanco: 'Banco Agrícola',
         esRetaceo: true,
+        idSucursal: 8,
+        idBodega: 3,
         lineItems: [{ id_producto: 12, cantidad: 3 }],
       };
 
@@ -87,6 +89,8 @@ describe('DteDetailComponent - proceso compra/gasto', () => {
       expect(payload.fecha_pago).toBe('2026-09-15');
       expect(payload.detalle_banco).toBe('Banco Agrícola');
       expect(payload.es_retaceo).toBe(true);
+      expect(payload.id_sucursal).toBe(8);
+      expect(payload.id_bodega).toBe(3);
       expect(payload.line_mappings).toEqual([{ index: 0, id_producto: 12, cantidad: 3 }]);
     });
 
@@ -102,12 +106,16 @@ describe('DteDetailComponent - proceso compra/gasto', () => {
         fechaPago: null,
         detalleBanco: null,
         esRetaceo: false,
+        idSucursal: 8,
+        idBodega: 3,
         lineItems: [{ id_producto: null, cantidad: 1 }],
       };
 
       const payload = invocar('buildProcesarPayload', ctx);
       expect(payload.line_mappings).toEqual([]);
       expect(payload.id_categoria).toBe(4);
+      expect(payload.id_sucursal).toBe(8);
+      expect(payload.id_bodega).toBeNull();
     });
   });
 

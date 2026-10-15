@@ -6,6 +6,7 @@ import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 import { DteDocumentService, DteDocument, DteDocumentsResponse } from '@services/dte-management/dte-document.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
@@ -39,6 +40,10 @@ export class DteInboxComponent implements OnInit {
   modalProcesarRef?: BsModalRef;
   documentoProcesar: DteDocument | null = null;
   destinoSeleccionado: 'compra' | 'gasto' = 'compra';
+  idSucursal: number | null = null;
+  idBodega: number | null = null;
+  sucursales: any[] = [];
+  bodegas: any[] = [];
   procesando = false;
   mensajeProcesar: string | null = null;
   errorProcesar: string | null = null;
@@ -46,6 +51,7 @@ export class DteInboxComponent implements OnInit {
   constructor(
     private dteService: DteDocumentService,
     private alertService: AlertService,
+    private apiService: ApiService,
     private router: Router,
     private route: ActivatedRoute,
     private modalService: BsModalService
@@ -108,19 +114,67 @@ export class DteInboxComponent implements OnInit {
     }
     this.documentoProcesar = doc;
     this.destinoSeleccionado = (doc.destino || (doc.pais === 'CR' ? 'gasto' : 'compra')) as 'compra' | 'gasto';
+    const usuario = this.apiService.auth_user();
+    this.idSucursal = usuario?.id_sucursal ?? null;
+    this.idBodega = usuario?.id_bodega ?? null;
+    this.cargarSucursalesYBodegas();
     this.procesando = false;
     this.mensajeProcesar = null;
     this.errorProcesar = null;
     this.modalProcesarRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
   }
 
+  get bodegasDeSucursal(): any[] {
+    if (!this.idSucursal) {
+      return [];
+    }
+    return this.bodegas.filter((bodega) => Number(bodega.id_sucursal) === Number(this.idSucursal));
+  }
+
+  cargarSucursalesYBodegas(): void {
+    if (!this.sucursales.length) {
+      this.apiService.getAll('sucursales/list').subscribe({
+        next: (data) => { this.sucursales = data || []; },
+        error: (err) => this.alertService.error(err),
+      });
+    }
+    if (!this.bodegas.length) {
+      this.apiService.getAll('bodegas/list').subscribe({
+        next: (data) => {
+          this.bodegas = data || [];
+          this.cambioSucursal();
+        },
+        error: (err) => this.alertService.error(err),
+      });
+      return;
+    }
+    this.cambioSucursal();
+  }
+
+  cambioSucursal(): void {
+    const pertenece = this.bodegasDeSucursal.some((bodega) => Number(bodega.id) === Number(this.idBodega));
+    if (!pertenece) {
+      this.idBodega = this.bodegasDeSucursal[0]?.id ?? null;
+    }
+  }
+
   confirmarProcesar(): void {
     if (!this.documentoProcesar) return;
+    if (!this.idSucursal) {
+      this.errorProcesar = 'Seleccione la sucursal.';
+      return;
+    }
+    if (this.destinoSeleccionado === 'compra' && !this.idBodega) {
+      this.errorProcesar = 'Seleccione la bodega de la sucursal.';
+      return;
+    }
     this.procesando = true;
     const doc = this.documentoProcesar;
 
     this.dteService.procesar(doc.id, {
       destino: this.destinoSeleccionado,
+      id_sucursal: this.idSucursal,
+      id_bodega: this.destinoSeleccionado === 'compra' ? this.idBodega : null,
     }).subscribe({
       next: (res) => {
         // ponytail: alerta in-modal; AlertService.success hace scroll al tope de la página

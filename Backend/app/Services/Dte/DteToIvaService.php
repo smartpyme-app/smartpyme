@@ -14,6 +14,8 @@ use App\Models\DteManagement\UserEmailAccount;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
 use App\Services\Inventario\ConversionInventarioService;
+use App\Services\Inventario\LoteAsignacionService;
+use App\Services\Inventario\LoteEnDescripcionDte;
 use App\Services\Inventario\ProductoImportacionDteService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -114,8 +116,12 @@ class DteToIvaService
             return ['success' => false];
         }
 
-        $idSucursal = $account->id_sucursal ?? $this->getDefaultSucursalId($document->id_empresa);
-        $idBodega = $account->id_bodega ?? $this->getDefaultBodegaId($document->id_empresa);
+        $idSucursal = $opciones->idSucursal
+            ?? $account->id_sucursal
+            ?? $this->getDefaultSucursalId($document->id_empresa);
+        $idBodega = $opciones->idBodega
+            ?? $account->id_bodega
+            ?? $this->getDefaultBodegaId($document->id_empresa);
         $actualizarInventario = (bool) ($account->actualizar_inventario ?? false);
         $idUsuario = $account->user_id ?? 1;
 
@@ -306,7 +312,7 @@ class DteToIvaService
                 ]);
 
                 if ($actualizarInventario && $idBodega) {
-                    $this->actualizarInventarioCompra($compra, $detalle, $producto);
+                    $this->actualizarInventarioCompra($compra, $detalle, $producto, (string) ($item['descripcion'] ?? ''));
                 }
             }
 
@@ -373,7 +379,7 @@ class DteToIvaService
         ];
     }
 
-    protected function actualizarInventarioCompra(Compra $compra, DetalleCompra $detalle, Producto $producto): void
+    protected function actualizarInventarioCompra(Compra $compra, DetalleCompra $detalle, Producto $producto, string $descripcionLinea = ''): void
     {
         if ($producto->tipo === 'Servicio' || !$compra->id_bodega) {
             return;
@@ -411,6 +417,24 @@ class DteToIvaService
             ],
             ['stock' => 0, 'stock_minimo' => 0, 'stock_maximo' => 0]
         );
+
+        $empresa = \App\Models\Admin\Empresa::find($compra->id_empresa);
+        $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
+        $lote = LoteEnDescripcionDte::extraer($descripcionLinea);
+        if ($producto->inventario_por_lotes && $lotesActivo && $lote) {
+            $asignaciones = LoteEnDescripcionDte::asignarOCrear(
+                $producto,
+                (int) $compra->id_bodega,
+                (float) $detalle->cantidad,
+                $lote
+            );
+            if ($asignaciones !== []) {
+                LoteAsignacionService::aplicarEntradaCompra($asignaciones, $detalle, $compra, $inventario);
+
+                return;
+            }
+        }
+
         $inventario->stock += $detalle->cantidad;
         $inventario->save();
         $inventario->kardex($compra, $detalle->cantidad);

@@ -49,6 +49,10 @@ export class DteDetailComponent implements OnInit {
   fechaPago: string | null = null;
   detalleBanco: string | null = null;
   esRetaceo = false;
+  idSucursal: number | null = null;
+  idBodega: number | null = null;
+  sucursales: any[] = [];
+  bodegas: any[] = [];
   formasPago: any[] = [];
   bancos: any[] = [];
   searchProductos$ = new Subject<string>();
@@ -81,6 +85,7 @@ export class DteDetailComponent implements OnInit {
     this.verificarAccesoContabilidad();
     this.cargarProyectos();
     this.cargarFormasPagoYBancos();
+    this.cargarSucursalesYBodegas();
     this.configurarBusquedaProductos();
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
@@ -115,6 +120,41 @@ export class DteDetailComponent implements OnInit {
     return this.document.validation_status === 'valid'
       && this.document.processing_status !== 'processed'
       && this.document.processing_status !== 'anulado';
+  }
+
+  get bodegasDeSucursal(): any[] {
+    if (!this.idSucursal) {
+      return [];
+    }
+    return this.bodegas.filter((bodega) => Number(bodega.id_sucursal) === Number(this.idSucursal));
+  }
+
+  cargarSucursalesYBodegas(): void {
+    const usuario = this.apiService.auth_user();
+    this.idSucursal = usuario?.id_sucursal ?? null;
+    this.idBodega = usuario?.id_bodega ?? null;
+    this.apiService.getAll('sucursales/list').subscribe({
+      next: (data) => { this.sucursales = data || []; },
+      error: (err) => this.alertService.error(err),
+    });
+    this.apiService.getAll('bodegas/list').subscribe({
+      next: (data) => {
+        this.bodegas = data || [];
+        this.ajustarBodegaASucursal();
+      },
+      error: (err) => this.alertService.error(err),
+    });
+  }
+
+  cambioSucursal(): void {
+    this.ajustarBodegaASucursal();
+  }
+
+  private ajustarBodegaASucursal(): void {
+    const pertenece = this.bodegasDeSucursal.some((bodega) => Number(bodega.id) === Number(this.idBodega));
+    if (!pertenece) {
+      this.idBodega = this.bodegasDeSucursal[0]?.id ?? null;
+    }
   }
 
   verificarAccesoContabilidad(): void {
@@ -510,6 +550,8 @@ export class DteDetailComponent implements OnInit {
       fecha_pago: this.credito ? this.fechaPago : null,
       detalle_banco: this.requiereBanco ? this.detalleBanco : null,
       es_retaceo: this.esRetaceo,
+      id_sucursal: this.idSucursal,
+      id_bodega: this.esCompra ? this.idBodega : null,
       line_mappings: this.esCompra
         ? this.lineItems.map((item, index) => ({
             index,
@@ -522,6 +564,14 @@ export class DteDetailComponent implements OnInit {
 
   procesar(): void {
     if (!this.document) return;
+    if (!this.idSucursal) {
+      this.alertService.warning('Sucursal', 'Seleccione la sucursal.');
+      return;
+    }
+    if (this.esCompra && !this.idBodega) {
+      this.alertService.warning('Bodega', 'Seleccione la bodega de la sucursal.');
+      return;
+    }
     if (this.requiereBanco && !this.detalleBanco) {
       this.alertService.warning('Banco requerido', 'Seleccione el banco para esta forma de pago.');
       return;

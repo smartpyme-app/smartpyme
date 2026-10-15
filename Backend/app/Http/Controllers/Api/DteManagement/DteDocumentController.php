@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api\DteManagement;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin\Sucursal;
 use App\Models\DteManagement\DteDocument;
 use App\Models\DteManagement\UserEmailAccount;
+use App\Models\Inventario\Bodega;
 use App\Services\Dte\DteProcesoOpciones;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -288,6 +290,8 @@ class DteDocumentController extends Controller
         try {
             $opciones->validarPago();
             $destino = $document->destino ?? $request->input('destino');
+            $opciones->validarDestino((string) $destino);
+            $this->validarSucursalProceso($document->id_empresa, $opciones, (string) $destino);
             if ($destino === 'compra') {
                 $lineCount = count($this->parseLineItemsFromJson($this->jsonData($document)));
                 $opciones->validarLineasCompra($lineCount);
@@ -331,6 +335,29 @@ class DteDocumentController extends Controller
         }
 
         return response()->json(['error' => 'Error al procesar el DTE'], 500);
+    }
+
+    private function validarSucursalProceso(int $idEmpresa, DteProcesoOpciones $opciones, string $destino): void
+    {
+        $sucursalOk = Sucursal::withoutGlobalScopes()
+            ->where('id', $opciones->idSucursal)
+            ->where('id_empresa', $idEmpresa)
+            ->exists();
+        if (!$sucursalOk) {
+            throw new \InvalidArgumentException('La sucursal no corresponde a la empresa.');
+        }
+
+        if ($destino !== 'compra') {
+            return;
+        }
+
+        $bodegaOk = Bodega::withoutGlobalScopes()
+            ->where('id', $opciones->idBodega)
+            ->where('id_sucursal', $opciones->idSucursal)
+            ->exists();
+        if (!$bodegaOk) {
+            throw new \InvalidArgumentException('La bodega no corresponde a la sucursal.');
+        }
     }
 
     /**
