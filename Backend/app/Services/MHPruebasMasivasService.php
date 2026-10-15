@@ -16,6 +16,7 @@ use App\Models\MH\MHSujetoExcluidoGasto;
 use App\Models\MH\ActividadEconomica;
 use App\Models\TrabajosPendientes;
 use App\Services\MH\MHPruebasMasivasOutcome;
+use App\Models\PaisConfiguracion;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -1756,7 +1757,7 @@ class MHPruebasMasivasService
                 'http_errors' => false
             ]);
 
-            $responseFirma = $client->post(config('app.mh_url_firmado', 'https://facturadtesv.com:8443/firmardocumento/'), [
+            $responseFirma = $client->post(PaisConfiguracion::urlFirmadorParaEmpresa($this->empresa), [
                 'json' => $datosParaFirma,
                 'headers' => [
                     'Content-Type' => 'application/json',

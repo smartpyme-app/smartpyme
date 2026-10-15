@@ -15,6 +15,7 @@ use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Detalle;
 use App\Models\Ventas\Venta;
 use App\Services\MhGovSvGatewayService;
+use App\Models\PaisConfiguracion;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Http\Client\ConnectionException;
@@ -450,7 +451,7 @@ public function handle()
             'dteJson' => $dteJson,
         ];
 
-        $urlFirmador = 'https://facturadtesv.com:8443/firmardocumento/';
+        $urlFirmador = PaisConfiguracion::urlFirmadorParaEmpresa($empresa);
 
         $response = Http::timeout((int) config('mh.timeout_seconds', 120))
             ->withOptions([

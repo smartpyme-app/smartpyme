@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\Ventas\Detalle;
 use App\Models\Ventas\Venta;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryGate;
+use App\Models\PaisConfiguracion;
 use App\Services\MhGovSvGatewayService;
 use App\Services\Moneda\MonedaPaisService;
 use Carbon\Carbon;
@@ -692,7 +693,7 @@ class GenerarVentasRecurrentesService
             ])
             ->acceptJson()
             ->asJson()
-            ->post(config('app.mh_url_firmado', 'https://facturadtesv.com:8443/firmardocumento/'), [
+            ->post(PaisConfiguracion::urlFirmadorParaEmpresa($empresa), [
                 'nit' => $nit,
                 'activo' => true,
                 'passwordPri' => (string) $empresa->mh_pwd_certificado,

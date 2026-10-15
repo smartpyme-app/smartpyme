@@ -33,6 +33,7 @@ use App\Models\Suscripcion;
 use App\Services\Suscripcion\SuscripcionService;
 use App\Services\Auth\AuthService;
 use App\Services\Contadores\ContadorSesionEmpresa;
+use App\Models\PaisConfiguracion;
 use App\Services\Payment\N1coService;
 use App\Services\Suscripcion\CancelacionSuscripcionService;
 use Illuminate\Support\Facades\Password;
@@ -102,6 +103,7 @@ class AuthJWTController extends Controller
             $user->empresa->es_empresa_padre = $user->empresa->esEmpresaPadre();
             $user->empresa->es_empresa_hija = $user->empresa->esEmpresaHija();
             $this->adjuntarUsaImpresionHtml($user->empresa);
+            $this->adjuntarUrlFirmadorFe($user->empresa);
         }
 
         $suscripcion = $user->empresa->suscripcion()
@@ -551,6 +553,7 @@ class AuthJWTController extends Controller
             $user->empresa->es_empresa_padre = $user->empresa->esEmpresaPadre();
             $user->empresa->es_empresa_hija = $user->empresa->esEmpresaHija();
             $this->adjuntarUsaImpresionHtml($user->empresa);
+            $this->adjuntarUrlFirmadorFe($user->empresa);
         }
 
         $suscripcion = $user->empresa->suscripcion()
@@ -584,6 +587,15 @@ class AuthJWTController extends Controller
             array_map('intval', config('constants.EMPRESAS_IMPRESION_HTML', [])),
             true
         );
+    }
+
+    private function adjuntarUrlFirmadorFe($empresa): void
+    {
+        try {
+            $empresa->mh_url_firmador = PaisConfiguracion::urlFirmadorParaEmpresa($empresa);
+        } catch (\Throwable $e) {
+            $empresa->mh_url_firmador = null;
+        }
     }
 
     /**

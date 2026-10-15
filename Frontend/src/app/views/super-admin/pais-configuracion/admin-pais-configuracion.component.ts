@@ -28,7 +28,7 @@ export class AdminPaisConfiguracionComponent implements OnInit {
   modalRef!: BsModalRef;
 
   readonly paises = ['SV', 'CR', 'HN', 'GT', 'NI', 'PA', 'BZ', 'MX'];
-  readonly modulosSugeridos = ['documentos', 'planillas', 'impuestos', 'retenciones', 'identificacion'];
+  readonly modulosSugeridos = ['documentos', 'planillas', 'impuestos', 'retenciones', 'identificacion', 'facturacion_electronica'];
 
   resumen(row: any): string {
     const c = row?.configuracion;
@@ -41,6 +41,9 @@ export class AdminPaisConfiguracionComponent implements OnInit {
     }
     if (c?.moneda != null || c?.iva != null) {
       return `${c.moneda || '?'} · IVA ${c.iva ?? '?'}%`;
+    }
+    if (typeof c?.url_firmador === 'string' && c.url_firmador) {
+      return c.url_firmador;
     }
     return 'objeto JSON';
   }
