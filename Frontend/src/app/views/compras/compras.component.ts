@@ -1470,7 +1470,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
     item.estado = 'lista';
     if (this.apiService.isLotesActivo()) {
       const sinLote = item.compra.detalles.filter(
-        (d: any) => d.inventario_por_lotes && !d.lote_id
+        (d: any) => d.inventario_por_lotes && !d.lote_id && !d.lotes_asignados?.length && !d.lote_pendiente?.numero_lote
       );
       if (sinLote.length) {
         this.alertService.info(
@@ -1501,7 +1501,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
     }
     if (this.apiService.isLotesActivo()) {
       for (const d of item.compra.detalles) {
-        if (d.inventario_por_lotes && !d.lote_id) {
+        if (d.inventario_por_lotes && !d.lote_id && !d.lotes_asignados?.length && !d.lote_pendiente?.numero_lote) {
           return false;
         }
       }

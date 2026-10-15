@@ -5,6 +5,7 @@ import { DocumentoImportService } from '@services/compras/documento-import.servi
 import { ProveedorDesdeEmisorService } from '@services/compras/proveedor-desde-emisor.service';
 import {
   costoUnitarioDesdeLineaDte,
+  lotePendienteDesdeDescripcion,
   totalLineaDesdeDte,
 } from '@services/compras/compra-detalle-desde-dte.util';
 import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
@@ -366,6 +367,7 @@ export class CompraJsonBulkService {
             stock: producto.tipo === 'Servicio' ? null : producto.stock || 0,
             inventario_por_lotes: !!producto.inventario_por_lotes,
             lote_id: null,
+            lote_pendiente: lotePendienteDesdeDescripcion(item.descripcion),
             porcentaje_impuesto: snapshotPorcentajeImpuestoProducto(
                 producto.porcentaje_impuesto,
                 auth?.empresa?.iva,

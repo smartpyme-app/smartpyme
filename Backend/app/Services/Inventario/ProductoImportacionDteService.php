@@ -79,7 +79,7 @@ class ProductoImportacionDteService
             if ($cod !== '' && isset($mapPorCodigo[$cod])) {
                 continue;
             }
-            $desc = isset($it['descripcion']) ? trim((string) $it['descripcion']) : '';
+            $desc = LoteEnDescripcionDte::descripcionProducto($it['descripcion'] ?? null);
             if (strlen($desc) >= 2) {
                 $descripcionesUnicas[$desc] = true;
             }
@@ -97,7 +97,7 @@ class ProductoImportacionDteService
         foreach ($items as $it) {
             $numItem = $it['numItem'] ?? null;
             $cod = isset($it['codigo']) ? trim((string) $it['codigo']) : '';
-            $desc = isset($it['descripcion']) ? trim((string) $it['descripcion']) : '';
+            $desc = LoteEnDescripcionDte::descripcionProducto($it['descripcion'] ?? null);
 
             $producto = null;
             if ($cod !== '' && isset($mapPorCodigo[$cod])) {

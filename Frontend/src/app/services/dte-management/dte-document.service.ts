@@ -64,6 +64,8 @@ export interface DteProcesarPayload {
   fecha_pago?: string | null;
   detalle_banco?: string | null;
   es_retaceo?: boolean;
+  id_sucursal?: number | null;
+  id_bodega?: number | null;
   line_mappings?: { index: number; id_producto: number | null; cantidad: number }[];
 }
 

@@ -318,6 +318,22 @@
         </div>
 
         <div class="form-group col-md-4">
+          <label class="fw-medium">Sucursal</label>
+          <select class="form-select" [(ngModel)]="idSucursal" (ngModelChange)="cambioSucursal()">
+            <option [ngValue]="null">Seleccione aquí</option>
+            <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">{{ sucursal.nombre }}</option>
+          </select>
+        </div>
+
+        <div class="form-group col-md-4" *ngIf="esCompra">
+          <label class="fw-medium">Bodega</label>
+          <select class="form-select" [(ngModel)]="idBodega">
+            <option [ngValue]="null">Seleccione aquí</option>
+            <option *ngFor="let bodega of bodegasDeSucursal" [ngValue]="bodega.id">{{ bodega.nombre }}</option>
+          </select>
+        </div>
+
+        <div class="form-group col-md-4">
           <button class="btn btn-primary" [disabled]="procesando || guardando || resolviendoProductos" (click)="procesar()">
             <span *ngIf="procesando">Procesando...</span>
             <span *ngIf="!procesando"><i class="fa fa-play me-1"></i> Procesar</span>

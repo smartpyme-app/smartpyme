@@ -105,6 +105,27 @@ class DteProcesoOpcionesTest extends TestCase
         $this->assertFalse($sugerido['credito']);
     }
 
+    public function test_exige_sucursal_y_bodega_al_clasificar_compra(): void
+    {
+        $opciones = DteProcesoOpciones::fromArray([
+            'id_sucursal' => 12,
+            'id_bodega' => 34,
+        ]);
+
+        $this->assertSame(12, $opciones->idSucursal);
+        $this->assertSame(34, $opciones->idBodega);
+        $opciones->validarDestino('compra');
+
+        $this->expectException(InvalidArgumentException::class);
+        DteProcesoOpciones::fromArray([])->validarDestino('gasto');
+    }
+
+    public function test_compra_exige_bodega(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        DteProcesoOpciones::fromArray(['id_sucursal' => 12])->validarDestino('compra');
+    }
+
     public function test_pago_sugerido_credito_por_codigo_o_condicion(): void
     {
         $porCodigo = DteProcesoOpciones::pagoSugeridoDesdeJson([

@@ -182,6 +182,18 @@
       <option value="compra">Compra (inventario)</option>
       <option value="gasto">Gasto (gasolina, servicios, etc.)</option>
     </select>
+    <label class="form-label fw-medium">Sucursal</label>
+    <select class="form-select mb-3" [(ngModel)]="idSucursal" (ngModelChange)="cambioSucursal()">
+      <option [ngValue]="null">Seleccione aquí</option>
+      <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">{{ sucursal.nombre }}</option>
+    </select>
+    <ng-container *ngIf="destinoSeleccionado === 'compra'">
+      <label class="form-label fw-medium">Bodega</label>
+      <select class="form-select mb-3" [(ngModel)]="idBodega">
+        <option [ngValue]="null">Seleccione aquí</option>
+        <option *ngFor="let bodega of bodegasDeSucursal" [ngValue]="bodega.id">{{ bodega.nombre }}</option>
+      </select>
+    </ng-container>
     <p class="small text-muted mb-0">
       Las compras usan la misma resolución de productos que la importación JSON del módulo de compras (código proveedor + descripción).
     </p>

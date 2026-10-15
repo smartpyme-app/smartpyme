@@ -80,3 +80,44 @@ export function totalLineaDesdeDte(item: {
   const costo = costoUnitarioDesdeLineaDte(item);
   return Math.max(0, cantidad * costo - descuento);
 }
+
+export interface LotePendienteDte {
+  numero_lote: string;
+  cantidad: number;
+  fecha_fabricacion: string | null;
+  fecha_vencimiento: string | null;
+}
+
+const LOTE_EN_DESCRIPCION =
+  /^(.*?)\s*\|\s*Lote:\s*(.+?)\s+Cantidad Lote:\s*([0-9]+(?:[.,][0-9]+)?)(?:\s*\|\s*Fecha fabricación:\s*(\d{4}-\d{2}-\d{2}))?(?:\s*\|\s*Fecha Caducidad:\s*(\d{4}-\d{2}-\d{2}))?\s*$/iu;
+
+/** Lote que algunos emisores (Mercantil Farmacéutica) meten en la descripción de la línea. */
+export function lotePendienteDesdeDescripcion(
+  descripcion: string | null | undefined
+): LotePendienteDte | null {
+  const texto = String(descripcion ?? '').trim();
+  const match = texto.match(LOTE_EN_DESCRIPCION);
+  if (!match) {
+    return null;
+  }
+  const numero = match[2].trim();
+  if (!numero) {
+    return null;
+  }
+  return {
+    numero_lote: numero,
+    cantidad: parseFloat(match[3].replace(',', '.')) || 0,
+    fecha_fabricacion: match[4] || null,
+    fecha_vencimiento: match[5] || null,
+  };
+}
+
+export function descripcionProductoSinLote(descripcion: string | null | undefined): string {
+  const lote = lotePendienteDesdeDescripcion(descripcion);
+  if (!lote) {
+    return String(descripcion ?? '').trim();
+  }
+  const texto = String(descripcion ?? '').trim();
+  const corte = texto.toLowerCase().indexOf('| lote:');
+  return corte > 0 ? texto.slice(0, corte).trim() : texto;
+}
