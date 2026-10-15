@@ -62,6 +62,7 @@ export class WhatsAppComponent extends BaseComponent implements OnInit {
   
   public autoRefreshEnabled: boolean = true;
   public refreshInterval: number = 30;
+  private readonly lucasWhatsapp = '50374668551';
 
   public sendingMessage: boolean = false;
   public manualMessage = {
@@ -403,7 +404,7 @@ export class WhatsAppComponent extends BaseComponent implements OnInit {
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
-        this.apiService.delete('admin/whatsapp/sessions', session.id)
+        this.apiService.delete('admin/whatsapp/sessions/', session.id)
           .pipe(this.untilDestroyed())
           .subscribe(
           (response) => {
@@ -582,7 +583,7 @@ export class WhatsAppComponent extends BaseComponent implements OnInit {
     this.refreshing = true;
     this.loading = true;
     
-    this.apiService.delete('admin/whatsapp/sessions', sessionId)
+    this.apiService.delete('admin/whatsapp/sessions/', sessionId)
       .pipe(this.untilDestroyed())
       .subscribe(
       (response) => {
@@ -606,6 +607,23 @@ export class WhatsAppComponent extends BaseComponent implements OnInit {
     const count = this.stats.messages[type] || 0;
     
     return Math.round((count / total) * 100);
+  }
+
+  get codigoEmpresa(): string {
+    return this.apiService.auth_user()?.empresa?.codigo || '';
+  }
+
+  get lucasNumero(): string {
+    return `+${this.lucasWhatsapp}`;
+  }
+
+  get lucasChatUrl(): string {
+    const text = this.codigoEmpresa || 'Hola Lucas';
+    return `https://wa.me/${this.lucasWhatsapp}?text=${encodeURIComponent(text)}`;
+  }
+
+  abrirAgregarNumero(template: TemplateRef<any>): void {
+    this.modalRef = this.modalService.show(template);
   }
 
   copyToClipboard(text: string): void {

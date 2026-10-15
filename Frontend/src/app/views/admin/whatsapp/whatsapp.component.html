@@ -3,12 +3,17 @@
       <i class="fab fa-whatsapp text-success me-2"></i>
       WhatsApp 
     </h2>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 align-items-center">
+      <button type="button" class="btn btn-success btn-sm" (click)="abrirAgregarNumero(magregar)">
+        <i class="fa fa-plus me-1"></i> Agregar número
+      </button>
+      <!-- Periodo solo alimentaba las métricas ocultas.
       <select class="form-select w-auto" [(ngModel)]="selectedPeriod" (change)="onPeriodChange()">
         <option value="7">Últimos 7 días</option>
         <option value="30">Últimos 30 días</option>
         <option value="90">Últimos 90 días</option>
       </select>
+      -->
       <button 
         class="btn btn-sm"
         [class]="autoRefreshEnabled ? 'btn-success' : 'btn-outline-secondary'"
@@ -16,6 +21,7 @@
         [tooltip]="autoRefreshEnabled ? 'Desactivar auto-actualización' : 'Activar auto-actualización'">
         <i class="fa" [class]="autoRefreshEnabled ? 'fa-sync fa-spin' : 'fa-sync'"></i>
       </button>
+      <!--
       <button 
         class="btn btn-outline-primary btn-sm" 
         (click)="refreshData()" 
@@ -23,9 +29,11 @@
         <i class="fa fa-refresh" [class.fa-spin]="refreshing"></i>
         {{ refreshing ? 'Actualizando...' : 'Actualizar' }}
       </button>
+      -->
     </div>
 </section>
 
+<!-- Métricas de uso ocultas (sesiones y mensajes).
 @if (executiveSummary) {
   <section class="bg-white p-4 rounded mb-3">
     <h3 class="mb-4">
@@ -73,7 +81,7 @@
             </div>
         </div>
         
-        <!-- <div class="col-md-3 col-sm-6 mb-4">
+        <div class="col-md-3 col-sm-6 mb-4">
             <div class="card border-0 shadow-sm mb-0">
                 <div class="card-body pt-2 pb-0">
                     <div class="row justify-content-between">
@@ -84,7 +92,7 @@
                     </div>
                 </div>
             </div>
-        </div> -->
+        </div>
     </div>
   </section>
 }
@@ -199,6 +207,7 @@
     No hay datos de WhatsApp para mostrar. Las estadísticas aparecerán cuando se registren sesiones y mensajes.
   </div>
 }
+-->
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
@@ -366,6 +375,47 @@
         }
     </div>
 </section>
+
+<ng-template #magregar>
+    <div class="modal-header">
+        <div class="modal-title">
+            <h2 class="mb-0">Agregar número</h2>
+        </div>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Cerrar"></button>
+    </div>
+    <div class="modal-body">
+        <p>Vincula un WhatsApp con Lucas en tres pasos:</p>
+        <ol class="mb-3">
+            <li>Copia el código de tu empresa.</li>
+            <li>
+              Abre el chat con Lucas al
+              <strong>{{ lucasNumero }}</strong>
+              <button class="btn btn-link btn-sm p-0 ms-1 align-baseline" type="button" (click)="copyToClipboard(lucasNumero)" tooltip="Copiar número">
+                <i class="fa fa-copy"></i>
+              </button>
+              y envía ese código.
+            </li>
+            <li>Lucas pedirá el correo registrado en SmartPyme para confirmar el número.</li>
+        </ol>
+        <p class="text-muted small">El mismo código sigue disponible en Integraciones.</p>
+        @if (codigoEmpresa) {
+          <label class="form-label" for="codigo-whatsapp">Código de empresa</label>
+          <div class="input-group mb-3">
+            <input id="codigo-whatsapp" type="text" class="form-control" [value]="codigoEmpresa" readonly>
+            <button class="btn btn-outline-primary" type="button" (click)="copyToClipboard(codigoEmpresa)" tooltip="Copiar código">
+              <i class="fa fa-copy"></i>
+            </button>
+          </div>
+        } @else {
+          <p>Esta empresa aún no tiene código de WhatsApp.</p>
+        }
+        <div class="text-end">
+          <a class="btn btn-outline-success" [href]="lucasChatUrl" target="_blank" rel="noopener noreferrer">
+            <i class="fab fa-whatsapp me-1"></i> Abrir chat con Lucas
+          </a>
+        </div>
+    </div>
+</ng-template>
 
 <!-- Modal de filtros -->
 <ng-template #mfilter>
