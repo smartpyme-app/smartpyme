@@ -403,7 +403,7 @@ export class WhatsAppComponent extends BaseComponent implements OnInit {
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
-        this.apiService.delete('admin/whatsapp/sessions', session.id)
+        this.apiService.delete('admin/whatsapp/sessions/', session.id)
           .pipe(this.untilDestroyed())
           .subscribe(
           (response) => {
@@ -582,7 +582,7 @@ export class WhatsAppComponent extends BaseComponent implements OnInit {
     this.refreshing = true;
     this.loading = true;
     
-    this.apiService.delete('admin/whatsapp/sessions', sessionId)
+    this.apiService.delete('admin/whatsapp/sessions/', sessionId)
       .pipe(this.untilDestroyed())
       .subscribe(
       (response) => {
