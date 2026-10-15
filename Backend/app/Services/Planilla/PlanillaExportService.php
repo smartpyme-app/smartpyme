@@ -12,6 +12,7 @@ use App\Exports\Planillas\CostaRica\ReporteD138Export;
 use App\Exports\Planillas\CostaRica\ReporteCostoPatronalExport;
 use App\Exports\PlanillaExportTemplate;
 use App\Models\Planilla\Empleado;
+use App\Models\EmpresaConfiguracionPlanilla;
 use App\Constants\PlanillaConstants;
 use Maatwebsite\Excel\Facades\Excel;
 use PDF;
@@ -267,29 +268,8 @@ class PlanillaExportService
     public function descargarPlantilla()
     {
         try {
-            $headers = [
-                'codigo' => 'Código Empleado',
-                'nombres_y_apellidos' => 'Nombres y Apellidos',
-                'salario_base' => 'Salario Base',
-                'dias_laborados' => 'Días Laborados',
-                'comisiones' => 'Comisiones',
-                'horas_extra' => 'Horas Extra',
-                'monto_horas_extra' => 'Monto Horas Extra',
-                'total_horas_extras' => 'Total Horas Extras',
-                'bonificaciones' => 'Bonificaciones',
-                'otros_ingresos' => 'Otros Ingresos',
-                'prestamos' => 'Préstamos',
-                'anticipos' => 'Anticipos',
-                'descuentos_judiciales' => 'Descuentos Judiciales',
-                'sub_total' => 'Sub Total',
-                'isss' => 'ISSS',
-                'afp' => 'AFP',
-                'renta' => 'RENTA',
-                'otras_deducciones' => 'Otras Deducciones',
-                'detalle_de_otras_deducciones' => 'Detalle de Otras Deducciones',
-                'total_neto' => 'Total Neto',
-                'firma' => 'Firma'
-            ];
+            $codPais = EmpresaConfiguracionPlanilla::resolverCodigoPaisEmpresa(auth()->user()->empresa);
+            $headers = PlantillaImportacionPlanilla::encabezados($codPais);
 
             $empleados = Empleado::where('id_empresa', auth()->user()->id_empresa)
                 ->where('id_sucursal', auth()->user()->id_sucursal)
@@ -298,40 +278,24 @@ class PlanillaExportService
 
             $data = [];
             foreach ($empleados as $empleado) {
-                $data[] = [
+                $isss = $afp = $renta = 0;
+                if ($codPais === 'SV') {
+                    $isss = $this->calcularISSSEmpleado($empleado->salario_base);
+                    $afp = $this->calcularAFPEmpleado($empleado->salario_base);
+                    $renta = $this->calcularRentaImportacion($empleado->salario_base);
+                }
+                $data[] = PlantillaImportacionPlanilla::filaEmpleado(
+                    $codPais,
                     $empleado->codigo,
-                    $empleado->nombres . ' ' . $empleado->apellidos,
+                    trim($empleado->nombres . ' ' . $empleado->apellidos),
                     $empleado->salario_base,
-                    30,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    $empleado->salario_base,
-                    $this->calcularISSSEmpleado($empleado->salario_base),
-                    $this->calcularAFPEmpleado($empleado->salario_base),
-                    $this->calcularRentaImportacion($empleado->salario_base),
-                    0, '', 0, ''
-                ];
+                    $isss,
+                    $afp,
+                    $renta
+                );
             }
 
-            // Agregar fila de totales
-            $data[] = [
-                '', 'TOTAL',
-                '=SUM(C2:C' . (count($data) + 1) . ')',
-                '', '=SUM(E2:E' . (count($data) + 1) . ')',
-                '=SUM(F2:F' . (count($data) + 1) . ')',
-                '=SUM(G2:G' . (count($data) + 1) . ')',
-                '=SUM(H2:H' . (count($data) + 1) . ')',
-                '=SUM(I2:I' . (count($data) + 1) . ')',
-                '=SUM(J2:J' . (count($data) + 1) . ')',
-                '=SUM(K2:K' . (count($data) + 1) . ')',
-                '=SUM(L2:L' . (count($data) + 1) . ')',
-                '=SUM(M2:M' . (count($data) + 1) . ')',
-                '=SUM(N2:N' . (count($data) + 1) . ')',
-                '=SUM(O2:O' . (count($data) + 1) . ')',
-                '=SUM(P2:P' . (count($data) + 1) . ')',
-                '=SUM(Q2:Q' . (count($data) + 1) . ')',
-                '=SUM(R2:R' . (count($data) + 1) . ')',
-                '', '=SUM(T2:T' . (count($data) + 1) . ')', ''
-            ];
+            $data[] = PlantillaImportacionPlanilla::filaTotales($codPais, count($data));
 
             return Excel::download(
                 new PlanillaExportTemplate($headers, $data),

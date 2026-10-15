@@ -49,11 +49,13 @@ class PlanillaExportTemplate implements FromArray, WithHeadings, WithStyles, Wit
     public function columnFormats(): array
     {
         $moneyFormat = CurrencyHelper::excelFormat();
-        $moneyColumns = ['C', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'T'];
+        $sinDinero = ['codigo', 'nombres_y_apellidos', 'dias_laborados', 'detalle_de_otras_deducciones', 'firma'];
         $formats = [];
 
-        foreach ($moneyColumns as $column) {
-            $formats[$column] = $moneyFormat;
+        foreach (array_keys($this->headers) as $indice => $clave) {
+            if (!in_array($clave, $sinDinero, true)) {
+                $formats[chr(65 + $indice)] = $moneyFormat;
+            }
         }
 
         return $formats;
