@@ -333,11 +333,12 @@ class ShopifyExportService
             $locationId = $this->getDefaultLocationId($client);
 
             if ($producto->shopify_inventory_item_id && $locationId) {
-                $client->post('inventory_levels/set.json', [
-                    'location_id' => (int) $locationId,
-                    'inventory_item_id' => (int) $producto->shopify_inventory_item_id,
-                    'available' => (int) round((float) $stock)
-                ]);
+                app(ShopifyInventarioCantidad::class)->fijarOnHand(
+                    $client,
+                    (int) $producto->shopify_inventory_item_id,
+                    (int) $locationId,
+                    (int) round((float) $stock)
+                );
             }
         } catch (\Exception $e) {
             Log::channel('shopify')->warning("Error actualizando inventario en Shopify: " . $e->getMessage());

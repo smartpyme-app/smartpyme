@@ -13,6 +13,7 @@ use App\Services\Shopify\ShopifyClienteService;
 use App\Services\Shopify\ShopifyVentaService;
 use App\Services\ShopifyImageService;
 use App\Services\ShopifySyncCache;
+use Illuminate\Support\Facades\Cache;
 use App\Services\ShopifyTransformer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -282,6 +283,110 @@ class ShopifyVariantesDivisionTest extends TestCase
         $variante = Producto::where('shopify_variant_id', 7001)->first();
         $this->assertNotNull($variante);
         $this->assertSame(40.0, (float) Inventario::where('id_producto', $variante->id)->where('id_bodega', 689)->value('stock'));
+    }
+
+    public function test_variante_se_crea_aunque_otro_producto_tenga_el_mismo_sku(): void
+    {
+        Producto::create([
+            'id_empresa' => $this->empresa->id,
+            'nombre' => 'calcetas invisibles',
+            'codigo' => 'DMHM20323',
+            'shopify_sku' => 'DMHM20323',
+            'shopify_product_id' => 15207835795826,
+            'shopify_variant_id' => 111,
+            'shopify_inventory_item_id' => 222,
+            'enable' => '1',
+        ]);
+
+        Producto::create([
+            'id_empresa' => $this->empresa->id,
+            'nombre' => 'Calcetines visibles',
+            'codigo' => 'DMHM20323',
+            'shopify_sku' => 'DMHM20323',
+            'shopify_product_id' => 15207836516722,
+            'shopify_variant_id' => 62397255450994,
+            'shopify_inventory_item_id' => 64415683150194,
+            'enable' => '1',
+        ]);
+
+        $request = new Request([
+            'id' => 15207835795826,
+            'title' => 'calcetas invisibles',
+            'status' => 'active',
+            'options' => [['name' => 'Talla']],
+            'variants' => [
+                [
+                    'id' => 7001,
+                    'title' => 'S',
+                    'option1' => 'S',
+                    'price' => '10.00',
+                    'sku' => 'DMHM20323',
+                    'inventory_item_id' => 64524929827186,
+                    'inventory_quantity' => 6,
+                ],
+            ],
+        ]);
+
+        $this->invocar('procesarProductoActualizado', [$request, $this->empresa, $this->usuario]);
+
+        $variante = Producto::where('shopify_variant_id', 7001)->first();
+        $this->assertNotNull($variante);
+        $this->assertSame('S', $variante->nombre_variante);
+        $this->assertNotSame(15207836516722, (int) $variante->shopify_product_id);
+    }
+
+    public function test_sku_de_variante_se_guarda_aunque_haya_lock(): void
+    {
+        $producto = Producto::create([
+            'id_empresa' => $this->empresa->id,
+            'nombre' => 'calcetas invisibles',
+            'nombre_variante' => 'Azul',
+            'codigo' => '',
+            'shopify_product_id' => 15207835795826,
+            'shopify_variant_id' => 62503936131442,
+            'shopify_inventory_item_id' => 64525558317426,
+            'enable' => '1',
+            'precio' => 10,
+            'costo' => 0,
+        ]);
+        Cache::put('sync_lock_' . $producto->id, true, 120);
+
+        $impuestos = $this->createMock(ImpuestosService::class);
+        $impuestos->method('calcularPrecioSinImpuesto')->willReturnCallback(function ($precio) {
+            return $precio;
+        });
+        $controller = new ShopifyController(
+            new ShopifyTransformer($impuestos),
+            new ShopifySyncCache(),
+            $this->createMock(ShippingService::class),
+            $impuestos,
+            $this->createMock(ShopifyImageService::class)
+        );
+
+        $request = new Request([
+            'id' => 15207835795826,
+            'title' => 'calcetas invisibles',
+            'status' => 'active',
+            'options' => [['name' => 'Color']],
+            'variants' => [[
+                'id' => 62503936131442,
+                'title' => 'Azul',
+                'option1' => 'Azul',
+                'price' => '10.00',
+                'sku' => 'AZUL-1',
+                'inventory_item_id' => 64525558317426,
+                'inventory_quantity' => 0,
+            ]],
+        ]);
+
+        $ref = new ReflectionClass($controller);
+        $method = $ref->getMethod('procesarProductoActualizado');
+        $method->setAccessible(true);
+        $method->invokeArgs($controller, [$request, $this->empresa, $this->usuario]);
+
+        $producto->refresh();
+        $this->assertSame('AZUL-1', $producto->codigo);
+        $this->assertSame('AZUL-1', $producto->shopify_sku);
     }
 
     private function invocar(string $metodo, array $args)

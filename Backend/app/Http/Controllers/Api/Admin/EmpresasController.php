@@ -187,10 +187,21 @@ class EmpresasController extends Controller
 
         $this->restoreWoocommerceSettings($empresa, $woocommerceValues);
 
+        $suscripcionEmpresa = null;
+        $cadenciaEmpresa = trim((string) $request->input('tipo_plan', ''));
+        if ($request->exists('tipo_plan') && $cadenciaEmpresa !== '') {
+            $suscripcionEmpresa = $empresa->suscripcion;
+            $empresa->aplicarCadenciaElegida($cadenciaEmpresa, $suscripcionEmpresa);
+        }
+
         $empresa->save();
 
         if ($request->has('custom_empresa')) {
             $empresa->syncCustomEmpresaToConfiguracion();
+        }
+
+        if ($suscripcionEmpresa && $suscripcionEmpresa->isDirty('tipo_plan')) {
+            $suscripcionEmpresa->save();
         }
 
         if ($request->has('forma_pago')) {
@@ -218,6 +229,10 @@ class EmpresasController extends Controller
 
         $empresa = new Empresa;
         $empresa->fill($request->all());
+        $cadenciaEmpresa = trim((string) $request->input('tipo_plan', ''));
+        if ($cadenciaEmpresa !== '') {
+            $empresa->aplicarCadenciaElegida($cadenciaEmpresa);
+        }
 
         if (($empresa->pais === 'Honduras' || $empresa->cod_pais === 'HN') && !empty($empresa->nit)) {
             $empresa->nit = preg_replace('/\D/', '', (string) $empresa->nit);

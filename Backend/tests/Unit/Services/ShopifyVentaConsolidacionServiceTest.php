@@ -10,6 +10,7 @@ use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
 use App\Models\User;
 use App\Models\Ventas\Detalle;
+use App\Models\Ventas\Impuesto;
 use App\Models\Ventas\Venta;
 use App\Services\ShopifyVentaConsolidacionService;
 use Illuminate\Http\Request;
@@ -114,6 +115,14 @@ class ShopifyVentaConsolidacionServiceTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('venta_impuestos', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('id_venta');
+            $table->unsignedBigInteger('id_impuesto')->nullable();
+            $table->decimal('monto', 12, 2)->default(0);
+            $table->timestamps();
+        });
+
         Schema::create('kardexs', function ($table) {
             $table->id();
             $table->date('fecha')->nullable();
@@ -170,6 +179,7 @@ class ShopifyVentaConsolidacionServiceTest extends TestCase
             $table->decimal('exenta', 12, 2)->default(0);
             $table->decimal('no_sujeta', 12, 2)->default(0);
             $table->decimal('iva', 12, 2)->default(0);
+            $table->decimal('sub_total', 12, 4)->nullable();
             $table->decimal('costo', 12, 2)->default(0);
             $table->decimal('total_costo', 12, 2)->default(0);
             $table->decimal('cuenta_a_terceros', 12, 2)->default(0);
@@ -391,6 +401,58 @@ class ShopifyVentaConsolidacionServiceTest extends TestCase
         $this->assertEquals(2, (float) Inventario::where('id_producto', $calcetines->id)->value('stock'));
     }
 
+    public function test_edicion_partially_paid_actualiza_lineas_y_conserva_pagada(): void
+    {
+        $this->empresa->update([
+            'woocommerce_api_key' => 'token_webhook_123',
+            'shopify_status' => 'connected',
+        ]);
+        User::where('id', $this->usuario->id)->update(['shopify_status' => 'connected']);
+
+        $calcetines = Producto::create([
+            'nombre' => 'Calcetines',
+            'tipo' => 'Producto',
+            'id_empresa' => $this->empresa->id,
+            'shopify_variant_id' => 111,
+            'precio' => 12,
+            'costo' => 1,
+        ]);
+        Inventario::create(['id_producto' => $calcetines->id, 'id_bodega' => 1, 'stock' => 10]);
+
+        $venta = Venta::create([
+            'id_empresa' => $this->empresa->id,
+            'id_bodega' => 1,
+            'estado' => 'Pagada',
+            'referencia_shopify' => 'SHOPIFY-17148162310514',
+            'total' => 1,
+        ]);
+        $venta->created_at = now()->subMinute();
+        $venta->save();
+        Detalle::create([
+            'id_venta' => $venta->id,
+            'id_producto' => $calcetines->id,
+            'cantidad' => 1,
+            'precio' => 1,
+            'total' => 1,
+            'descripcion' => 'Calcetines',
+        ]);
+
+        $pedido = $this->pedidoShopify();
+        $pedido['financial_status'] = 'partially_paid';
+        $pedido['updated_at'] = now()->addMinute()->toIso8601String();
+        $pedido['line_items'][0]['quantity'] = 3;
+        $pedido['line_items'][0]['current_quantity'] = 3;
+
+        $request = Request::create('/api/webhook/shopify/token_webhook_123/orders/updated', 'POST', $pedido);
+        $response = app(ShopifyController::class)->procesarVentaActualizada('token_webhook_123', $request);
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $venta->refresh();
+        $this->assertSame('Pagada', $venta->estado);
+        $this->assertEquals(3, (float) $venta->detalles()->where('id_producto', $calcetines->id)->value('cantidad'));
+        $this->assertEquals(8, (float) Inventario::where('id_producto', $calcetines->id)->value('stock'));
+    }
+
     public function test_endpoint_consolida_la_venta_de_la_empresa(): void
     {
         $this->empresa->update([
@@ -458,6 +520,107 @@ class ShopifyVentaConsolidacionServiceTest extends TestCase
         $this->assertEquals(422, app(VentasController::class)->consolidarShopify($venta->id)->getStatusCode());
         $venta->refresh();
         $this->assertEquals(8, (float) $venta->total);
+    }
+
+    public function test_consolidar_prorratea_el_iva_de_la_linea_y_actualiza_el_impuesto(): void
+    {
+        $goofy = Producto::create([
+            'nombre' => 'goofy de peluche',
+            'tipo' => 'Producto',
+            'id_empresa' => $this->empresa->id,
+            'shopify_variant_id' => 62422376579442,
+            'precio' => 15,
+            'costo' => 0,
+        ]);
+        $calcetines = Producto::create([
+            'nombre' => 'Calcetines visibles',
+            'tipo' => 'Producto',
+            'id_empresa' => $this->empresa->id,
+            'shopify_variant_id' => 62397255450994,
+            'precio' => 12,
+            'costo' => 0,
+        ]);
+        Inventario::create(['id_producto' => $goofy->id, 'id_bodega' => 1, 'stock' => 996]);
+        Inventario::create(['id_producto' => $calcetines->id, 'id_bodega' => 1, 'stock' => 4]);
+
+        $venta = Venta::create([
+            'id_empresa' => $this->empresa->id,
+            'id_bodega' => 1,
+            'id_usuario' => $this->usuario->id,
+            'estado' => 'Pagada',
+            'referencia_shopify' => 'SHOPIFY-17187340321138',
+            'total' => 33,
+            'gravada' => 29.20,
+            'iva' => 3.80,
+            'sub_total' => 29.20,
+        ]);
+        Detalle::create([
+            'id_venta' => $venta->id,
+            'id_producto' => $goofy->id,
+            'descripcion' => 'goofy de peluche',
+            'cantidad' => 2,
+            'precio' => 13.275,
+            'precio_sin_iva' => 13.275,
+            'precio_con_iva' => 15,
+            'gravada' => 26.55,
+            'iva' => 3.45,
+            'total' => 26.55,
+            'sub_total' => 26.55,
+        ]);
+        Impuesto::create([
+            'id_venta' => $venta->id,
+            'id_impuesto' => 381,
+            'monto' => 3.80,
+        ]);
+
+        app(ShopifyVentaConsolidacionService::class)->consolidar($venta, [
+            'id' => 17187340321138,
+            'financial_status' => 'paid',
+            'taxes_included' => true,
+            'created_at' => '2026-10-12T15:44:01-06:00',
+            'current_total_price' => '30.00',
+            'current_total_tax' => '3.46',
+            'current_subtotal_price' => '27.00',
+            'total_shipping_price_set' => ['shop_money' => ['amount' => '3.00']],
+            'line_items' => [
+                [
+                    'title' => 'goofy de peluche',
+                    'price' => '15.00',
+                    'quantity' => 2,
+                    'current_quantity' => 1,
+                    'variant_id' => 62422376579442,
+                    'tax_lines' => [['price' => '3.45']],
+                ],
+                [
+                    'title' => 'Calcetines visibles',
+                    'price' => '12.00',
+                    'quantity' => 1,
+                    'current_quantity' => 1,
+                    'variant_id' => 62397255450994,
+                    'tax_lines' => [['price' => '1.38']],
+                ],
+            ],
+            'shipping_lines' => [[
+                'title' => 'San Salvador',
+                'price' => '3.00',
+                'discounted_price' => '3.00',
+                'tax_lines' => [['price' => '0.35']],
+            ]],
+        ], $this->usuario);
+
+        $venta->refresh();
+        $goofyLinea = $venta->detalles()->where('id_producto', $goofy->id)->first();
+        $ivaGoofy = round(3.45 * (1 / 2), 2);
+
+        $this->assertEquals(1, (float) $goofyLinea->cantidad);
+        $this->assertEquals($ivaGoofy, (float) $goofyLinea->iva);
+        $this->assertEquals(round(15 - $ivaGoofy, 2), (float) $goofyLinea->gravada);
+        $this->assertEquals(round(15 - $ivaGoofy, 2), (float) $goofyLinea->sub_total);
+        $this->assertEquals(1.38, (float) $venta->detalles()->where('id_producto', $calcetines->id)->value('iva'));
+        $this->assertEquals(3.46, (float) $venta->iva);
+        $this->assertEquals(26.54, (float) $venta->gravada);
+        $this->assertEquals(30.00, (float) $venta->total);
+        $this->assertEquals(3.46, (float) Impuesto::where('id_venta', $venta->id)->value('monto'));
     }
 
     private function pedidoShopify(): array

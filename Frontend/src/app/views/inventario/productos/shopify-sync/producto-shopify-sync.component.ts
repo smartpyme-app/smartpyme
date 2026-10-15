@@ -135,7 +135,7 @@ export class ProductoShopifySyncComponent {
 
     private configInicial() {
         return {
-            direccion: 'sp_to_shopify',
+            direccion: 'shopify_to_sp',
             sync_precio: true,
             sync_stock: true,
             sync_imagenes: false,

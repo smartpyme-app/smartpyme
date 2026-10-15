@@ -259,15 +259,12 @@ class ShopifyStockService
                 return false;
             }
 
-            $payload = [
-                'location_id' => $locationId,
-                'inventory_item_id' => $producto->shopify_inventory_item_id,
-                'available' => (int)$stock
-            ];
-
-            $response = $client->post('inventory_levels/set.json', $payload);
-
-            return true;
+            return app(ShopifyInventarioCantidad::class)->fijarOnHand(
+                $client,
+                (int) $producto->shopify_inventory_item_id,
+                (int) $locationId,
+                (int) round((float) $stock)
+            );
         } catch (\Exception $e) {
             return false;
         }
@@ -310,20 +307,21 @@ class ShopifyStockService
                         ->where('id_bodega', $map->id_bodega)
                         ->value('stock') ?? 0;
 
-                    $client->post('inventory_levels/set.json', [
-                        'location_id' => $map->shopify_location_id,
-                        'inventory_item_id' => $producto->shopify_inventory_item_id,
-                        'available' => (int)$stockBodega
-                    ]);
+                    app(ShopifyInventarioCantidad::class)->fijarOnHand(
+                        $client,
+                        (int) $producto->shopify_inventory_item_id,
+                        (int) $map->shopify_location_id,
+                        (int) round((float) $stockBodega)
+                    );
                 }
             } else {
                 $locationId = $this->getDefaultLocationId($client);
-                $setPayload = [
-                    'location_id' => $locationId,
-                    'inventory_item_id' => $producto->shopify_inventory_item_id,
-                    'available' => (int)$productData['stock_quantity']
-                ];
-                $client->post('inventory_levels/set.json', $setPayload);
+                app(ShopifyInventarioCantidad::class)->fijarOnHand(
+                    $client,
+                    (int) $producto->shopify_inventory_item_id,
+                    (int) $locationId,
+                    (int) round((float) $productData['stock_quantity'])
+                );
             }
 
             if (!empty($productData['images'])) {
@@ -417,19 +415,12 @@ class ShopifyStockService
     {
         try {
             $locationId = $this->getDefaultLocationId($client);
-            $setPayload = [
-                'location_id' => $locationId,
-                'inventory_item_id' => $existente['inventory_item_id'],
-                'available' => (int)$productData['stock_quantity']
-            ];
-
-            // ShopifyHelper::log("actualizarProductoPorSku: seteando inventario en Shopify", [
-                // 'producto_id' => $producto->id,
-                // 'sku' => $producto->codigo,
-                // 'payload' => $setPayload,
-            // ]);
-
-            $response = $client->post('inventory_levels/set.json', $setPayload);
+            app(ShopifyInventarioCantidad::class)->fijarOnHand(
+                $client,
+                (int) $existente['inventory_item_id'],
+                (int) $locationId,
+                (int) round((float) $productData['stock_quantity'])
+            );
 
             $producto->shopify_product_id = $existente['product_id'];
             $producto->shopify_variant_id = $existente['variant_id'];
@@ -472,20 +463,12 @@ class ShopifyStockService
             $producto->save();
 
             $locationId = $this->getDefaultLocationId($client);
-            $setPayload = [
-                'location_id' => $locationId,
-                'inventory_item_id' => $variant['inventory_item_id'],
-                'available' => (int)$productData['variants'][0]['inventory_quantity']
-            ];
-
-            // ShopifyHelper::log("crearNuevoProducto: seteando inventario inicial en Shopify", [
-                // 'producto_id' => $producto->id,
-                // 'shopify_product_id' => $shopifyProduct['id'],
-                // 'variant_id' => $variant['id'],
-                // 'payload' => $setPayload,
-            // ]);
-
-            $client->post('inventory_levels/set.json', $setPayload);
+            app(ShopifyInventarioCantidad::class)->fijarOnHand(
+                $client,
+                (int) $variant['inventory_item_id'],
+                (int) $locationId,
+                (int) round((float) $productData['variants'][0]['inventory_quantity'])
+            );
 
             // ShopifyHelper::log("Nuevo producto creado en Shopify", [
                 // 'producto_id' => $producto->id,

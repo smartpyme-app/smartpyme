@@ -92,6 +92,16 @@ class SuscripcionesController extends Controller
                 })
                 ->when($request->campania, function ($q) use ($request) {
                     return $q->where('campania', 'like', '%' . $request->campania . '%');
+                })
+                ->when($request->filled('monto_desde'), function ($q) use ($request) {
+                    return $q->whereHas('suscripcion', function ($query) use ($request) {
+                        $query->where('monto', '>=', $request->monto_desde);
+                    });
+                })
+                ->when($request->filled('monto_hasta'), function ($q) use ($request) {
+                    return $q->whereHas('suscripcion', function ($query) use ($request) {
+                        $query->where('monto', '<=', $request->monto_hasta);
+                    });
                 });
 
             if (!$request->estado) {
@@ -178,6 +188,12 @@ class SuscripcionesController extends Controller
                     ->select('empresas.*');
                 break;
 
+            case 'monto':
+                $query->leftJoin('suscripciones as s7', 'empresas.id', '=', 's7.empresa_id')
+                    ->orderBy('s7.monto', $direccion)
+                    ->select('empresas.*');
+                break;
+
             case 'metodo_pago':
                 $query->orderBy('metodo_pago', $direccion);
                 break;
@@ -206,12 +222,14 @@ class SuscripcionesController extends Controller
                 ], 422);
             }
 
+            $cadencia = $this->cadenciaElegidaEnFormulario($request, $validated['tipo_plan'] ?? null);
+
             // Crear nueva suscripción
             $suscripcion = new Suscripcion();
             $suscripcion->empresa_id = $validated['empresa_id'];
             $suscripcion->plan_id = $validated['plan_id'];
             $suscripcion->usuario_id = $validated['usuario_id'];
-            $suscripcion->tipo_plan = $validated['tipo_plan'];
+            $suscripcion->tipo_plan = $cadencia !== '' ? $cadencia : $validated['tipo_plan'];
             $suscripcion->estado = $validated['estado'];
             $suscripcion->estado_ultimo_pago = $request->input('estado_ultimo_pago');
             $suscripcion->fecha_ultimo_pago = $request->input('estado_ultimo_pago') === config('constants.ESTADO_ORDEN_PAGO_COMPLETADO') ? now() : null;
@@ -264,16 +282,16 @@ class SuscripcionesController extends Controller
                     $request->motivo_cancelacion
                 );
             }
+            if ($cadencia !== '') {
+                $empresa->aplicarCadenciaElegida($cadencia, $suscripcion);
+                $suscripcion->save();
+            }
             $empresa->sincronizarMontosDesdeSuscripcion($suscripcion->monto, $suscripcion->tipo_plan);
             if ($request->has('monto_mensual')) {
                 $empresa->monto_mensual = $request->input('monto_mensual');
             }
             if ($request->has('monto_anual')) {
                 $empresa->monto_anual = $request->input('monto_anual');
-            }
-            // Actualizar frecuencia_pago si viene en el request
-            if ($request->has('frecuencia_pago')) {
-                $empresa->frecuencia_pago = $request->input('frecuencia_pago');
             }
             if ($request->has('metodo_pago')) {
                 $empresa->forma_pago = $request->input('metodo_pago');
@@ -318,15 +336,14 @@ class SuscripcionesController extends Controller
                 $plan = Plan::findOrFail($request->input('plan.id'));
                 $suscripcion->plan_id = $plan->id;
                 $suscripcion->monto = $plan->precio;
-                $suscripcion->tipo_plan = $plan->getTipoPlanAttribute();
                 $suscripcion->save();
 
                 $empresaPlan = Empresa::findOrFail($suscripcion->empresa_id);
                 $empresaPlan->plan = $plan->nombre;
-                $empresaPlan->tipo_plan = $plan->getTipoPlanAttribute();
-                $empresaPlan->sincronizarMontosDesdeSuscripcion($suscripcion->monto, $suscripcion->tipo_plan);
                 $empresaPlan->save();
             }
+
+            $cadencia = $this->cadenciaElegidaEnFormulario($request, $validated['tipo_plan'] ?? null);
 
             // fecha_proximo_pago no se edita aquí: solo vía «Pago recibido» o integraciones.
             $datosActualizacion = [
@@ -334,7 +351,7 @@ class SuscripcionesController extends Controller
                 'estado' => $validated['estado'],
                 'usuario_id' => $validated['usuario_id'],
                 'plan_id' => $validated['plan_id'],
-                'tipo_plan' => $validated['tipo_plan'],
+                'tipo_plan' => $cadencia !== '' ? $cadencia : $validated['tipo_plan'],
                 'monto' => $validated['monto'],
                 'fin_periodo_prueba' => $validated['fin_periodo_prueba'],
                 'nit' => $request->input('nit'),
@@ -368,16 +385,16 @@ class SuscripcionesController extends Controller
                 );
                 $empresa->fecha_cancelacion = now();
             }
+            if ($cadencia !== '') {
+                $empresa->aplicarCadenciaElegida($cadencia, $suscripcion);
+                $suscripcion->save();
+            }
             $empresa->sincronizarMontosDesdeSuscripcion($suscripcion->monto, $suscripcion->tipo_plan);
             if ($request->has('monto_mensual')) {
                 $empresa->monto_mensual = $request->input('monto_mensual');
             }
             if ($request->has('monto_anual')) {
                 $empresa->monto_anual = $request->input('monto_anual');
-            }
-            // Actualizar frecuencia_pago si viene en el request
-            if ($request->has('frecuencia_pago')) {
-                $empresa->frecuencia_pago = $request->input('frecuencia_pago');
             }
             if ($request->has('metodo_pago')) {
                 $empresa->forma_pago = $request->input('metodo_pago');
@@ -1200,10 +1217,10 @@ class SuscripcionesController extends Controller
             $suscripcion = Suscripcion::findOrFail($validated['suscripcion_id']);
             $empresa = Empresa::findOrFail($suscripcion->empresa_id);
 
-            $empresa->frecuencia_pago = $fp;
             if ($fp) {
-                $empresa->tipo_plan = $fp;
-                $suscripcion->tipo_plan = $fp;
+                $empresa->aplicarCadenciaElegida($fp, $suscripcion);
+            } else {
+                $empresa->frecuencia_pago = null;
             }
 
             if ($request->has('monto_mensual')) {
@@ -1285,5 +1302,19 @@ class SuscripcionesController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Select de frecuencia en el formulario de suscripción.
+     * Si viene vacío, usa tipo_plan enviado en el mismo formulario.
+     */
+    private function cadenciaElegidaEnFormulario(Request $request, ?string $tipoPlan): string
+    {
+        $frecuencia = trim((string) $request->input('frecuencia_pago', ''));
+        if ($frecuencia !== '') {
+            return $frecuencia;
+        }
+
+        return trim((string) $tipoPlan);
     }
 }

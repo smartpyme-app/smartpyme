@@ -169,6 +169,51 @@ class ShopifyTransformerTest extends TestCase
         $this->assertTrue($pagadoLunes->equalTo($fechas['created_at']));
     }
 
+    public function test_venta_exenta_deja_el_detalle_exento(): void
+    {
+        $linea = $this->transformer->transformarDetallesVenta([
+            'title' => 'Calcetas',
+            'price' => '10.00',
+            'quantity' => 2,
+            'taxable' => true,
+            'tax_lines' => [],
+        ], 1, null, true, true);
+
+        $this->assertSame('exenta', $linea['tipo_gravado']);
+        $this->assertSame(20.0, (float) $linea['exenta']);
+        $this->assertSame(0.0, (float) $linea['gravada']);
+        $this->assertSame(0.0, (float) $linea['iva']);
+        $this->assertSame(10.0, (float) $linea['precio']);
+
+        $venta = $this->transformer->transformarVenta([
+            'id' => 1066,
+            'created_at' => '2026-10-13T14:23:55-06:00',
+            'financial_status' => 'paid',
+            'tax_exempt' => true,
+            'taxes_included' => true,
+            'total_price' => '20.00',
+            'total_tax' => '0.00',
+            'current_total_price' => '20.00',
+            'current_total_tax' => '0.00',
+            'id_empresa' => null,
+            'id_bodega' => 1,
+            'id_usuario' => 1,
+            'id_sucursal' => 1,
+            'id_canal' => 1,
+            'line_items' => [[
+                'title' => 'Calcetas',
+                'price' => '10.00',
+                'quantity' => 2,
+                'taxable' => true,
+            ]],
+        ], 1, 1, 1);
+
+        $this->assertSame(20.0, (float) $venta['exenta']);
+        $this->assertSame(0.0, (float) $venta['gravada']);
+        $this->assertSame(0.0, (float) $venta['iva']);
+        $this->assertSame(20.0, (float) $venta['total']);
+    }
+
     public function test_descuentos_de_shopify_quedan_en_el_campo_descuento(): void
     {
         $lineaCodigo = $this->transformer->transformarDetallesVenta([
