@@ -1071,16 +1071,28 @@ class ShopifyConsolidationServiceTest extends TestCase
 
         $mockClient = $this->createMock(ShopifyApiClient::class);
 
-        // 1st call fails with 422 tracking error, 2nd call succeeds after enabling tracking
-        $matcher = $this->exactly(2);
-        $mockClient->expects($matcher)
-            ->method('post')
-            ->with('inventory_levels/set.json')
-            ->willReturnCallback(function () use ($matcher) {
-                if ($matcher->getInvocationCount() === 1) {
-                    throw new \Exception('Error en petición a Shopify API: 422 - {"errors":["Inventory item does not have inventory tracking enabled"]}');
+        $mutaciones = 0;
+        $mockClient->expects($this->exactly(3))
+            ->method('graphql')
+            ->willReturnCallback(function ($query) use (&$mutaciones) {
+                if (str_contains($query, 'inventorySetQuantities')) {
+                    $mutaciones++;
+                    if ($mutaciones === 1) {
+                        return ['inventorySetQuantities' => ['userErrors' => [[
+                            'message' => 'Inventory item does not have inventory tracking enabled',
+                            'field' => ['inventoryItemId'],
+                            'code' => 'INVALID',
+                        ]]]];
+                    }
+
+                    return ['inventorySetQuantities' => ['userErrors' => []]];
                 }
-                return ['status' => 'success', 'body' => []];
+
+                return ['inventoryItem' => ['inventoryLevel' => ['quantities' => [
+                    ['name' => 'on_hand', 'quantity' => 0],
+                    ['name' => 'available', 'quantity' => 0],
+                    ['name' => 'committed', 'quantity' => 0],
+                ]]]];
             });
 
         // Expects PUT to activate tracking on inventory_item

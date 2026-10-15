@@ -7,7 +7,9 @@ use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
 use App\Models\User;
 use App\Models\Ventas\Detalle;
+use App\Models\Ventas\Impuesto;
 use App\Models\Ventas\Venta;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class ShopifyVentaConsolidacionService
@@ -93,6 +95,7 @@ class ShopifyVentaConsolidacionService
     private function aplicarLineas(Venta $venta, array $lineas, array $shopifyOrder, User $usuario): void
     {
         $taxesIncluded = (bool) ($shopifyOrder['taxes_included'] ?? false);
+        $ventaExenta = filter_var($shopifyOrder['tax_exempt'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         foreach ($lineas as $item) {
             $producto = $this->resolverProducto($item, $venta, $usuario);
@@ -101,10 +104,14 @@ class ShopifyVentaConsolidacionService
             }
 
             $cantidad = (float) $item['current_quantity'];
+            $item = $this->prorratearImpuestoLinea($item, $cantidad);
             $item['quantity'] = $cantidad;
-            $datos = $this->transformer->transformarDetallesVenta($item, $venta->id, $venta->id_empresa, $taxesIncluded);
+            $datos = $this->transformer->transformarDetallesVenta($item, $venta->id, $venta->id_empresa, $taxesIncluded, $ventaExenta);
             $datos['id_producto'] = $producto->id;
             $datos['cantidad'] = $cantidad;
+            if (array_key_exists('subtotal', $datos)) {
+                $datos['sub_total'] = $datos['subtotal'];
+            }
             unset($datos['subtotal']);
 
             $detalle = $venta->detalles()
@@ -196,6 +203,36 @@ class ShopifyVentaConsolidacionService
             'monto_pago' => $cabecera['monto_pago'],
             'estado' => $cabecera['estado'],
         ]);
+
+        $filasImpuesto = Impuesto::where('id_venta', $venta->id)->get();
+        if ($filasImpuesto->count() === 1) {
+            $filasImpuesto->first()->update(['monto' => $cabecera['iva']]);
+        }
+    }
+
+    /**
+     * Shopify deja tax_lines calculado sobre quantity (la original).
+     * current_quantity es la cantidad vigente tras editar el pedido.
+     */
+    private function prorratearImpuestoLinea(array $item, float $cantidadVigente): array
+    {
+        $cantidadOriginal = (float) ($item['quantity'] ?? $cantidadVigente);
+        if ($cantidadOriginal <= 0 || abs($cantidadOriginal - $cantidadVigente) < 0.00001) {
+            return $item;
+        }
+        if (empty($item['tax_lines']) || !is_array($item['tax_lines'])) {
+            return $item;
+        }
+
+        $factor = $cantidadVigente / $cantidadOriginal;
+        foreach ($item['tax_lines'] as $indice => $taxLine) {
+            if (!is_array($taxLine) || !isset($taxLine['price'])) {
+                continue;
+            }
+            $item['tax_lines'][$indice]['price'] = round((float) $taxLine['price'] * $factor, 2);
+        }
+
+        return $item;
     }
 
     private function resolverProducto(array $item, Venta $venta, User $usuario): ?Producto
@@ -302,6 +339,8 @@ class ShopifyVentaConsolidacionService
         if (!$inventario) {
             return;
         }
+
+        Cache::put("shopify_syncing_inv_{$producto->id}", true, 60);
 
         if ($delta > 0) {
             $inventario->decrement('stock', $delta);

@@ -351,13 +351,6 @@ class ShopifyController extends Controller
             $productoData['id_categoria'] = $categoria->id;
 
             if ($producto) {
-                // España Dev: Si la sincronización local está activa para este producto, omitir webhook entrante para prevenir bucles y reseteos a 0
-                if ($this->cache->isLocked($producto->id) || Cache::has("shopify_syncing_inv_{$producto->id}")) {
-                    Log::channel('shopify')->info("ShopifyController: Omitiendo webhook para producto #{$producto->id} porque la sincronización local está activa (lockSync)");
-                    $this->procesarImagenes($request, $producto->id, $variantImageId);
-                    continue;
-                }
-
                 $isDifferent = $this->cache->isShopifyDataDifferent($producto, $productoData);
                 
                 // España Dev: detectar si el stock total o por sucursal difiere para sincronizarlo
@@ -392,9 +385,10 @@ class ShopifyController extends Controller
                 // validando URL y reemplazando solo si la URL o el hash cambiaron.
                 $this->procesarImagenes($request, $producto->id, $variantImageId);
             } else {
-                // El SKU repetido solo bloquea si pertenece a otro producto.
-                // Las variantes del mismo producto de Shopify pueden compartir el SKU de la compra.
-                $duplicadoPorSKU = !empty($productoData['codigo']) &&
+                // El SKU repetido bloquea una ficha simple que ya existe en otro producto.
+                // Una variante real se crea igual: otro producto puede tener el mismo codigo.
+                $duplicadoPorSKU = empty($productoData['nombre_variante'])
+                    && !empty($productoData['codigo']) &&
                     Producto::where('codigo', $productoData['codigo'])
                         ->where('id_empresa', $empresa->id)
                         ->where('enable', '!=', '0')
@@ -600,15 +594,6 @@ class ShopifyController extends Controller
             return response()->json(['status' => 'ignored', 'message' => 'Product not linked'], 200);
         }
 
-        // España Dev: Si la sincronización saliente está activa para este producto, omitir webhook entrante
-        if ($this->cache->isLocked($producto->id) || Cache::has("shopify_syncing_inv_{$producto->id}")) {
-            ShopifyHelper::log("inventory_levels/update: [OMITIDO] Sincronización saliente activa para producto #{$producto->id}", [
-                'inventory_item_id' => $inventoryItemId,
-                'location_id' => $locationId,
-            ]);
-            return response()->json(['status' => 'ignored', 'message' => 'Outbound sync in progress'], 200);
-        }
-
         // Resolver la bodega destino según el location_id que envía Shopify
         $bodegaId = null;
         if (!empty($locationId)) {
@@ -631,124 +616,107 @@ class ShopifyController extends Controller
             ->where('id_bodega', $bodegaId)
             ->first();
 
-        $stockAnterior = $inventario ? (int) $inventario->stock : 0;
+        $stockLocal = $inventario ? (float) $inventario->stock : 0.0;
 
-        ShopifyHelper::log("inventory_levels/update: Datos resueltos", [
+        if (empty($locationId) || !$empresa->tieneCredencialesShopify()) {
+            return response()->json(['status' => 'error', 'message' => 'No se pudo leer on_hand'], 500);
+        }
+
+        try {
+            $client = new ShopifyApiClient(
+                $empresa->shopify_store_url,
+                $empresa->shopify_consumer_secret,
+                app(\App\Services\ShopifyTokenService::class),
+                $empresa
+            );
+            $cantidades = app(\App\Services\ShopifyInventarioCantidad::class)->leer(
+                $client,
+                (int) $inventoryItemId,
+                (int) $locationId
+            );
+        } catch (\Throwable $e) {
+            ShopifyHelper::log('inventory_levels/update: no se pudo leer on_hand', [
+                'producto_id' => $producto->id,
+                'error' => $e->getMessage(),
+            ], 'error');
+
+            return response()->json(['status' => 'error', 'message' => 'No se pudo leer on_hand'], 500);
+        }
+
+        if ($cantidades === null) {
+            return response()->json(['status' => 'error', 'message' => 'No se pudo leer on_hand'], 500);
+        }
+
+        $onHand = $cantidades['on_hand'];
+
+        ShopifyHelper::log('inventory_levels/update: cantidades', [
             'producto_id' => $producto->id,
-            'producto_nombre' => $producto->nombre,
             'bodega_id' => $bodegaId,
-            'stock_smartpyme' => $stockAnterior,
-            'available_shopify' => $available,
+            'on_hand' => $onHand,
+            'available' => $cantidades['available'],
+            'committed' => $cantidades['committed'],
+            'stock_smartpyme' => $stockLocal,
         ]);
 
-        // 1. Si el stock en SmartPyme ya es igual al stock available de Shopify, no hay nada que cambiar
-        if ($stockAnterior === $available) {
-            ShopifyHelper::log("inventory_levels/update: [OMITIDO] Stock en SmartPyme ({$stockAnterior}) ya es igual al available de Shopify ({$available})", [
+        $prevKey = "shopify_qty_{$empresa->id}_{$inventoryItemId}_{$bodegaId}";
+        $previo = Cache::get($prevKey);
+        $nuevoStock = $this->stockSegunMovimientoFisico($stockLocal, $cantidades, is_array($previo) ? $previo : null);
+        Cache::put($prevKey, [
+            'on_hand' => (float) $cantidades['on_hand'],
+            'available' => (float) $cantidades['available'],
+            'committed' => (float) $cantidades['committed'],
+        ], now()->addDays(30));
+
+        if ($nuevoStock === null || (float) $nuevoStock === $stockLocal) {
+            ShopifyHelper::log('inventory_levels/update: sin movimiento físico, el stock local se queda', [
                 'producto_id' => $producto->id,
                 'bodega_id' => $bodegaId,
-                'stock' => $stockAnterior,
+                'on_hand' => $onHand,
+                'stock_smartpyme' => $stockLocal,
             ]);
-            return response()->json(['status' => 'success', 'message' => 'Stock ya sincronizado'], 200);
+            return response()->json(['status' => 'success', 'message' => 'Sin movimiento físico'], 200);
         }
-
-        // 2. En SmartPyme (ERP), las reducciones de inventario son gestionadas exclusivamente
-        // por el flujo de ventas/órdenes (orders/create, convertirCotizacionAVenta), las cuales
-        // emiten el documento fiscal (Factura/CCF) y registran la salida formal en Kardex.
-        // Toda orden en Shopify emite concurrentemente inventory_levels/update con available < stock;
-        // procesar reducciones aquí produce condiciones de carrera y doble descuento en Kardex.
-        //
-        // BUG-2 mitigation: si la reducción llega pero no hay venta reciente en SmartPyme que la
-        // justifique, es probable que el webhook orders/create se haya perdido. Se registra una
-        // alerta de discrepancia para que pueda reconciliarse sin aplicar el descuento de forma
-        // insegura (lo que causaría doble descuento cuando orders/create SÍ llegue).
-        if ($available < $stockAnterior) {
-            $delta = $stockAnterior - $available; // unidades reducidas en Shopify
-
-            // Verificar si ya existe una venta reciente en SmartPyme que justifique esta reducción.
-            // Ventana: 5 minutos — suficiente para que orders/create haya sido procesado.
-            $ventaReciente = \App\Models\Ventas\DetalleVenta::whereHas('venta', function ($q) use ($empresa) {
-                    $q->where('id_empresa', $empresa->id)
-                      ->where('created_at', '>=', now()->subMinutes(5));
-                })
-                ->whereHas('producto', function ($q) use ($producto) {
-                    $q->where('id', $producto->id);
-                })
-                ->exists();
-
-            if ($ventaReciente) {
-                // orders/create ya fue procesado — reducción esperada, ignorar correctamente.
-                ShopifyHelper::log("inventory_levels/update: [OMITIDO] Reducción cubierta por venta reciente en SmartPyme", [
-                    'producto_id'      => $producto->id,
-                    'bodega_id'        => $bodegaId,
-                    'stock_smartpyme'  => $stockAnterior,
-                    'available_shopify'=> $available,
-                    'delta'            => -$delta,
-                ]);
-            } else {
-                // No hay venta reciente: posible webhook orders/create perdido.
-                // NO aplicamos la reducción para evitar doble descuento cuando orders/create llegue tarde.
-                // Se registra como warning para reconciliación manual o automatizada.
-                Log::channel('shopify')->warning("inventory_levels/update: [DISCREPANCIA STOCK] Reducción sin venta reciente en SmartPyme — posible webhook orders/create perdido", [
-                    'producto_id'          => $producto->id,
-                    'producto_nombre'      => $producto->nombre,
-                    'bodega_id'            => $bodegaId,
-                    'stock_smartpyme'      => $stockAnterior,
-                    'available_shopify'    => $available,
-                    'unidades_sin_cubrir'  => $delta,
-                    'inventory_item_id'    => $inventoryItemId,
-                    'location_id'          => $locationId,
-                    'accion_recomendada'   => "Verificar si existe orden en Shopify para este producto y reconciliar stock manualmente si orders/create no llega.",
-                ]);
-
-                // Guardar la discrepancia en cache (TTL 30min) para que un job de reconciliación
-                // pueda detectarla y actuar. Clave: shopify_stock_discrepancy_{producto_id}_{bodega_id}
-                Cache::put("shopify_stock_discrepancy_{$producto->id}_{$bodegaId}", [
-                    'producto_id'      => $producto->id,
-                    'bodega_id'        => $bodegaId,
-                    'stock_smartpyme'  => $stockAnterior,
-                    'available_shopify'=> $available,
-                    'detected_at'      => now()->toISOString(),
-                    'inventory_item_id'=> $inventoryItemId,
-                ], 1800);
-            }
-
-            return response()->json([
-                'status'  => 'ignored',
-                'message' => 'Reducciones de stock son gestionadas exclusivamente por el flujo de ventas/órdenes.',
-            ], 200);
-        }
-
-        ShopifyHelper::log("inventory_levels/update: [APLICANDO AJUSTE DIRECTO] Modificando inventario por cambio en Shopify", [
-            'producto_id' => $producto->id,
-            'bodega_id' => $bodegaId,
-            'stock_anterior' => $stockAnterior,
-            'stock_nuevo' => $available,
-            'delta' => $available - $stockAnterior,
-        ]);
-
-        $this->cache->lockSync($producto->id);
 
         $this->actualizarInventario(
             $producto->id,
-            $available,
+            $nuevoStock,
             $bodegaId,
             $usuario->id,
-            ['origen' => 'shopify', 'tipo' => 'ajuste_inventario', 'stock_anterior' => $stockAnterior, 'location_id' => $locationId]
+            ['origen' => 'shopify', 'tipo' => 'ajuste_inventario', 'stock_anterior' => $stockLocal, 'location_id' => $locationId]
         );
 
         if ($inventario) {
             $this->cache->saveInventorySnapshot($inventario->fresh(), $producto->id);
         }
 
-        ShopifyHelper::log("inventory_levels/update: [COMPLETADO] Inventario actualizado exitosamente", [
-            'producto_id' => $producto->id,
-            'inventory_item_id' => $inventoryItemId,
-            'location_id' => $locationId,
-            'stock_anterior' => $stockAnterior,
-            'stock_nuevo' => $available,
-        ]);
-
         return response()->json(['status' => 'success', 'message' => 'Inventario actualizado'], 200);
+    }
+
+    /**
+     * Un pedido mueve available y committed, no el físico. Solo se copia a SmartPyme
+     * un cambio de on_hand que también mueve available (ajuste o reposición).
+     * El surtido baja on_hand y deja available igual: la venta ya descontó.
+     */
+    private function stockSegunMovimientoFisico(float $stockLocal, array $actual, ?array $previo): ?float
+    {
+        $onHand = (float) $actual['on_hand'];
+        $available = (float) $actual['available'];
+        $committed = (float) ($actual['committed'] ?? 0);
+
+        if ($previo === null) {
+            if ($committed > 0 || $onHand === $stockLocal) {
+                return null;
+            }
+            return $onHand;
+        }
+
+        $deltaOnHand = $onHand - (float) $previo['on_hand'];
+        $deltaAvailable = $available - (float) $previo['available'];
+        if (abs($deltaOnHand) < 0.00001 || abs($deltaOnHand - $deltaAvailable) >= 0.00001) {
+            return null;
+        }
+
+        return $stockLocal + $deltaOnHand;
     }
 
     /**
@@ -1398,6 +1366,13 @@ class ShopifyController extends Controller
         $stockFallback = 0,
         $tipoMovimiento = 'inventario_inicial'
     ) {
+        if ($tipoMovimiento === 'actualizacion_shopify') {
+            ShopifyHelper::log('products/update: el stock lo trae inventory_levels/update', [
+                'producto_id' => $producto->id,
+            ]);
+            return;
+        }
+
         $ubicacionesMapeadas = ($empresa) ? ShopifyLocation::withoutGlobalScope('empresa')
             ->where('id_empresa', $empresa->id)
             ->where('sincronizar_stock', true)
@@ -1428,7 +1403,10 @@ class ShopifyController extends Controller
 
                 foreach ($ubicacionesMapeadas as $locMap) {
                     $locId = (string) $locMap->shopify_location_id;
-                    $stockDisponible = (float) ($levelsMap[$locId] ?? 0.0);
+                    if (!array_key_exists($locId, $levelsMap)) {
+                        continue;
+                    }
+                    $stockDisponible = (float) $levelsMap[$locId];
 
                     $this->actualizarInventario(
                         $producto->id,
@@ -1902,7 +1880,8 @@ class ShopifyController extends Controller
                 }
 
                 $taxesIncluded = $request->taxes_included ?? false;
-                $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa, $taxesIncluded);
+                $ventaExenta = filter_var($request->input('tax_exempt', false), FILTER_VALIDATE_BOOLEAN);
+                $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa, $taxesIncluded, $ventaExenta);
                 $detalleData['id_producto'] = $producto->id;
                 $venta->detalles()->create($detalleData);
 
@@ -1913,7 +1892,8 @@ class ShopifyController extends Controller
                         ->where('id_bodega', $venta->id_bodega)
                         ->value('stock') ?? 0;
 
-                    // Actualizar inventario
+                    // La venta ya está en Shopify. No reescribir su on_hand con este descuento.
+                    Cache::put("shopify_syncing_inv_{$producto->id}", true, 60);
                     Inventario::where('id_producto', $producto->id)
                         ->where('id_bodega', $venta->id_bodega)
                         ->decrement('stock', $item['quantity']);
@@ -2339,6 +2319,43 @@ class ShopifyController extends Controller
     }
 
     /**
+     * El stock se lee antes de guardar: updateOrCreate deja getOriginal() en el valor nuevo y el delta salía 0.
+     */
+    private function fijarStockConsolidacionIndividual(Producto $producto, int $idBodega, float $stockDisponible, string $observacion): void
+    {
+        DB::transaction(function () use ($producto, $idBodega, $stockDisponible, $observacion) {
+            $stockAnterior = (float) (Inventario::where('id_producto', $producto->id)
+                ->where('id_bodega', $idBodega)
+                ->value('stock') ?? 0);
+
+            $inv = Inventario::withoutEvents(function () use ($producto, $idBodega, $stockDisponible) {
+                return Inventario::updateOrCreate(
+                    ['id_producto' => $producto->id, 'id_bodega' => $idBodega],
+                    ['stock' => $stockDisponible]
+                );
+            });
+
+            $delta = $stockDisponible - $stockAnterior;
+            if (abs($delta) <= 0.001) {
+                return;
+            }
+
+            $inv->kardex(
+                $producto,
+                $delta,
+                $producto->precio,
+                $producto->costo,
+                null,
+                [
+                    'origen' => 'shopify',
+                    'observacion' => $observacion,
+                    'id_usuario' => Auth::id(),
+                ]
+            );
+        });
+    }
+
+    /**
      * Sincroniza un producto individual entre SmartPyme y Shopify en la dirección seleccionada.
      */
     public function sincronizarProductoIndividual($id, Request $request)
@@ -2502,24 +2519,12 @@ class ShopifyController extends Controller
                         $locId = $locMap ? (string) $locMap->shopify_location_id : (string) $empresa->shopify_location_id;
                         $stockDisponible = isset($levelsMap[$locId]) ? $levelsMap[$locId] : 0.0;
 
-                        $inv = Inventario::withoutEvents(function () use ($producto, $idBodega, $stockDisponible) {
-                            return Inventario::updateOrCreate(
-                                ['id_producto' => $producto->id, 'id_bodega' => (int) $idBodega],
-                                ['stock' => $stockDisponible]
-                            );
-                        });
-
-                        $delta = $stockDisponible - ($inv->wasRecentlyCreated ? 0 : $inv->getOriginal('stock'));
-                        if (abs($delta) > 0.001) {
-                            $inv->kardex(
-                                $producto,
-                                $delta,
-                                $producto->precio,
-                                $producto->costo,
-                                null,
-                                ['origen' => 'shopify', 'observacion' => 'Ajuste individual desde Shopify']
-                            );
-                        }
+                        $this->fijarStockConsolidacionIndividual(
+                            $producto,
+                            (int) $idBodega,
+                            $stockDisponible,
+                            'Ajuste individual desde Shopify'
+                        );
                     } else {
                         // Sincronizar TODAS las sucursales mapeadas (1 a 1)
                         if ($ubicacionesMapeadas->isNotEmpty()) {
@@ -2527,48 +2532,24 @@ class ShopifyController extends Controller
                                 $locId = (string) $locMap->shopify_location_id;
                                 $stockDisponible = (float) ($levelsMap[$locId] ?? 0.0);
 
-                                $inv = Inventario::withoutEvents(function () use ($producto, $locMap, $stockDisponible) {
-                                    return Inventario::updateOrCreate(
-                                        ['id_producto' => $producto->id, 'id_bodega' => $locMap->id_bodega],
-                                        ['stock' => $stockDisponible]
-                                    );
-                                });
-
-                                $delta = $stockDisponible - ($inv->wasRecentlyCreated ? 0 : $inv->getOriginal('stock'));
-                                if (abs($delta) > 0.001) {
-                                    $inv->kardex(
-                                        $producto,
-                                        $delta,
-                                        $producto->precio,
-                                        $producto->costo,
-                                        null,
-                                        ['origen' => 'shopify', 'observacion' => "Ajuste individual desde Shopify ({$locMap->shopify_location_name})"]
-                                    );
-                                }
+                                $this->fijarStockConsolidacionIndividual(
+                                    $producto,
+                                    (int) $locMap->id_bodega,
+                                    $stockDisponible,
+                                    "Ajuste individual desde Shopify ({$locMap->shopify_location_name})"
+                                );
                             }
                         } else {
                             // Fallback mono-sucursal sin mapeo
                             $stockDisponible = (float) ($variantShopify['inventory_quantity'] ?? 0);
                             $bodegaDestino = $user->id_bodega ?: $producto->id_bodega;
                             if ($bodegaDestino) {
-                                $inv = Inventario::withoutEvents(function () use ($producto, $bodegaDestino, $stockDisponible) {
-                                    return Inventario::updateOrCreate(
-                                        ['id_producto' => $producto->id, 'id_bodega' => $bodegaDestino],
-                                        ['stock' => $stockDisponible]
-                                    );
-                                });
-
-                                $delta = $stockDisponible - ($inv->wasRecentlyCreated ? 0 : $inv->getOriginal('stock'));
-                                if (abs($delta) > 0.001) {
-                                    $inv->kardex(
-                                        $producto,
-                                        $delta,
-                                        $producto->precio,
-                                        $producto->costo,
-                                        null,
-                                        ['origen' => 'shopify', 'observacion' => 'Ajuste individual desde Shopify']
-                                    );
-                                }
+                                $this->fijarStockConsolidacionIndividual(
+                                    $producto,
+                                    (int) $bodegaDestino,
+                                    $stockDisponible,
+                                    'Ajuste individual desde Shopify'
+                                );
                             }
                         }
                     }
@@ -2776,34 +2757,14 @@ class ShopifyController extends Controller
     /**
      * Establece el nivel de inventario en Shopify asegurando que el seguimiento esté activo.
      */
-    private function setInventoryLevelWithTracking($client, int $locationId, int $inventoryItemId, $available)
+    private function setInventoryLevelWithTracking($client, int $locationId, int $inventoryItemId, $onHand)
     {
-        try {
-            return $client->post('inventory_levels/set.json', [
-                'location_id' => $locationId,
-                'inventory_item_id' => $inventoryItemId,
-                'available' => (int) round((float) $available),
-            ]);
-        } catch (\Throwable $e) {
-            if (str_contains($e->getMessage(), 'tracking enabled') || str_contains($e->getMessage(), 'inventory tracking')) {
-                try {
-                    $client->put("inventory_items/{$inventoryItemId}.json", [
-                        'inventory_item' => [
-                            'id' => $inventoryItemId,
-                            'tracked' => true,
-                        ]
-                    ]);
-                    return $client->post('inventory_levels/set.json', [
-                        'location_id' => $locationId,
-                        'inventory_item_id' => $inventoryItemId,
-                        'available' => (int) round((float) $available),
-                    ]);
-                } catch (\Throwable $t2) {
-                    Log::channel('shopify')->warning("No se pudo activar tracking para item #{$inventoryItemId}: " . $t2->getMessage());
-                }
-            }
-            throw $e;
-        }
+        return app(\App\Services\ShopifyInventarioCantidad::class)->fijarOnHand(
+            $client,
+            $inventoryItemId,
+            $locationId,
+            (int) round((float) $onHand)
+        );
     }
 
     private function buscarCategoria($nombre, $id_empresa)
@@ -3737,6 +3698,7 @@ class ShopifyController extends Controller
                     ->where('id_bodega', $venta->id_bodega)
                     ->value('stock') ?? 0;
 
+                Cache::put("shopify_syncing_inv_{$producto->id}", true, 60);
                 Inventario::where('id_producto', $producto->id)
                     ->where('id_bodega', $venta->id_bodega)
                     ->decrement('stock', $detalle->cantidad);
@@ -3807,6 +3769,20 @@ class ShopifyController extends Controller
      * @param string $shopifyStatus
      * @return string
      */
+    private function edicionPosteriorALaVenta(Request $request, Venta $venta): bool
+    {
+        $marca = $request->input('updated_at');
+        if (!$marca || !$venta->updated_at) {
+            return false;
+        }
+
+        try {
+            return \Carbon\Carbon::parse($marca)->greaterThan($venta->updated_at);
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
     private function mapearEstado($shopifyStatus)
     {
         $mapeo = [
@@ -4017,7 +3993,8 @@ class ShopifyController extends Controller
             // Si no existe el detalle, crearlo (producto nuevo agregado al pedido)
             if (!$detalle) {
                 $taxesIncluded = $request->taxes_included ?? false;
-                $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa, $taxesIncluded);
+                $ventaExenta = filter_var($request->input('tax_exempt', false), FILTER_VALIDATE_BOOLEAN);
+                $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa, $taxesIncluded, $ventaExenta);
                 $detalleData['id_producto'] = $producto->id;
                 $detalleData['cantidad'] = $currentQuantity;
                 $detalle = $venta->detalles()->create($detalleData);
@@ -4506,7 +4483,7 @@ class ShopifyController extends Controller
             // pending/authorized/partially_paid (riesgo, envío, reintento) puede llegar
             // después del paid y bajar la venta a Pendiente. Reembolso y anulación siguen.
             $degradaPago = $venta->estado === 'Pagada' && $nuevoEstado === 'Pendiente';
-            if ($degradaPago) {
+            if ($degradaPago && !$this->edicionPosteriorALaVenta($request, $venta)) {
                 ShopifyHelper::log('orders/updated: se conserva Pagada; el financial_status entrante no la degrada', [
                     'venta_id' => $venta->id,
                     'financial_status' => $financialStatus,
@@ -4524,6 +4501,11 @@ class ShopifyController extends Controller
             app(\App\Services\ShopifyVentaConsolidacionService::class)
                 ->consolidar($venta, $request->all(), $usuario);
             $venta->refresh();
+
+            if ($degradaPago && $venta->estado !== 'Pagada') {
+                $venta->estado = 'Pagada';
+                $venta->saveQuietly();
+            }
 
             return response()->json([
                 'status' => 'success',
@@ -4815,7 +4797,8 @@ class ShopifyController extends Controller
 
                     // Crear detalle de venta
                     $taxesIncluded = $request->taxes_included ?? false;
-                    $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa, $taxesIncluded);
+                    $ventaExenta = filter_var($request->input('tax_exempt', false), FILTER_VALIDATE_BOOLEAN);
+                    $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa, $taxesIncluded, $ventaExenta);
                     $detalleData['id_producto'] = $producto->id;
                     $venta->detalles()->create($detalleData);
 

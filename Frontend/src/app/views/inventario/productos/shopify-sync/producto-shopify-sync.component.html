@@ -152,26 +152,7 @@
             <!-- Dirección de Sincronización (Patrón idéntico a Consolidación) -->
             <label class="form-label fw-bold text-dark mb-2">Seleccione la dirección del proceso:</label>
             <div class="row g-3 mb-3">
-                <!-- Opción 1: SmartPyme -> Shopify -->
-                <div class="col-md-6">
-                    <div class="card h-100 border"
-                        [ngClass]="syncShopifyConfig.direccion === 'sp_to_shopify' ? 'border-primary border-2 bg-light' : 'border-light'"
-                        (click)="syncShopifyConfig.direccion = 'sp_to_shopify'"
-                        style="cursor: pointer;">
-                        <div class="card-body p-3">
-                            <div class="d-flex align-items-center gap-2 mb-2">
-                                <i class="fa fa-upload text-primary fs-5"></i>
-                                <span class="fw-bold text-dark">SmartPyme &rarr; Shopify</span>
-                                <span *ngIf="syncShopifyConfig.direccion === 'sp_to_shopify'" class="badge bg-primary ms-auto">Activo</span>
-                            </div>
-                            <p class="small text-muted mb-0">
-                                Actualiza la tienda en línea con los datos de SmartPyme (Precio con {{ nombreImpuesto() }}: <strong class="text-dark">{{ comparativaShopify.local?.precio_venta | currency:'USD':'symbol':'1.2' }}</strong>, Stock: <strong class="text-dark">{{ comparativaShopify.local?.stock_total }}</strong> unid.).
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Opción 2: Shopify -> SmartPyme -->
+                <!-- Opción 1: Shopify -> SmartPyme -->
                 <div class="col-md-6">
                     <div class="card h-100 border"
                         [ngClass]="{
@@ -189,6 +170,25 @@
                             </div>
                             <p class="small text-muted mb-0">
                                 Actualiza SmartPyme con los datos de Shopify (Precio con {{ nombreImpuesto() }}: <strong class="text-dark">{{ comparativaShopify.shopify?.price !== null && comparativaShopify.shopify?.price !== undefined ? (comparativaShopify.shopify?.price | currency:'USD':'symbol':'1.2') : '—' }}</strong>, Stock: <strong class="text-dark">{{ comparativaShopify.shopify?.inventory_quantity !== null && comparativaShopify.shopify?.inventory_quantity !== undefined ? comparativaShopify.shopify?.inventory_quantity : '—' }}</strong> unid.).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Opción 2: SmartPyme -> Shopify -->
+                <div class="col-md-6">
+                    <div class="card h-100 border"
+                        [ngClass]="syncShopifyConfig.direccion === 'sp_to_shopify' ? 'border-primary border-2 bg-light' : 'border-light'"
+                        (click)="syncShopifyConfig.direccion = 'sp_to_shopify'"
+                        style="cursor: pointer;">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <i class="fa fa-upload text-primary fs-5"></i>
+                                <span class="fw-bold text-dark">SmartPyme &rarr; Shopify</span>
+                                <span *ngIf="syncShopifyConfig.direccion === 'sp_to_shopify'" class="badge bg-primary ms-auto">Activo</span>
+                            </div>
+                            <p class="small text-muted mb-0">
+                                Actualiza la tienda en línea con los datos de SmartPyme (Precio con {{ nombreImpuesto() }}: <strong class="text-dark">{{ comparativaShopify.local?.precio_venta | currency:'USD':'symbol':'1.2' }}</strong>, Stock: <strong class="text-dark">{{ comparativaShopify.local?.stock_total }}</strong> unid.).
                             </p>
                         </div>
                     </div>
