@@ -176,13 +176,16 @@ export class CrearEmpresaComponent implements OnInit {
     }
 
     public setPlan(){
+        if (this.empresa.tipo_plan) {
+            this.empresa.frecuencia_pago = this.empresa.tipo_plan;
+        }
         if(this.empresa.plan == 'Emprendedor'){
             this.empresa.user_limit = 1;
             this.empresa.sucursal_limit = 1;
 
             if(this.empresa.tipo_plan == 'Mensual'){
                 this.empresa.total = 16.95;
-            }else{
+            }else if(this.empresa.tipo_plan == 'Anual'){
                 this.empresa.total = 203.4;
             }
         }
@@ -193,7 +196,7 @@ export class CrearEmpresaComponent implements OnInit {
 
             if(this.empresa.tipo_plan == 'Mensual'){
                 this.empresa.total = 28.25;
-            }else{
+            }else if(this.empresa.tipo_plan == 'Anual'){
                 this.empresa.total = 339;
             }
         }
@@ -204,7 +207,7 @@ export class CrearEmpresaComponent implements OnInit {
 
             if(this.empresa.tipo_plan == 'Mensual'){
                 this.empresa.total = 56.5;
-            }else{
+            }else if(this.empresa.tipo_plan == 'Anual'){
                 this.empresa.total = 678;
             }
         }

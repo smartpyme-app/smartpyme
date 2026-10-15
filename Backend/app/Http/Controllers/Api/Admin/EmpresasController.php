@@ -137,7 +137,18 @@ class EmpresasController extends Controller
 
         $this->restoreWoocommerceSettings($empresa, $woocommerceValues);
 
+        $suscripcionEmpresa = null;
+        $cadenciaEmpresa = trim((string) $request->input('tipo_plan', ''));
+        if ($request->exists('tipo_plan') && $cadenciaEmpresa !== '') {
+            $suscripcionEmpresa = $empresa->suscripcion;
+            $empresa->aplicarCadenciaElegida($cadenciaEmpresa, $suscripcionEmpresa);
+        }
+
         $empresa->save();
+
+        if ($suscripcionEmpresa && $suscripcionEmpresa->isDirty('tipo_plan')) {
+            $suscripcionEmpresa->save();
+        }
 
         if ($request->has('forma_pago')) {
             $metodoValidado = $request->input('forma_pago');
@@ -167,6 +178,10 @@ class EmpresasController extends Controller
 
         $empresa = new Empresa;
         $empresa->fill($request->all());
+        $cadenciaEmpresa = trim((string) $request->input('tipo_plan', ''));
+        if ($cadenciaEmpresa !== '') {
+            $empresa->aplicarCadenciaElegida($cadenciaEmpresa);
+        }
 
         if ($request->hasFile('file')) {
             $empresa->logo = $this->handleLogoUpload($request, $empresa);

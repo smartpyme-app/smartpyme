@@ -345,6 +345,8 @@ export class AdminSuscripcionesComponent implements OnInit {
       campania: '',
       fecha_pago_inicio: '',
       fecha_pago_fin: '',
+      monto_desde: '',
+      monto_hasta: '',
     };
 
     this.filtrarSuscripciones();
@@ -400,7 +402,7 @@ export class AdminSuscripcionesComponent implements OnInit {
         (suscripcionCompleta) => {
           // Obtener código promocional desde la relación empresa del modelo Suscripcion
           const codigoPromocional = suscripcionCompleta.empresa?.codigo_promocional || '';
-          const frecuenciaPago = suscripcionCompleta.empresa?.frecuencia_pago || suscripcionCompleta.tipo_plan || '';
+          const frecuenciaPago = suscripcionCompleta.tipo_plan || suscripcionCompleta.empresa?.frecuencia_pago || '';
           const montoMensual = suscripcionCompleta.empresa?.monto_mensual || null;
           const montoAnual = suscripcionCompleta.empresa?.monto_anual || null;
 
@@ -432,7 +434,7 @@ export class AdminSuscripcionesComponent implements OnInit {
             .then(() => {
               this.editando = true;
               const codigoPromocional = suscripcion.empresa?.codigo_promocional || '';
-              const frecuenciaPago = suscripcion.empresa?.frecuencia_pago || suscripcion.tipo_plan || '';
+              const frecuenciaPago = suscripcion.tipo_plan || suscripcion.empresa?.frecuencia_pago || '';
               const montoMensual = suscripcion.empresa?.monto_mensual || null;
               const montoAnual = suscripcion.empresa?.monto_anual || null;
 
@@ -462,7 +464,7 @@ export class AdminSuscripcionesComponent implements OnInit {
         .then(() => {
           this.editando = true;
           const codigoPromocional = suscripcion.empresa?.codigo_promocional || '';
-          const frecuenciaPago = suscripcion.empresa?.frecuencia_pago || suscripcion.tipo_plan || '';
+          const frecuenciaPago = suscripcion.tipo_plan || suscripcion.empresa?.frecuencia_pago || '';
           const montoMensual = suscripcion.empresa?.monto_mensual || null;
           const montoAnual = suscripcion.empresa?.monto_anual || null;
 
@@ -533,18 +535,17 @@ export class AdminSuscripcionesComponent implements OnInit {
 
     this.saving = true;
 
-    // Sincronizar tipo_plan con frecuencia_pago si no están sincronizados
-    if (this.suscripcion.frecuencia_pago && !this.suscripcion.tipo_plan) {
-      this.suscripcion.tipo_plan = this.suscripcion.frecuencia_pago;
-    } else if (this.suscripcion.tipo_plan && !this.suscripcion.frecuencia_pago) {
-      this.suscripcion.frecuencia_pago = this.suscripcion.tipo_plan;
+    const cadenciaEdit = (this.suscripcion.frecuencia_pago || this.suscripcion.tipo_plan || '').toString().trim();
+    if (cadenciaEdit) {
+      this.aplicarCadenciaEnFormulario(this.suscripcion, cadenciaEdit);
     }
 
     const datosSuscripcion: any = {
       ...this.suscripcion,
       usuario_id: this.suscripcion.usuario_id,
       fin_periodo_prueba: new Date(this.suscripcion.fin_periodo_prueba),
-      frecuencia_pago: this.suscripcion.frecuencia_pago || this.suscripcion.tipo_plan,
+      tipo_plan: cadenciaEdit || this.suscripcion.tipo_plan,
+      frecuencia_pago: cadenciaEdit || this.suscripcion.tipo_plan,
       codigo_promocional: this.suscripcion.codigo_promocional || null,
       monto_mensual: this.suscripcion.monto_mensual || null,
       monto_anual: this.suscripcion.monto_anual || null,
@@ -1028,24 +1029,31 @@ export class AdminSuscripcionesComponent implements OnInit {
   }
 
   public onFrecuenciaPagoChange(frecuencia: string, isEdit: boolean = false) {
+    const cadencia = (frecuencia || '').toString().trim();
     if (isEdit) {
-      // Sincronizar tipo_plan con frecuencia_pago en edición
-      if (frecuencia) {
-        this.suscripcion.tipo_plan = frecuencia;
+      if (cadencia) {
+        this.aplicarCadenciaEnFormulario(this.suscripcion, cadencia);
       }
-      // Recalcular montos si hay un monto establecido
-      if (this.suscripcion.monto) {
-        this.calcularMontos(this.suscripcion.monto, frecuencia, true);
+      if (this.suscripcion.monto && cadencia) {
+        this.calcularMontos(this.suscripcion.monto, cadencia, true);
       }
     } else {
-      // Sincronizar tipo_plan con frecuencia_pago en creación
-      if (frecuencia) {
-        this.nuevaSuscripcion.tipo_plan = frecuencia;
+      if (cadencia) {
+        this.aplicarCadenciaEnFormulario(this.nuevaSuscripcion, cadencia);
       }
-      // Recalcular montos si hay un monto establecido
-      if (this.nuevaSuscripcion.monto) {
-        this.calcularMontos(this.nuevaSuscripcion.monto, frecuencia, false);
+      if (this.nuevaSuscripcion.monto && cadencia) {
+        this.calcularMontos(this.nuevaSuscripcion.monto, cadencia, false);
       }
+    }
+  }
+
+  /** La opción elegida en el select queda en suscripción y en empresa. */
+  private aplicarCadenciaEnFormulario(destino: any, cadencia: string): void {
+    destino.frecuencia_pago = cadencia;
+    destino.tipo_plan = cadencia;
+    if (destino.empresa) {
+      destino.empresa.frecuencia_pago = cadencia;
+      destino.empresa.tipo_plan = cadencia;
     }
   }
 
@@ -1198,18 +1206,17 @@ export class AdminSuscripcionesComponent implements OnInit {
 
     this.saving = true;
 
-    // Sincronizar tipo_plan con frecuencia_pago si no están sincronizados
-    if (this.nuevaSuscripcion.frecuencia_pago && !this.nuevaSuscripcion.tipo_plan) {
-      this.nuevaSuscripcion.tipo_plan = this.nuevaSuscripcion.frecuencia_pago;
-    } else if (this.nuevaSuscripcion.tipo_plan && !this.nuevaSuscripcion.frecuencia_pago) {
-      this.nuevaSuscripcion.frecuencia_pago = this.nuevaSuscripcion.tipo_plan;
+    const cadenciaNueva = (this.nuevaSuscripcion.frecuencia_pago || this.nuevaSuscripcion.tipo_plan || '').toString().trim();
+    if (cadenciaNueva) {
+      this.aplicarCadenciaEnFormulario(this.nuevaSuscripcion, cadenciaNueva);
     }
 
     const datosSuscripcion = {
       ...this.nuevaSuscripcion,
       fecha_proximo_pago: new Date(this.nuevaSuscripcion.fecha_proximo_pago),
       fin_periodo_prueba: new Date(this.nuevaSuscripcion.fin_periodo_prueba),
-      frecuencia_pago: this.nuevaSuscripcion.frecuencia_pago || this.nuevaSuscripcion.tipo_plan,
+      tipo_plan: cadenciaNueva || this.nuevaSuscripcion.tipo_plan,
+      frecuencia_pago: cadenciaNueva || this.nuevaSuscripcion.tipo_plan,
       codigo_promocional: this.nuevaSuscripcion.codigo_promocional || null,
       monto_mensual: this.nuevaSuscripcion.monto_mensual || null,
       monto_anual: this.nuevaSuscripcion.monto_anual || null,

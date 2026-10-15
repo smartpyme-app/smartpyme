@@ -254,6 +254,23 @@ class Empresa extends Model
     }
 
     /**
+     * Cadencia elegida en el formulario. No lee la frecuencia ya guardada en la empresa.
+     */
+    public function aplicarCadenciaElegida(?string $cadencia, ?Suscripcion $suscripcion = null): void
+    {
+        $cadencia = trim((string) $cadencia);
+        if ($cadencia === '') {
+            return;
+        }
+
+        $this->frecuencia_pago = $cadencia;
+        $this->tipo_plan = $cadencia;
+        if ($suscripcion) {
+            $suscripcion->tipo_plan = $cadencia;
+        }
+    }
+
+    /**
      * Alinea total, monto_mensual o monto_anual con el cobro de la suscripción según tipo_plan.
      */
     public function sincronizarMontosDesdeSuscripcion($monto, ?string $tipoPlan): void
