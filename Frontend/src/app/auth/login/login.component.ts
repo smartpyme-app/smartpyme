@@ -17,6 +17,7 @@ declare let $:any;
 @Component({
     selector: 'app-login',
     templateUrl: './login.component.html',
+    styleUrls: ['./login.component.css'],
     standalone: true,
     imports: [CommonModule, FormsModule, RouterModule, NotificacionesContainerComponent, LazyImageDirective]
 })
@@ -27,6 +28,13 @@ export class LoginComponent implements OnInit {
     public saludo:string = '';
     public anio:any = '';
     public showpassword:boolean = false;
+    public slideActivo = 0;
+    public readonly slides = [
+        { src: 'assets/img/login/slide-1.png', alt: 'Centraliza, automatiza y simplifica la gestión de tu negocio.' },
+        { src: 'assets/img/login/slide-2.png', alt: 'Accede a nuestros módulos.' },
+        { src: 'assets/img/login/slide-3.png', alt: 'Sin importar tu rubro, somos tu aliado para hacer crecer tu negocio.' },
+    ];
+    private slideTimer?: ReturnType<typeof setInterval>;
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
@@ -52,6 +60,27 @@ export class LoginComponent implements OnInit {
         if (this.route.snapshot.queryParamMap.get('passwordReset')) {
             setTimeout(() => this.alertService.success('¡Listo!', 'Tu contraseña ha sido actualizada correctamente.'));
         }
+
+        this.destroyRef.onDestroy(() => clearInterval(this.slideTimer));
+        this.iniciarSlider();
+    }
+
+    cambiarSlide(direccion: 1 | -1) {
+        const total = this.slides.length;
+        this.slideActivo = (this.slideActivo + direccion + total) % total;
+        this.iniciarSlider();
+    }
+
+    private iniciarSlider() {
+        clearInterval(this.slideTimer);
+
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            return;
+        }
+
+        this.slideTimer = setInterval(() => {
+            this.slideActivo = (this.slideActivo + 1) % this.slides.length;
+        }, 7000);
     }
 
     submit() {
