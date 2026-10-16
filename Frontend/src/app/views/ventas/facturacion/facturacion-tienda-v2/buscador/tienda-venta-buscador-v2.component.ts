@@ -238,6 +238,10 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
         return this.apiService.isComponenteQuimicoHabilitado();
     }
 
+    public isNombreComercialHabilitado(): boolean {
+        return this.apiService.isNombreComercialHabilitado();
+    }
+
     /**
      * Obtiene el nombre completo del producto (nombre + nombre_variante si aplica)
      */

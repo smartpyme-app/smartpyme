@@ -611,6 +611,10 @@ export class ProductosComponent implements OnInit, OnDestroy {
         return this.apiService.isComponenteQuimicoHabilitado();
     }
 
+    public isNombreComercialHabilitado(): boolean {
+        return this.apiService.isNombreComercialHabilitado();
+    }
+
     /**
      * Verifica si Shopify está activo en la empresa
      */

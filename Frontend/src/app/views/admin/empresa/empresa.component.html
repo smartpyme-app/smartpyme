@@ -1017,6 +1017,19 @@
                                         (change)="toggleComponenteQuimicoActivo()" name="componente_quimico_activo">
                                 </div>
                             </div>
+                            <div class="empresa-pref-row">
+                                <div class="empresa-pref-row-text">
+                                    <label class="empresa-pref-row-label" for="nombre_comercial_activo">Permitir agregar nombre comercial a productos</label>
+                                    <p class="empresa-pref-row-help text-muted small mb-0">
+                                        Muestra el campo nombre comercial en productos y lo incluye en las búsquedas.
+                                    </p>
+                                </div>
+                                <div class="form-switch m-0">
+                                    <input class="form-check-input" type="checkbox" role="switch"
+                                        id="nombre_comercial_activo" [checked]="isNombreComercialHabilitado()"
+                                        (change)="toggleNombreComercialActivo()" name="nombre_comercial_activo">
+                                </div>
+                            </div>
                             <div class="empresa-pref-row" *ngIf="tieneAccesoModuloPresentacionesProductos">
                                 <div class="empresa-pref-row-text">
                                     <label class="empresa-pref-row-label" for="modulo_presentaciones">Módulo de presentaciones</label>

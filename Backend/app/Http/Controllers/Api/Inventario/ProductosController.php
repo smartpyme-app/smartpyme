@@ -155,7 +155,8 @@ class ProductosController extends Controller
         })
             ->when($request->buscador, function ($q) use ($request, $empresa) {
                 $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
-                return $q->where(function ($sub) use ($request, $incluirComponenteQuimico) {
+                $incluirNombreComercial = $empresa && $empresa->isNombreComercialHabilitado();
+                return $q->where(function ($sub) use ($request, $incluirComponenteQuimico, $incluirNombreComercial) {
                     $sub->where('nombre', 'like', '%' . $request->buscador . '%')
                         ->orWhere('nombre_variante', 'like', '%' . $request->buscador . '%')
                         ->orWhere('codigo', 'like', '%' . $request->buscador . '%')
@@ -170,6 +171,9 @@ class ProductosController extends Controller
                         ->orWhereRaw("CONCAT(nombre, ' (', COALESCE(nombre_variante, ''), ')') LIKE ?", ['%' . $request->buscador . '%']);
                     if ($incluirComponenteQuimico) {
                         $sub->orWhere('componente_quimico', 'like', '%' . $request->buscador . '%');
+                    }
+                    if ($incluirNombreComercial) {
+                        $sub->orWhere('nombre_comercial', 'like', '%' . $request->buscador . '%');
                     }
                 });
             })
@@ -290,16 +294,20 @@ class ProductosController extends Controller
 
         $empresa = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
         $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
+        $incluirNombreComercial = $empresa && $empresa->isNombreComercialHabilitado();
 
         $query = Producto::query()
             ->where('enable', true)
             ->whereIn('tipo', $tipos)
-            ->where(function ($q) use ($term, $incluirComponenteQuimico) {
+            ->where(function ($q) use ($term, $incluirComponenteQuimico, $incluirNombreComercial) {
                 $q->where('nombre', 'LIKE', "%{$term}%")
                     ->orWhere('nombre_variante', 'LIKE', "%{$term}%")
                     ->orWhereRaw("CONCAT(nombre, ' (', COALESCE(nombre_variante, ''), ')') LIKE ?", ["%{$term}%"]);
                 if ($incluirComponenteQuimico) {
                     $q->orWhere('componente_quimico', 'LIKE', "%{$term}%");
+                }
+                if ($incluirNombreComercial) {
+                    $q->orWhere('nombre_comercial', 'LIKE', "%{$term}%");
                 }
             })
             ->orderByRaw("
@@ -325,12 +333,13 @@ class ProductosController extends Controller
     {
         $empresa = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
         $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
+        $incluirNombreComercial = $empresa && $empresa->isNombreComercialHabilitado();
 
         $productos = Producto::where('enable', true)->with(array_merge(
             ['inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios', 'precios'],
             $this->relacionesImpuestosProducto()
         ))
-            ->where(function ($q) use ($txt, $incluirComponenteQuimico) {
+            ->where(function ($q) use ($txt, $incluirComponenteQuimico, $incluirNombreComercial) {
                 $q->where('nombre', 'like', "%$txt%")
                     ->orWhere('nombre_variante', 'like', "%$txt%")
                     ->orWhere('barcode', 'like', "%$txt%")
@@ -339,6 +348,9 @@ class ProductosController extends Controller
                     ->orWhereRaw("CONCAT(nombre, ' (', COALESCE(nombre_variante, ''), ')') LIKE ?", ["%$txt%"]);
                 if ($incluirComponenteQuimico) {
                     $q->orWhere('componente_quimico', 'like', "%$txt%");
+                }
+                if ($incluirNombreComercial) {
+                    $q->orWhere('nombre_comercial', 'like', "%$txt%");
                 }
             })
             ->take(50)
@@ -352,19 +364,30 @@ class ProductosController extends Controller
         $search = $request->input('search', '');
         $limit = $request->input('limit', 20);
 
+        $empresa = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
+        $incluirNombreComercial = $empresa && $empresa->isNombreComercialHabilitado();
+
         $query = Producto::where('enable', true)
             ->orderBy('nombre');
 
         if (!empty($search)) {
-            $query->where(function($q) use ($search) {
+            $query->where(function($q) use ($search, $incluirNombreComercial) {
                 $q->where('nombre', 'LIKE', '%' . $search . '%')
                 ->orWhere('codigo', 'LIKE', '%' . $search . '%')
                 ->orWhere('barcode', 'LIKE', '%' . $search . '%');
+                if ($incluirNombreComercial) {
+                    $q->orWhere('nombre_comercial', 'LIKE', '%' . $search . '%');
+                }
             });
         }
 
+        $select = ['id', 'nombre', 'codigo', 'barcode', 'tipo'];
+        if ($incluirNombreComercial) {
+            $select[] = 'nombre_comercial';
+        }
+
         $productos = $query
-            ->select('id', 'nombre', 'codigo', 'barcode', 'tipo')
+            ->select($select)
             ->limit($limit)
             ->get();
 
@@ -388,6 +411,7 @@ class ProductosController extends Controller
         $id_bodega = $request->query('id_bodega');
         $empresa   = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
         $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
+        $incluirNombreComercial = $empresa && $empresa->isNombreComercialHabilitado();
         $incluirPresentaciones = $this->puedeCargarPresentaciones($empresa);
 
         // ── 1. Buscar productos base ──────────────────────────────────────────────
@@ -405,7 +429,7 @@ class ProductosController extends Controller
         $productos = Producto::where('enable', true)
             ->with($with)
             ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
-            ->where(function ($q) use ($query, $incluirComponenteQuimico) {
+            ->where(function ($q) use ($query, $incluirComponenteQuimico, $incluirNombreComercial) {
                 $q->where('nombre',    'like', "%$query%")
                   ->orWhere('nombre_variante', 'like', "%$query%")
                   ->orWhere('barcode', 'like', "%$query%")
@@ -414,6 +438,9 @@ class ProductosController extends Controller
                   ->orWhereRaw("CONCAT(nombre, ' (', COALESCE(nombre_variante, ''), ')') LIKE ?", ["%$query%"]);
                 if ($incluirComponenteQuimico) {
                     $q->orWhere('componente_quimico', 'like', "%$query%");
+                }
+                if ($incluirNombreComercial) {
+                    $q->orWhere('nombre_comercial', 'like', "%$query%");
                 }
             })
             ->take(50)
@@ -474,6 +501,7 @@ class ProductosController extends Controller
         $id_bodega = $request->query('id_bodega');
         $empresa = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
         $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
+        $incluirNombreComercial = $empresa && $empresa->isNombreComercialHabilitado();
         $incluirPresentaciones = $this->puedeCargarPresentaciones($empresa);
 
         if ($id_bodega) {
@@ -503,7 +531,7 @@ class ProductosController extends Controller
                     })
                     ->orWhere('tipo', 'Servicio');
                 })
-                ->where(function ($q) use ($query, $incluirComponenteQuimico) {
+                ->where(function ($q) use ($query, $incluirComponenteQuimico, $incluirNombreComercial) {
                     $q->where('nombre', 'like', "%$query%")
                         ->orWhere('nombre_variante', 'like', "%$query%")
                         ->orWhere('barcode', 'like', "%$query%")
@@ -512,6 +540,9 @@ class ProductosController extends Controller
                         ->orWhereRaw("CONCAT(nombre, ' (', COALESCE(nombre_variante, ''), ')') LIKE ?", ["%$query%"]);
                     if ($incluirComponenteQuimico) {
                         $q->orWhere('componente_quimico', 'like', "%$query%");
+                    }
+                    if ($incluirNombreComercial) {
+                        $q->orWhere('nombre_comercial', 'like', "%$query%");
                     }
                 })
                 ->take(50)
@@ -527,7 +558,7 @@ class ProductosController extends Controller
 
             $productos = Producto::where('enable', true)->with($withGlobal)->with('precios')
                 ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
-                ->where(function ($q) use ($query, $incluirComponenteQuimico) {
+                ->where(function ($q) use ($query, $incluirComponenteQuimico, $incluirNombreComercial) {
                     $q->where('nombre', 'like', "%$query%")
                         ->orWhere('nombre_variante', 'like', "%$query%")
                         ->orWhere('barcode', 'like', "%$query%")
@@ -536,6 +567,9 @@ class ProductosController extends Controller
                         ->orWhereRaw("CONCAT(nombre, ' (', COALESCE(nombre_variante, ''), ')') LIKE ?", ["%$query%"]);
                     if ($incluirComponenteQuimico) {
                         $q->orWhere('componente_quimico', 'like', "%$query%");
+                    }
+                    if ($incluirNombreComercial) {
+                        $q->orWhere('nombre_comercial', 'like', "%$query%");
                     }
                 })
                 ->take(50)
@@ -2029,12 +2063,13 @@ class ProductosController extends Controller
 
         $empresa = Empresa::find($request->id_empresa);
         $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
+        $incluirNombreComercial = $empresa && $empresa->isNombreComercialHabilitado();
 
         $productos = Producto::where('enable', true)
             ->where('id_empresa', $request->id_empresa)
             ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
             ->with(['inventarios', 'precios'])
-            ->where(function ($q) use ($termino, $incluirComponenteQuimico) {
+            ->where(function ($q) use ($termino, $incluirComponenteQuimico, $incluirNombreComercial) {
                 $q->where('nombre', 'like', "%$termino%")
                     ->orWhere('codigo', 'like', "%$termino%")
                     ->orWhere('barcode', 'like', "%$termino%")
@@ -2043,6 +2078,9 @@ class ProductosController extends Controller
                     ->orWhere('descripcion', 'like', "%$termino%");
                 if ($incluirComponenteQuimico) {
                     $q->orWhere('componente_quimico', 'like', "%$termino%");
+                }
+                if ($incluirNombreComercial) {
+                    $q->orWhere('nombre_comercial', 'like', "%$termino%");
                 }
             })
             ->orderBy('nombre', 'asc')

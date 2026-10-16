@@ -102,8 +102,30 @@ export class HttpService {
         }
         return response.body;
       }),
-      catchError(this.handleError)
+      catchError((error: HttpErrorResponse) => this.handleError(this.parseJsonTextErrorBody(error)))
     );
+  }
+
+  /** storeWithTimeout usa responseType text; errores 4xx/5xx vienen como JSON en string. */
+  private parseJsonTextErrorBody(error: HttpErrorResponse): HttpErrorResponse {
+    if (typeof error.error !== 'string') {
+      return error;
+    }
+    const trimmed = error.error.trim();
+    if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+      return error;
+    }
+    try {
+      return new HttpErrorResponse({
+        error: JSON.parse(trimmed),
+        headers: error.headers,
+        status: error.status,
+        statusText: error.statusText,
+        url: error.url ?? undefined,
+      });
+    } catch {
+      return error;
+    }
   }
 
   update(url: string, id: number, model: any): Observable<any> {

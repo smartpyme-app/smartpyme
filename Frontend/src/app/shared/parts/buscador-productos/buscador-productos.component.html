@@ -2,7 +2,7 @@
   <div class="input-group">
     <span class="input-group-text bg-white border-right-0"><i class="fa fa-search"></i></span>
     <input id="search" [formControl]="searchControl" type="search" name="buscador" class="form-control"
-      [placeholder]="isComponenteQuimicoHabilitado() ? 'Buscar producto, servicio, código o componente químico' : 'Buscar producto, servicio o código'">
+      [placeholder]="isNombreComercialHabilitado() ? (isComponenteQuimicoHabilitado() ? 'Buscar producto, servicio, código, nombre comercial o componente químico' : 'Buscar producto, servicio, código o nombre comercial') : (isComponenteQuimicoHabilitado() ? 'Buscar producto, servicio, código o componente químico' : 'Buscar producto, servicio o código')">
   </div>
   <ul *ngIf="searchControl.value?.length > 0" class="list-group opciones"
     style="position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; max-height: 300px; overflow-y: auto;">
@@ -23,6 +23,8 @@
         </span>
 
         <br>
+        <small *ngIf="isNombreComercialHabilitado() && producto.nombre_comercial"
+          class="text-muted d-block">Nombre comercial: {{ producto.nombre_comercial }}</small>
         <small *ngIf="isComponenteQuimicoHabilitado() && producto.componente_quimico"
           class="text-muted d-block">Comp. químico: {{ producto.componente_quimico }}</small>
         <small><span class="badge bg-light text-muted">{{ producto.nombre_categoria }}</span> <span

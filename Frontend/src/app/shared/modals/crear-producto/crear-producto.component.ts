@@ -277,6 +277,10 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
         return this.apiService.isComponenteQuimicoHabilitado();
     }
 
+    public isNombreComercialHabilitado(): boolean {
+        return this.apiService.isNombreComercialHabilitado();
+    }
+
     public barcode() {
         const raw = String(this.producto.barcode || this.producto.codigo || '').trim();
         if (!raw) {

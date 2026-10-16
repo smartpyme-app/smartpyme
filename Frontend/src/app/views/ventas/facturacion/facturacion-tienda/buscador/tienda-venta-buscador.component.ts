@@ -316,6 +316,10 @@ export class TiendaVentaBuscadorComponent extends BasePaginatedModalComponent im
         return this.apiService.isComponenteQuimicoHabilitado();
     }
 
+    public isNombreComercialHabilitado(): boolean {
+        return this.apiService.isNombreComercialHabilitado();
+    }
+
     /**
      * Obtiene el nombre completo del producto (nombre + nombre_variante si aplica)
      */

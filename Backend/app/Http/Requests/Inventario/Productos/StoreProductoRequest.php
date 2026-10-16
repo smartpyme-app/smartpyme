@@ -22,6 +22,7 @@ class StoreProductoRequest extends FormRequest
         return [
             'id' => 'sometimes|nullable|integer|exists:productos,id',
             'nombre' => 'required|string|max:255',
+            'nombre_comercial' => 'sometimes|nullable|string|max:255',
             'precio' => 'required|numeric|min:0',
             'costo' => 'required|numeric|min:0',
             'id_categoria' => 'required|integer|exists:categorias,id',

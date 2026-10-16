@@ -101,6 +101,10 @@ export class BuscadorProductosComponent implements OnInit {
         return this.apiService.isComponenteQuimicoHabilitado();
     }
 
+    public isNombreComercialHabilitado(): boolean {
+        return this.apiService.isNombreComercialHabilitado();
+    }
+
     /**
      * Verifica si Shopify está activo en la empresa
      */

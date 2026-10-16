@@ -29,6 +29,7 @@ class Producto extends AuditableModel
     protected $table = 'productos';
     protected $fillable = array(
         'nombre',
+        'nombre_comercial',
         'nombre_variante',
         'option1_name',
         'option1_value',

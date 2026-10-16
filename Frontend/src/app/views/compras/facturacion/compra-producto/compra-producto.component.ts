@@ -46,6 +46,10 @@ export class CompraProductoComponent implements OnInit {
         return this.apiService.isComponenteQuimicoHabilitado();
     }
 
+    public isNombreComercialHabilitado(): boolean {
+        return this.apiService.isNombreComercialHabilitado();
+    }
+
     private tasaImpuestoProducto(producto: any): number {
         const empresa = this.apiService.auth_user()?.empresa;
         return snapshotPorcentajeImpuestoProducto(

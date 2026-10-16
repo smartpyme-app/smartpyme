@@ -926,4 +926,8 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     return this.apiService.isComponenteQuimicoHabilitado();
   }
 
+  public isNombreComercialHabilitado(): boolean {
+    return this.apiService.isNombreComercialHabilitado();
+  }
+
 }
