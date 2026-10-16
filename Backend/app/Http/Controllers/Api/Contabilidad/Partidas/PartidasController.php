@@ -29,10 +29,13 @@ use App\Services\Contabilidad\SimulacionCierreService;
 use App\Services\Contabilidad\Partidas\ReglaAbonosCartera;
 use App\Services\Contabilidad\Partidas\ReglaCuentaIva;
 use App\Services\Contabilidad\Partidas\ReglaIngresoVenta;
+use App\Services\Contabilidad\Partidas\ReglaMontoIngresoVentaDetalle;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\Contabilidad\PartidaExcelExport;
+use App\Exceptions\PartidaDetalleSinProductoException;
+use App\Services\Ventas\VincularProductoDetalleVentaService;
 
 class PartidasController extends Controller
 {
@@ -633,7 +636,7 @@ class PartidasController extends Controller
                                 $query->select(['id', 'nombre']);
                             },
                             'detalles' => function($query) {
-                                $query->select(['id', 'id_venta', 'id_producto', 'total', 'costo', 'cantidad']);
+                                $query->select(ReglaMontoIngresoVentaDetalle::COLUMNAS_DETALLE_VENTA);
                             },
                             'detalles.producto' => function($query) {
                                 $query->select(['id', 'id_categoria']);
@@ -642,6 +645,11 @@ class PartidasController extends Controller
                         ->get();
 
             $ventas = $this->sinPartidaOrigen('Venta', $ventas);
+
+            $payloadSinProducto = app(VincularProductoDetalleVentaService::class)->resolverAntesDePartidasVentas($ventas);
+            if ($payloadSinProducto !== null) {
+                throw new PartidaDetalleSinProductoException($payloadSinProducto);
+            }
             
             \Log::info('Ventas cargadas', [
                 'cantidad' => $ventas->count(),
@@ -938,7 +946,7 @@ class PartidasController extends Controller
                                 'nombre_cuenta' => $cuenta->nombre,
                                 'concepto' => 'Ingresos por ventas ' . $refDoc,
                                 'debe' => NULL,
-                                'haber' => $detalle->total,
+                                'haber' => ReglaMontoIngresoVentaDetalle::haber($detalle),
                                 'saldo' => 0,
                             ];
                         }else{
@@ -1131,6 +1139,8 @@ class PartidasController extends Controller
                     ], 413);
                 }
             }
+        } catch (PartidaDetalleSinProductoException $e) {
+            throw $e;
         } catch (\Exception $e) {
             \Log::error('Error general en generarIngresos', [
                 'mensaje' => $e->getMessage(),
@@ -1170,6 +1180,11 @@ class PartidasController extends Controller
             ->get();
 
         $ventas = $this->sinPartidaOrigen('Venta', $ventas);
+
+        $payloadSinProducto = app(VincularProductoDetalleVentaService::class)->resolverAntesDePartidasVentas($ventas);
+        if ($payloadSinProducto !== null) {
+            throw new PartidaDetalleSinProductoException($payloadSinProducto);
+        }
 
         // Partida
             $partida = [
@@ -1228,7 +1243,7 @@ class PartidasController extends Controller
                             'nombre_cuenta' => $cuenta->nombre,
                             'concepto' => 'Ingresos por ventas ' . $refDoc,
                             'debe' => NULL,
-                            'haber' => $detalle->total,
+                            'haber' => ReglaMontoIngresoVentaDetalle::haber($detalle),
                             'saldo' => 0,
                         ];
                     }else{

@@ -11,6 +11,7 @@ use App\Models\Ventas\Venta;
 use App\Models\Ventas\Abono as AbonoVenta;
 use App\Models\Admin\FormaDePago;
 use App\Services\Contabilidad\Partidas\PartidaService;
+use App\Services\Contabilidad\Partidas\ReglaMontoIngresoVentaDetalle;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -71,7 +72,7 @@ class PartidaIngresosService
                                 $query->select(['id', 'nombre']);
                             },
                             'detalles' => function($query) {
-                                $query->select(['id', 'id_venta', 'id_producto', 'total', 'costo', 'cantidad']);
+                                $query->select(ReglaMontoIngresoVentaDetalle::COLUMNAS_DETALLE_VENTA);
                             },
                             'detalles.producto' => function($query) {
                                 $query->select(['id', 'id_categoria']);
@@ -350,7 +351,7 @@ class PartidaIngresosService
                                 'nombre_cuenta' => $cuenta->nombre,
                                 'concepto' => 'Inventarios ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
                                 'debe' => NULL,
-                                'haber' => $detalle->total,
+                                'haber' => ReglaMontoIngresoVentaDetalle::haber($detalle),
                                 'saldo' => 0,
                             ];
                         }else{

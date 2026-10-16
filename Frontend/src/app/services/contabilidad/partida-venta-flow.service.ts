@@ -9,6 +9,7 @@ export type DetalleSinProductoPayload = {
   titulo?: string;
   error?: string;
   id_venta?: number;
+  referencia_venta?: string;
   detalle: { id: number; descripcion?: string; id_producto?: number };
   sugerencias?: Array<{ id: number; nombre: string; codigo?: string | null; tipo?: string }>;
   pendientes?: number;
@@ -19,12 +20,17 @@ export class PartidaVentaFlowService {
   constructor(private apiService: ApiService) {}
 
   generarPartida(venta: { id: number }): Observable<unknown> {
-    return this.apiService.store('contabilidad/partida/venta', venta).pipe(
-      catchError((err) => this.reintentarTrasAsignacion(err, venta))
+    return this.runWithDetalleSinProductoRetry(() =>
+      this.apiService.store('contabilidad/partida/venta', venta)
     );
   }
 
-  private reintentarTrasAsignacion(err: unknown, venta: { id: number }): Observable<unknown> {
+  /** Partida del día (ingreso, CxC, etc.): mismo modal de vincular producto, reintenta la operación completa. */
+  runWithDetalleSinProductoRetry<T>(work: () => Observable<T>): Observable<T> {
+    return work().pipe(catchError((err) => this.reintentarTrasAsignacion(err, work)));
+  }
+
+  private reintentarTrasAsignacion<T>(err: unknown, retry: () => Observable<T>): Observable<T> {
     const body = (err as { error?: DetalleSinProductoPayload })?.error;
     if (body?.code !== 'detalle_sin_producto' || !body.detalle?.id) {
       return throwError(() => err);
@@ -39,7 +45,7 @@ export class PartidaVentaFlowService {
           id_producto: idProducto,
         });
       }),
-      switchMap(() => this.generarPartida(venta))
+      switchMap(() => this.runWithDetalleSinProductoRetry(retry))
     );
   }
 
