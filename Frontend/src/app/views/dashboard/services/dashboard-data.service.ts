@@ -202,6 +202,13 @@ export class DashboardDataService {
     return this.cuentasData.obtenerCuentas(filtros);
   }
 
+  obtenerFacturasPorVendedor(
+    filtros: any,
+    opts: { vendedor: string; tipo: 'cobros' | 'pendiente'; serie?: string },
+  ): Observable<any[] | null> {
+    return this.cuentasData.obtenerFacturasPorVendedor(filtros, opts);
+  }
+
   obtenerDetalleCxcPagina(
     filtros: any,
     page: DetalleCxcPageParams,

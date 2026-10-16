@@ -9,7 +9,7 @@ import { ChartConfig } from '../../models/chart-config.model';
 export class BarChartComponent implements OnInit, OnChanges {
   @Input() config!: ChartConfig;
   @Input() height?: string;
-  @Output() itemClick = new EventEmitter<{ name: string; value: any; index: number }>();
+  @Output() itemClick = new EventEmitter<{ name: string; value: any; index: number; seriesName?: string }>();
 
   chartOption: any = {};
   echartsInstance: any;
@@ -169,8 +169,12 @@ export class BarChartComponent implements OnInit, OnChanges {
       show: true,
       position: barLabelPosition,
       rotate: 0,
-      formatter: (params: any) =>
-        this.formatCompactBarLabel(params.value, !!this.config.barLabelExactUnder1000),
+      formatter: (params: any) => {
+        if (params.value == null || params.value === '') {
+          return '';
+        }
+        return this.formatCompactBarLabel(params.value, !!this.config.barLabelExactUnder1000);
+      },
       color: isInsidePosition ? '#fff' : '#666',
       fontSize: 12,
       fontWeight: 'medium',
@@ -185,6 +189,7 @@ export class BarChartComponent implements OnInit, OnChanges {
       series = (this.config.data as any[]).map((serie, index) => ({
         name: serie.name,
         type: 'bar',
+        cursor: 'pointer',
         data: serie.data,
         itemStyle: {
           color: this.config.colors?.[index] || (index === 0 ? '#5470c6' : '#ff9800'),
@@ -208,6 +213,7 @@ export class BarChartComponent implements OnInit, OnChanges {
 
       series = [{
         name: this.config.title || 'Datos',
+        cursor: 'pointer',
         type: 'bar',
         data: data,
         itemStyle: hasConditionalColors ? {
@@ -272,7 +278,7 @@ export class BarChartComponent implements OnInit, OnChanges {
     // ponytail: vertical charts zoom above 6 items, horizontal charts zoom above 10 items (more space available)
     // ceiling: static thresholds of 6/10, upgrade path would parameterize these thresholds via configuration
     const limit = isHorizontal ? 10 : 6;
-    const needsDataZoom = !isMultiSeries && labelCount > limit;
+    const needsDataZoom = labelCount > limit && (!isMultiSeries || !!this.config.categoryScroll);
     const dataZoomBottom = (needsDataZoom && !isHorizontal) ? '20%' : undefined;
     const gridBottom = this.config.gridBottom ?? dataZoomBottom ?? (
       rotateLabels >= 45 ? '16%' : rotateLabels > 0 ? '10%' : '8%'
@@ -346,8 +352,10 @@ export class BarChartComponent implements OnInit, OnChanges {
         const label = resolveLabel(params[0]);
         let result = label + '<br/>';
         params.forEach((item: any) => {
-          const value = item.value;
-          const formattedValue = formatBarTooltipValue(value);
+          if (item.value == null || item.value === '' || Number(item.value) === 0) {
+            return;
+          }
+          const formattedValue = formatBarTooltipValue(item.value);
           result += `${item.marker} ${item.seriesName}: ${prefix}${formattedValue}<br/>`;
         });
         return result;
@@ -432,6 +440,7 @@ export class BarChartComponent implements OnInit, OnChanges {
         }
       } : {
         type: 'category',
+        triggerEvent: true,
         data: this.config.labels || [],
         axisLabel: {
           show: this.config.showXAxisLabels !== false,
@@ -440,7 +449,7 @@ export class BarChartComponent implements OnInit, OnChanges {
           fontSize: labelCount > 6 ? 10 : 11,
           hideOverlap: false,
           formatter: (value: string) => {
-            const maxLen = 12;
+            const maxLen = rotateLabels >= 45 ? 32 : 12;
             return value && value.length > maxLen ? value.slice(0, maxLen) + '…' : value;
           }
         },
@@ -453,6 +462,7 @@ export class BarChartComponent implements OnInit, OnChanges {
       },
       yAxis: (this.config as any).horizontal ? {
         type: 'category',
+        triggerEvent: true,
         data: this.config.labels || [],
         axisLabel: {
           show: true,
@@ -621,13 +631,23 @@ export class BarChartComponent implements OnInit, OnChanges {
     }
     this.echartsInstance.off('click');
     this.echartsInstance.on('click', (params: any) => {
-      if (params && params.name !== undefined) {
-        this.itemClick.emit({
-          name: params.name,
-          value: params.value,
-          index: params.dataIndex,
-        });
+      const series = params?.componentType === 'series';
+      const axis = params?.componentType === 'xAxis' || params?.componentType === 'yAxis';
+      if (!series && !axis) {
+        return;
       }
+      const axisData = (this.chartOption?.xAxis?.data || this.chartOption?.yAxis?.data || []) as string[];
+      const fromIndex = axisData[params.dataIndex] ?? axisData[Number(params.value)];
+      const name = String(series ? params.name : (fromIndex || params.value || '')).trim();
+      if (!name) {
+        return;
+      }
+      this.itemClick.emit({
+        name,
+        value: params.value,
+        index: params.dataIndex,
+        seriesName: series ? params.seriesName : undefined,
+      });
     });
   }
 
