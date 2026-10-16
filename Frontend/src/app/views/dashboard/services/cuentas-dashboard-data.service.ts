@@ -206,6 +206,26 @@ export class CuentasDashboardDataService {
     return url;
   }
 
+  obtenerFacturasPorVendedor(
+    filtros: any,
+    opts: { vendedor: string; tipo: 'cobros' | 'pendiente'; serie?: string },
+  ): Observable<any[] | null> {
+    const api = this.analytics.baseUrl;
+    const { p, pEst } = this.querySuffix(filtros);
+    let url =
+      `${api}/api/cuentas/cxc/facturas-por-vendedor?${p}${pEst}` +
+      `&tipo=${encodeURIComponent(opts.tipo)}` +
+      `&vendedor_nombre=${encodeURIComponent(opts.vendedor)}`;
+    if (opts.serie === 'Vigente' || opts.serie === 'Vencido') {
+      url += `&serie=${encodeURIComponent(opts.serie)}`;
+    }
+    return this.analytics.get(url).pipe(
+      map((rows) =>
+        Array.isArray(rows) ? rows.map((i) => this.mapDetalleCxcItem(i)) : null,
+      ),
+    );
+  }
+
   obtenerDetalleCxcPagina(
     filtros: any = {},
     page: DetalleCxcPageParams,
@@ -466,6 +486,43 @@ export class CuentasDashboardDataService {
     };
   }
 
+  private cobrosPorVendedorChart(rows: any[]) {
+    const list = (rows ?? []).filter((i) => Number(i.amount) !== 0);
+    return {
+      type: 'bar',
+      highlightMaxBar: true,
+      rotateLabels: 45,
+      gridBottom: '22%',
+      collapseExcessBars: true,
+      initialVisibleBars: 8,
+      colors: ['#38528f'],
+      labels: list.map((i: any) => i.name),
+      data: list.map((i: any) => Number(i.amount)),
+    };
+  }
+
+  private pendientePorVendedorChart(rows: any[]) {
+    const list = (rows ?? []).filter(
+      (i) => Number(i.vigente) + Number(i.vencido) !== 0,
+    );
+    const monto = (v: unknown) => {
+      const n = Number(v) || 0;
+      return n === 0 ? null : n;
+    };
+    return {
+      type: 'bar',
+      categoryScroll: true,
+      collapseExcessBars: true,
+      initialVisibleBars: 8,
+      colors: ['#5B8DEF', '#C45C5C'],
+      labels: list.map((i: any) => i.name),
+      data: [
+        { name: 'Vigente', data: list.map((i: any) => monto(i.vigente)) },
+        { name: 'Vencido', data: list.map((i: any) => monto(i.vencido)) },
+      ],
+    };
+  }
+
   private mapearCuentasPesado(raw: {
     cxpCards: any;
     cxpVigencia: any;
@@ -563,6 +620,26 @@ export class CuentasDashboardDataService {
       })
     );
 
+    const cobrosPorVendedor$ = safe(`/api/cuentas/cxc/cobros-por-vendedor?${p}${pEst}`).pipe(
+      map(rows => ({
+        cobrosPorVendedorConfig: this.cobrosPorVendedorChart(rows),
+      })),
+      catchError(err => {
+        console.error('Error loading /api/cuentas/cxc/cobros-por-vendedor:', err);
+        return of({ cobrosPorVendedorConfig: this.cobrosPorVendedorChart([]) });
+      })
+    );
+
+    const pendientePorVendedor$ = safe(`/api/cuentas/cxc/pendiente-por-vendedor?${p}${pEst}`).pipe(
+      map(rows => ({
+        pendientePorVendedorConfig: this.pendientePorVendedorChart(rows),
+      })),
+      catchError(err => {
+        console.error('Error loading /api/cuentas/cxc/pendiente-por-vendedor:', err);
+        return of({ pendientePorVendedorConfig: this.pendientePorVendedorChart([]) });
+      })
+    );
+
     const cxpCards$ = safe(`/api/cuentas/cxp/cards?${p}${pCXP}${pEst}`).pipe(
       map(cxpCards => ({
         metricasCuentas: {
@@ -635,6 +712,8 @@ export class CuentasDashboardDataService {
       cxcCards$,
       cxcVigencia$,
       cxcClientes$,
+      cobrosPorVendedor$,
+      pendientePorVendedor$,
       cxpCards$,
       cxpVigencia$,
       cxpProveedores$,
@@ -653,6 +732,8 @@ export class CuentasDashboardDataService {
       cxcCards: safe(`/api/cuentas/cxc/cards?${p}${pEst}`),
       cxcVigencia: safe(`/api/cuentas/cxc/vigencia?${p}${pEst}`),
       cxcClientes: safe(`/api/cuentas/cxc/clientes?${p}&limite=10`),
+      cobrosPorVendedor: safe(`/api/cuentas/cxc/cobros-por-vendedor?${p}${pEst}`),
+      pendientePorVendedor: safe(`/api/cuentas/cxc/pendiente-por-vendedor?${p}${pEst}`),
       cxpCards: safe(`/api/cuentas/cxp/cards?${p}${pCXP}${pEst}`),
       cxpVigencia: safe(`/api/cuentas/cxp/vigencia?${p}${pCXP}${pEst}`),
       cxpProveedores: safe(
@@ -662,11 +743,15 @@ export class CuentasDashboardDataService {
     }).pipe(
       map((all) =>
         this.mergeCuentasPayload(
-          this.mapearCuentasCritico({
-            cxcCards: all.cxcCards,
-            cxcVigencia: all.cxcVigencia,
-            cxcClientes: all.cxcClientes,
-          }) as Record<string, unknown>,
+          {
+            ...this.mapearCuentasCritico({
+              cxcCards: all.cxcCards,
+              cxcVigencia: all.cxcVigencia,
+              cxcClientes: all.cxcClientes,
+            }),
+            cobrosPorVendedorConfig: this.cobrosPorVendedorChart(all.cobrosPorVendedor),
+            pendientePorVendedorConfig: this.pendientePorVendedorChart(all.pendientePorVendedor),
+          } as Record<string, unknown>,
           this.mapearCuentasPesado({
             cxpCards: all.cxpCards,
             cxpVigencia: all.cxpVigencia,
