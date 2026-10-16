@@ -16,7 +16,6 @@ use App\Models\MH\MHSujetoExcluidoGasto;
 use App\Models\MH\ActividadEconomica;
 use App\Models\TrabajosPendientes;
 use App\Services\MH\MHPruebasMasivasOutcome;
-use App\Models\PaisConfiguracion;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -28,6 +27,9 @@ use Illuminate\Support\Facades\Mail;
 
 class MHPruebasMasivasService
 {
+    /** Misma URL por defecto que `MHService.URL_FIRMADOR_SV_DEFAULT` en el frontend. */
+    private const URL_FIRMADOR_SV = 'https://facturadtesv.com:8113/firmardocumento/';
+
     protected $baseVenta;
     protected $baseGasto;
     protected $empresa;
@@ -1757,7 +1759,7 @@ class MHPruebasMasivasService
                 'http_errors' => false
             ]);
 
-            $responseFirma = $client->post(PaisConfiguracion::urlFirmadorParaEmpresa($this->empresa), [
+            $responseFirma = $client->post(self::URL_FIRMADOR_SV, [
                 'json' => $datosParaFirma,
                 'headers' => [
                     'Content-Type' => 'application/json',
