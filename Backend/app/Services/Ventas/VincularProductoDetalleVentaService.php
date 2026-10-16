@@ -46,18 +46,65 @@ class VincularProductoDetalleVentaService
         /** @var DetalleVenta $primero */
         $primero = $pendientes[0];
 
+        return $this->payloadDetallePendiente($venta, $primero, count($pendientes));
+    }
+
+    /**
+     * Misma validación/vinculación automática que la partida individual, para N ventas (p. ej. partida del día).
+     *
+     * @param  iterable<Venta>  $ventas
+     * @return array<string, mixed>|null
+     */
+    public function resolverAntesDePartidasVentas(iterable $ventas): ?array
+    {
+        $bloques = [];
+
+        foreach ($ventas as $venta) {
+            $payload = $this->resolverAntesDePartida($venta);
+            if ($payload !== null) {
+                $bloques[] = ['venta' => $venta, 'payload' => $payload];
+            }
+        }
+
+        if ($bloques === []) {
+            return null;
+        }
+
+        $totalPendientes = array_sum(array_map(
+            static fn (array $b) => (int) ($b['payload']['pendientes'] ?? 1),
+            $bloques
+        ));
+
+        $primero = $bloques[0];
+        /** @var Venta $ventaRef */
+        $ventaRef = $primero['venta'];
+        $out = $primero['payload'];
+        $out['pendientes'] = $totalPendientes;
+        $out['referencia_venta'] = $ventaRef->referenciaDocumentoContable();
+        $out['error'] = 'Venta ' . $out['referencia_venta'] . ': '
+            . ($out['error'] ?? 'Asigne un servicio o producto para continuar.');
+
+        return $out;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function payloadDetallePendiente(Venta $venta, DetalleVenta $detalle, int $pendientes): array
+    {
         return [
             'code' => 'detalle_sin_producto',
             'titulo' => 'Producto no asignado',
             'error' => 'No se encontró un servicio que coincida con la descripción importada. Asigne uno manualmente para generar la partida.',
             'id_venta' => $venta->id,
             'detalle' => [
-                'id' => $primero->id,
-                'descripcion' => $primero->descripcion,
-                'id_producto' => (int) $primero->id_producto,
+                'id' => $detalle->id,
+                'descripcion' => $detalle->descripcion,
+                'id_producto' => (int) $detalle->id_producto,
             ],
-            'sugerencias' => $this->sugerenciasPara($primero->descripcion ?? ''),
-            'pendientes' => count($pendientes),
+            'sugerencias' => $this->sugerenciasPara($detalle->descripcion ?? ''),
+            'pendientes' => $pendientes,
+            'referencia_venta' => $venta->referenciaDocumentoContable(),
         ];
     }
 
