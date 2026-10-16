@@ -17,6 +17,7 @@ import * as moment from 'moment';
 @Component({
     selector: 'app-admin-dash',
     templateUrl: './admin-dash.component.html',
+    styleUrls: ['./admin-dash.component.css'],
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, DatosComponent, TopsComponent, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
