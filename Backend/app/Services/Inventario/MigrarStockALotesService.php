@@ -130,4 +130,76 @@ class MigrarStockALotesService
             })
             ->values();
     }
+
+    /**
+     * Iguala la suma de lotes en bodega al stock objetivo (p. ej. tras ajuste masivo).
+     *
+     * ponytail: con varios lotes concentra el total en STOCK-INICIAL (o el primero); desglose fino = ajuste por lote.
+     *
+     * @return Lote|null Lote que quedó con el stock objetivo
+     */
+    public function alinearStockEnBodega(Producto $producto, int $idBodega, float $stockObjetivo): ?Lote
+    {
+        $stockObjetivo = round($stockObjetivo, 2);
+
+        $lotes = Lote::withoutGlobalScopes()
+            ->where('id_producto', $producto->id)
+            ->where('id_bodega', $idBodega)
+            ->where('id_empresa', $producto->id_empresa)
+            ->whereNull('deleted_at')
+            ->orderByRaw('CASE WHEN numero_lote = ? THEN 0 ELSE 1 END', [self::NUMERO_LOTE_INICIAL])
+            ->orderBy('id')
+            ->get();
+
+        if ($lotes->isEmpty()) {
+            if ($stockObjetivo <= 0) {
+                return null;
+            }
+
+            return Lote::create([
+                'id_producto' => $producto->id,
+                'id_bodega' => $idBodega,
+                'numero_lote' => self::NUMERO_LOTE_INICIAL,
+                'stock' => $stockObjetivo,
+                'stock_inicial' => $stockObjetivo,
+                'id_empresa' => $producto->id_empresa,
+                'observaciones' => 'Creado por ajuste masivo de inventario',
+            ]);
+        }
+
+        $sum = round((float) $lotes->sum('stock'), 2);
+        if (abs($sum - $stockObjetivo) < 0.0001) {
+            return $lotes->first();
+        }
+
+        $primary = $lotes->first(fn (Lote $l) => $l->numero_lote === self::NUMERO_LOTE_INICIAL) ?? $lotes->first();
+
+        if ($lotes->count() === 1) {
+            $primary->stock = $stockObjetivo;
+            if ((float) $primary->stock_inicial == 0 && $stockObjetivo > 0) {
+                $primary->stock_inicial = $stockObjetivo;
+            }
+            $primary->save();
+
+            return $primary;
+        }
+
+        foreach ($lotes as $lote) {
+            if ($lote->id === $primary->id) {
+                continue;
+            }
+            if ((float) $lote->stock !== 0.0) {
+                $lote->stock = 0;
+                $lote->save();
+            }
+        }
+
+        $primary->stock = $stockObjetivo;
+        if ((float) $primary->stock_inicial == 0 && $stockObjetivo > 0) {
+            $primary->stock_inicial = $stockObjetivo;
+        }
+        $primary->save();
+
+        return $primary;
+    }
 }

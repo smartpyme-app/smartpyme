@@ -24,7 +24,8 @@ class AjusteMasivoRequest extends FormRequest
             'productos' => 'required|array|min:1',
             'productos.*.id_producto' => 'required|integer|exists:productos,id',
             'productos.*.id_bodega' => 'required|integer|exists:sucursal_bodegas,id',
-            'productos.*.stock_actual' => 'required|numeric|min:0',
+            // stock_actual refleja el inventario real (puede ser negativo por desfases); el ajuste lo corrige
+            'productos.*.stock_actual' => 'required|numeric',
             'productos.*.stock_nuevo' => 'required|numeric|min:0',
             'productos.*.diferencia' => 'required|numeric',
         ];
@@ -47,7 +48,6 @@ class AjusteMasivoRequest extends FormRequest
             'productos.*.id_bodega.exists' => 'Una de las bodegas seleccionadas no existe.',
             'productos.*.stock_actual.required' => 'El stock actual es obligatorio en cada elemento.',
             'productos.*.stock_actual.numeric' => 'El stock actual debe ser un número.',
-            'productos.*.stock_actual.min' => 'El stock actual no puede ser negativo.',
             'productos.*.stock_nuevo.required' => 'El stock nuevo es obligatorio en cada elemento.',
             'productos.*.stock_nuevo.numeric' => 'El stock nuevo debe ser un número.',
             'productos.*.stock_nuevo.min' => 'El stock nuevo no puede ser negativo.',
