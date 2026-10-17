@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Auth;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class Partida extends AuditableModel
 {
@@ -208,14 +209,14 @@ class Partida extends AuditableModel
     }
 
     /**
-     * @throws \Exception cuando ya hay partida(s) para ese origen
+     * @throws HttpException 400 cuando ya hay partida(s) para ese origen
      */
     public static function assertNoExisteParaOrigen(string $referencia, $idReferencia, ?string $mensaje = null): void
     {
         if (self::existeParaDocumentoOrigen($referencia, $idReferencia)) {
-            throw new \Exception(
-                $mensaje ?? 'Ya existen partidas contables generadas para este documento. No se puede duplicar.',
-                400
+            throw new HttpException(
+                400,
+                $mensaje ?? 'Ya existen partidas contables generadas para este documento. No se puede duplicar.'
             );
         }
     }

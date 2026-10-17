@@ -56,7 +56,7 @@
                             <i class="fa fa-search text-muted"></i>
                         </div>
                         <input type="search" name="buscador" class="form-control pull-right border-start-0"
-                            [placeholder]="isComponenteQuimicoHabilitado() ? 'Buscar por nombre, código o componente químico' : 'Buscar'"
+                            [placeholder]="isNombreComercialHabilitado() ? (isComponenteQuimicoHabilitado() ? 'Buscar por nombre, código, nombre comercial o componente químico' : 'Buscar por nombre, código o nombre comercial') : (isComponenteQuimicoHabilitado() ? 'Buscar por nombre, código o componente químico' : 'Buscar')"
                             [(ngModel)]="filtros.buscador">
                     </div>
                 </form>

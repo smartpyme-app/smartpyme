@@ -1818,6 +1818,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
                 lotes_metodologia: 'FIFO', // Manual, FIFO, LIFO, FEFO
                 lotes_dias_anticipacion: 30, // Días para alerta de vencimiento
                 componente_quimico_activo: false, // Habilitar campo componente químico en productos
+                nombre_comercial_activo: false, // Habilitar campo nombre comercial en productos
                 modulo_presentaciones: false, // Habilitar presentaciones alternativas en productos, ventas e inventario
                 modulo_bancos: false, // Habilitar módulo de bancos (cuentas bancarias) en Finanzas
                 gastos_categorias_personalizadas: false, // Categorías de gasto BD, departamentos y áreas en gastos
@@ -2537,6 +2538,30 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
                 'Configuración actualizada',
                 `Campo componente químico ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
             );
+        });
+    }
+
+    public isNombreComercialHabilitado(): boolean {
+        return this.getCustomConfig('configuraciones', 'nombre_comercial_activo', false);
+    }
+
+    public toggleNombreComercialActivo() {
+        this.updateNombreComercialActivo(!this.isNombreComercialHabilitado());
+    }
+
+    public updateNombreComercialActivo(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'nombre_comercial_activo', activo);
+
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Campo nombre comercial ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
+            );
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
         });
     }
 

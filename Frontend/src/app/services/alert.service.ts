@@ -76,10 +76,12 @@ export class AlertService {
             this.injector.get(AuthService).sessionExpired();
         }
         else if(status == 400) {
-            const body = (typeof errBody === 'object' && errBody !== null) ? errBody : {};
-            const mensaje = body.message ?? body.error ?? (typeof body === 'string' ? body : undefined);
-            const titulo = body.titulo || 'Lo sentimos';
-            const tipo = body.titulo ? 'alert-info' : 'alert-danger';
+            const body = this.parseErrorBody(errBody);
+            const mensaje =
+                (typeof body.message === 'string' ? body.message : undefined)
+                ?? (typeof body.error === 'string' ? body.error : undefined);
+            const titulo = (typeof body.titulo === 'string' && body.titulo.trim()) ? body.titulo : 'Lo sentimos';
+            const tipo = body.titulo ? 'alert-warning' : 'alert-danger';
             this.alertSubject.next({
                 tipo,
                 titulo,
@@ -87,7 +89,16 @@ export class AlertService {
             });
         }
         else if(status == 422) {
-            if (errBody && Array.isArray(errBody.failures) && errBody.failures.length > 0) {
+            const body422 = this.parseErrorBody(errBody);
+            if (body422.code === 'detalle_sin_producto') {
+                this.alertSubject.next({
+                    tipo: 'alert-warning',
+                    titulo: (typeof body422.titulo === 'string' ? body422.titulo : 'Producto no asignado'),
+                    mensaje: typeof body422.error === 'string' ? body422.error : 'Asigne un producto o servicio.',
+                });
+                return;
+            }
+            if (errBody && Array.isArray((errBody as any).failures) && (errBody as any).failures.length > 0) {
                 const byRow: { [row: number]: string[] } = {};
                 for (const f of errBody.failures) {
                     const r = Number(f.row);
@@ -134,15 +145,43 @@ export class AlertService {
             this.alertSubject.next({ tipo: 'alert-warning', titulo, mensaje });
         }
         else if(status == 500) {
-            const mensaje = errBody?.message
-                ? errBody.message
-                : this.normalizeUnknownError(message);
-            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : mensaje});
+            const body = this.parseErrorBody(errBody);
+            const mensaje =
+                (typeof body.message === 'string' ? body.message : undefined)
+                ?? (typeof body.error === 'string' ? body.error : undefined)
+                ?? this.normalizeUnknownError(message);
+            const titulo = (typeof body.titulo === 'string' && body.titulo.trim()) ? body.titulo : 'Lo sentimos';
+            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': titulo, 'mensaje' : mensaje});
         }
         else {
             const mensaje = this.normalizeUnknownError(message);
             this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Lo sentimos', 'mensaje' : mensaje});
         }
+    }
+
+    /** Cuerpo de error API (objeto o JSON string, p. ej. respuestas text de storeWithTimeout). */
+    private parseErrorBody(errBody: unknown): Record<string, unknown> {
+        if (errBody == null) {
+            return {};
+        }
+        if (typeof errBody === 'string') {
+            const trimmed = errBody.trim();
+            if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                try {
+                    const parsed = JSON.parse(trimmed);
+                    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+                        return parsed as Record<string, unknown>;
+                    }
+                } catch {
+                    /* plain text */
+                }
+            }
+            return { error: errBody };
+        }
+        if (typeof errBody === 'object' && !Array.isArray(errBody)) {
+            return errBody as Record<string, unknown>;
+        }
+        return { error: String(errBody) };
     }
 
     /**
@@ -163,10 +202,15 @@ export class AlertService {
         }
         // HttpErrorResponse u objeto con status + error
         if (message.error != null) {
-            const body = message.error;
-            if (typeof body === 'string') {
-                return body;
+            const bodyRaw = message.error;
+            if (typeof bodyRaw === 'string') {
+                const parsed = this.parseErrorBody(bodyRaw);
+                if (typeof parsed.error === 'string') {
+                    return parsed.error;
+                }
+                return bodyRaw;
             }
+            const body = bodyRaw;
             if (Array.isArray(body)) {
                 return body.map((e: any) => this.normalizeUnknownError(e)).join('<br>');
             }

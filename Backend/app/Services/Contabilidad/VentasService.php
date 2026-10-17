@@ -12,6 +12,7 @@ use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Models\Inventario\Categorias\Cuenta as CuentaCategoria;
 use App\Services\Contabilidad\Partidas\ReglaCuentaIva;
 use App\Services\Contabilidad\Partidas\ReglaIngresoVenta;
+use App\Services\Contabilidad\Partidas\ReglaMontoIngresoVentaDetalle;
 use App\Services\Ventas\VincularProductoDetalleVentaService;
 use App\Exceptions\PartidaDetalleSinProductoException;
 use Illuminate\Support\Facades\DB;
@@ -153,18 +154,20 @@ class VentasService
                         throw new Exception('No se encontró la cuenta contable de ingresos para la categoría', 400);
                     }
 
+                    $haberIngreso = ReglaMontoIngresoVentaDetalle::haber($producto);
+
                     Detalle::create([
                         'id_cuenta' => $cuenta->id,
                         'codigo' => $cuenta->codigo,
                         'nombre_cuenta' => $cuenta->nombre,
                         'concepto' => 'Ingresos por ventas',
                         'debe' => NULL,
-                        'haber' => $producto->total,
+                        'haber' => $haberIngreso,
                         'saldo' => 0,
                         'id_partida' => $partida_ingresos->id
                     ]);
 
-                    $total_productos_procesados += $producto->total;
+                    $total_productos_procesados += $haberIngreso;
                 } else {
                     // Producto sin categoría - usar cuenta general
                     if (!$configuracion->id_cuenta_ventas) {

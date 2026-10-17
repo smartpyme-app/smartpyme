@@ -1039,6 +1039,11 @@ class Empresa extends Model
         return (bool) $this->getCustomConfigValue('configuraciones', 'componente_quimico_activo', false);
     }
 
+    public function isNombreComercialHabilitado(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'nombre_comercial_activo', false);
+    }
+
     /**
      * Verificar si el módulo de Inventario Fraccionado (presentaciones de empaque) está activo.
      * Permite que el buscador expanda las presentaciones en el punto de venta.

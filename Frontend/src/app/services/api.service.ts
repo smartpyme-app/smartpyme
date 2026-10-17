@@ -450,6 +450,18 @@ export class ApiService {
         return customConfig?.configuraciones?.componente_quimico_activo === true;
     }
 
+    /** Indica si el campo nombre comercial está habilitado para la empresa del usuario actual */
+    isNombreComercialHabilitado(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.nombre_comercial_activo === true;
+    }
+
     /** Indica si el módulo de bancos (cuentas bancarias) está activo para la empresa del usuario actual */
     isModuloBancos(): boolean {
         const empresa = this.auth_user()?.empresa;

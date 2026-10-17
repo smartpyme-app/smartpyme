@@ -12,7 +12,7 @@
     </button>
   </div>
   <div class="modal-body pt-0"  style="max-height: 400px; overflow-y: auto;">
-        <input type="text" [placeholder]="isComponenteQuimicoHabilitado() ? 'Buscar por nombre o componente químico' : 'Buscar...'" class="form-control" [(ngModel)]="buscador">
+        <input type="text" [placeholder]="isNombreComercialHabilitado() ? (isComponenteQuimicoHabilitado() ? 'Buscar por nombre, nombre comercial o componente químico' : 'Buscar por nombre o nombre comercial') : (isComponenteQuimicoHabilitado() ? 'Buscar por nombre o componente químico' : 'Buscar...')" class="form-control" [(ngModel)]="buscador">
         <table class="table table-bordered table-hover">
             <thead>
                 <tr>
@@ -31,10 +31,11 @@
                         <span class="label label-info">Cargando...</span>
                     </td>
                 </tr>
-                <tr *ngFor="let producto of productos | filter:(isComponenteQuimicoHabilitado() ? ['nombre', 'componente_quimico'] : ['nombre']):buscador">
+                <tr *ngFor="let producto of productos | filter:camposFiltroBusquedaProducto():buscador">
                     <td><img src="{{ apiService.productoImagenUrl(producto.img) }}" width="50px"></td>
                     <td>
                         {{ producto.nombre }}
+                        <small *ngIf="isNombreComercialHabilitado() && producto.nombre_comercial" class="text-muted d-block">Nombre comercial: {{ producto.nombre_comercial }}</small>
                         <small *ngIf="isComponenteQuimicoHabilitado() && producto.componente_quimico" class="text-muted d-block">Comp. químico: {{ producto.componente_quimico }}</small>
                     </td>
                     <td class="text-center">

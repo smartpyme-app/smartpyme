@@ -12,6 +12,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { HttpCacheService } from '@services/http-cache.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { PartidaVentaFlowService } from '@services/contabilidad/partida-venta-flow.service';
 
 import * as moment from 'moment';
 
@@ -44,7 +45,8 @@ export class PartidaComponent extends BaseModalComponent implements OnInit {
       private cacheService: HttpCacheService,
       private sumPipe:SumPipe,
       private route: ActivatedRoute, private router: Router,
-      private cdr: ChangeDetectorRef
+      private cdr: ChangeDetectorRef,
+      private partidaVentaFlow: PartidaVentaFlowService
   ) {
       super(modalManager, alertService);
   }
@@ -457,9 +459,13 @@ export class PartidaComponent extends BaseModalComponent implements OnInit {
 
     generarPartidasDelDia(){
         this.saving = true;
+        const url = 'partidas/generar/' + this.partida.tipo.toLowerCase();
         // Usar storeWithTimeout para evitar timeouts con grandes volúmenes de datos
         // Timeout de 10 minutos (600000ms) para procesar días con muchas ventas
-        this.apiService.storeWithTimeout('partidas/generar/' + this.partida.tipo.toLowerCase() , this.partida, 600000)
+        this.partidaVentaFlow
+          .runWithDetalleSinProductoRetry(() =>
+            this.apiService.storeWithTimeout(url, this.partida, 600000)
+          )
           .pipe(this.untilDestroyed())
           .subscribe({
             next: (data) => {
@@ -522,7 +528,13 @@ export class PartidaComponent extends BaseModalComponent implements OnInit {
               this.alertService.error(error);
               this.saving = false;
               this.cdr.markForCheck();
-            }
+            },
+            complete: () => {
+              if (this.saving) {
+                this.saving = false;
+                this.cdr.markForCheck();
+              }
+            },
           });
       }
 

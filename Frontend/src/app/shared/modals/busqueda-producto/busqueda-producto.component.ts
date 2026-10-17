@@ -7,12 +7,13 @@ import { ApiService } from '../../../services/api.service';
 import { AlertService } from '../../../services/alert.service';
 import { ModalManagerService } from '../../../services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
+import { FilterPipe } from '../../../pipes/filter.pipe';
 
 @Component({
     selector: 'app-busqueda-producto',
     templateUrl: './busqueda-producto.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule]
+    imports: [CommonModule, FormsModule, RouterModule, FilterPipe]
 })
 export class BusquedaProductoComponent extends BaseModalComponent implements OnInit {
 
@@ -35,6 +36,21 @@ export class BusquedaProductoComponent extends BaseModalComponent implements OnI
 
   public isComponenteQuimicoHabilitado(): boolean {
     return this.apiService.isComponenteQuimicoHabilitado();
+  }
+
+  public isNombreComercialHabilitado(): boolean {
+    return this.apiService.isNombreComercialHabilitado();
+  }
+
+  public camposFiltroBusquedaProducto(): string[] {
+    const campos = ['nombre'];
+    if (this.isNombreComercialHabilitado()) {
+      campos.push('nombre_comercial');
+    }
+    if (this.isComponenteQuimicoHabilitado()) {
+      campos.push('componente_quimico');
+    }
+    return campos;
   }
 
     override openModal(template: TemplateRef<any>) {

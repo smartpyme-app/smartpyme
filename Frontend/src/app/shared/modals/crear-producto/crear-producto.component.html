@@ -28,6 +28,10 @@
                     <label for="nombre">Nombre</label>
                     <input type="text" class="form-control" (change)="verificarSiExiste()" [(ngModel)]="producto.nombre" name="nombre" placeholder="Escribe aquí" required>
                 </div>
+                <div class="form-group col-md-12 col-lg-4" *ngIf="isNombreComercialHabilitado()">
+                    <label for="nombre_comercial">Nombre comercial</label>
+                    <input type="text" class="form-control" [(ngModel)]="producto.nombre_comercial" name="nombre_comercial" placeholder="Escribe aquí">
+                </div>
                 <div class="form-group col-md-6 col-lg-3">
                     <label for="codigo">Código</label>
                     <input type="text" class="form-control" [(ngModel)]="producto.codigo" name="codigo" placeholder="Escribe aquí">
