@@ -634,6 +634,22 @@ return [
             'crear' => 'clinica.diagnosticos.crear',
             'editar' => 'clinica.diagnosticos.editar',
         ],
+        'medicamentos' => [
+            'ver' => 'clinica.medicamentos.ver',
+            'configurar' => 'clinica.medicamentos.configurar',
+        ],
+        'recetas' => [
+            'ver' => 'clinica.recetas.ver',
+            'crear' => 'clinica.recetas.crear',
+            'editar' => 'clinica.recetas.editar',
+            'anular' => 'clinica.recetas.anular',
+        ],
+        'vacunas' => [
+            'ver' => 'clinica.vacunas.ver',
+            'crear' => 'clinica.vacunas.crear',
+            'configurar' => 'clinica.vacunas.configurar',
+            'anular' => 'clinica.vacunas.anular',
+        ],
     ],
 
     /*

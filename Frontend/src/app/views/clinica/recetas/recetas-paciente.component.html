@@ -1,0 +1,44 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading mb-0">Recetas</h2>
+    <div class="d-flex gap-2">
+        @if (apiService.hasPermission('clinica.recetas.crear')) {
+            <a class="btn btn-primary" [routerLink]="['/clinica/pacientes', idPaciente, 'recetas', 'nuevo']">Nueva receta</a>
+        }
+        <button type="button" class="btn btn-default" [routerLink]="['/clinica/pacientes', idPaciente, 'expediente']">Expediente</button>
+    </div>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    @if (cargando) {
+        <span class="badge bg-primary">Cargando...</span>
+    }
+    @if (!cargando && recetas.length === 0) {
+        <span class="badge bg-secondary">Sin recetas</span>
+    }
+    @if (!cargando && recetas.length > 0) {
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                        <th>Profesional</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (r of recetas; track r.id) {
+                        <tr [class.text-muted]="r.estado === 'anulada'">
+                            <td>{{ r.fecha }}</td>
+                            <td>{{ r.estado }}</td>
+                            <td>{{ r.profesional?.nombre || '—' }}</td>
+                            <td class="text-end">
+                                <a class="btn btn-primary btn-sm" [routerLink]="['/clinica/pacientes', idPaciente, 'recetas', r.id]">Ver</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
