@@ -83,6 +83,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
   cabysItems: CabysSelectOption[] = [];
   cabysLoading = false;
   cabysSeleccionado: CabysSelectOption | null = null;
+  cabysInvalido = false;
 
   readonly compareCabys = (a: CabysSelectOption, b: CabysSelectOption): boolean =>
     !!(a && b && a.codigo === b.codigo);
@@ -364,12 +365,26 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     if (item) {
       this.producto.codigo_cabys = item.codigo;
       this.producto.descripcion_cabys = item.descripcion;
+      this.cabysInvalido = false;
       void this.aplicarImpuestoDesdeCabys(item);
     } else {
       this.producto.codigo_cabys = null;
       this.producto.descripcion_cabys = null;
     }
     this.cdr.markForCheck();
+  }
+
+  /** Productos, compuestos y servicios de una cuenta CR no se guardan sin CABYS de 13 dígitos. */
+  private faltaCabys(): boolean {
+    if (!this.esEmpresaCostaRica()) {
+      return false;
+    }
+    const tipo = this.producto?.tipo;
+    if (tipo !== 'Producto' && tipo !== 'Compuesto' && tipo !== 'Servicio') {
+      return false;
+    }
+    const digits = String(this.producto?.codigo_cabys ?? '').replace(/\D/g, '');
+    return digits.length !== 13;
   }
 
   private async aplicarImpuestoDesdeCabys(item: CabysSelectOption): Promise<void> {
@@ -632,6 +647,17 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
   }
 
   public onSubmit() {
+    if (this.faltaCabys()) {
+      this.cabysInvalido = true;
+      this.alertService.warning(
+        'Código CABYS',
+        'Debe asignar un código CABYS antes de guardar el producto o servicio.',
+      );
+      this.cdr.markForCheck();
+      return;
+    }
+    this.cabysInvalido = false;
+
     if (!this.producto.id) {
       if (!this.producto.costo) {
         this.producto.costo = this.producto.costo_promedio;
