@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { esCostaRicaFe } from '@services/facturacion-electronica/fe-pais.util';
 import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -19,7 +21,7 @@ import { RecalcularPreciosTcComponent } from '@views/inventario/recalcular-preci
     selector: 'app-servicios',
     templateUrl: './servicios.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent, LazyImageDirective, TranslatePipe, CurrencyPipe, RecalcularPreciosTcComponent],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TooltipModule, ImportarExcelComponent, PaginationComponent, LazyImageDirective, TranslatePipe, CurrencyPipe, RecalcularPreciosTcComponent],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ServiciosComponent extends BaseCrudComponent<any> implements OnInit {
@@ -90,6 +92,13 @@ export class ServiciosComponent extends BaseCrudComponent<any> implements OnInit
         this.filtros.page = 1;
         this.loading = true;
         this.filtrarServicios();
+    }
+
+    public faltaCabys(item: { codigo_cabys?: string | null }): boolean {
+        if (!esCostaRicaFe(this.apiService.auth_user()?.empresa)) {
+            return false;
+        }
+        return String(item?.codigo_cabys ?? '').replace(/\D/g, '').length !== 13;
     }
 
     public filtrarServicios(){

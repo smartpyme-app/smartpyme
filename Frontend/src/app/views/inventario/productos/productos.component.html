@@ -156,6 +156,11 @@
                             <ng-template #nombreNormal>
                                 {{ producto.nombre }}
                             </ng-template>
+                            <sup *ngIf="faltaCabys(producto)" style="font-size: 0.65em;">
+                                <a routerLink="/producto/editar/{{producto.id}}" class="text-warning" tooltip="Falta configurar CABYS" container="body">
+                                    <i class="fa fa-exclamation-triangle"></i>
+                                </a>
+                            </sup>
                         </td>
                         <td class="d-none d-lg-table-cell">
                             <select name="enable" class="form-select w-auto border-0" (change)="setEstado(producto)"

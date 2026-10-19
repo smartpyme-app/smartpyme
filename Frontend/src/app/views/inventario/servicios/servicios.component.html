@@ -94,6 +94,11 @@
                         <td>
                             <img [appLazyImage]="apiService.productoImagenUrl(servicio.img)" class="rounded-circle" width="50px">
                             {{ servicio.nombre }}
+                            <sup *ngIf="faltaCabys(servicio)" style="font-size: 0.65em;">
+                                <a routerLink="/servicio/editar/{{servicio.id}}" class="text-warning" tooltip="Falta configurar CABYS" container="body">
+                                    <i class="fa fa-exclamation-triangle"></i>
+                                </a>
+                            </sup>
                         </td>
                         <td class="d-none d-lg-table-cell">
                             <select name="enable" (change)="setEstado(servicio)" class="form-select w-auto border-0" [(ngModel)]="servicio.enable" [ngClass]="{'bg-light-danger' : servicio?.enable == 0, 'bg-light-success' : servicio?.enable == 1}">
