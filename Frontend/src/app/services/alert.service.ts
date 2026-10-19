@@ -77,11 +77,14 @@ export class AlertService {
         }
         else if(status == 400) {
             const body = this.parseErrorBody(errBody);
+            const messageRaw = body['message'];
+            const errorRaw = body['error'];
+            const tituloRaw = body['titulo'];
             const mensaje =
-                (typeof body.message === 'string' ? body.message : undefined)
-                ?? (typeof body.error === 'string' ? body.error : undefined);
-            const titulo = (typeof body.titulo === 'string' && body.titulo.trim()) ? body.titulo : 'Lo sentimos';
-            const tipo = body.titulo ? 'alert-warning' : 'alert-danger';
+                (typeof messageRaw === 'string' ? messageRaw : undefined)
+                ?? (typeof errorRaw === 'string' ? errorRaw : undefined);
+            const titulo = (typeof tituloRaw === 'string' && tituloRaw.trim()) ? tituloRaw : 'Lo sentimos';
+            const tipo = tituloRaw ? 'alert-warning' : 'alert-danger';
             this.alertSubject.next({
                 tipo,
                 titulo,
@@ -90,11 +93,14 @@ export class AlertService {
         }
         else if(status == 422) {
             const body422 = this.parseErrorBody(errBody);
-            if (body422.code === 'detalle_sin_producto') {
+            const code422 = body422['code'];
+            const titulo422 = body422['titulo'];
+            const error422 = body422['error'];
+            if (code422 === 'detalle_sin_producto') {
                 this.alertSubject.next({
                     tipo: 'alert-warning',
-                    titulo: (typeof body422.titulo === 'string' ? body422.titulo : 'Producto no asignado'),
-                    mensaje: typeof body422.error === 'string' ? body422.error : 'Asigne un producto o servicio.',
+                    titulo: (typeof titulo422 === 'string' ? titulo422 : 'Producto no asignado'),
+                    mensaje: typeof error422 === 'string' ? error422 : 'Asigne un producto o servicio.',
                 });
                 return;
             }
@@ -146,11 +152,14 @@ export class AlertService {
         }
         else if(status == 500) {
             const body = this.parseErrorBody(errBody);
+            const messageRaw = body['message'];
+            const errorRaw = body['error'];
+            const tituloRaw = body['titulo'];
             const mensaje =
-                (typeof body.message === 'string' ? body.message : undefined)
-                ?? (typeof body.error === 'string' ? body.error : undefined)
+                (typeof messageRaw === 'string' ? messageRaw : undefined)
+                ?? (typeof errorRaw === 'string' ? errorRaw : undefined)
                 ?? this.normalizeUnknownError(message);
-            const titulo = (typeof body.titulo === 'string' && body.titulo.trim()) ? body.titulo : 'Lo sentimos';
+            const titulo = (typeof tituloRaw === 'string' && tituloRaw.trim()) ? tituloRaw : 'Lo sentimos';
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': titulo, 'mensaje' : mensaje});
         }
         else {
@@ -205,8 +214,9 @@ export class AlertService {
             const bodyRaw = message.error;
             if (typeof bodyRaw === 'string') {
                 const parsed = this.parseErrorBody(bodyRaw);
-                if (typeof parsed.error === 'string') {
-                    return parsed.error;
+                const parsedError = parsed['error'];
+                if (typeof parsedError === 'string') {
+                    return parsedError;
                 }
                 return bodyRaw;
             }
