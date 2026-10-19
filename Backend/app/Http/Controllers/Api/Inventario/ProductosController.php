@@ -1513,6 +1513,10 @@ class ProductosController extends Controller
     {
 
         $productosActualizados = 0;
+        $user = Auth::user();
+        $empresa = Empresa::find($user->id_empresa);
+        $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
+        $migracionLotes = app(MigrarStockALotesService::class);
 
         // Procesar cada producto
         foreach ($request->productos as $item) {
@@ -1529,6 +1533,16 @@ class ProductosController extends Controller
                 continue; // Si no existe el inventario, saltamos
             }
 
+            $producto = Producto::find($item['id_producto']);
+            $loteAjustado = null;
+            if ($producto && $producto->inventario_por_lotes && $lotesActivo) {
+                $loteAjustado = $migracionLotes->alinearStockEnBodega(
+                    $producto,
+                    (int) $item['id_bodega'],
+                    (float) $item['stock_nuevo']
+                );
+            }
+
             // Actualizar stock
             $inventario->stock = $item['stock_nuevo'];
             $inventario->save();
@@ -1542,7 +1556,10 @@ class ProductosController extends Controller
             $ajuste->stock_actual = $item['stock_actual'];
             $ajuste->stock_real = $item['stock_nuevo'];
             $ajuste->ajuste = $item['diferencia'];
-            $ajuste->id_empresa = Auth::user()->id_empresa;
+            $ajuste->id_empresa = $user->id_empresa;
+            if ($loteAjustado) {
+                $ajuste->lote_id = $loteAjustado->id;
+            }
             $ajuste->save();
 
             $inventario->kardex($ajuste, $ajuste->ajuste);
