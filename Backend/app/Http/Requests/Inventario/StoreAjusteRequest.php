@@ -23,7 +23,8 @@ class StoreAjusteRequest extends FormRequest
             'id' => ['sometimes', 'nullable', 'integer', 'exists:ajustes,id'],
             'id_producto' => ['required', 'integer', 'exists:productos,id'],
             'id_bodega' => ['required', 'integer', 'exists:sucursal_bodegas,id'],
-            'stock_actual' => ['required', 'numeric', 'min:0'],
+            // stock_actual es el inventario real (puede ser negativo); stock_real es el destino y no puede serlo
+            'stock_actual' => ['required', 'numeric'],
             'stock_real' => ['required', 'numeric', 'min:0'],
             'ajuste' => ['required', 'numeric'],
             'concepto' => ['required', 'string', 'max:255'],
@@ -45,7 +46,6 @@ class StoreAjusteRequest extends FormRequest
             'id_bodega.exists' => 'La bodega seleccionada no existe.',
             'stock_actual.required' => 'El stock actual es requerido.',
             'stock_actual.numeric' => 'El stock actual debe ser un número.',
-            'stock_actual.min' => 'El stock actual no puede ser negativo.',
             'stock_real.required' => 'El stock real es requerido.',
             'stock_real.numeric' => 'El stock real debe ser un número.',
             'stock_real.min' => 'El stock real no puede ser negativo.',
