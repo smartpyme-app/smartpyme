@@ -514,11 +514,16 @@ class SuscripcionesController extends Controller
             $suscripcion = Suscripcion::findOrFail($validated['id']);
             $mesesCobertura = isset($validated['meses_cobertura']) ? (int) $validated['meses_cobertura'] : null;
 
+            // Conserva el día de cobro: pagar el 30 no mueve un ciclo que vence el 28.
+            $base = $suscripcion->fecha_proximo_pago
+                ? Carbon::parse($suscripcion->fecha_proximo_pago)
+                : Carbon::now();
+
             if ($mesesCobertura !== null && $mesesCobertura >= 1) {
-                $fechaProximoPago = Carbon::now()->addMonths($mesesCobertura);
+                $fechaProximoPago = $base->copy()->addMonthsNoOverflow($mesesCobertura);
             } else {
                 $dias = max(1, (int) config('constants.DIAS_PAGO_RECIBIDO_PROXIMO_CICLO', 30));
-                $fechaProximoPago = Carbon::now()->addDays($dias);
+                $fechaProximoPago = $base->copy()->addDays($dias);
             }
 
             $crearVenta = $request->boolean('crear_venta');
