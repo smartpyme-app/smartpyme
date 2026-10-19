@@ -53,12 +53,12 @@ export class AlertService {
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : mensaje});
         }
         else if(status == 404) {
-            const body = (typeof errBody === 'object' && errBody !== null) ? errBody : {};
-            const mensaje = typeof body.error === 'string'
-                ? body.error
+            const body = this.parseErrorBody(errBody);
+            const mensaje = typeof body['error'] === 'string'
+                ? body['error']
                 : 'El registro no ha sido encontrado';
-            const titulo = body.code === 'hacienda_contribuyente_not_found' ? 'Hacienda' : 'Lo sentimos';
-            const tipo = body.code === 'hacienda_contribuyente_not_found' ? 'alert-warning' : 'alert-danger';
+            const titulo = body['code'] === 'hacienda_contribuyente_not_found' ? 'Hacienda' : 'Lo sentimos';
+            const tipo = body['code'] === 'hacienda_contribuyente_not_found' ? 'alert-warning' : 'alert-danger';
             this.alertSubject.next({ tipo, titulo, mensaje });
         }
         else if(status == 403) {
@@ -78,10 +78,10 @@ export class AlertService {
         else if(status == 400) {
             const body = this.parseErrorBody(errBody);
             const mensaje =
-                (typeof body.message === 'string' ? body.message : undefined)
-                ?? (typeof body.error === 'string' ? body.error : undefined);
-            const titulo = (typeof body.titulo === 'string' && body.titulo.trim()) ? body.titulo : 'Lo sentimos';
-            const tipo = body.titulo ? 'alert-warning' : 'alert-danger';
+                (typeof body['message'] === 'string' ? body['message'] : undefined)
+                ?? (typeof body['error'] === 'string' ? body['error'] : undefined);
+            const titulo = (typeof body['titulo'] === 'string' && body['titulo'].trim()) ? body['titulo'] : 'Lo sentimos';
+            const tipo = body['titulo'] ? 'alert-warning' : 'alert-danger';
             this.alertSubject.next({
                 tipo,
                 titulo,
@@ -90,11 +90,11 @@ export class AlertService {
         }
         else if(status == 422) {
             const body422 = this.parseErrorBody(errBody);
-            if (body422.code === 'detalle_sin_producto') {
+            if (body422['code'] === 'detalle_sin_producto') {
                 this.alertSubject.next({
                     tipo: 'alert-warning',
-                    titulo: (typeof body422.titulo === 'string' ? body422.titulo : 'Producto no asignado'),
-                    mensaje: typeof body422.error === 'string' ? body422.error : 'Asigne un producto o servicio.',
+                    titulo: (typeof body422['titulo'] === 'string' ? body422['titulo'] : 'Producto no asignado'),
+                    mensaje: typeof body422['error'] === 'string' ? body422['error'] : 'Asigne un producto o servicio.',
                 });
                 return;
             }
@@ -137,20 +137,20 @@ export class AlertService {
             });
         }
         else if(status == 502 || status == 503) {
-            const body = (typeof errBody === 'object' && errBody !== null) ? errBody : {};
-            const mensaje = typeof body.error === 'string'
-                ? body.error
+            const body = this.parseErrorBody(errBody);
+            const mensaje = typeof body['error'] === 'string'
+                ? body['error']
                 : this.normalizeUnknownError(message);
-            const titulo = body.code === 'hacienda_html_response' ? 'Hacienda' : 'Lo sentimos';
+            const titulo = body['code'] === 'hacienda_html_response' ? 'Hacienda' : 'Lo sentimos';
             this.alertSubject.next({ tipo: 'alert-warning', titulo, mensaje });
         }
         else if(status == 500) {
             const body = this.parseErrorBody(errBody);
             const mensaje =
-                (typeof body.message === 'string' ? body.message : undefined)
-                ?? (typeof body.error === 'string' ? body.error : undefined)
+                (typeof body['message'] === 'string' ? body['message'] : undefined)
+                ?? (typeof body['error'] === 'string' ? body['error'] : undefined)
                 ?? this.normalizeUnknownError(message);
-            const titulo = (typeof body.titulo === 'string' && body.titulo.trim()) ? body.titulo : 'Lo sentimos';
+            const titulo = (typeof body['titulo'] === 'string' && body['titulo'].trim()) ? body['titulo'] : 'Lo sentimos';
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': titulo, 'mensaje' : mensaje});
         }
         else {
@@ -205,8 +205,8 @@ export class AlertService {
             const bodyRaw = message.error;
             if (typeof bodyRaw === 'string') {
                 const parsed = this.parseErrorBody(bodyRaw);
-                if (typeof parsed.error === 'string') {
-                    return parsed.error;
+                if (typeof parsed['error'] === 'string') {
+                    return parsed['error'];
                 }
                 return bodyRaw;
             }
