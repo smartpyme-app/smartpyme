@@ -973,7 +973,8 @@
         </option>
       </select>
       <p class="text-muted small mb-0 mt-1">
-        La <strong>próxima fecha de pago</strong> se calculará sumando esos meses a hoy
+        La <strong>próxima fecha de pago</strong> se calcula sumando esos meses a la
+        fecha programada, sin mover el día de cobro
         (referencia: ~{{ fechaProximoPagoPreview() | date : 'mediumDate' }}). Se
         actualizará la fecha del último pago. Si había <strong>acceso temporal</strong>,
         se anulará.

@@ -176,7 +176,7 @@ export class AdminSuscripcionesComponent extends BasePaginatedComponent implemen
   loadingOrdenesPendientesModal = false;
   ordenPagoSeleccionadoId: number | null = null;
 
-  /** Cobertura del pago (próximo cobro = hoy + N meses en servidor). */
+  /** Cobertura del pago (próximo cobro = fecha programada + N meses). */
   pagoModalMesesCobertura = 1;
   readonly mesesCoberturaOpcionesPago: { meses: number; etiqueta: string }[] = [
     { meses: 1, etiqueta: '1 mes' },
@@ -663,9 +663,27 @@ export class AdminSuscripcionesComponent extends BasePaginatedComponent implemen
   }
 
   public fechaProximoPagoPreview(): Date {
-    const d = new Date();
-    d.setMonth(d.getMonth() + (this.pagoModalMesesCobertura || 1));
-    return d;
+    const meses = this.pagoModalMesesCobertura || 1;
+    const base = this.fechaBaseProximoPago();
+    const dia = base.getDate();
+    const destino = new Date(base.getFullYear(), base.getMonth() + meses, 1);
+    const ultimo = new Date(
+      destino.getFullYear(),
+      destino.getMonth() + 1,
+      0
+    ).getDate();
+    destino.setDate(Math.min(dia, ultimo));
+    return destino;
+  }
+
+  /** Día de cobro ya programado. Sin fecha, la vista previa parte de hoy. */
+  private fechaBaseProximoPago(): Date {
+    const raw = this.suscripcionPagoPendiente?.fecha_proximo_pago;
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw ? String(raw) : '');
+    if (!match) {
+      return new Date();
+    }
+    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
   }
 
   public montoEstimadoCrearVentaModal(): number | null {
