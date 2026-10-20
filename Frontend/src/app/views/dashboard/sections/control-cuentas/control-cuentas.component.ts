@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy, inject } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ViewChild, ElementRef, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy, inject } from '@angular/core';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, takeUntil } from 'rxjs/operators';
 import { DashboardDataService } from '../../services/dashboard-data.service';
@@ -113,6 +113,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
     ];
   }
 
+  @ViewChild('vendedorDetalleBackdrop') vendedorDetalleBackdrop?: ElementRef<HTMLElement>;
   @ViewChild('detalleCuentasGrid') detalleCuentasGrid: any;
   @ViewChild('resumenCuentasPagarGrid') resumenCuentasPagarGrid: any;
 
@@ -139,6 +140,22 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
     ventasConIVA: 0,
     montoAbonado: 0,
     saldoPendiente: 0,
+  };
+  vendedorDetalleAbierto = false;
+  vendedorDetalleLoading = false;
+  vendedorDetalleTitulo = '';
+  vendedorDetalleError = '';
+  vendedorDetalleRows: any[] = [];
+  vendedorDetallePin: any[] = [];
+  private vendedorDetalleReq = 0;
+  private vendedorDetalleCerrarTimer: ReturnType<typeof setTimeout> | null = null;
+  readonly vendedorDetalleGridOptions: GridOptions = {
+    defaultColDef: { resizable: true, sortable: true, filter: true },
+    pagination: true,
+    paginationPageSize: 25,
+    enableCellTextSelection: true,
+    getRowClass: (params: any) =>
+      params.node?.rowPinned === 'bottom' ? 'ag-row-total' : '',
   };
   cxpListo = false;
   cxpLoading = false;
@@ -342,6 +359,9 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.vendedorDetalleCerrarTimer) {
+      clearTimeout(this.vendedorDetalleCerrarTimer);
+    }
     this.destroy$.next();
     this.destroy$.complete();
     this.dashboardDataService.guardarFiltrosUI('Control de cuentas', {
@@ -1310,6 +1330,164 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
     }
     this.aplicarFiltrosInteractivos();
     this.cargarDetalleCxcPagina(0);
+  }
+
+  onVendedorChartClick(
+    tipo: 'cobros' | 'pendiente',
+    event: { name: string; seriesName?: string },
+  ): void {
+    const nombre = (event?.name || '').trim();
+    if (!nombre) {
+      return;
+    }
+    const serie =
+      event.seriesName === 'Vigente' || event.seriesName === 'Vencido'
+        ? event.seriesName
+        : '';
+    this.vendedorDetalleAbierto = true;
+    this.vendedorDetalleLoading = true;
+    this.vendedorDetalleError = '';
+    this.vendedorDetalleRows = [];
+    this.vendedorDetallePin = [];
+    if (this.vendedorDetalleCerrarTimer) {
+      clearTimeout(this.vendedorDetalleCerrarTimer);
+      this.vendedorDetalleCerrarTimer = null;
+    }
+    const backdrop = this.vendedorDetalleBackdrop?.nativeElement;
+    if (backdrop) {
+      backdrop.style.display = '';
+    }
+    this.vendedorDetalleTitulo = this.tituloDetalleVendedor(tipo, nombre, serie);
+    const req = ++this.vendedorDetalleReq;
+    this.cdr.detectChanges();
+    const filtros = this.getFiltrosCxcDetalle();
+    if (this.filtrosInteractivos.vigencia) {
+      const vig = this.vigenciaParaApiAplicado();
+      if (vig) {
+        filtros.estadoVigencia = vig;
+      } else {
+        delete filtros.estadoVigencia;
+      }
+    }
+    this.dashboardDataService
+      .obtenerFacturasPorVendedor(filtros, {
+        vendedor: nombre,
+        tipo,
+        serie: serie || undefined,
+      })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((rows) => {
+        if (req !== this.vendedorDetalleReq) {
+          return;
+        }
+        this.vendedorDetalleLoading = false;
+        if (rows == null) {
+          this.vendedorDetalleError = 'No se pudo cargar el detalle.';
+        } else {
+          this.vendedorDetalleRows = rows;
+          this.vendedorDetallePin = this.pinFacturasVendedor(rows);
+        }
+        this.cdr.detectChanges();
+      });
+  }
+
+  exportarDetalleVendedor(): void {
+    const cols = this.detalleCuentasColumnDefs.filter((c) => c.field);
+    if (!cols.length || !this.vendedorDetalleRows.length) {
+      return;
+    }
+    const header = cols
+      .map((c) => this.csvEscape(String(c.headerName || c.field)))
+      .join(',');
+    const lines = [...this.vendedorDetalleRows, ...this.vendedorDetallePin].map(
+      (item: any) =>
+        cols
+          .map((c) => {
+            const raw = item[c.field || ''];
+            return this.csvEscape(
+              raw === null || raw === undefined ? '' : String(raw),
+            );
+          })
+          .join(','),
+    );
+    const fecha = new Date().toISOString().split('T')[0];
+    const blob = new Blob(['\uFEFF' + [header, ...lines].join('\n')], {
+      type: 'text/csv;charset=utf-8;',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `detalle-vendedor-${fecha}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  cerrarDetalleVendedor(): void {
+    this.vendedorDetalleReq++;
+    this.vendedorDetalleLoading = false;
+    const backdrop = this.vendedorDetalleBackdrop?.nativeElement;
+    if (backdrop) {
+      backdrop.style.display = 'none';
+    }
+    if (this.vendedorDetalleCerrarTimer) {
+      clearTimeout(this.vendedorDetalleCerrarTimer);
+    }
+    this.vendedorDetalleCerrarTimer = setTimeout(() => {
+      this.vendedorDetalleCerrarTimer = null;
+      this.vendedorDetalleAbierto = false;
+      this.vendedorDetalleRows = [];
+      this.vendedorDetallePin = [];
+      this.cdr.detectChanges();
+    }, 0);
+  }
+
+  private tituloDetalleVendedor(
+    tipo: 'cobros' | 'pendiente',
+    nombre: string,
+    serie: string,
+  ): string {
+    if (tipo === 'cobros') {
+      return `Pagos recibidos de ${nombre}`;
+    }
+    if (serie === 'Vigente') {
+      return `Cuentas vigentes de ${nombre}`;
+    }
+    if (serie === 'Vencido') {
+      return `Cuentas vencidas de ${nombre}`;
+    }
+    return `Cuentas pendientes de ${nombre}`;
+  }
+
+  private pinFacturasVendedor(rows: any[]): any[] {
+    const totales = (rows ?? []).reduce(
+      (acc, i) => ({
+        ventasConIVA: acc.ventasConIVA + (Number(i.ventasConIVA) || 0),
+        montoAbonado: acc.montoAbonado + (Number(i.montoAbonado) || 0),
+        saldoPendiente: acc.saldoPendiente + (Number(i.saldoPendiente) || 0),
+      }),
+      { ventasConIVA: 0, montoAbonado: 0, saldoPendiente: 0 },
+    );
+    if (
+      totales.ventasConIVA === 0 &&
+      totales.montoAbonado === 0 &&
+      totales.saldoPendiente === 0
+    ) {
+      return [];
+    }
+    return [
+      {
+        cliente: 'Total',
+        factura: '',
+        fechaVenta: '',
+        fechaPago: '',
+        diasVencimiento: '',
+        estado: '',
+        ventasConIVA: totales.ventasConIVA,
+        montoAbonado: totales.montoAbonado,
+        diasAbono: '',
+        saldoPendiente: totales.saldoPendiente,
+      },
+    ];
   }
 
   onClienteCuentaClick(event: { name: string; amount: number }): void {
