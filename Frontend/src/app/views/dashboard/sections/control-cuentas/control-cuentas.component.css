@@ -539,3 +539,53 @@
     border-color: rgba(241, 148, 71, 0.45) !important;
     box-shadow: 0 4px 12px rgba(241, 148, 71, 0.08) !important;
 }
+
+.vendedor-detalle-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 4000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(15, 23, 42, 0.45);
+}
+
+.vendedor-detalle-cerrar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: rgba(45, 82, 168, 0.08);
+    color: #2d52a8;
+    cursor: pointer;
+}
+
+.vendedor-detalle-cerrar:hover {
+    background: rgba(45, 82, 168, 0.16);
+    color: #1e3a8a;
+}
+
+.vendedor-detalle-estado {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    min-height: 180px;
+    color: #334155;
+}
+
+.vendedor-detalle-panel {
+    width: min(1100px, 100%);
+    max-height: calc(100vh - 3rem);
+    overflow: auto;
+    background: #fff;
+    border-radius: 8px;
+    padding: 1rem 1rem 0.75rem;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}

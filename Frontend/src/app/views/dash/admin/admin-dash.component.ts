@@ -21,7 +21,6 @@ import * as moment from 'moment';
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, DatosComponent, TopsComponent, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    
 })
 export class AdminDashComponent extends BaseModalComponent implements OnInit {
 
