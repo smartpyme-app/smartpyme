@@ -1003,20 +1003,20 @@ export class FacturacionV2Component implements OnInit {
             ? parseFloat(guardadoConIva)
             : precioSinIva * (1 + pctImpuesto / 100);
           detalle.precio_iva = redondearMoneda(precioConIva).toFixed(2);
-          detalle.precio = precioSinIva.toFixed(4);
+          detalle.precio = precioSinIva.toFixed(6);
 
           detalle.precios = producto.precios
             ? producto.precios.map((p: any) => {
               const sin = parseFloat(p.precio);
               return {
                 ...p,
-                precio: sin.toFixed(4),
+                precio: sin.toFixed(6),
                 precio_sin_iva: sin,
               };
             })
             : [];
           detalle.precios.unshift({
-            precio: precioSinIva.toFixed(4),
+            precio: precioSinIva.toFixed(6),
             precio_sin_iva: precioSinIva,
             precio_con_iva: precioConIva.toFixed(4),
           });
@@ -1025,7 +1025,9 @@ export class FacturacionV2Component implements OnInit {
 
           if (detalle.precios?.length) {
             detalle.precios[0] = {
-              precio: typeof detalle.precio === 'string' ? detalle.precio : parseFloat(detalle.precio).toFixed(4),
+              precio: typeof detalle.precio === 'string'
+                ? detalle.precio
+                : parseFloat(detalle.precio).toFixed(6),
               precio_sin_iva: parseFloat(detalle.precio),
               precio_con_iva: detalle.precio_iva,
             };
@@ -1490,7 +1492,7 @@ export class FacturacionV2Component implements OnInit {
         ? Number(mejor.precio_sin_iva)
         : parseFloat(String(mejor.precio));
     if (!Number.isFinite(sinSel)) return;
-    detalle.precio = sinSel.toFixed(4);
+    detalle.precio = sinSel.toFixed(6);
     const conSelRaw = mejor.precio_con_iva;
     const conSel = conSelRaw != null && conSelRaw !== ''
       ? Number(conSelRaw)
@@ -2917,7 +2919,7 @@ export class FacturacionV2Component implements OnInit {
         id_producto: d.id_producto,
         id_presentacion: d.id_presentacion ?? null,
         cantidad: cant,
-        precio: precioSinIva.toFixed(4),
+        precio: precioSinIva.toFixed(6),
         precio_iva: redondearMoneda(precioConIva).toFixed(2),
         descripcion: d.descripcion || '',
         costo: 0,

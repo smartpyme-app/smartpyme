@@ -295,7 +295,7 @@ export class VentaDetallesV2Component implements OnInit, OnDestroy {
                 : (pctDet > 0 ? sin * (1 + pctDet / 100) : sin);
             return {
                 ...(src || {}),
-                precio: sin.toFixed(4),
+                precio: sin.toFixed(6),
                 precio_sin_iva: sin,
                 precio_con_iva: con.toFixed(4),
             };
@@ -303,10 +303,10 @@ export class VentaDetallesV2Component implements OnInit, OnDestroy {
         let lista = Array.isArray(detalle.precios) ? [...detalle.precios] : [];
         if (!lista.length) {
             detalle.precios = [itemPrecio(precioLinea)];
-            detalle.precio = precioLinea.toFixed(4);
+            detalle.precio = precioLinea.toFixed(6);
             return;
         }
-        const eq = (a: number, b: number) => Math.abs(a - b) <= 5e-4;
+        const eq = (a: number, b: number) => Math.abs(a - b) <= 5e-7;
         lista = lista.map((p: any) =>
             itemPrecio(parseFloat(String(p.precio_sin_iva ?? p.precio ?? 0)) || 0, p)
         );
@@ -319,7 +319,7 @@ export class VentaDetallesV2Component implements OnInit, OnDestroy {
             lista[idxBase] = itemPrecio(precioLinea, lista[idxBase]);
         }
         detalle.precios = lista;
-        detalle.precio = precioLinea.toFixed(4);
+        detalle.precio = precioLinea.toFixed(6);
     }
 
     /** Tras activar o desactivar "Con IVA" en la cabecera, recalcula IVA y tipo por línea. */
@@ -353,7 +353,7 @@ export class VentaDetallesV2Component implements OnInit, OnDestroy {
             this.updateTotal(detalle);
             return;
         }
-        const eq = (a: number, b: number) => Math.abs(a - b) <= 5e-4;
+        const eq = (a: number, b: number) => Math.abs(a - b) <= 5e-7;
         const precioSeleccionado = detalle.precios.find((p: any) => eq(parseFloat(String(p.precio)), valSel));
         const sinLista =
             precioSeleccionado &&
@@ -366,7 +366,7 @@ export class VentaDetallesV2Component implements OnInit, OnDestroy {
             this.updateTotal(detalle);
             return;
         }
-        detalle.precio = sinLista.toFixed(4);
+        detalle.precio = Number(sinLista).toFixed(6);
         const conGuardado = precioSeleccionado?.precio_con_iva;
         const conNum = conGuardado != null && conGuardado !== '' ? Number(conGuardado) : NaN;
         detalle.precio_iva = Number.isFinite(conNum)
@@ -375,12 +375,10 @@ export class VentaDetallesV2Component implements OnInit, OnDestroy {
                 ? redondearMoneda(sinLista * (1 + pctDetalle / 100)).toFixed(2)
                 : redondearMoneda(sinLista).toFixed(2));
         this.updateTotal(detalle);
-        // Mantener el valor del <select> alineado con las opciones del catálogo
-        // (updateTotal reformatea precio a 6 decimales y el select queda en blanco).
-        if (precioSeleccionado && precioSeleccionado.precio !== undefined && precioSeleccionado.precio !== null) {
+        if (precioSeleccionado?.precio != null && precioSeleccionado.precio !== '') {
             detalle.precio = precioSeleccionado.precio;
         } else {
-            detalle.precio = valSel;
+            detalle.precio = valSel.toFixed(6);
         }
     }
 
@@ -413,7 +411,7 @@ export class VentaDetallesV2Component implements OnInit, OnDestroy {
                 ? this.calcularPrecioSinIva(precioIva, pctDetalle)
                 : precioIva;
 
-            detalle.precio = precioSinIva.toFixed(4);
+            detalle.precio = precioSinIva.toFixed(6);
 
             // Descuento sobre precio con IVA (campo Precio); se guarda sin IVA para base gravada.
             const { descuentoSinIva, descuentoConIva } = calcularDescuentoDesdePrecioConIva({

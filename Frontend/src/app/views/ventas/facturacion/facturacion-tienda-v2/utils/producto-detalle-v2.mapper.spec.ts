@@ -20,7 +20,7 @@ describe('producto-detalle-v2.mapper', () => {
       ctx
     );
     expect(det.precio_iva).toBe('113.00');
-    expect(det.precio).toBe('100.0000');
+    expect(det.precio).toBe('100.000000');
   });
 
   it('usa fila plana del buscador con presentacion', () => {

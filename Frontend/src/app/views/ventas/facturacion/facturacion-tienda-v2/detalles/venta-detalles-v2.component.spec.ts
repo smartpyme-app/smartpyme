@@ -210,7 +210,7 @@ describe('VentaDetallesV2Component', () => {
     component.venta.cliente = { clasificacion: 'A' };
     const detalle = {
       precios: [
-        { precio: '10.0000' },
+        { precio: '10.000000' },
         { precio: '8.0000', clasificacion: 'B' },
         { precio: '7.0000', clasificacion: 'A' },
       ],
@@ -218,7 +218,7 @@ describe('VentaDetallesV2Component', () => {
 
     const visibles = component.preciosParaSelector(detalle);
 
-    expect(visibles.map((p: any) => p.precio)).toEqual(['10.0000', '7.0000']);
+    expect(visibles.map((p: any) => p.precio)).toEqual(['10.000000', '7.000000']);
   });
 
   it('si ningún precio coincide con la clasificación, no deja el selector vacío', () => {
@@ -226,8 +226,8 @@ describe('VentaDetallesV2Component', () => {
     component.venta.cliente = { clasificacion: 'A' };
     const detalle = {
       precios: [
-        { precio: '10.0000', clasificacion: 'B' },
-        { precio: '8.0000', clasificacion: 'C' },
+        { precio: '10.000000', clasificacion: 'B' },
+        { precio: '8.000000', clasificacion: 'C' },
       ],
     };
 

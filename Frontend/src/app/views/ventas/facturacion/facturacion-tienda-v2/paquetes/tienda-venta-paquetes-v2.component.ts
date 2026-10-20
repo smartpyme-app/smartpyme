@@ -143,7 +143,7 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
         // precio_iva: precio con IVA (para cálculos y visualización)
         this.detalle.precio_iva     = redondearMoneda(precioConIva).toFixed(2);
         // precio: precio sin IVA (para guardar en BD)
-        this.detalle.precio         = precioSinIva.toFixed(4);
+        this.detalle.precio         = precioSinIva.toFixed(6);
         
         // Lista sin IVA (como configuración del producto)
         this.detalle.precios        = paquete.precios ? paquete.precios.map((p: any) => {
@@ -151,13 +151,13 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
             const precioSinIvaP = iva > 0 ? precioConIvaP / (1 + iva / 100) : precioConIvaP;
             return {
                 ...p,
-                precio: precioSinIvaP.toFixed(4),
+                precio: precioSinIvaP.toFixed(6),
                 precio_sin_iva: precioSinIvaP,
             };
         }) : [];
 
         this.detalle.precios.unshift({
-                'precio' : precioSinIva.toFixed(4),
+                'precio' : precioSinIva.toFixed(6),
                 'precio_sin_iva': precioSinIva
             });
         this.detalle.costo          = parseFloat(paquete.costo);
@@ -209,7 +209,7 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
             // precio_iva: precio con IVA (para cálculos y visualización)
             this.detalle.precio_iva    = redondearMoneda(precioConIva).toFixed(2);
             // precio: precio sin IVA (para guardar en BD)
-            this.detalle.precio        = precioSinIva.toFixed(4);
+            this.detalle.precio        = precioSinIva.toFixed(6);
             
             this.detalle.total         = parseFloat(paquete.total).toFixed(4);
             this.detalle.cuenta_a_terceros        = parseFloat(paquete.cuenta_a_terceros);
