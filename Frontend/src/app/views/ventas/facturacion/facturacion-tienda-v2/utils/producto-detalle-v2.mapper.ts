@@ -70,7 +70,7 @@ export function armarListaPreciosDetalleV2(
           : sinIvaLista;
         return {
           ...p,
-          precio: sinIvaLista.toFixed(4),
+          precio: sinIvaLista.toFixed(6),
           precio_sin_iva: sinIvaLista,
           precio_con_iva: conIva.toFixed(4),
         };
@@ -80,7 +80,7 @@ export function armarListaPreciosDetalleV2(
     ? precioConIvaBase
     : (pctImpuesto > 0 ? precioSinIva * (1 + pctImpuesto / 100) : precioSinIva);
   lista.unshift({
-    precio: precioSinIva.toFixed(4),
+    precio: precioSinIva.toFixed(6),
     precio_sin_iva: precioSinIva,
     precio_con_iva: conIvaBase.toFixed(4),
   });
@@ -100,7 +100,7 @@ export function armarDetalleDesdeProductoV2(producto: any, ctx: ProductoDetalleV
   detalle.porcentaje_impuesto = porcentajeImpuesto;
   copiarImpuestosProductoAlDetalle(detalle, producto, ctx.ivaEmpresa);
   detalle.precio_iva = redondearMoneda(precioConIva).toFixed(2);
-  detalle.precio = precioSinIva.toFixed(4);
+  detalle.precio = precioSinIva.toFixed(6);
   detalle.precio_base = precioSinIva;
   detalle.precios = armarListaPreciosDetalleV2(producto, precioSinIva, pctImpuesto, precioConIva);
 

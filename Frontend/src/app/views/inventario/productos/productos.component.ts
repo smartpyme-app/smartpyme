@@ -31,6 +31,7 @@ import {
 import { TranslatePipe } from '@ngx-translate/core';
 import { RecalcularPreciosTcComponent } from '@views/inventario/recalcular-precios-tc/recalcular-precios-tc.component';
 import { DescargarInventarioComponent } from '@shared/parts/descargar-inventario/descargar-inventario.component';
+import { esCostaRicaFe } from '@services/facturacion-electronica/fe-pais.util';
 
 export type AnalisisVentasColaEstado = {
     id: number;
@@ -613,6 +614,13 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
     public isNombreComercialHabilitado(): boolean {
         return this.apiService.isNombreComercialHabilitado();
+    }
+
+    public faltaCabys(item: { codigo_cabys?: string | null }): boolean {
+        if (!esCostaRicaFe(this.apiService.auth_user()?.empresa)) {
+            return false;
+        }
+        return String(item?.codigo_cabys ?? '').replace(/\D/g, '').length !== 13;
     }
 
     /**
