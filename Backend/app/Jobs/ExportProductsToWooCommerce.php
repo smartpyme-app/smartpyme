@@ -4,13 +4,14 @@ namespace App\Jobs;
 
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Bodega;
-use App\Models\Inventario\Inventario;
+use App\Services\WooCommerceSpExportCatalogService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class ExportProductsToWooCommerce implements ShouldQueue
@@ -19,22 +20,25 @@ class ExportProductsToWooCommerce implements ShouldQueue
 
     protected $userId;
     protected $sucursalId;
-    protected $limit = 50; // Cantidad de productos por job trabajador
+    /** @var bool */
+    protected $soloConStock;
+    protected $limit = 12; // Grupos SKU por lote
     public $timeout = 3600;
 
     /**
      * Create a new job instance.
      */
-    public function __construct($userId, $sucursalId)
+    public function __construct($userId, $sucursalId, bool $soloConStock = true)
     {
         $this->userId = $userId;
         $this->sucursalId = $sucursalId;
+        $this->soloConStock = $soloConStock;
     }
 
     /**
      * Execute the job.
      */
-    public function handle()
+    public function handle(WooCommerceSpExportCatalogService $catalog)
     {
         set_time_limit(3600);
         try {
@@ -55,7 +59,20 @@ class ExportProductsToWooCommerce implements ShouldQueue
 
             $empresa->woocommerce_sync_status = 'syncing';
             $empresa->woocommerce_error = null;
+            $empresa->woocommerce_sync_processed_batches = 0;
             $empresa->save();
+
+            Cache::put('woocommerce_export_' . $empresa->id, [
+                'estado' => 'procesando',
+                'progreso' => 0,
+                'mensaje' => 'Iniciando exportación...',
+                'lotes_total' => 0,
+                'lotes_procesados' => 0,
+                'creados' => 0,
+                'actualizados' => 0,
+                'errores' => 0,
+                'fecha_inicio' => now()->toIso8601String(),
+            ], 7200);
 
             Log::info("Iniciando exportación a WooCommerce", [
                 'user_id' => $this->userId,
@@ -71,40 +88,36 @@ class ExportProductsToWooCommerce implements ShouldQueue
                 throw new \Exception("No se encontraron bodegas para la sucursal {$this->sucursalId}");
             }
 
-            // Obtener IDs de productos con inventario
-            $productosIds = Inventario::where('id_bodega', $bodega->id)
-                ->where('stock', '>', 0)
-                ->select('id_producto')
-                ->distinct()
-                ->pluck('id_producto')
-                ->toArray();
+            $productos = $catalog->productosElegibles($user, $bodega->id, $this->soloConStock);
+            $groups = $catalog->groupForExport($productos);
 
-            $totalProductos = count($productosIds);
+            Log::info('Exportación WooCommerce: productos y grupos', [
+                'productos' => $productos->count(),
+                'grupos_sku' => count($groups),
+                'solo_con_stock' => $this->soloConStock,
+            ]);
 
-            Log::info("Total de productos a procesar: {$totalProductos}");
-
-            if ($totalProductos == 0) {
+            if (count($groups) === 0) {
                 $empresa->woocommerce_sync_status = 'completed';
                 $empresa->woocommerce_last_sync = now();
                 $empresa->save();
 
-                Log::info("No hay productos para sincronizar");
+                Log::info('No hay productos para sincronizar');
                 return;
             }
 
-            // Dividir en lotes
-            $lotes = array_chunk($productosIds, $this->limit);
+            $lotes = array_chunk($groups, $this->limit);
             $totalLotes = count($lotes);
 
-            Log::info("Dividiendo exportación en {$totalLotes} lotes");
-
-            // Crear un job para cada lote de productos
-            foreach ($lotes as $index => $loteIds) {
-                // Retrasar cada job para que no se ejecuten todos a la vez
-                // Inicio escalonado: el primer lote inicia inmediatamente, los siguientes cada 30 segundos
+            foreach ($lotes as $index => $groupChunk) {
+                $loteIds = [];
+                foreach ($groupChunk as $group) {
+                    foreach ($group['items'] as $producto) {
+                        $loteIds[] = $producto->id;
+                    }
+                }
                 $delay = now()->addSeconds($index * 30);
 
-                // Encolar job trabajador
                 ProcessWooCommerceProductBatch::dispatch(
                     $this->userId,
                     $this->sucursalId,

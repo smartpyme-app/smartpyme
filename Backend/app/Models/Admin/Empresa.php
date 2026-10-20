@@ -609,6 +609,8 @@ class Empresa extends Model
     public const WOOCOMMERCE_SYNC_BIDIRECTIONAL = 'bidirectional';
     public const WOOCOMMERCE_SYNC_WC_TO_SP = 'wc_to_sp';
     public const WOOCOMMERCE_SYNC_SP_TO_WC = 'sp_to_wc';
+    /** Solo pedidos web; sin catálogo ni stock hacia/desde Woo. */
+    public const WOOCOMMERCE_SYNC_ORDERS_ONLY = 'orders_only';
 
     /**
      * SmartPyme envía producto/stock a WooCommerce (observers, exportación masiva).
@@ -616,8 +618,17 @@ class Empresa extends Model
     public function woocommerceSyncPushesToRemote(): bool
     {
         $mode = $this->woocommerce_sync_mode ?: self::WOOCOMMERCE_SYNC_BIDIRECTIONAL;
-        if (!in_array($mode, [self::WOOCOMMERCE_SYNC_BIDIRECTIONAL, self::WOOCOMMERCE_SYNC_WC_TO_SP, self::WOOCOMMERCE_SYNC_SP_TO_WC], true)) {
+        if (!in_array($mode, [
+            self::WOOCOMMERCE_SYNC_BIDIRECTIONAL,
+            self::WOOCOMMERCE_SYNC_WC_TO_SP,
+            self::WOOCOMMERCE_SYNC_SP_TO_WC,
+            self::WOOCOMMERCE_SYNC_ORDERS_ONLY,
+        ], true)) {
             $mode = self::WOOCOMMERCE_SYNC_BIDIRECTIONAL;
+        }
+
+        if ($mode === self::WOOCOMMERCE_SYNC_ORDERS_ONLY) {
+            return false;
         }
 
         return in_array($mode, [self::WOOCOMMERCE_SYNC_BIDIRECTIONAL, self::WOOCOMMERCE_SYNC_SP_TO_WC], true);
@@ -629,8 +640,17 @@ class Empresa extends Model
     public function woocommerceSyncAcceptsCatalogFromWoo(): bool
     {
         $mode = $this->woocommerce_sync_mode ?: self::WOOCOMMERCE_SYNC_BIDIRECTIONAL;
-        if (!in_array($mode, [self::WOOCOMMERCE_SYNC_BIDIRECTIONAL, self::WOOCOMMERCE_SYNC_WC_TO_SP, self::WOOCOMMERCE_SYNC_SP_TO_WC], true)) {
+        if (!in_array($mode, [
+            self::WOOCOMMERCE_SYNC_BIDIRECTIONAL,
+            self::WOOCOMMERCE_SYNC_WC_TO_SP,
+            self::WOOCOMMERCE_SYNC_SP_TO_WC,
+            self::WOOCOMMERCE_SYNC_ORDERS_ONLY,
+        ], true)) {
             $mode = self::WOOCOMMERCE_SYNC_BIDIRECTIONAL;
+        }
+
+        if ($mode === self::WOOCOMMERCE_SYNC_ORDERS_ONLY) {
+            return false;
         }
 
         return in_array($mode, [self::WOOCOMMERCE_SYNC_BIDIRECTIONAL, self::WOOCOMMERCE_SYNC_WC_TO_SP], true);

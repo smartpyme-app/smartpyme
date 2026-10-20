@@ -15,6 +15,27 @@ class WooCommerceTransformerTest extends TestCase
         $this->transformer = new WooCommerceTransformer();
     }
 
+    public function test_transformar_producto_desde_line_item_genera_codigo(): void
+    {
+        $data = $this->transformer->transformarProductoDesdeLineItem([
+            'name' => 'Camisa',
+            'sku' => 'CAM-01',
+            'price' => '12.50',
+            'product_id' => 99,
+            'quantity' => 2,
+        ], 1, 2, 3);
+
+        $this->assertSame('CAM-01', $data['codigo']);
+        $this->assertSame(99, $data['woocommerce_id']);
+        $this->assertSame('Camisa', $data['nombre']);
+    }
+
+    public function test_es_estado_pedido_anulado(): void
+    {
+        $this->assertTrue($this->transformer->esEstadoPedidoAnulado('cancelled'));
+        $this->assertFalse($this->transformer->esEstadoPedidoAnulado('processing'));
+    }
+
     public function test_mapear_forma_pago_efectivo_cod(): void
     {
         $formaPago = $this->transformer->mapearFormaPago([

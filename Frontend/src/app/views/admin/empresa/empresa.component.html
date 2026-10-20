@@ -1530,48 +1530,37 @@
     <tab heading="WooCommerce" [active]="activeTabSlug === 'woocommerce'" (selectTab)="onTabSelect($event)">
         <section class="bg-white rounded p-4 mb-4">
             <div class="row">
-                <div class="col-12">
+                <div class="col-12 col-md-4 col-lg-3 col-xl-2 mb-4 mb-md-0">
+                    <div class="nav flex-column nav-pills ecommerce-nav-pills gap-1" role="tablist" aria-orientation="vertical">
+                        <button type="button" class="nav-link text-start py-2 px-3"
+                            [ngClass]="{'active': tabWooCommerceActiva === 'credenciales'}"
+                            (click)="tabWooCommerceActiva = 'credenciales'" role="tab">
+                            <i class="fa fa-key me-2"></i>Credenciales
+                        </button>
+                        <button type="button" class="nav-link text-start py-2 px-3"
+                            [ngClass]="{'active': tabWooCommerceActiva === 'webhooks'}"
+                            (click)="tabWooCommerceActiva = 'webhooks'" role="tab">
+                            <i class="fa fa-bolt me-2"></i>Webhooks
+                        </button>
+                        <button type="button" class="nav-link text-start py-2 px-3"
+                            *ngIf="empresa.status_conexion_woocommerce === 'connected' || empresa.woocommerce_store_url"
+                            [ngClass]="{'active': tabWooCommerceActiva === 'configuracion'}"
+                            (click)="tabWooCommerceActiva = 'configuracion'" role="tab">
+                            <i class="fa fa-sliders-h me-2"></i>Configuración
+                        </button>
+                        <button type="button" class="nav-link text-start py-2 px-3"
+                            *ngIf="empresa.status_conexion_woocommerce === 'connected'"
+                            [ngClass]="{'active': tabWooCommerceActiva === 'productos'}"
+                            (click)="tabWooCommerceActiva = 'productos'; consultarEstadoExportacionWoo(false)" role="tab">
+                            <i class="fa fa-boxes me-2"></i>Productos
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-8 col-lg-9 col-xl-10">
                     <h5 class="mb-3">Integración WooCommerce</h5>
 
-                    <div class="row g-3">
-
-                        <div class="col-12">
-                            <label for="url_webhook_woocomerce" class="form-label">URL Webhook para WooCommerce:</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" [(ngModel)]="empresa.woocommerce_api_url"
-                                    name="url_webhook_woocomerce" placeholder="URL del Webhook para WooCommerce"
-                                    readonly>
-                                <button class="btn btn-secondary" type="button"
-                                    (click)="copyToClipboard(empresa.woocommerce_api_url)" tooltip="Copiar URL">
-                                    <i class="fa fa-copy"></i>
-                                </button>
-                            </div>
-                            <small class="text-muted d-block mt-2">
-                                Configure esta URL en WooCommerce (webhooks de <strong>pedido</strong>, p. ej. pedido
-                                creado) para registrar ventas en SmartPyme.
-                            </small>
-                        </div>
-
-                        <div class="col-12" *ngIf="empresa.woocommerce_product_webhook_url">
-                            <label class="form-label">URL Webhook de producto (Woo → SmartPyme):</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control"
-                                    [value]="empresa.woocommerce_product_webhook_url" readonly>
-                                <button class="btn btn-secondary" type="button"
-                                    (click)="copyToClipboard(empresa.woocommerce_product_webhook_url)"
-                                    tooltip="Copiar URL">
-                                    <i class="fa fa-copy"></i>
-                                </button>
-                            </div>
-                            <small class="text-muted d-block mt-2">
-                                En WooCommerce → Ajustes → Avanzado → Webhooks, cree <strong>Producto creado</strong> y
-                                <strong>Producto actualizado</strong>
-                                con esta URL (y opcional <strong>Producto eliminado</strong>) para sincronizar catálogo
-                                a SmartPyme cuando el modo lo permita.
-                            </small>
-                        </div>
-
-
+                    <div *ngIf="tabWooCommerceActiva === 'credenciales'" class="row g-3">
                         <div class="col-md-6">
                             <label for="woocommerce_store_url" class="form-label">URL de la Tienda:</label>
                             <input type="text" class="form-control" [(ngModel)]="empresa.woocommerce_store_url"
@@ -1612,24 +1601,6 @@
                             </small>
                         </div>
 
-                        <div class="col-12"
-                            *ngIf="empresa.status_conexion_woocommerce === 'connected' || empresa.woocommerce_store_url">
-                            <label for="woocommerce_sync_mode" class="form-label">Sincronización de catálogo e
-                                inventario</label>
-                            <select class="form-select" id="woocommerce_sync_mode" name="woocommerce_sync_mode"
-                                [(ngModel)]="empresa.woocommerce_sync_mode" (change)="onSubmit()">
-                                <option value="bidirectional">Bidireccional (ambos lados se pueden actualizar)</option>
-                                <option value="wc_to_sp">Solo de WooCommerce hacia SmartPyme (la tienda manda; no se
-                                    envía a WooCommerce)</option>
-                                <option value="sp_to_wc">Solo de SmartPyme hacia WooCommerce (SmartPyme manda; no se
-                                    importa CSV de la tienda)</option>
-                            </select>
-                            <small class="text-muted d-block mt-1">
-                                Los pedidos de la tienda en línea siempre se reciben en SmartPyme con el canal de
-                                arriba; esta opción solo define catálogo e inventario.
-                            </small>
-                        </div>
-
                         <div class="col-12">
                             @if (empresa.woocommerce_store_url && empresa.woocommerce_consumer_key && empresa.woocommerce_consumer_secret) {
                               <div class="alert mt-3"
@@ -1648,28 +1619,6 @@
                             }
 
                             <div class="text-end mt-3">
-                                <button tooltip="Enviar los productos de SmartPyme a WooCommerce"
-                                    (click)="exportarWooCommerce()" class="btn btn-light me-2"
-                                    *ngIf="empresa.status_conexion_woocommerce === 'connected' && woocommerceModoPuedeEnviarATienda()">
-                                    <img src="/assets/icons/upload-cloud.png" class="icon me-2">
-                                    Exportar productos
-                                </button>
-
-                                <button tooltip="Descargar productos para importar en WooCommerce"
-                                    (click)="descargarWooCommerce()" class="btn btn-light me-2"
-                                    *ngIf="empresa.status_conexion_woocommerce === 'connected' && woocommerceModoPuedeEnviarATienda()">
-                                    <img src="/assets/icons/woocommerce.png" class="icon me-2">
-                                    Descargar productos
-                                  </button>
-
-                                <button tooltip="Importar productos desde CSV de WooCommerce"
-                                    (click)="openImportarWooCommerceCsv(importarWooCommerceCsvModal)"
-                                    class="btn btn-light me-2"
-                                    *ngIf="empresa.status_conexion_woocommerce === 'connected' && woocommerceModoPuedeImportarDesdeWoo()">
-                                    <i class="fa fa-file-csv me-2"></i>
-                                    Importar desde CSV
-                                </button>
-
                                 @if (empresa.is_current_user_connected_to_woocommerce) {
                                   <button class="btn btn-light text-danger me-2"
                                           type="button"
@@ -1697,6 +1646,222 @@
                             }
                         </div>
                     </div>
+
+                    <div *ngIf="tabWooCommerceActiva === 'webhooks'" class="row g-3">
+                        <div class="col-12">
+                            <div class="card border">
+                                <button type="button"
+                                    class="btn btn-link text-start text-decoration-none text-body w-100 px-3 py-3 d-flex justify-content-between align-items-center"
+                                    (click)="mostrarGuiaWebhooksWooCommerce = !mostrarGuiaWebhooksWooCommerce"
+                                    [attr.aria-expanded]="mostrarGuiaWebhooksWooCommerce">
+                                    <span>
+                                        <i class="fa fa-bolt me-2"></i>
+                                        Configurar webhooks en WooCommerce
+                                    </span>
+                                    <i class="fa"
+                                        [ngClass]="mostrarGuiaWebhooksWooCommerce ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                                </button>
+                                <div class="card-body border-top" *ngIf="mostrarGuiaWebhooksWooCommerce">
+                                    <p class="text-muted small mb-3">
+                                        En WooCommerce → <strong>Ajustes → Avanzado → Webhooks</strong>, pulse
+                                        <strong>Añadir webhook</strong> por cada fila. Estado: Activo. Entrega: URL de abajo según el tipo.
+                                    </p>
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-1 mb-3">
+                                        <small class="text-muted mb-0">Nombres del menú <strong>Tema</strong> según el idioma del panel de WordPress.</small>
+                                        <div class="btn-group btn-group-sm" role="group" aria-label="Idioma de temas WooCommerce">
+                                            <button type="button" class="btn"
+                                                [ngClass]="webhooksWooCommerceEnEspanol ? 'btn-primary' : 'btn-outline-secondary'"
+                                                (click)="webhooksWooCommerceEnEspanol = true">Español</button>
+                                            <button type="button" class="btn"
+                                                [ngClass]="!webhooksWooCommerceEnEspanol ? 'btn-primary' : 'btn-outline-secondary'"
+                                                (click)="webhooksWooCommerceEnEspanol = false">Inglés</button>
+                                        </div>
+                                    </div>
+                                    <div class="row g-3 mb-4">
+                                        <div class="col-12 col-md-6">
+                                            <div class="fw-bold small mb-1">{{ webhooksWooCommerceEnEspanol ? 'Pedido' : 'Order' }}</div>
+                                            <p class="text-muted small mb-2">Ventas nuevas en la tienda (siempre hacia SmartPyme).</p>
+                                            <span class="badge bg-light text-primary border me-1"
+                                                tooltip="Obligatorio para registrar pedidos">{{ webhooksWooCommerceEnEspanol ? 'Pedido creado' : 'Order created' }}</span>
+                                            <span class="badge bg-light text-primary border me-1"
+                                                tooltip="Actualiza estado y cancelaciones">{{ webhooksWooCommerceEnEspanol ? 'Pedido actualizado' : 'Order updated' }}</span>
+                                            <span class="badge bg-light text-dark border">{{ webhooksWooCommerceEnEspanol ? 'Pedido eliminado' : 'Order deleted' }}</span>
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <div class="fw-bold small mb-1">{{ webhooksWooCommerceEnEspanol ? 'Producto' : 'Product' }}</div>
+                                            <p class="text-muted small mb-2">Catálogo Woo → SmartPyme (solo si el modo de sync lo permite).</p>
+                                            <span class="badge bg-light text-dark border me-1">{{ webhooksWooCommerceEnEspanol ? 'Producto creado' : 'Product created' }}</span>
+                                            <span class="badge bg-light text-dark border me-1">{{ webhooksWooCommerceEnEspanol ? 'Producto actualizado' : 'Product updated' }}</span>
+                                            <span class="badge bg-light text-dark border">{{ webhooksWooCommerceEnEspanol ? 'Producto eliminado' : 'Product deleted' }}</span>
+                                        </div>
+                                    </div>
+
+                                    <label for="url_webhook_woocomerce" class="form-label">URL — pedidos (Woo → SmartPyme)</label>
+                                    <div class="input-group mb-3">
+                                        <input type="text" class="form-control" [(ngModel)]="empresa.woocommerce_api_url"
+                                            name="url_webhook_woocomerce" placeholder="URL del Webhook para WooCommerce"
+                                            readonly>
+                                        <button class="btn btn-secondary" type="button"
+                                            (click)="copyToClipboard(empresa.woocommerce_api_url)" tooltip="Copiar URL">
+                                            <i class="fa fa-copy"></i>
+                                        </button>
+                                    </div>
+
+                                    <ng-container *ngIf="empresa.woocommerce_product_webhook_url">
+                                        <label class="form-label">URL — productos (Woo → SmartPyme)</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control"
+                                                [value]="empresa.woocommerce_product_webhook_url" readonly>
+                                            <button class="btn btn-secondary" type="button"
+                                                (click)="copyToClipboard(empresa.woocommerce_product_webhook_url)"
+                                                tooltip="Copiar URL">
+                                                <i class="fa fa-copy"></i>
+                                            </button>
+                                        </div>
+                                    </ng-container>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div *ngIf="tabWooCommerceActiva === 'configuracion'" class="row g-3">
+                        <div class="col-12">
+                            <div class="card border">
+                                <div class="card-header bg-light py-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-light-primary rounded-circle p-2 me-3 d-inline-flex justify-content-center align-items-center"
+                                            style="width: 40px; height: 40px; background-color: #e3f2fd;">
+                                            <i class="fa fa-sliders-h text-primary fs-5" style="color: #007bff;"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 fw-bold">Opciones de sincronización</h6>
+                                            <small class="text-muted">Catálogo e inventario entre SmartPyme y WooCommerce.</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body p-4">
+                                    <p class="text-muted small">
+                                        Los <strong>pedidos</strong> de la tienda siempre entran a SmartPyme (webhooks de pedido).
+                                        Estos interruptores solo controlan catálogo, CSV e inventario hacia/desde WooCommerce.
+                                    </p>
+                                    <div class="row g-4">
+                                        <div class="col-12 col-lg-6">
+                                            <div class="form-switch bg-light-info rounded mb-2">
+                                                <label for="woo_sync_import" class="form-check-label fw-bold">
+                                                    Recibir catálogo desde WooCommerce
+                                                </label>
+                                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                                    id="woo_sync_import"
+                                                    [ngModel]="wooSyncImportDesdeTienda"
+                                                    (ngModelChange)="onWooSyncImportToggle($event)"
+                                                    name="woo_sync_import">
+                                            </div>
+                                            <small class="text-muted d-block ps-2">
+                                                Webhooks de producto e importación CSV desde la tienda hacia SmartPyme.
+                                            </small>
+                                        </div>
+                                        <div class="col-12 col-lg-6">
+                                            <div class="form-switch bg-light-info rounded mb-2">
+                                                <label for="woo_sync_export" class="form-check-label fw-bold">
+                                                    Enviar catálogo a WooCommerce
+                                                </label>
+                                                <input class="form-check-input float-end" type="checkbox" role="switch"
+                                                    id="woo_sync_export"
+                                                    [ngModel]="wooSyncEnviarATienda"
+                                                    (ngModelChange)="onWooSyncExportToggle($event)"
+                                                    name="woo_sync_export">
+                                            </div>
+                                            <small class="text-muted d-block ps-2">
+                                                Exportación masiva, CSV de salida y sincronización de stock hacia la tienda.
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="woocommerce_sync_mode" [(ngModel)]="empresa.woocommerce_sync_mode">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div *ngIf="tabWooCommerceActiva === 'productos'" class="row g-3">
+                        <div class="col-12">
+                            <div class="card border border-primary border-opacity-25 shadow-sm mb-3">
+                                <div class="card-body p-3">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                                        <div>
+                                            <h6 class="fw-bold mb-1 text-primary">
+                                                <i class="fa fa-cloud-upload-alt text-primary me-2"></i>
+                                                Exportación a WooCommerce
+                                            </h6>
+                                            <small class="text-muted">
+                                                Progreso del envío masivo de productos (cola en segundo plano).
+                                            </small>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                            (click)="consultarEstadoExportacionWoo(false)">
+                                            <i class="fa fa-sync-alt me-1"></i> Actualizar estado
+                                        </button>
+                                    </div>
+                                    <div *ngIf="estadoExportacionWoo && estadoExportacionWoo.estado === 'procesando'" class="mt-3 p-3 bg-light rounded border">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="small fw-bold text-primary">
+                                                <i class="fa fa-spinner fa-spin me-1"></i>
+                                                Exportación en curso
+                                            </span>
+                                            <span class="small text-muted fw-bold">
+                                                Lote {{ estadoExportacionWoo.lotes_procesados || 0 }} de {{ estadoExportacionWoo.lotes_total || 0 }}
+                                                ({{ estadoExportacionWoo.progreso || 0 }}%)
+                                            </span>
+                                        </div>
+                                        <div class="progress mb-2" style="height: 8px;">
+                                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                                                [style.width.%]="estadoExportacionWoo.progreso || 0"></div>
+                                        </div>
+                                        <div class="d-flex gap-3 flex-wrap small text-muted">
+                                            <span><i class="fa fa-plus-circle text-primary me-1"></i> Creados: <strong>{{ estadoExportacionWoo.creados || 0 }}</strong></span>
+                                            <span><i class="fa fa-check-circle text-success me-1"></i> Actualizados: <strong>{{ estadoExportacionWoo.actualizados || 0 }}</strong></span>
+                                            <span *ngIf="(estadoExportacionWoo.errores || 0) > 0"><i class="fa fa-exclamation-triangle text-danger me-1"></i> Errores: <strong>{{ estadoExportacionWoo.errores }}</strong></span>
+                                        </div>
+                                    </div>
+                                    <div *ngIf="estadoExportacionWoo && estadoExportacionWoo.estado === 'completado' && !procesandoExportacionWoo" class="alert alert-success small mt-3 mb-0 py-2">
+                                        <i class="fa fa-check-circle me-1"></i>
+                                        Última exportación completada.
+                                        Creados: {{ estadoExportacionWoo.creados || 0 }},
+                                        actualizados: {{ estadoExportacionWoo.actualizados || 0 }}.
+                                    </div>
+                                    <div *ngIf="estadoExportacionWoo && estadoExportacionWoo.estado === 'error'" class="alert alert-danger small mt-3 mb-0 py-2">
+                                        <i class="fa fa-exclamation-circle me-1"></i>
+                                        {{ estadoExportacionWoo.mensaje || 'Error en la exportación.' }}
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-muted small mb-3">
+                                Exporte el catálogo de SmartPyme a WooCommerce, descargue un CSV para importación manual o suba un CSV exportado desde WooCommerce.
+                            </p>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button tooltip="Enviar los productos de SmartPyme a WooCommerce"
+                                    (click)="exportarWooCommerce(wooExportPreviewModal)" class="btn btn-light"
+                                    *ngIf="woocommerceModoPuedeEnviarATienda()">
+                                    <img src="/assets/icons/upload-cloud.png" class="icon me-2">
+                                    Exportar productos
+                                </button>
+
+                                <button tooltip="Descargar productos para importar en WooCommerce"
+                                    (click)="descargarWooCommerce()" class="btn btn-light"
+                                    *ngIf="woocommerceModoPuedeEnviarATienda()">
+                                    <img src="/assets/icons/woocommerce.png" class="icon me-2">
+                                    Descargar productos
+                                </button>
+
+                                <button tooltip="Importar productos desde CSV de WooCommerce"
+                                    (click)="openImportarWooCommerceCsv(importarWooCommerceCsvModal)"
+                                    class="btn btn-light"
+                                    *ngIf="woocommerceModoPuedeImportarDesdeWoo()">
+                                    <i class="fa fa-file-csv me-2"></i>
+                                    Importar desde CSV
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -1706,7 +1871,7 @@
             <div class="row">
                 <!-- SIDEBAR VERTICAL DE PESTAÑAS SHOPIFY -->
                 <div class="col-12 col-md-4 col-lg-3 col-xl-2 mb-4 mb-md-0">
-                    <div class="nav flex-column nav-pills shopify-nav-pills gap-1" role="tablist" aria-orientation="vertical">
+                    <div class="nav flex-column nav-pills ecommerce-nav-pills gap-1" role="tablist" aria-orientation="vertical">
                         <button type="button" class="nav-link text-start py-2 px-3"
                             [ngClass]="{'active': tabShopifyActiva === 'credenciales'}"
                             (click)="tabShopifyActiva = 'credenciales'; mostrarWebhooksShopify = false" role="tab">
@@ -2388,6 +2553,81 @@
                 <i class="fa fa-spinner fa-spin me-1"></i> Iniciando proceso...
               </span>
             }
+        </button>
+    </div>
+</ng-template>
+
+<ng-template #wooExportPreviewModal>
+    <div class="modal-header bg-light">
+        <h5 class="modal-title mb-0">
+            <i class="fa fa-cloud-upload-alt text-primary me-2"></i>
+            Revisar exportación a WooCommerce
+        </h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <p class="text-muted small">
+            Los productos con el <strong>mismo SKU</strong> se agrupan en un solo producto <strong>variable</strong> en WooCommerce.
+            La talla se toma del final del nombre en SmartPyme. El título en WooCommerce usa <strong>nombre comercial</strong> si existe.
+        </p>
+        <div class="row g-3 mb-3">
+            <div class="col-12 col-md-6">
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="woo_export_stock" id="woo_export_solo_stock"
+                        [checked]="wooExportSoloConStock" (change)="wooExportSoloConStock = true; onWooExportFiltroStockChange()">
+                    <label class="form-check-label" for="woo_export_solo_stock">Solo productos con stock en esta bodega</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="woo_export_stock" id="woo_export_todos"
+                        [checked]="!wooExportSoloConStock" (change)="wooExportSoloConStock = false; onWooExportFiltroStockChange()">
+                    <label class="form-check-label" for="woo_export_todos">Todos los productos de la bodega (incluye stock 0)</label>
+                </div>
+            </div>
+            <div class="col-12 col-md-6" *ngIf="wooExportPreviewTotales">
+                <div class="small text-muted">
+                    {{ wooExportPreviewTotales.productos_sp }} filas en SP ·
+                    {{ wooExportPreviewTotales.grupos }} grupos ·
+                    {{ wooExportPreviewTotales.variables }} variables ·
+                    {{ wooExportPreviewTotales.simples }} simples
+                </div>
+            </div>
+        </div>
+        <div *ngIf="wooExportPreviewLoading" class="text-center py-4 text-muted">
+            <i class="fa fa-spinner fa-spin me-2"></i> Cargando vista previa...
+        </div>
+        <div *ngIf="!wooExportPreviewLoading" class="border rounded" style="max-height: 420px; overflow-y: auto;">
+            <div *ngFor="let grupo of wooExportPreviewGrupos" class="border-bottom p-3">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                    <div>
+                        <span class="badge bg-primary me-2" *ngIf="grupo.tipo === 'variable'">Variable</span>
+                        <span class="badge bg-secondary me-2" *ngIf="grupo.tipo !== 'variable'">Simple</span>
+                        <strong>{{ grupo.nombre_padre }}</strong>
+                        <div class="small text-muted">SKU: {{ grupo.sku }}</div>
+                    </div>
+                </div>
+                <ul class="list-unstyled mb-0 mt-2 ms-1 small">
+                    <li *ngFor="let v of grupo.variantes" class="py-1 border-top">
+                        <span class="fw-semibold" *ngIf="v.talla">{{ v.talla }}</span>
+                        <span *ngIf="!v.talla">{{ v.nombre_sp }}</span>
+                        <span class="text-muted ms-2">Stock SP: {{ v.stock | number:'1.0-2' }}</span>
+                    </li>
+                </ul>
+            </div>
+            <div *ngIf="wooExportPreviewGrupos.length === 0" class="p-4 text-center text-muted">
+                No hay productos para exportar con el filtro seleccionado.
+            </div>
+        </div>
+        <div class="form-check mt-3">
+            <input class="form-check-input" type="checkbox" id="woo_export_omitir_preview"
+                [(ngModel)]="wooExportOmitirPreview">
+            <label class="form-check-label" for="woo_export_omitir_preview">No volver a mostrar esta revisión</label>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
+        <button type="button" class="btn btn-primary" [disabled]="wooExportPreviewLoading || wooExportPreviewGrupos.length === 0"
+            (click)="confirmarExportacionWooDesdeModal()">
+            <i class="fa fa-play me-1"></i> Iniciar exportación
         </button>
     </div>
 </ng-template>

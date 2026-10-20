@@ -11,6 +11,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class ProcessWooCommerceProductBatch implements ShouldQueue
@@ -105,6 +106,8 @@ class ProcessWooCommerceProductBatch implements ShouldQueue
                         ]
                     ]);
 
+                    $this->acumularEstadisticasExportacion($empresa->id, $result);
+
                     // Pausa para no sobrecargar WooCommerce
                     sleep(2);
                 } catch (\Exception $e) {
@@ -154,5 +157,34 @@ class ProcessWooCommerceProductBatch implements ShouldQueue
         }
 
         $empresa->save();
+
+        $cacheKey = 'woocommerce_export_' . $empresa->id;
+        $cache = Cache::get($cacheKey, []);
+        $estadoCache = $empresa->woocommerce_sync_status === 'completed' ? 'completado'
+            : ($empresa->woocommerce_sync_status === 'error' ? 'error' : 'procesando');
+        Cache::put($cacheKey, array_merge($cache, [
+            'estado' => $estadoCache,
+            'progreso' => (int) $empresa->woocommerce_sync_progress,
+            'lotes_total' => (int) $empresa->woocommerce_sync_total_batches,
+            'lotes_procesados' => (int) $empresa->woocommerce_sync_processed_batches,
+            'mensaje' => $estadoCache === 'completado'
+                ? 'Exportación completada.'
+                : 'Procesando lotes de productos...',
+        ]), 7200);
+    }
+
+    private function acumularEstadisticasExportacion(int $empresaId, array $result): void
+    {
+        $cacheKey = 'woocommerce_export_' . $empresaId;
+        $cache = Cache::get($cacheKey, [
+            'creados' => 0,
+            'actualizados' => 0,
+            'errores' => 0,
+        ]);
+        Cache::put($cacheKey, array_merge($cache, [
+            'creados' => ($cache['creados'] ?? 0) + (int) ($result['creados'] ?? 0),
+            'actualizados' => ($cache['actualizados'] ?? 0) + (int) ($result['actualizados'] ?? 0),
+            'errores' => ($cache['errores'] ?? 0) + (int) ($result['errores'] ?? 0),
+        ]), 7200);
     }
 }
