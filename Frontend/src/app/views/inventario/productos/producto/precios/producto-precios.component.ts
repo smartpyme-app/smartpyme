@@ -105,7 +105,7 @@ export class ProductoPreciosComponent extends BaseModalComponent implements OnIn
         const iva = this.getPorcentajeProducto();
         if (iva > 0) {
             this.precio.impuesto = iva / 100;
-            this.precio.precio = (this.precio.precio_final / (1 + (this.precio.impuesto * 1))).toFixed(4);
+            this.precio.precio = (this.precio.precio_final / (1 + (this.precio.impuesto * 1))).toFixed(6);
         }
     }
 

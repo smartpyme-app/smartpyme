@@ -578,7 +578,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
         const pct = this.getPorcentajeProducto();
         if (pct <= 0) return;
         this.producto.impuesto = pct / 100;
-        this.producto.precio = (this.producto.precio_final / (1 + (this.producto.impuesto * 1))).toFixed(4);
+        this.producto.precio = (this.producto.precio_final / (1 + (this.producto.impuesto * 1))).toFixed(6);
     }
 
     public calPrecioFinal(){
