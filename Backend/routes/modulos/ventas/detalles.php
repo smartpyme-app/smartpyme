@@ -7,5 +7,6 @@ use Illuminate\Support\Facades\Route;
     Route::get('/venta/detalle/{id}',       [DetallesController::class, 'read']);
     Route::post('/venta/detalle',           [DetallesController::class, 'store']);
     Route::patch('/venta/detalle/{id}/producto', [DetallesController::class, 'asignarProducto']);
+    Route::post('/venta/detalle/{id}/producto', [DetallesController::class, 'asignarProducto']);
     Route::delete('/venta/detalle/{id}',    [DetallesController::class, 'delete']);
     Route::post('/ventas/detalle',          [DetallesController::class, 'historial']);

@@ -36,6 +36,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\Contabilidad\PartidaExcelExport;
 use App\Exceptions\PartidaDetalleSinProductoException;
 use App\Services\Ventas\VincularProductoDetalleVentaService;
+use App\Services\Contabilidad\CuentaContableDesdePagoResolver;
 
 class PartidasController extends Controller
 {
@@ -662,7 +663,7 @@ class PartidasController extends Controller
                 $abonos_ventas = AbonoVenta::where('estado', 'Confirmado')
                             ->where('fecha', $request->fecha)
                             ->where('id_empresa', auth()->user()->id_empresa)
-                            ->select(['id', 'fecha', 'total', 'forma_pago', 'id_venta', 'id_sucursal'])
+                            ->select(['id', 'fecha', 'total', 'forma_pago', 'detalle_banco', 'id_venta', 'id_sucursal'])
                             ->with([
                                 'venta' => function($query) {
                                     $query->select(['id', 'correlativo', 'id_documento']);
@@ -866,46 +867,33 @@ class PartidasController extends Controller
             foreach ($ingresos as $ingreso) {
                 $refDoc = $this->referenciaDocumentoIngreso($ingreso);
 
-                // Usar forma de pago desde el cache
-                $formapago = $formasPago[$ingreso->forma_pago] ?? null;
-                
-                \Log::info('Verificando forma de pago', [
-                    'forma_pago_ingreso' => $ingreso->forma_pago,
-                    'formapago_encontrada' => $formapago ? true : false,
-                    'tiene_banco' => $formapago && $formapago->banco ? true : false,
-                    'id_cuenta_contable' => $formapago && $formapago->banco ? $formapago->banco->id_cuenta_contable : null,
-                    'venta' => $refDoc
-                ]);
+                if (($ingreso->tipo ?? '') === 'abono') {
+                    try {
+                        $cuenta = CuentaContableDesdePagoResolver::resolve($ingreso);
+                        $cuentas[$cuenta->id] = $cuenta;
+                    } catch (Exception $e) {
+                        return Response()->json([
+                            'titulo' => 'Cuenta bancaria del abono',
+                            'error' => $e->getMessage(),
+                            'code' => 400,
+                        ], 400);
+                    }
+                } else {
+                    $formapago = $formasPago[$ingreso->forma_pago] ?? null;
 
-                if(!$formapago){
-                    \Log::error('Forma de pago no encontrada', [
-                        'forma_pago_buscada' => $ingreso->forma_pago,
-                        'formas_pago_disponibles' => $formasPago->keys()->toArray()
-                    ]);
-                    return  Response()->json(['titulo' => 'La forma de pago ' . $ingreso->forma_pago . ' no fue encontrada.', 'error' => 'Venta: ' . ($ingreso->nombre_documento ?? 'N/A') . ' #' . ($ingreso->correlativo ?? 'N/A'), 'code' => 400], 400);
-                }
-                
-                if(!$formapago->banco){
-                    \Log::error('Forma de pago sin banco', [
-                        'forma_pago' => $formapago->nombre,
-                        'id_banco' => $formapago->id_banco
-                    ]);
-                    return  Response()->json(['titulo' => 'La forma de pago ' . $ingreso->forma_pago . ' no tiene banco asociado.', 'error' => 'Venta: ' . ($ingreso->nombre_documento ?? 'N/A') . ' #' . ($ingreso->correlativo ?? 'N/A'), 'code' => 400], 400);
-                }
-                
-                if(!$formapago->banco->id_cuenta_contable){
-                    \Log::error('Banco sin cuenta contable', [
-                        'forma_pago' => $formapago->nombre,
-                        'id_banco' => $formapago->banco->id
-                    ]);
-                    return  Response()->json(['titulo' => 'La forma de pago ' . $ingreso->forma_pago . ' no tiene cuenta contable.', 'error' => 'Venta: ' . ($ingreso->nombre_documento ?? 'N/A') . ' #' . ($ingreso->correlativo ?? 'N/A'), 'code' => 400], 400);
-                }
+                    if(!$formapago){
+                        return  Response()->json(['titulo' => 'La forma de pago ' . $ingreso->forma_pago . ' no fue encontrada.', 'error' => 'Venta: ' . ($ingreso->nombre_documento ?? 'N/A') . ' #' . ($ingreso->correlativo ?? 'N/A'), 'code' => 400], 400);
+                    }
 
-                // Usar cuenta desde el cache
-                $cuenta = $cuentas[$formapago->banco->id_cuenta_contable] ?? null;
-                
-                if (!$cuenta) {
-                    return Response()->json(['titulo' => 'La cuenta contable no existe.', 'error' => 'Forma de pago: ' . $ingreso->forma_pago, 'code' => 400], 400);
+                    if(!$formapago->banco || !$formapago->banco->id_cuenta_contable){
+                        return  Response()->json(['titulo' => 'La forma de pago ' . $ingreso->forma_pago . ' no tiene cuenta contable.', 'error' => 'Venta: ' . ($ingreso->nombre_documento ?? 'N/A') . ' #' . ($ingreso->correlativo ?? 'N/A'), 'code' => 400], 400);
+                    }
+
+                    $cuenta = $cuentas[$formapago->banco->id_cuenta_contable] ?? null;
+
+                    if (!$cuenta) {
+                        return Response()->json(['titulo' => 'La cuenta contable no existe.', 'error' => 'Forma de pago: ' . $ingreso->forma_pago, 'code' => 400], 400);
+                    }
                 }
 
                 $detalles[] = [
@@ -1305,19 +1293,12 @@ class PartidasController extends Controller
             if (Partida::existeParaDocumentoOrigen('Abono de Venta', $abono->id)) {
                 continue;
             }
-            $formapago = FormaDePago::with('banco')->where('nombre', $abono->forma_pago)->first();
-            if (! $formapago || ! $formapago->banco || ! $formapago->banco->id_cuenta_contable) {
+            try {
+                $cuenta_forma_pago = CuentaContableDesdePagoResolver::resolve($abono);
+            } catch (Exception $e) {
                 return Response()->json([
-                    'titulo' => 'Forma de pago sin cuenta contable',
-                    'error' => 'Configure la cuenta del banco para: '.$abono->forma_pago.' (abono venta #'.$abono->id.')',
-                    'code' => 400,
-                ], 400);
-            }
-            $cuenta_forma_pago = Cuenta::find($formapago->banco->id_cuenta_contable);
-            if (! $cuenta_forma_pago) {
-                return Response()->json([
-                    'titulo' => 'Cuenta contable no encontrada',
-                    'error' => 'Forma de pago: '.$abono->forma_pago,
+                    'titulo' => 'Cuenta bancaria del abono',
+                    'error' => $e->getMessage().' (abono venta #'.$abono->id.')',
                     'code' => 400,
                 ], 400);
             }
@@ -1403,13 +1384,25 @@ class PartidasController extends Controller
 
             foreach ($egresos as $egreso) {
 
-                $formapago = FormaDePago::with('banco')->where('nombre', $egreso->forma_pago)->first();
+                if (($egreso->tipo ?? '') === 'abono') {
+                    try {
+                        $cuenta = CuentaContableDesdePagoResolver::resolve($egreso);
+                    } catch (Exception $e) {
+                        return Response()->json([
+                            'titulo' => 'Cuenta bancaria del abono',
+                            'error' => $e->getMessage(),
+                            'code' => 400,
+                        ], 400);
+                    }
+                } else {
+                    $formapago = FormaDePago::with('banco')->where('nombre', $egreso->forma_pago)->first();
 
-                if(!$formapago || !$formapago->banco || !$formapago->banco->id_cuenta_contable){
-                    return  Response()->json(['titulo' => 'La forma de pago ' . $venta->forma_pago . ' no tiene cuenta contable.', 'error' => 'Venta: ' . $venta->nombre_documento . ' #' . $venta->correlativo, 'code' => 400], 400);
+                    if(!$formapago || !$formapago->banco || !$formapago->banco->id_cuenta_contable){
+                        return  Response()->json(['titulo' => 'La forma de pago ' . $egreso->forma_pago . ' no tiene cuenta contable.', 'error' => 'Documento: ' . ($egreso->tipo_documento ?? '') . ' #' . ($egreso->referencia ?? ''), 'code' => 400], 400);
+                    }
+
+                    $cuenta = Cuenta::where('id', $formapago->banco->id_cuenta_contable)->first();
                 }
-
-                $cuenta = Cuenta::where('id', $formapago->banco->id_cuenta_contable)->first();
 
                 $detalles[] = [
                     'id_cuenta'         => $cuenta->id,
@@ -1685,19 +1678,12 @@ class PartidasController extends Controller
             if (Partida::existeParaDocumentoOrigen('Abono de Compra', $abono->id)) {
                 continue;
             }
-            $formapago = FormaDePago::with('banco')->where('nombre', $abono->forma_pago)->first();
-            if (! $formapago || ! $formapago->banco || ! $formapago->banco->id_cuenta_contable) {
+            try {
+                $cuenta_forma_pago = CuentaContableDesdePagoResolver::resolve($abono);
+            } catch (Exception $e) {
                 return Response()->json([
-                    'titulo' => 'Forma de pago sin cuenta contable',
-                    'error' => 'Configure la cuenta del banco para: '.$abono->forma_pago.' (abono compra #'.$abono->id.')',
-                    'code' => 400,
-                ], 400);
-            }
-            $cuenta_forma_pago = Cuenta::find($formapago->banco->id_cuenta_contable);
-            if (! $cuenta_forma_pago) {
-                return Response()->json([
-                    'titulo' => 'Cuenta contable no encontrada',
-                    'error' => 'Forma de pago: '.$abono->forma_pago,
+                    'titulo' => 'Cuenta bancaria del abono',
+                    'error' => $e->getMessage().' (abono compra #'.$abono->id.')',
                     'code' => 400,
                 ], 400);
             }

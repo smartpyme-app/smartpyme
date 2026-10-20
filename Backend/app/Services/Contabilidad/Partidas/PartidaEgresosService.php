@@ -9,6 +9,7 @@ use App\Models\Compras\Compra;
 use App\Models\Compras\Detalle as DetalleCompra;
 use App\Models\Compras\Abono as AbonoCompra;
 use App\Models\Admin\FormaDePago;
+use App\Services\Contabilidad\CuentaContableDesdePagoResolver;
 use App\Services\Contabilidad\Partidas\PartidaService;
 use Illuminate\Support\Facades\Log;
 
@@ -66,13 +67,17 @@ class PartidaEgresosService
         $cuenta_cxp = Cuenta::where('id', $configuracion->id_cuenta_cxp)->firstOrFail();
 
         foreach ($egresos as $egreso) {
-            $formapago = FormaDePago::with('banco')->where('nombre', $egreso->forma_pago)->first();
+            if (($egreso->tipo ?? '') === 'abono') {
+                $cuenta = CuentaContableDesdePagoResolver::resolve($egreso);
+            } else {
+                $formapago = FormaDePago::with('banco')->where('nombre', $egreso->forma_pago)->first();
 
-            if(!$formapago || !$formapago->banco || !$formapago->banco->id_cuenta_contable){
-                throw new \Exception('La forma de pago ' . $egreso->forma_pago . ' no tiene cuenta contable.');
+                if(!$formapago || !$formapago->banco || !$formapago->banco->id_cuenta_contable){
+                    throw new \Exception('La forma de pago ' . $egreso->forma_pago . ' no tiene cuenta contable.');
+                }
+
+                $cuenta = Cuenta::where('id', $formapago->banco->id_cuenta_contable)->first();
             }
-
-            $cuenta = Cuenta::where('id', $formapago->banco->id_cuenta_contable)->first();
 
             $detalles[] = [
                 'id_cuenta'         => $cuenta->id,

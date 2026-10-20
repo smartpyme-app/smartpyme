@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Ventas\Detalles;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class AsignarProductoDetalleRequest extends FormRequest
 {
@@ -13,8 +14,19 @@ class AsignarProductoDetalleRequest extends FormRequest
 
     public function rules(): array
     {
+        $empresaId = auth()->user()?->id_empresa;
+
         return [
-            'id_producto' => ['required', 'integer', 'exists:productos,id'],
+            'id_producto' => [
+                'required',
+                'integer',
+                Rule::exists('productos', 'id')->where(function ($query) use ($empresaId) {
+                    $query->where('tipo', 'Servicio');
+                    if ($empresaId !== null) {
+                        $query->where('id_empresa', $empresaId);
+                    }
+                }),
+            ],
         ];
     }
 

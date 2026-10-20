@@ -95,7 +95,11 @@ class DetallesController extends Controller
         $detalle->id_producto = $producto->id;
         $detalle->save();
 
-        return Response()->json($detalle->load('producto'), 200);
+        // ponytail: respuesta mínima; serializar Detalle/Producto dispara appends (img, lotes, etc.) y puede agotar el timeout del gateway
+        return Response()->json([
+            'id' => (int) $detalle->id,
+            'id_producto' => (int) $detalle->id_producto,
+        ], 200);
     }
 
     public function delete($id)

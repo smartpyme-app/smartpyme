@@ -10,6 +10,7 @@ use App\Models\Inventario\Categorias\Cuenta as CuentaCategoria;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Abono as AbonoVenta;
 use App\Models\Admin\FormaDePago;
+use App\Services\Contabilidad\CuentaContableDesdePagoResolver;
 use App\Services\Contabilidad\Partidas\PartidaService;
 use App\Services\Contabilidad\Partidas\ReglaMontoIngresoVentaDetalle;
 use Illuminate\Support\Facades\DB;
@@ -90,7 +91,7 @@ class PartidaIngresosService
             if (ReglaAbonosCartera::incluirEnIngresosEgresos($configuracion)) {
                 $abonos_ventas = AbonoVenta::where('estado', 'Confirmado')
                             ->where('fecha', $fecha)
-                            ->select(['id', 'fecha', 'total', 'forma_pago', 'id_venta', 'id_sucursal'])
+                            ->select(['id', 'fecha', 'total', 'forma_pago', 'detalle_banco', 'id_venta', 'id_sucursal'])
                             ->with([
                                 'venta' => function($query) {
                                     $query->select(['id', 'correlativo', 'id_documento']);
@@ -288,24 +289,27 @@ class PartidaIngresosService
                     ]);
                 }
 
-                // Obtener forma de pago del cache
-                $formapago = $formasPago->get($ingreso->forma_pago);
+                if (($ingreso->tipo ?? '') === 'abono') {
+                    $cuenta = CuentaContableDesdePagoResolver::resolve($ingreso);
+                    $cuentasContables->put($cuenta->id, $cuenta);
+                } else {
+                    $formapago = $formasPago->get($ingreso->forma_pago);
 
-                if(!$formapago || !$formapago->banco || !$formapago->banco->id_cuenta_contable){
-                    throw new \Exception('La forma de pago ' . $ingreso->forma_pago . ' no tiene cuenta contable. Venta: ' . $ingreso->nombre_documento . ' #' . $ingreso->correlativo);
-                }
-
-                // Obtener cuenta del cache
-                $cuenta = $cuentasContables->get($formapago->banco->id_cuenta_contable);
-                if (!$cuenta) {
-                    $cuenta = Cuenta::find($formapago->banco->id_cuenta_contable);
-                    if ($cuenta) {
-                        $cuentasContables->put($cuenta->id, $cuenta);
+                    if(!$formapago || !$formapago->banco || !$formapago->banco->id_cuenta_contable){
+                        throw new \Exception('La forma de pago ' . $ingreso->forma_pago . ' no tiene cuenta contable. Venta: ' . $ingreso->nombre_documento . ' #' . $ingreso->correlativo);
                     }
-                }
 
-                if (!$cuenta) {
-                    throw new \Exception('La cuenta contable no existe. Forma de pago: ' . $ingreso->forma_pago);
+                    $cuenta = $cuentasContables->get($formapago->banco->id_cuenta_contable);
+                    if (!$cuenta) {
+                        $cuenta = Cuenta::find($formapago->banco->id_cuenta_contable);
+                        if ($cuenta) {
+                            $cuentasContables->put($cuenta->id, $cuenta);
+                        }
+                    }
+
+                    if (!$cuenta) {
+                        throw new \Exception('La cuenta contable no existe. Forma de pago: ' . $ingreso->forma_pago);
+                    }
                 }
 
                 $detalles[] = [
