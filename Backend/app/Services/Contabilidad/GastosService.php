@@ -2,7 +2,6 @@
 
 namespace App\Services\Contabilidad;
 
-use App\Models\Admin\FormaDePago;
 use App\Models\Contabilidad\Configuracion;
 use App\Models\Contabilidad\Partidas\Partida;
 use App\Models\Contabilidad\Partidas\Detalle;
@@ -114,7 +113,7 @@ class GastosService
             throw new Exception('El gasto no tiene forma de pago asignada', 400);
         }
 
-        $cuenta_haber = $this->cuentaFormaPago($gastoCompleto->forma_pago);
+        $cuenta_haber = $this->cuentaFormaPago($gastoCompleto);
 
         $this->validarGastoParaPartida($gastoCompleto);
 
@@ -149,7 +148,7 @@ class GastosService
             throw new Exception('No se encontró la cuenta contable de cuentas por pagar', 400);
         }
 
-        $cuenta_forma_pago = $this->cuentaFormaPago($abono->forma_pago);
+        $cuenta_forma_pago = $this->cuentaFormaPago($abono);
         $refTxt = ($gasto->tipo_documento ?? 'Documento') . ' #' . ($gasto->referencia ?? $gasto->id);
         $concepto = 'Abono a cuenta por pagar gasto ' . $refTxt;
 
@@ -249,24 +248,9 @@ class GastosService
         return 'Gasto de ' . ($categoria->nombre ?? 'sin categoría') . '. ' . $ref;
     }
 
-    private function cuentaFormaPago(string $formaPago): Cuenta
+    private function cuentaFormaPago(object $registro): Cuenta
     {
-        $formapago = FormaDePago::with('banco')->where('nombre', $formaPago)->first();
-
-        if (!$formapago) {
-            throw new Exception('No se encontró la forma de pago: ' . $formaPago, 400);
-        }
-
-        if (!$formapago->banco || !$formapago->banco->id_cuenta_contable) {
-            throw new Exception('La forma de pago no tiene un banco o cuenta contable configurada', 400);
-        }
-
-        $cuenta = Cuenta::find($formapago->banco->id_cuenta_contable);
-        if (!$cuenta) {
-            throw new Exception('No se encontró la cuenta contable del banco asociado a la forma de pago', 400);
-        }
-
-        return $cuenta;
+        return CuentaContableDesdePagoResolver::resolve($registro);
     }
 
     /**

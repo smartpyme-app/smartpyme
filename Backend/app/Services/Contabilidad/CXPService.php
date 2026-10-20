@@ -2,8 +2,8 @@
 
 namespace App\Services\Contabilidad;
 
-use App\Models\Admin\FormaDePago;
 use App\Models\Compras\Compra;
+use App\Services\Contabilidad\CuentaContableDesdePagoResolver;
 use App\Models\Contabilidad\Configuracion;
 use App\Models\Contabilidad\Partidas\Partida;
 use App\Models\Contabilidad\Partidas\Detalle;
@@ -87,20 +87,8 @@ class CXPService
                 'id_partida'        => $partida->id
             ]);
 
-            // Haber - Forma de pago
-            $formapago = FormaDePago::with('banco')->where('nombre', $cxp->forma_pago)->first();
-            if (!$formapago) {
-                throw new Exception('No se encontró la forma de pago: ' . $cxp->forma_pago, 400);
-            }
-
-            if (!$formapago->banco || !$formapago->banco->id_cuenta_contable) {
-                throw new Exception('La forma de pago no tiene un banco o cuenta contable configurada', 400);
-            }
-
-            $cuenta_forma_pago = Cuenta::find($formapago->banco->id_cuenta_contable);
-            if (!$cuenta_forma_pago) {
-                throw new Exception('No se encontró la cuenta contable del banco asociado a la forma de pago', 400);
-            }
+            // Haber — banco elegido en el abono (detalle_banco) o banco por defecto de la forma de pago
+            $cuenta_forma_pago = CuentaContableDesdePagoResolver::resolve($cxp);
 
             Detalle::create([
                 'id_cuenta'         => $cuenta_forma_pago->id,

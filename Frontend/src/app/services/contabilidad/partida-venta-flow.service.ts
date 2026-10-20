@@ -41,7 +41,7 @@ export class PartidaVentaFlowService {
         if (!idProducto) {
           return EMPTY;
         }
-        return this.apiService.patch('venta/detalle', `${body.detalle.id}/producto`, {
+        return this.apiService.store(`venta/detalle/${body.detalle.id}/producto`, {
           id_producto: idProducto,
         });
       }),
