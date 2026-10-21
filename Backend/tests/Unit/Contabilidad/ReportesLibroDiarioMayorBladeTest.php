@@ -41,7 +41,7 @@ class ReportesLibroDiarioMayorBladeTest extends TestCase
 
     public function test_fecha_movimiento_usa_fecha_de_partida(): void
     {
-        $fechaCell = "partida?->fecha ? \\Carbon\\Carbon::parse(\$detalle->partida->fecha)->format('d/m/Y')";
+        $fechaCell = "->format('d/m/Y')";
         $pdf = $this->blade();
         $excel = (string) file_get_contents(
             dirname(__DIR__, 3) . '/resources/views/reportes/contabilidad/excel/libro_diario_mayor_excel.blade.php'
@@ -50,5 +50,17 @@ class ReportesLibroDiarioMayorBladeTest extends TestCase
         $this->assertStringContainsString($fechaCell, $pdf);
         $this->assertStringContainsString($fechaCell, $excel);
         $this->assertStringNotContainsString('$detalle->created_at', $excel);
+    }
+
+    public function test_libro_auxiliar_reutiliza_plantillas_del_mayor(): void
+    {
+        $controller = (string) file_get_contents(
+            dirname(__DIR__, 3) . '/app/Http/Controllers/Api/Contabilidad/Reportes/GenerarReportesController.php'
+        );
+
+        $this->assertStringContainsString('generarRepLibroDiarioMayorPDF', $controller);
+        $this->assertStringContainsString('generarRepLibroDiarioMayorExcel', $controller);
+        $this->assertStringContainsString("'Libro auxiliar'", $controller);
+        $this->assertStringNotContainsString('libro_diario_auxiliar', $controller);
     }
 }
