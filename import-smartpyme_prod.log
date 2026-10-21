@@ -1,0 +1,6 @@
+=== Import v2 started 2026-10-21T12:52:55-06:00 (MySQL9 fix: mesa_sesion_activa_id VIRTUAL) ===
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+=== Import finished 2026-10-21T13:01:35-06:00 exit=0 ===
+mysql: [Warning] Using a password on the command line interface can be insecure.
+272
