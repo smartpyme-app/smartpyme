@@ -111,6 +111,7 @@ class StoreUsuarioRequest extends FormRequest
             'file.image' => 'El archivo debe ser una imagen.',
             'file.mimes' => 'La imagen debe ser de tipo: jpeg, png, jpg, gif o svg.',
             'file.max' => 'La imagen no puede exceder 5MB.',
+            'file.uploaded' => 'No se pudo subir la imagen. Use JPG o PNG de hasta 5 MB.',
         ];
     }
 
@@ -129,6 +130,7 @@ class StoreUsuarioRequest extends FormRequest
             'telefono' => 'teléfono',
             'password' => 'contraseña',
             'rol_id' => 'rol',
+            'file' => 'foto de perfil',
         ];
     }
 

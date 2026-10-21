@@ -34,6 +34,7 @@ interface UsuarioSavePayload {
 @Component({
     selector: 'app-usuario',
     templateUrl: './usuario.component.html',
+    styleUrls: ['./usuario.component.css'],
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, FilterPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -132,9 +133,10 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
   public selectedCountry = this.countries[0];
 
   // Img Upload
-  public file?: File;
   public preview = false;
   public url_img_preview: string = '';
+  public file: File | null = null;
+  private static readonly AVATAR_MAX_BYTES = 5 * 1024 * 1024;
 
   public editandoEmail: boolean = false;
   public editandoPassword: boolean = false;
@@ -324,19 +326,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
       return;
     }
 
-    let body: FormData | UsuarioSavePayload = payload;
-    if (this.file) {
-      const formData = new FormData();
-      for (const [key, value] of Object.entries(payload)) {
-        if (value !== null && value !== undefined) {
-          formData.append(key, String(value));
-        }
-      }
-      formData.append('file', this.file);
-      body = formData;
-    }
-
-    this.apiService.store('usuario', body)
+    this.apiService.store('usuario', payload)
       .pipe(this.untilDestroyed())
       .subscribe(
       (usuario) => {
@@ -356,11 +346,15 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
         }
 
         this.loading = false;
-        this.preview = false;
         this.alertService.success(
           'Usuario guardado',
           'El usuario fue guardado exitosamente.'
         );
+        if (this.file) {
+          this.subirAvatarPendiente();
+        } else {
+          this.preview = false;
+        }
         this.cdr.markForCheck();
       },
       (error) => {
@@ -377,18 +371,29 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
     );
   }
 
-  setFile(event: any) {
-    this.file = event.target.files[0];
-    this.usuario.file = this.file;
-    var reader = new FileReader();
+  setFile(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const picked = input.files?.[0];
+    if (!picked) {
+      return;
+    }
+    if (picked.size > UsuarioComponent.AVATAR_MAX_BYTES) {
+      this.alertService.error('La imagen no puede superar 5 MB.');
+      input.value = '';
+      return;
+    }
+    this.file = picked;
+    const reader = new FileReader();
     reader.onload = () => {
-      var url: any;
-      url = reader.result;
-      this.url_img_preview = url;
+      this.url_img_preview = String(reader.result ?? '');
       this.preview = true;
       this.cdr.markForCheck();
     };
-    reader.readAsDataURL(this.file!);
+    reader.readAsDataURL(picked);
+
+    if (this.usuario?.id) {
+      this.subirAvatarPendiente();
+    }
   }
 
   mostrarPassword(campo: string): boolean {
@@ -703,21 +708,36 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
-  sendFile(file: File) {
-    let formData: FormData = new FormData();
-    formData.append('file', file);
-    formData.append('id', this.usuario.id);
+  private subirAvatarPendiente(): void {
+    if (!this.file || !this.usuario?.id) {
+      return;
+    }
+    const formData = new FormData();
+    formData.append('file', this.file);
+    formData.append('id', String(this.usuario.id));
     this.apiService.store('usuario/avatar', formData)
       .pipe(this.untilDestroyed())
-      .subscribe(
-      (response: any) => {
-        this.cdr.markForCheck();
-      },
-      (error) => {
-        console.error('Error completo:', error);
-        this.cdr.markForCheck();
-      }
-    );
+      .subscribe({
+        next: (response: any) => {
+          if (response?.avatar) {
+            this.usuario.avatar = response.avatar;
+          }
+          const auth = this.apiService.auth_user();
+          if (auth?.id === this.usuario.id && response?.avatar) {
+            auth.avatar = response.avatar;
+            localStorage.setItem('SP_auth_user', JSON.stringify(auth));
+          }
+          this.file = null;
+          this.preview = false;
+          this.url_img_preview = '';
+          this.alertService.success('Foto actualizada', 'La foto de perfil se guardó correctamente.');
+          this.cdr.markForCheck();
+        },
+        error: (error) => {
+          this.alertService.error(error);
+          this.cdr.markForCheck();
+        },
+      });
   }
 
 

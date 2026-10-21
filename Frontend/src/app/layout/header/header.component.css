@@ -38,3 +38,15 @@
     left: 0;
   }
 }
+
+.app-header-user-thumb {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.app-header-user-thumb--lg {
+  width: 40px;
+  height: 40px;
+}

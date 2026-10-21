@@ -80,6 +80,8 @@ return [
     'timezone'             => 'El :attribute debe ser una zona válida.',
     'unique'               => ':attribute ya ha sido registrado.',
     'url'                  => 'El formato :attribute es inválido.',
+    'file'                 => ':attribute debe ser un archivo.',
+    'uploaded'             => 'No se pudo subir :attribute. Revise el tamaño (máx. 5 MB) y el formato (JPG o PNG).',
 
     /*
     |--------------------------------------------------------------------------

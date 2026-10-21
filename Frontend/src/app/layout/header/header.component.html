@@ -29,11 +29,11 @@
             <li class="icons nav-item dropdown ps-3">
 
                 <a class="nav-link dropdown-toggle user-img c-pointer-x px-0" href="#" id="headerProfileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <img [appLazyImage]="apiService.baseUrl + '/img/' + usuario.avatar" height="30" width="30" class="img-circle">
+                    <img [appLazyImage]="imagenHeaderUsuario" class="app-header-user-thumb" alt="">
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end app-header-profile-menu" aria-labelledby="headerProfileDropdown">
                     <li class="dropdown-item click user-header text-center" (click)="irAPerfil()">
-                        <img [appLazyImage]="apiService.baseUrl + '/img/' + usuario.avatar" class="img-circle" alt="User Image" width="40px">
+                        <img [appLazyImage]="imagenHeaderUsuario" class="app-header-user-thumb app-header-user-thumb--lg" alt="">
                         <p>
                           {{ usuario.name }} <br>
                           <small>{{rol ?? '' }}</small><br>

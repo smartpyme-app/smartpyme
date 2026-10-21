@@ -1,0 +1,66 @@
+.usuario-avatar-edit {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  cursor: pointer;
+  border: 2px dashed #adb5bd;
+  transition: border-color 0.15s ease;
+}
+
+/* template.min.css atenúa .file-upload al hover; aquí usamos overlay propio */
+.usuario-avatar-edit.file-upload:hover {
+  opacity: 1;
+}
+
+.usuario-avatar-edit:hover,
+.usuario-avatar-edit:focus-within {
+  border-color: var(--bs-primary, #0d6efd);
+}
+
+.usuario-avatar-edit__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.usuario-avatar-edit__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #fff;
+  background: rgb(0 0 0 / 0.5);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.usuario-avatar-edit:hover .usuario-avatar-edit__overlay,
+.usuario-avatar-edit:focus-within .usuario-avatar-edit__overlay {
+  opacity: 1;
+}
+
+.usuario-avatar-edit__hint {
+  max-width: 120px;
+}
+
+.usuario-editable-hint {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--bs-primary, #0d6efd);
+  text-decoration: none;
+}
+
+.usuario-editable-hint:hover {
+  text-decoration: underline;
+}

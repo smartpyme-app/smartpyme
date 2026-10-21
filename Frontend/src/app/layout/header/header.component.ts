@@ -77,6 +77,16 @@ export class HeaderComponent implements OnInit {
         this.rol = this.permissionService.getDisplayRoleName();
     }
 
+    /** Logo de la empresa activa; si no hay, avatar del usuario (SP-2221). */
+    get imagenHeaderUsuario(): string {
+        const base = `${this.apiService.baseUrl}/img/`;
+        const logo = (this.usuario?.empresa?.logo ?? this.contadoresPortal.leerContextoEmpresa()?.logo)?.trim();
+        if (logo && !logo.includes('default.jpg')) {
+            return base + logo.replace(/^\//, '');
+        }
+        return base + (this.usuario?.avatar ?? '');
+    }
+
     irAPerfil() {
         const encryptedId = this.encryptService.encrypt(this.usuario.id);
         this.router.navigate(['/usuario', encryptedId]);
