@@ -41,6 +41,10 @@ testem.log
 .DS_Store
 Thumbs.db
 
+# Sentry (tokens locales de upload de source maps)
+.env.sentry-build-plugin
+.sentryclirc
+
 # Cypress
 cypress/videos
 cypress/screenshots

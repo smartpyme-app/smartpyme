@@ -27,6 +27,13 @@ export const environment = {
     wssPort: 443,
     forceTLS: false,
   },
+  sentry: {
+    enabled: false,
+    dsn: '',
+    environment: 'development',
+    release: '',
+    tracesSampleRate: 0,
+  },
 };
 
 /*
