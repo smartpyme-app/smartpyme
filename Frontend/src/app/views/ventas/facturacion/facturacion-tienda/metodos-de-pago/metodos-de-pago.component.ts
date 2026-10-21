@@ -9,6 +9,7 @@ import { AlertService } from '@services/alert.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { aplicarResumenPagoMultiple, resumenPagoMultiple } from '@utils/cambio-efectivo.util';
+import { esFormaPagoGiftCard } from '@utils/gift-card.util';
 import { totalAPagarConSeguroFlete } from '@utils/impuestos-venta.util';
 
 @Component({
@@ -22,7 +23,12 @@ export class MetodosDePagoComponent extends BaseModalComponent implements OnInit
 
     @Input() venta: any = {};
     @Input() formaPagos: any = [];
+    @Input() giftCardsActivo = false;
+    @Input() giftCardInfo: any = null;
+    @Input() giftCardLookupError = '';
+    @Input() giftCardLookupLoading = false;
     @Output() update = new EventEmitter();
+    @Output() consultarCodigo = new EventEmitter<void>();
     public pendiente = 0;
     public vuelto = 0;
     public puedeAplicar = false;
@@ -42,6 +48,15 @@ export class MetodosDePagoComponent extends BaseModalComponent implements OnInit
     public override openModal(template: TemplateRef<any>) {
         this.sumTotal();
         super.openModal(template, { class: 'modal-md', backdrop: 'static' });
+    }
+
+    public muestraCodigoGiftCard(): boolean {
+        return this.giftCardsActivo && Array.isArray(this.formaPagos)
+            && this.formaPagos.some((fp: any) => esFormaPagoGiftCard(fp?.nombre));
+    }
+
+    public consultarCodigoGiftCard(): void {
+        this.consultarCodigo.emit();
     }
 
     public totalAPagar(): number {

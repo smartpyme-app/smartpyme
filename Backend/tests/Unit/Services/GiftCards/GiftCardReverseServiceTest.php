@@ -92,6 +92,25 @@ class GiftCardReverseServiceTest extends TestCase
         $this->assertNotNull($savedRedencion->reversed_at);
     }
 
+    public function test_revertir_reactiva_tarjeta_inactiva(): void
+    {
+        $card = $this->makeCard(['estado' => GiftCard::ESTADO_INACTIVA]);
+        $savedCard = null;
+        $svc = $this->makeService([
+            'obtenerRedencionesPendientes' => fn () => collect([$this->makeRedencion()]),
+            'obtenerGiftCard' => fn () => $card,
+            'persistirGiftCard' => function (object $c) use (&$savedCard) {
+                $savedCard = $c;
+
+                return $c;
+            },
+        ]);
+
+        $svc->revertirPorAnulacion((object) ['id' => 50, 'id_empresa' => 1, 'fecha' => '2026-07-20']);
+
+        $this->assertSame(GiftCard::ESTADO_ACTIVA, $savedCard->estado);
+    }
+
     public function test_revertir_idempotente_no_duplica_saldo(): void
     {
         $card = $this->makeCard(['saldo' => 40.0, 'estado' => GiftCard::ESTADO_ACTIVA]);

@@ -114,7 +114,10 @@
           <select id="pos_forma_pago" class="form-select" (change)="cambioMetodoDePago()" [(ngModel)]="venta.forma_pago" name="pos_forma_pago">
             <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
           </select>
-          <app-metodos-de-pago [venta]="venta" [formaPagos]="formaPagos" (update)="totalPorMetodoDePago()"></app-metodos-de-pago>
+          <app-metodos-de-pago [venta]="venta" [formaPagos]="formaPagos" [giftCardsActivo]="giftCardsActivo"
+            [giftCardInfo]="giftCardInfo" [giftCardLookupError]="giftCardLookupError"
+            [giftCardLookupLoading]="giftCardLookupLoading" (consultarCodigo)="consultarGiftCard()"
+            (update)="totalPorMetodoDePago()"></app-metodos-de-pago>
         </div>
       </div>
 

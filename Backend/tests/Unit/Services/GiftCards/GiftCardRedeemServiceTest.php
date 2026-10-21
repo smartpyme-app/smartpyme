@@ -82,6 +82,30 @@ class GiftCardRedeemServiceTest extends TestCase
         $svc->redeem($this->makeVenta(), 'GC0000000001', 15.0, 5);
     }
 
+    public function test_saldo_cero_deja_inactiva(): void
+    {
+        $card = $this->makeCard(0.0);
+        $saved = null;
+        $svc = $this->makeService([
+            'buscarGiftCard' => fn () => $card,
+            'persistirGiftCard' => function (object $c) use (&$saved) {
+                $saved = $c;
+
+                return $c;
+            },
+        ]);
+
+        try {
+            $svc->redeem($this->makeVenta(), 'GC0000000001', 5.0, 5);
+            $this->fail('Debió rechazar la redención');
+        } catch (DomainException $e) {
+            $this->assertSame('Saldo insuficiente', $e->getMessage());
+        }
+
+        $this->assertSame(GiftCard::ESTADO_INACTIVA, $saved->estado);
+        $this->assertSame(0.0, (float) $saved->saldo);
+    }
+
     public function test_parcial_deja_activa(): void
     {
         $card = $this->makeCard(100.0);
@@ -103,7 +127,7 @@ class GiftCardRedeemServiceTest extends TestCase
         $this->assertSame(60.0, (float) $redencion->saldo_resultante);
     }
 
-    public function test_exacto_deja_agotada(): void
+    public function test_exacto_deja_inactiva(): void
     {
         $card = $this->makeCard(50.0);
         $saved = null;
@@ -120,7 +144,7 @@ class GiftCardRedeemServiceTest extends TestCase
         $redencion = $svc->redeem($this->makeVenta(), 'GC0000000001', 50.0, 5);
 
         $this->assertSame(0.0, (float) $saved->saldo);
-        $this->assertSame(GiftCard::ESTADO_AGOTADA, $saved->estado);
+        $this->assertSame(GiftCard::ESTADO_INACTIVA, $saved->estado);
         $this->assertSame(0.0, (float) $redencion->saldo_resultante);
     }
 

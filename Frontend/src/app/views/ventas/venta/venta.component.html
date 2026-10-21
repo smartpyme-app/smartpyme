@@ -183,6 +183,14 @@
                 <label class="fw-medium">Forma de pago</label>
                 <p>{{ venta.forma_pago }}</p>
             </div>
+            @if (venta.gift_cards_emitidas?.length) {
+                <div class="form-group col-lg-4">
+                    <label class="fw-medium">Tarjeta de regalo</label>
+                    @for (card of venta.gift_cards_emitidas; track card.id || card.codigo) {
+                        <p class="mb-1">{{ card.codigo }}</p>
+                    }
+                </div>
+            }
             <div class="form-group col-lg-4">
                 <label class="fw-medium">Detalle banco</label>
                 <p>{{ venta.detalle_banco }}</p>
