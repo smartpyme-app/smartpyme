@@ -38,7 +38,8 @@ class ComprasService
 
         Partida::assertNoExisteParaOrigen('Compra', $compra->id, 'Ya existen partidas contables generadas para esta compra.');
 
-        $concepto = 'Compra de mercancía. ' . ($compra->tipo_documento ?? 'Documento') . ' #' . ($compra->referencia ?? 'Sin referencia');
+        $refDocumento = $compra->referenciaDocumentoContable();
+        $concepto = 'Compra de mercancía. ' . $refDocumento;
 
         DB::beginTransaction();
 
@@ -136,7 +137,7 @@ class ComprasService
                         'id_cuenta'         => $cuenta->id,
                         'codigo'            => $cuenta->codigo,
                         'nombre_cuenta'     => $cuenta->nombre,
-                        'concepto'          => 'Compra de mercancía',
+                        'concepto'          => 'Compra de mercancía ' . $refDocumento,
                         'debe'              => $producto->total,
                         'haber'             => NULL,
                         'saldo'             => 0,
@@ -159,7 +160,7 @@ class ComprasService
                         'id_cuenta'         => $cuenta->id,
                         'codigo'            => $cuenta->codigo,
                         'nombre_cuenta'     => $cuenta->nombre,
-                        'concepto'          => 'Compra de mercancía',
+                        'concepto'          => 'Compra de mercancía ' . $refDocumento,
                         'debe'              => $compra->sub_total,
                         'haber'             => NULL,
                         'saldo'             => 0,
@@ -187,7 +188,7 @@ class ComprasService
                     'id_cuenta'         => $cuenta->id,
                     'codigo'            => $cuenta->codigo,
                     'nombre_cuenta'     => $cuenta->nombre,
-                    'concepto'          => 'Compra de mercancía',
+                    'concepto'          => 'Compra de mercancía ' . $refDocumento,
                     'debe'              => $compra->iva,
                     'haber'             => NULL,
                     'saldo'             => 0,
@@ -210,7 +211,7 @@ class ComprasService
                     'id_cuenta'         => $cuenta->id,
                     'codigo'            => $cuenta->codigo,
                     'nombre_cuenta'     => $cuenta->nombre,
-                    'concepto'          => 'Compra de mercancía',
+                    'concepto'          => 'Compra de mercancía ' . $refDocumento,
                     'debe'              => $compra->percepcion,
                     'haber'             => NULL,
                     'saldo'             => 0,
@@ -233,7 +234,7 @@ class ComprasService
                     'id_cuenta'         => $cuenta->id,
                     'codigo'            => $cuenta->codigo,
                     'nombre_cuenta'     => $cuenta->nombre,
-                    'concepto'          => 'Compra de mercancía',
+                    'concepto'          => 'Compra de mercancía ' . $refDocumento,
                     'debe'              => $compra->renta_retenida,
                     'haber'             => NULL,
                     'saldo'             => 0,

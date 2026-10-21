@@ -67,6 +67,8 @@ class PartidaEgresosService
         $cuenta_cxp = Cuenta::where('id', $configuracion->id_cuenta_cxp)->firstOrFail();
 
         foreach ($egresos as $egreso) {
+            $refDoc = $this->referenciaDocumentoEgreso($egreso);
+
             if (($egreso->tipo ?? '') === 'abono') {
                 $cuenta = CuentaContableDesdePagoResolver::resolve($egreso);
             } else {
@@ -83,7 +85,7 @@ class PartidaEgresosService
                 'id_cuenta'         => $cuenta->id,
                 'codigo'            => $cuenta->codigo,
                 'nombre_cuenta'     => $cuenta->nombre,
-                'concepto' => 'Egresos por ' . $egreso->tipo . ' ' . $egreso->tipo_documento . ' #' . $egreso->referencia,
+                'concepto' => 'Egresos por ' . $egreso->tipo . ' ' . $refDoc,
                 'debe'              => NULL,
                 'haber'             => $egreso->total,
                 'saldo'             => 0
@@ -111,7 +113,7 @@ class PartidaEgresosService
                             'id_cuenta' => $cuenta->id,
                             'codigo' => $cuenta->codigo,
                             'nombre_cuenta' => $cuenta->nombre,
-                            'concepto' => 'Compra de mercancía ' . $egreso->tipo_documento . ' #' . $egreso->referencia,
+                            'concepto' => 'Compra de mercancía ' . $refDoc,
                             'debe' => $detalle->total,
                             'haber' => NULL,
                             'saldo' => 0,
@@ -121,7 +123,7 @@ class PartidaEgresosService
                             'id_cuenta' => $cuenta_compras->id,
                             'codigo' => $cuenta_compras->codigo,
                             'nombre_cuenta' => $cuenta_compras->nombre,
-                            'concepto' => 'Inventarios compra de mercancía ' . $egreso->tipo_documento . ' #' . $egreso->referencia,
+                            'concepto' => 'Inventarios compra de mercancía ' . $refDoc,
                             'debe' => $egreso->sub_total,
                             'haber' => NULL,
                             'saldo' => 0,
@@ -137,7 +139,7 @@ class PartidaEgresosService
                         'id_cuenta' => $cuentaIvaDoc->id,
                         'codigo' => $cuentaIvaDoc->codigo,
                         'nombre_cuenta' => $cuentaIvaDoc->nombre,
-                        'concepto' => 'Compra de mercadería ' . $egreso->tipo_documento . '#' . $egreso->referencia,
+                        'concepto' => 'Compra de mercadería ' . $refDoc,
                         'debe' => $egreso->iva,
                         'haber' => NULL,
                         'saldo' => 0,
@@ -149,7 +151,7 @@ class PartidaEgresosService
                         'id_cuenta' => $cuenta_iva_retenido->id,
                         'codigo' => $cuenta_iva_retenido->codigo,
                         'nombre_cuenta' => $cuenta_iva_retenido->nombre,
-                        'concepto' => 'Compra de mercadería ' . $egreso->tipo_documento . '#' . $egreso->referencia,
+                        'concepto' => 'Compra de mercadería ' . $refDoc,
                         'debe' => $egreso->percepcion,
                         'haber' => NULL,
                         'saldo' => 0,
@@ -161,7 +163,7 @@ class PartidaEgresosService
                         'id_cuenta'         => $cuenta_renta_retenida->id,
                         'codigo'            => $cuenta_renta_retenida->codigo,
                         'nombre_cuenta'     => $cuenta_renta_retenida->nombre,
-                        'concepto' => 'Compra de mercancía ' . $egreso->tipo_documento . ' #' . $egreso->referencia,
+                        'concepto' => 'Compra de mercancía ' . $refDoc,
                         'debe'              => $egreso->renta_retenida,
                         'haber'             => NULL,
                         'saldo'             => 0,
@@ -173,7 +175,7 @@ class PartidaEgresosService
                     'id_cuenta' => $cuenta_cxp->id,
                     'codigo' => $cuenta_cxp->codigo,
                     'nombre_cuenta' => $cuenta_cxp->nombre,
-                    'concepto' => 'Egreso por cxp ' . $egreso->tipo_documento . '#' . $egreso->referencia,
+                    'concepto' => 'Egreso por cxp ' . $refDoc,
                     'debe' => $egreso->total,
                     'haber' => NULL,
                     'saldo' => 0,
@@ -185,6 +187,25 @@ class PartidaEgresosService
             'partida' => $partida,
             'detalles' => $detalles,
         ];
+    }
+
+    private function referenciaDocumentoEgreso($egreso): string
+    {
+        if ($egreso instanceof Compra) {
+            return $egreso->referenciaDocumentoContable();
+        }
+
+        if (($egreso->tipo ?? '') === 'abono') {
+            $compra = $egreso->relationLoaded('compra') ? $egreso->compra : null;
+            if (!$compra && !empty($egreso->id_compra)) {
+                $compra = Compra::find($egreso->id_compra);
+            }
+            if ($compra) {
+                return $compra->referenciaDocumentoContable();
+            }
+        }
+
+        return ($egreso->tipo_documento ?? 'Documento') . ' #' . ($egreso->referencia ?? '');
     }
 }
 

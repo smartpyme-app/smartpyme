@@ -53,7 +53,7 @@ class CXCService
         DB::beginTransaction();
 
         try {
-            $concepto = 'Abono a cuenta por cobrar. ' . ($venta->nombre_documento ?? 'Documento') . ' #' . ($venta->correlativo ?? 'Sin correlativo') . ' ' . $venta->nombre_cliente;
+            $concepto = 'Abono a cuenta por cobrar. ' . $venta->referenciaDocumentoContable();
 
             $partida = Partida::create([
                 'fecha'         => $cxc->fecha,

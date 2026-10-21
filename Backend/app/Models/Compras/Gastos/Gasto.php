@@ -176,6 +176,11 @@ class Gasto extends AuditableModel {
         return 'Consumidor Final';
     }
 
+    public function referenciaDocumentoContable(): string
+    {
+        return ($this->tipo_documento ?? 'Documento') . ' #' . ($this->referencia ?? $this->id) . ' ' . $this->nombre_proveedor;
+    }
+
     public function getNombreSucursalAttribute()
     {
         return $this->sucursal()->pluck('nombre')->first();

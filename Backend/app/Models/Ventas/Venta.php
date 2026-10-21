@@ -228,7 +228,7 @@ class Venta extends AuditableModel {
 
     public function referenciaDocumentoContable(): string
     {
-        return ($this->nombre_documento ?? 'Documento') . ' #' . ($this->correlativo ?? 'Sin correlativo');
+        return ($this->nombre_documento ?? 'Documento') . ' #' . ($this->correlativo ?? 'Sin correlativo') . ' ' . $this->nombre_cliente;
     }
 
     public function scopeContabilizable($query)
