@@ -38,4 +38,17 @@ class ReportesLibroDiarioMayorBladeTest extends TestCase
         $this->assertStringContainsString($needle, $pdf);
         $this->assertStringContainsString($needle, $excel);
     }
+
+    public function test_fecha_movimiento_usa_fecha_de_partida(): void
+    {
+        $fechaCell = "partida?->fecha ? \\Carbon\\Carbon::parse(\$detalle->partida->fecha)->format('d/m/Y')";
+        $pdf = $this->blade();
+        $excel = (string) file_get_contents(
+            dirname(__DIR__, 3) . '/resources/views/reportes/contabilidad/excel/libro_diario_mayor_excel.blade.php'
+        );
+
+        $this->assertStringContainsString($fechaCell, $pdf);
+        $this->assertStringContainsString($fechaCell, $excel);
+        $this->assertStringNotContainsString('$detalle->created_at', $excel);
+    }
 }

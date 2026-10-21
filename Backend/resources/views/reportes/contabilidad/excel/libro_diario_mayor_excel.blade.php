@@ -201,7 +201,7 @@
                 <tr>
                     <td class="id_partida"> PART - {{$detalle->id_partida}}    </td>
                     <td class="correlativo">{{ $detalle->partida->correlativo ?? '' }}</td>
-                    <td class="fecha_partida">  {{$detalle->created_at}}    </td>
+                    <td class="fecha_partida">{{ $detalle->partida?->fecha ? \Carbon\Carbon::parse($detalle->partida->fecha)->format('d/m/Y') : '' }}</td>
                     <td class="concepto">       {{$detalle->concepto}}    </td>
                     <td class="cargo">          {{ number_format($detalle->debe ?? 0, 2) }}   </td>
                     <td class="abono">          {{ number_format($detalle->haber ?? 0, 2) }}    </td>

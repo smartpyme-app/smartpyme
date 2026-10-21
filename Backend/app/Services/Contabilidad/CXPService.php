@@ -53,7 +53,7 @@ class CXPService
         DB::beginTransaction();
 
         try {
-            $concepto = 'Abono a cuenta por pagar. ' . ($compra->tipo_documento ?? 'Documento') . ' #' . ($compra->referencia ?? 'Sin referencia') . ' ' . $compra->nombre_proveedor;
+            $concepto = 'Abono a cuenta por pagar. ' . $compra->referenciaDocumentoContable();
 
             $partida = Partida::create([
                 'fecha'         => $cxp->fecha,

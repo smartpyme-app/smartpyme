@@ -149,7 +149,7 @@ class GastosService
         }
 
         $cuenta_forma_pago = $this->cuentaFormaPago($abono);
-        $refTxt = ($gasto->tipo_documento ?? 'Documento') . ' #' . ($gasto->referencia ?? $gasto->id) . ' ' . $gasto->nombre_proveedor;
+        $refTxt = $gasto->referenciaDocumentoContable();
         $concepto = 'Abono a cuenta por pagar gasto ' . $refTxt;
 
         return [
@@ -263,7 +263,7 @@ class GastosService
         $categoria = $this->resolverCategoriaGasto($gastoCompleto);
         $nombreCategoria = $categoria->nombre;
         $concepto = 'Gasto de ' . $nombreCategoria;
-        $refTxt = ($gastoCompleto->tipo_documento ?? 'Documento') . ' #' . ($gastoCompleto->referencia ?? $gastoCompleto->id);
+        $refTxt = $gastoCompleto->referenciaDocumentoContable();
 
         $cuenta_categoria = Cuenta::find($categoria->id_cuenta_contable);
         if (!$cuenta_categoria) {
@@ -309,7 +309,7 @@ class GastosService
         Configuracion $configuracion,
         Cuenta $cuentaContrapartida
     ): array {
-        $refTxt = ($gastoCompleto->tipo_documento ?? 'Documento') . ' #' . ($gastoCompleto->referencia ?? $gastoCompleto->id);
+        $refTxt = $gastoCompleto->referenciaDocumentoContable();
         $detalles = [];
 
         foreach ($gastoCompleto->detalles as $linea) {

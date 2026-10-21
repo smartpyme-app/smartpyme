@@ -43,7 +43,7 @@
                 <tr>
                     <td>PART-{{ $detalle->id_partida }}</td>
                     <td>{{ $detalle->partida->correlativo ?? '' }}</td>
-                    <td>{{ $detalle->partida->fecha ?? $detalle->created_at }}</td>
+                    <td>{{ $detalle->partida?->fecha ? \Carbon\Carbon::parse($detalle->partida->fecha)->format('d/m/Y') : '' }}</td>
                     <td>{{ $detalle->concepto }}</td>
                     <td class="num">{{ number_format($detalle->debe ?? 0, 2) }}</td>
                     <td class="num">{{ number_format($detalle->haber ?? 0, 2) }}</td>

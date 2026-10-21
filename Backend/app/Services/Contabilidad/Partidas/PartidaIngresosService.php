@@ -282,6 +282,7 @@ class PartidaIngresosService
 
             foreach ($ingresos as $ingreso) {
                 $ingresoIndex++;
+                $refDoc = $this->referenciaDocumentoIngreso($ingreso);
                 if ($ingresoIndex % 50 == 0) {
                     Log::info('Procesando ingresos', [
                         'progreso' => "$ingresoIndex/$totalIngresos",
@@ -316,7 +317,7 @@ class PartidaIngresosService
                     'id_cuenta' => $cuenta->id,
                     'codigo' => $cuenta->codigo,
                     'nombre_cuenta' => $cuenta->nombre,
-                    'concepto' => 'Ingresos por ' . $ingreso->tipo . ' ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
+                    'concepto' => 'Ingresos por ' . $ingreso->tipo . ' ' . $refDoc,
                     'debe' => $ingreso->total,
                     'haber' => NULL,
                     'saldo' => 0,
@@ -353,7 +354,7 @@ class PartidaIngresosService
                                 'id_cuenta' => $cuenta->id,
                                 'codigo' => $cuenta->codigo,
                                 'nombre_cuenta' => $cuenta->nombre,
-                                'concepto' => 'Inventarios ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
+                                'concepto' => 'Inventarios ' . $refDoc,
                                 'debe' => NULL,
                                 'haber' => ReglaMontoIngresoVentaDetalle::haber($detalle),
                                 'saldo' => 0,
@@ -363,7 +364,7 @@ class PartidaIngresosService
                                 'id_cuenta' => $cuenta_ventas->id,
                                 'codigo' => $cuenta_ventas->codigo,
                                 'nombre_cuenta' => $cuenta_ventas->nombre,
-                                'concepto' => 'Inventarios ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
+                                'concepto' => 'Inventarios ' . $refDoc,
                                 'debe' => NULL,
                                 'haber' => $ingreso->sub_total,
                                 'saldo' => 0,
@@ -379,7 +380,7 @@ class PartidaIngresosService
                             'id_cuenta' => $cuentaIvaDoc->id,
                             'codigo' => $cuentaIvaDoc->codigo,
                             'nombre_cuenta' => $cuentaIvaDoc->nombre,
-                            'concepto' => '  ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
+                            'concepto' => '  ' . $refDoc,
                             'debe' => NULL,
                             'haber' => $ingreso->iva,
                             'saldo' => 0,
@@ -391,7 +392,7 @@ class PartidaIngresosService
                             'id_cuenta' => $cuenta_iva_retenido->id,
                             'codigo' => $cuenta_iva_retenido->codigo,
                             'nombre_cuenta' => $cuenta_iva_retenido->nombre,
-                            'concepto' => '  ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
+                            'concepto' => '  ' . $refDoc,
                             'debe' => $ingreso->iva_retenido,
                             'haber' => NULL,
                             'saldo' => 0,
@@ -403,7 +404,7 @@ class PartidaIngresosService
                         'id_cuenta' => $cuenta_cxc->id,
                         'codigo' => $cuenta_cxc->codigo,
                         'nombre_cuenta' => $cuenta_cxc->nombre,
-                        'concepto' => 'Ingreso por abono ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
+                        'concepto' => 'Ingreso por abono ' . $refDoc,
                         'debe' => NULL,
                         'haber' => $ingreso->total,
                         'saldo' => 0,
@@ -442,7 +443,7 @@ class PartidaIngresosService
                                 'id_cuenta' => $cuenta_costos->id,
                                 'codigo' => $cuenta_costos->codigo,
                                 'nombre_cuenta' => $cuenta_costos->nombre,
-                                'concepto' => 'Ingreso por costo de ventas ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
+                                'concepto' => 'Ingreso por costo de ventas ' . $refDoc,
                                 'debe' => $this->partidaService->normalizarDecimal($detalle->costo * $detalle->cantidad),
                                 'haber' => NULL,
                                 'saldo' => 0,
@@ -460,7 +461,7 @@ class PartidaIngresosService
                                 'id_cuenta' => $cuenta_inventarios->id,
                                 'codigo' => $cuenta_inventarios->codigo,
                                 'nombre_cuenta' => $cuenta_inventarios->nombre,
-                                'concepto' => 'Inventarios  ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
+                                'concepto' => 'Inventarios  ' . $refDoc,
                                 'debe' => NULL,
                                 'haber' => $this->partidaService->normalizarDecimal($detalle->costo * $detalle->cantidad),
                                 'saldo' => 0,
@@ -470,7 +471,7 @@ class PartidaIngresosService
                                 'id_cuenta' => $cuenta_costos->id,
                                 'codigo' => $cuenta_costos->codigo,
                                 'nombre_cuenta' => $cuenta_costos->nombre,
-                                'concepto' => 'Ingreso por costo de ventas ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
+                                'concepto' => 'Ingreso por costo de ventas ' . $refDoc,
                                 'debe' => $ingreso->total_costo,
                                 'haber' => NULL,
                                 'saldo' => 0,
@@ -479,7 +480,7 @@ class PartidaIngresosService
                                 'id_cuenta' => $cuenta_inventarios->id,
                                 'codigo' => $cuenta_inventarios->codigo,
                                 'nombre_cuenta' => $cuenta_inventarios->nombre,
-                                'concepto' => 'Inventarios ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
+                                'concepto' => 'Inventarios ' . $refDoc,
                                 'debe' => NULL,
                                 'haber' => $ingreso->total_costo,
                                 'saldo' => 0,
@@ -581,6 +582,22 @@ class PartidaIngresosService
 
             throw $e;
         }
+    }
+
+    private function referenciaDocumentoIngreso($ingreso): string
+    {
+        if ($ingreso instanceof Venta) {
+            return $ingreso->referenciaDocumentoContable();
+        }
+
+        if (($ingreso->tipo ?? '') === 'abono') {
+            $venta = $ingreso->relationLoaded('venta') ? $ingreso->venta : $ingreso->venta()->first();
+            if ($venta) {
+                return $venta->referenciaDocumentoContable();
+            }
+        }
+
+        return ($ingreso->nombre_documento ?? 'Documento') . ' #' . ($ingreso->correlativo ?? '');
     }
 }
 

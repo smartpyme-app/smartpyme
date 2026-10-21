@@ -139,6 +139,11 @@ class Compra extends AuditableModel {
         return $this->usuario()->pluck('name')->first();
     }
 
+    public function referenciaDocumentoContable(): string
+    {
+        return ($this->tipo_documento ?? 'Documento') . ' #' . ($this->referencia ?? 'Sin referencia') . ' ' . $this->nombre_proveedor;
+    }
+
     public function bodega(){
         return $this->belongsTo('App\Models\Inventario\Bodega','id_bodega');
     }
