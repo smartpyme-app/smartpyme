@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Models\Inventario\Categorias\Categoria;
 use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Producto;
 use App\Models\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -16,10 +18,27 @@ class WooCommerceExportService
     /** @var WooCommerceResolvedProductWriter */
     protected $resolvedProductWriter;
 
-    public function __construct(WooCommerceSkuResolver $skuResolver, WooCommerceResolvedProductWriter $resolvedProductWriter)
-    {
+    /** @var WooCommerceSpExportCatalogService */
+    protected $catalog;
+
+    /** @var WooCommerceTallaNombreParser */
+    protected $tallaParser;
+
+    /** @var WooCommerceProductLineMatcher */
+    protected $lineMatcher;
+
+    public function __construct(
+        WooCommerceSkuResolver $skuResolver,
+        WooCommerceResolvedProductWriter $resolvedProductWriter,
+        WooCommerceSpExportCatalogService $catalog,
+        WooCommerceTallaNombreParser $tallaParser,
+        WooCommerceProductLineMatcher $lineMatcher
+    ) {
         $this->skuResolver = $skuResolver;
         $this->resolvedProductWriter = $resolvedProductWriter;
+        $this->catalog = $catalog;
+        $this->tallaParser = $tallaParser;
+        $this->lineMatcher = $lineMatcher;
     }
 
     public function exportarProductos(User $user, $productos, $bodega)
@@ -64,54 +83,201 @@ class WooCommerceExportService
             'detalles' => []
         ];
 
-        foreach ($productos as $producto) {
+        $groups = $this->catalog->groupForExport($productos);
+        foreach ($groups as $group) {
             try {
-                $stock = $stocks[$producto->id] ?? 0;
-                $productData = $this->prepararDatosProducto($producto, $stock, $client);
-
-                $esImportadoWooCommerce = !empty($producto->imported_from_woocommerce_csv);
-
-                // Intentar actualizar primero si tenemos woocommerce_id
-                if (!empty($producto->woocommerce_id)) {
-                    if ($this->actualizarProductoExistente($client, $producto, $productData, $resultados)) {
-                        continue;
+                if ($group['variable']) {
+                    $this->exportarGrupoVariable($client, $group['items'], $group['sku'], $stocks, $resultados);
+                } else {
+                    foreach ($group['items'] as $producto) {
+                        $this->exportarProductoSimple($client, $producto, $stocks, $resultados);
                     }
                 }
-
-                $resolution = $this->skuResolver->resolveBySku($client, (string) $producto->codigo);
-
-                if ($resolution !== null) {
-                    try {
-                        $this->resolvedProductWriter->applyResolution($client, $producto, $productData, $resolution);
-                        $this->registrarExito($resultados, $producto, 'actualizado', $producto->woocommerce_id);
-                    } catch (\Exception $e) {
-                        Log::warning('Error aplicando resolución SKU en export WooCommerce: ' . $e->getMessage(), [
-                            'producto_id' => $producto->id,
-                            'sku' => $producto->codigo,
-                        ]);
-                        $this->registrarError($producto, $e, $resultados);
-                    }
-                    continue;
-                }
-
-                // Productos importados desde CSV de WooCommerce: NUNCA crear, solo actualizar
-                if ($esImportadoWooCommerce) {
-                    Log::info("Producto importado de WooCommerce sin woocommerce_id o actualización fallida - omitido", [
-                        'producto_id' => $producto->id,
-                        'nombre' => $producto->nombre,
-                        'woocommerce_id' => $producto->woocommerce_id
-                    ]);
-                    $resultados['omitidos'] = ($resultados['omitidos'] ?? 0) + 1;
-                    continue;
-                }
-
-                $this->crearNuevoProducto($client, $producto, $productData, $resultados);
             } catch (\Exception $e) {
-                $this->registrarError($producto, $e, $resultados);
+                Log::error('Error exportando grupo WooCommerce SKU ' . $group['sku'] . ': ' . $e->getMessage());
+                foreach ($group['items'] as $producto) {
+                    $this->registrarError($producto, $e, $resultados);
+                }
             }
         }
 
         return $resultados;
+    }
+
+    private function exportarProductoSimple($client, Producto $producto, array $stocks, array &$resultados): void
+    {
+        try {
+            $stock = $stocks[$producto->id] ?? 0;
+            $productData = $this->prepararDatosProducto($producto, $stock, $client);
+            $esImportadoWooCommerce = !empty($producto->imported_from_woocommerce_csv);
+
+            if (!empty($producto->woocommerce_id) && empty($producto->woocommerce_parent_id)) {
+                if ($this->actualizarProductoExistente($client, $producto, $productData, $resultados)) {
+                    return;
+                }
+            }
+
+            foreach ($this->lineMatcher->remoteSkusToTry($producto) as $skuTry) {
+                $resolution = $this->skuResolver->resolveBySku($client, $skuTry);
+                if ($resolution === null) {
+                    continue;
+                }
+                try {
+                    $productData['sku'] = $skuTry;
+                    $this->resolvedProductWriter->applyResolution($client, $producto, $productData, $resolution);
+                    $this->registrarExito($resultados, $producto, 'actualizado', $producto->woocommerce_id);
+                } catch (\Exception $e) {
+                    $this->registrarError($producto, $e, $resultados);
+                }
+
+                return;
+            }
+
+            if ($esImportadoWooCommerce) {
+                $resultados['omitidos'] = ($resultados['omitidos'] ?? 0) + 1;
+
+                return;
+            }
+
+            $this->crearNuevoProducto($client, $producto, $productData, $resultados);
+        } catch (\Exception $e) {
+            $this->registrarError($producto, $e, $resultados);
+        }
+    }
+
+    /**
+     * @param Collection<int, Producto> $items
+     */
+    private function exportarGrupoVariable($client, Collection $items, string $sku, array $stocks, array &$resultados): void
+    {
+        $parentName = $this->catalog->nombrePadreParaGrupo($items, $sku);
+        $variantRows = [];
+        foreach ($items as $producto) {
+            $parsed = $this->tallaParser->parse((string) $producto->nombre);
+            if ($parsed['talla'] === null) {
+                $this->exportarProductoSimple($client, $producto, $stocks, $resultados);
+                continue;
+            }
+            $variantRows[] = [
+                'producto' => $producto,
+                'talla' => $parsed['talla'],
+                'variation_sku' => $this->lineMatcher->buildVariationSku($sku, $parsed['talla']),
+            ];
+        }
+
+        if (count($variantRows) < 2) {
+            foreach ($items as $producto) {
+                $this->exportarProductoSimple($client, $producto, $stocks, $resultados);
+            }
+
+            return;
+        }
+
+        $parentWooId = $this->resolveParentWooId($items);
+        $tallas = array_values(array_unique(array_column($variantRows, 'talla')));
+        $first = $items->first();
+        $parentPayload = $this->prepararDatosProductoPadre($first, $parentName, $tallas, $client);
+
+        if ($parentWooId) {
+            unset($parentPayload['sku']);
+            $client->put("products/{$parentWooId}", $parentPayload);
+        } else {
+            $parentPayload['type'] = 'variable';
+            unset(
+                $parentPayload['sku'],
+                $parentPayload['regular_price'],
+                $parentPayload['price'],
+                $parentPayload['manage_stock'],
+                $parentPayload['stock_quantity'],
+                $parentPayload['stock_status']
+            );
+            $response = $client->post('products', $parentPayload);
+            $parentWooId = $this->extraerWooId($response);
+            if (!$parentWooId) {
+                throw new \Exception('No se pudo crear el producto variable padre en WooCommerce');
+            }
+            $this->registrarExito($resultados, $first, 'creado', $parentWooId);
+        }
+
+        foreach ($variantRows as $row) {
+            /** @var Producto $producto */
+            $producto = $row['producto'];
+            $stock = $stocks[$producto->id] ?? 0;
+            $productData = $this->prepararDatosProducto($producto, $stock, $client);
+            $productData['sku'] = $row['variation_sku'];
+            $variationPayload = $this->resolvedProductWriter->buildVariationPayload($productData);
+            $variationPayload['attributes'] = [
+                ['name' => 'Talla', 'option' => $row['talla']],
+            ];
+
+            if (!empty($producto->woocommerce_id) && (int) $producto->woocommerce_parent_id === (int) $parentWooId) {
+                $client->put("products/{$parentWooId}/variations/{$producto->woocommerce_id}", $variationPayload);
+                $producto->last_woocommerce_sync = now();
+                $producto->saveQuietly();
+                $this->registrarExito($resultados, $producto, 'actualizado', $producto->woocommerce_id);
+                continue;
+            }
+
+            $resolution = $this->skuResolver->resolveBySku($client, $row['variation_sku']);
+            if ($resolution !== null && ($resolution['mode'] ?? '') === 'variation') {
+                $this->resolvedProductWriter->applyResolution($client, $producto, $productData, $resolution);
+                $this->registrarExito($resultados, $producto, 'actualizado', $producto->woocommerce_id);
+                continue;
+            }
+
+            $response = $client->post("products/{$parentWooId}/variations", $variationPayload);
+            $variationId = $this->extraerWooId($response);
+            if (!$variationId) {
+                throw new \Exception('No se pudo crear variación en WooCommerce para talla ' . $row['talla']);
+            }
+            $producto->woocommerce_id = $variationId;
+            $producto->woocommerce_parent_id = $parentWooId;
+            $producto->last_woocommerce_sync = now();
+            $producto->saveQuietly();
+            $this->registrarExito($resultados, $producto, 'creado', $variationId);
+        }
+    }
+
+    /**
+     * @param Collection<int, Producto> $items
+     */
+    private function resolveParentWooId(Collection $items): ?int
+    {
+        foreach ($items as $p) {
+            if (!empty($p->woocommerce_parent_id)) {
+                return (int) $p->woocommerce_parent_id;
+            }
+        }
+        foreach ($items as $p) {
+            if (empty($p->woocommerce_id)) {
+                continue;
+            }
+            $parentCandidate = (int) $p->woocommerce_id;
+            foreach ($items as $other) {
+                if ((int) ($other->woocommerce_parent_id ?? 0) === $parentCandidate) {
+                    return $parentCandidate;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param list<string> $tallas
+     */
+    private function prepararDatosProductoPadre(Producto $producto, string $parentName, array $tallas, $client): array
+    {
+        $base = $this->prepararDatosProducto($producto, 0, $client);
+        $base['name'] = $parentName;
+        $base['attributes'] = [[
+            'name' => 'Talla',
+            'visible' => true,
+            'variation' => true,
+            'options' => $tallas,
+        ]];
+
+        return $base;
     }
 
     private function actualizarProductoExistente($client, $producto, $productData, &$resultados)
@@ -219,8 +385,14 @@ class WooCommerceExportService
         // Formatear el precio correctamente para WooCommerce
         $precio = number_format($precio, 2, '.', '');
 
+        $nombreWoo = trim((string) ($producto->nombre_comercial ?? ''));
+        if ($nombreWoo === '') {
+            $parsed = $this->tallaParser->parse((string) $producto->nombre);
+            $nombreWoo = $parsed['base'] !== '' ? $parsed['base'] : $producto->nombre;
+        }
+
         $productData = [
-            'name' => $producto->nombre,
+            'name' => $nombreWoo,
             'status' => 'publish',
             'featured' => false,
             'catalog_visibility' => 'visible',

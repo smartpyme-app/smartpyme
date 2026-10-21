@@ -17,10 +17,17 @@ class WooCommerceStockService
     /** @var WooCommerceResolvedProductWriter */
     protected $resolvedProductWriter;
 
-    public function __construct(WooCommerceSkuResolver $skuResolver, WooCommerceResolvedProductWriter $resolvedProductWriter)
-    {
+    /** @var WooCommerceProductLineMatcher */
+    protected $lineMatcher;
+
+    public function __construct(
+        WooCommerceSkuResolver $skuResolver,
+        WooCommerceResolvedProductWriter $resolvedProductWriter,
+        WooCommerceProductLineMatcher $lineMatcher
+    ) {
         $this->skuResolver = $skuResolver;
         $this->resolvedProductWriter = $resolvedProductWriter;
+        $this->lineMatcher = $lineMatcher;
     }
 
     public function actualizarStockEnWooCommerce($productoId, $userId, ?array $changedFields = null)
@@ -86,6 +93,10 @@ class WooCommerceStockService
             );
 
             $productData = $this->prepararDatosProducto($producto, $stock, $wooClient, $changedFields);
+            $remoteSku = $this->lineMatcher->variationSkuForProducto($producto);
+            if ($remoteSku !== null) {
+                $productData['sku'] = $remoteSku;
+            }
 
             if (!empty($producto->woocommerce_id)) {
                 if ($this->actualizarProductoExistente($wooClient, $producto, $productData)) {
@@ -93,12 +104,14 @@ class WooCommerceStockService
                 }
             }
 
-            $resolution = $this->skuResolver->resolveBySku($wooClient, (string) $producto->codigo);
+            foreach ($this->lineMatcher->remoteSkusToTry($producto) as $skuTry) {
+                $resolution = $this->skuResolver->resolveBySku($wooClient, $skuTry);
+                if ($resolution !== null) {
+                    $productData['sku'] = $skuTry;
+                    $this->resolvedProductWriter->applyResolution($wooClient, $producto, $productData, $resolution);
 
-            if ($resolution !== null) {
-                $this->resolvedProductWriter->applyResolution($wooClient, $producto, $productData, $resolution);
-
-                return true;
+                    return true;
+                }
             }
 
             if (!empty($producto->imported_from_woocommerce_csv)) {

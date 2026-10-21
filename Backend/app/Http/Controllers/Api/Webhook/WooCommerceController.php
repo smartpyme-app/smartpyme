@@ -11,15 +11,16 @@ use App\Models\Inventario\Producto;
 use App\Models\User;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Venta;
-use App\Services\WooCommerceApiClient;
 use Illuminate\Http\Request;
 use App\Services\WooCommerceTransformer;
 use App\Services\WooCommerceInboundProductService;
 use App\Services\WooCommerceOrderExtrasService;
+use App\Services\WooCommerceSpExportCatalogService;
+use App\Services\WooCommerceProductLineMatcher;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use App\Services\FidelizacionCliente\ConsumoPuntosService;
 
 class WooCommerceController extends Controller
@@ -27,12 +28,17 @@ class WooCommerceController extends Controller
     protected $transformer;
     protected $orderExtrasService;
 
+    /** @var WooCommerceProductLineMatcher */
+    protected $lineMatcher;
+
     public function __construct(
         WooCommerceTransformer $transformer,
-        WooCommerceOrderExtrasService $orderExtrasService
+        WooCommerceOrderExtrasService $orderExtrasService,
+        WooCommerceProductLineMatcher $lineMatcher
     ) {
         $this->transformer = $transformer;
         $this->orderExtrasService = $orderExtrasService;
+        $this->lineMatcher = $lineMatcher;
     }
 
     public function procesarVenta($tokenEmpresa, Request $request)
@@ -43,6 +49,19 @@ class WooCommerceController extends Controller
             return response()->json(['message' => 'Webhook válido'], 200);
         }
 
+        $topic = strtolower((string) $request->header('X-WC-Webhook-Topic', 'order.created'));
+        if ($topic === 'order.updated') {
+            return $this->procesarVentaActualizadaWoo($tokenEmpresa, $request);
+        }
+        if ($topic === 'order.deleted') {
+            return $this->procesarVentaCanceladaWoo($tokenEmpresa, $request);
+        }
+
+        return $this->crearVentaDesdePedidoWoo($tokenEmpresa, $request);
+    }
+
+    private function crearVentaDesdePedidoWoo($tokenEmpresa, Request $request)
+    {
         $empresa = Empresa::where('woocommerce_api_key', $tokenEmpresa)->where('woocommerce_status', 'connected')->first();
 
         if (!$empresa) {
@@ -122,28 +141,37 @@ class WooCommerceController extends Controller
                 throw new \Exception('El pedido no contiene productos (line_items vacío)');
             }
             foreach ($lineItems as $item) {
-                //$producto = Producto::where('codigo', $item['sku'])->where('id_empresa', $usuario->id_empresa)->first();
-                //primero buscar por woocommerce_id si no por sku
-
-                // variation_id cuando es variación, sino product_id (item['id'] puede ser el order_item_id)
-                $wooProductId = $item['variation_id'] ?? $item['product_id'] ?? $item['id'] ?? null;
-                $producto = $wooProductId
-                    ? Producto::where('woocommerce_id', $wooProductId)->where('id_empresa', $usuario->id_empresa)->first()
-                    : null;
+                $producto = $this->lineMatcher->findForOrderLine($usuario->id_empresa, $item);
 
                 if (!$producto) {
-                    $producto = Producto::where('codigo', $item['sku'] ?? '')->where('id_empresa', $usuario->id_empresa)->first();
-                }
-
-                if (!$producto) {
-                    return response()->json([
-                        'status' => 'error',
-                        'mensaje' => 'Producto no encontrado: ' . ($item['sku'] ?? $item['name'] ?? 'SKU desconocido')
-                    ], 500);
-                    // throw new \Exception("Producto no encontrado: {$item['sku']}");
-                    //crear el producto
-                    $productoData = $this->transformer->transformarProducto($item, $usuario->id_empresa, $usuario->id, $usuario->id_sucursal);
+                    $productoData = $this->transformer->transformarProductoDesdeLineItem(
+                        $item,
+                        $usuario->id_empresa,
+                        $usuario->id,
+                        $usuario->id_sucursal
+                    );
                     $producto = Producto::create($productoData);
+                    $wooVariationId = isset($item['variation_id']) ? (int) $item['variation_id'] : 0;
+                    $wooProductId = isset($item['product_id']) ? (int) $item['product_id'] : 0;
+                    if ($wooVariationId > 0) {
+                        $producto->woocommerce_id = $wooVariationId;
+                        $producto->woocommerce_parent_id = $wooProductId > 0 ? $wooProductId : null;
+                        $producto->saveQuietly();
+                    } elseif ($wooProductId > 0) {
+                        $producto->woocommerce_id = $wooProductId;
+                        $producto->saveQuietly();
+                    }
+                    Log::info('WooCommerce: producto creado desde line_item de pedido', [
+                        'producto_id' => $producto->id,
+                        'codigo' => $producto->codigo,
+                        'woo_order_id' => $wooOrderId,
+                    ]);
+                } elseif (!empty($item['variation_id']) && empty($producto->woocommerce_id)) {
+                    $producto->woocommerce_id = (int) $item['variation_id'];
+                    $producto->woocommerce_parent_id = !empty($item['product_id'])
+                        ? (int) $item['product_id']
+                        : $producto->woocommerce_parent_id;
+                    $producto->saveQuietly();
                 }
 
                 $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id);
@@ -269,16 +297,273 @@ class WooCommerceController extends Controller
             ], 400);
         }
 
-        // Obtener la sucursal actual del usuario
         $sucursalId = $user->id_bodega;
+        $soloConStock = filter_var($request->input('solo_con_stock', true), FILTER_VALIDATE_BOOLEAN);
 
-        // Encolar el trabajo
-        ExportProductsToWooCommerce::dispatch($user->id, $sucursalId);
+        ExportProductsToWooCommerce::dispatch($user->id, $sucursalId, $soloConStock);
 
         return response()->json([
             'status' => 'success',
-            'mensaje' => 'Exportación de productos iniciada. Este proceso puede tomar varios minutos.'
+            'mensaje' => 'Exportación de productos iniciada. Este proceso puede tomar varios minutos.',
+            'solo_con_stock' => $soloConStock,
         ]);
+    }
+
+    public function vistaPreviaExportacionWoo(Request $request, WooCommerceSpExportCatalogService $catalog)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['error' => 'No autorizado'], 401);
+        }
+
+        $empresa = Empresa::find($user->id_empresa);
+        if (!$empresa || $empresa->woocommerce_status !== 'connected') {
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'WooCommerce no está conectado',
+            ], 400);
+        }
+
+        $soloConStock = filter_var($request->input('solo_con_stock', true), FILTER_VALIDATE_BOOLEAN);
+        $bodegaId = (int) $user->id_bodega;
+        $productos = $catalog->productosElegibles($user, $bodegaId, $soloConStock);
+        $stocks = $catalog->stocksPorBodega($productos, $bodegaId);
+        $grupos = $catalog->buildPreviewGroups($productos, $stocks);
+
+        $variables = 0;
+        $simples = 0;
+        foreach ($grupos as $g) {
+            if ($g['tipo'] === 'variable') {
+                $variables++;
+            } else {
+                $simples++;
+            }
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'solo_con_stock' => $soloConStock,
+            'totales' => [
+                'productos_sp' => $productos->count(),
+                'grupos' => count($grupos),
+                'variables' => $variables,
+                'simples' => $simples,
+            ],
+            'grupos' => $grupos,
+        ]);
+    }
+
+    public function obtenerEstadoExportacion(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['error' => 'No autorizado'], 401);
+        }
+
+        $empresa = Empresa::find($user->id_empresa);
+        if (!$empresa) {
+            return response()->json(['error' => 'Empresa no encontrada'], 404);
+        }
+
+        $cache = Cache::get('woocommerce_export_' . $empresa->id, []);
+        $syncStatus = $empresa->woocommerce_sync_status;
+        $estado = 'inactivo';
+        if ($syncStatus === 'syncing') {
+            $estado = 'procesando';
+        } elseif ($syncStatus === 'completed') {
+            $estado = 'completado';
+        } elseif ($syncStatus === 'error') {
+            $estado = 'error';
+        }
+
+        return response()->json(array_merge([
+            'estado' => $cache['estado'] ?? $estado,
+            'progreso' => (int) ($empresa->woocommerce_sync_progress ?? 0),
+            'lotes_total' => (int) ($empresa->woocommerce_sync_total_batches ?? 0),
+            'lotes_procesados' => (int) ($empresa->woocommerce_sync_processed_batches ?? 0),
+            'ultima_sync' => $empresa->woocommerce_last_sync,
+            'mensaje' => $empresa->woocommerce_error ?: ($cache['mensaje'] ?? 'No hay exportación activa.'),
+            'creados' => 0,
+            'actualizados' => 0,
+            'errores' => 0,
+        ], $cache));
+    }
+
+    private function procesarVentaActualizadaWoo($tokenEmpresa, Request $request)
+    {
+        $contexto = $this->resolverContextoPedidoWoo($tokenEmpresa);
+        if ($contexto instanceof \Illuminate\Http\JsonResponse) {
+            return $contexto;
+        }
+        /** @var Empresa $empresa */
+        $empresa = $contexto['empresa'];
+
+        $wooOrderId = $request->input('id');
+        $referencia = $wooOrderId ? 'WOOC-' . $wooOrderId : null;
+        if (!$referencia) {
+            return response()->json(['status' => 'skipped', 'mensaje' => 'Pedido sin id'], 200);
+        }
+
+        $venta = Venta::withoutGlobalScope('empresa')
+            ->where('referencia_woocommerce', $referencia)
+            ->where('id_empresa', $empresa->id)
+            ->first();
+
+        $wooStatus = (string) $request->input('status', '');
+        if ($this->transformer->esEstadoPedidoAnulado($wooStatus)) {
+            return $this->anularVentaWooCommerce($venta, $wooOrderId, 'Pedido actualizado/cancelado en WooCommerce');
+        }
+
+        if (!$venta) {
+            return $this->crearVentaDesdePedidoWoo($tokenEmpresa, $request);
+        }
+
+        if ($this->ventaEmitida($venta)) {
+            return response()->json([
+                'status' => 'ignored',
+                'mensaje' => 'Venta ya emitida en SmartPyme - no se modifica desde WooCommerce',
+                'venta_id' => $venta->id,
+            ], 200);
+        }
+
+        $nuevoEstado = $this->transformer->mapearEstado($wooStatus);
+        $venta->update([
+            'estado' => $nuevoEstado,
+            'observaciones' => trim(($venta->observaciones ? $venta->observaciones . ' | ' : '')
+                . 'Actualizado desde WooCommerce ' . now()->format('d/m/Y H:i:s')),
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'mensaje' => 'Venta actualizada',
+            'venta_id' => $venta->id,
+            'estado' => $nuevoEstado,
+        ], 200);
+    }
+
+    private function procesarVentaCanceladaWoo($tokenEmpresa, Request $request)
+    {
+        $contexto = $this->resolverContextoPedidoWoo($tokenEmpresa);
+        if ($contexto instanceof \Illuminate\Http\JsonResponse) {
+            return $contexto;
+        }
+        /** @var Empresa $empresa */
+        $empresa = $contexto['empresa'];
+
+        $wooOrderId = $request->input('id');
+        $referencia = $wooOrderId ? 'WOOC-' . $wooOrderId : null;
+        $venta = $referencia
+            ? Venta::withoutGlobalScope('empresa')
+                ->where('referencia_woocommerce', $referencia)
+                ->where('id_empresa', $empresa->id)
+                ->first()
+            : null;
+
+        return $this->anularVentaWooCommerce($venta, $wooOrderId, 'Pedido eliminado en WooCommerce');
+    }
+
+    /**
+     * @return array{empresa: Empresa, usuario: User}|\Illuminate\Http\JsonResponse
+     */
+    private function resolverContextoPedidoWoo(string $tokenEmpresa)
+    {
+        $empresa = Empresa::where('woocommerce_api_key', $tokenEmpresa)->where('woocommerce_status', 'connected')->first();
+        if (!$empresa) {
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Token de acceso no válido o no conectado',
+            ], 401);
+        }
+
+        $usuario = User::where('id_empresa', $empresa->id)->where('woocommerce_status', 'connected')->first();
+        if (!$usuario) {
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Usuario no encontrado',
+            ], 401);
+        }
+
+        return ['empresa' => $empresa, 'usuario' => $usuario];
+    }
+
+    private function anularVentaWooCommerce(?Venta $venta, $wooOrderId, string $motivo)
+    {
+        if (!$venta) {
+            Log::warning('WooCommerce: venta no encontrada para anulación', ['woo_order_id' => $wooOrderId]);
+            return response()->json([
+                'status' => 'warning',
+                'mensaje' => 'Venta no encontrada para el pedido',
+            ], 404);
+        }
+
+        if ($venta->estado === 'Anulada') {
+            return response()->json([
+                'status' => 'success',
+                'mensaje' => 'Venta ya estaba anulada',
+                'venta_id' => $venta->id,
+            ], 200);
+        }
+
+        if ($this->ventaEmitida($venta)) {
+            return response()->json([
+                'status' => 'ignored',
+                'mensaje' => 'Venta ya emitida en SmartPyme - no se anula desde WooCommerce',
+                'venta_id' => $venta->id,
+            ], 200);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $venta->update([
+                'estado' => 'Anulada',
+                'observaciones' => trim(($venta->observaciones ? $venta->observaciones . ' | ' : '') . $motivo . ' ' . now()->format('d/m/Y H:i:s')),
+            ]);
+
+            $venta->load('detalles.producto');
+            foreach ($venta->detalles as $detalle) {
+                $producto = $detalle->producto;
+                if (!$producto) {
+                    continue;
+                }
+                $inventario = Inventario::where('id_producto', $producto->id)
+                    ->where('id_bodega', $venta->id_bodega)
+                    ->first();
+                if (!$inventario) {
+                    continue;
+                }
+                $cantidad = is_numeric($detalle->cantidad) ? (float) $detalle->cantidad : 0;
+                if ($cantidad <= 0) {
+                    continue;
+                }
+                $inventario->increment('stock', $cantidad);
+                $precio = is_numeric($detalle->precio) ? (float) $detalle->precio : 0;
+                $costoProducto = is_numeric($producto->costo) ? (float) $producto->costo : 0;
+                $inventario->kardex($venta, -$cantidad, $precio, $costoProducto, null, ['origen' => 'woocommerce']);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'mensaje' => 'Venta anulada correctamente',
+                'venta_id' => $venta->id,
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error anulando venta WooCommerce: ' . $e->getMessage());
+
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Error al anular la venta',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    private function ventaEmitida(Venta $venta): bool
+    {
+        return !empty($venta->sello_mh);
     }
 
     private function recalcularTotalesVenta(Venta $venta): void

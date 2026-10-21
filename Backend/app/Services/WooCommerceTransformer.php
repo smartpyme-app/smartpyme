@@ -208,6 +208,40 @@ class WooCommerceTransformer
         ];
     }
 
+    /**
+     * Producto mínimo desde line_item de un pedido WooCommerce (webhook de venta).
+     */
+    public function transformarProductoDesdeLineItem(array $item, int $id_empresa, int $id_usuario, int $id_sucursal): array
+    {
+        $wooId = (int) ($item['variation_id'] ?? $item['product_id'] ?? 0);
+        $sku = trim((string) ($item['sku'] ?? ''));
+        if ($sku === '') {
+            $sku = $wooId > 0 ? 'WOO-' . $wooId : 'WOO-LINE-' . uniqid();
+        }
+        $precio = (float) ($item['price'] ?? 0);
+
+        return [
+            'codigo' => $sku,
+            'barcode' => $sku,
+            'nombre' => $this->truncarTexto((string) ($item['name'] ?? 'Producto WooCommerce'), 255),
+            'descripcion' => '',
+            'id_empresa' => $id_empresa,
+            'id_usuario' => $id_usuario,
+            'id_sucursal' => $id_sucursal,
+            'costo' => $precio,
+            'precio' => $precio,
+            'woocommerce_id' => $wooId > 0 ? $wooId : null,
+            'tipo' => 'Producto',
+            'medida' => 'Unidad',
+            'enable' => 1,
+        ];
+    }
+
+    public function esEstadoPedidoAnulado(?string $wooStatus): bool
+    {
+        return in_array($wooStatus, ['cancelled', 'refunded', 'failed', 'trash'], true);
+    }
+
     private function extraerMeta($wooData, string $key): string
     {
         foreach ($wooData['meta_data'] ?? [] as $meta) {
