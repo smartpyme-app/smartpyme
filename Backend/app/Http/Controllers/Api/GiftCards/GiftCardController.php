@@ -27,6 +27,15 @@ class GiftCardController extends Controller
             ], 404);
         }
 
+        if ((float) $card->saldo <= 0
+            && $card->estado !== GiftCard::ESTADO_ANULADA
+            && $card->estado !== GiftCard::ESTADO_INACTIVA
+        ) {
+            $card->saldo = 0;
+            $card->estado = GiftCard::ESTADO_INACTIVA;
+            $card->save();
+        }
+
         return response()->json([
             'success' => true,
             'data' => $this->serializeCard($card),

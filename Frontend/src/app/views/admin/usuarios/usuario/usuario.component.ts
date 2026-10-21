@@ -6,7 +6,9 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { EncryptService } from '@services/encryption/encrypt.service';
+import { ContadoresPortalService } from '@services/contadores-portal.service';
 import { BaseComponent } from '@shared/base/base.component';
+import { pathLogoEmpresa, urlImagenEmpresaOAvatar } from '@shared/utils/imagen-empresa-o-avatar';
 import { FilterPipe } from '@pipes/filter.pipe';
 
 
@@ -132,12 +134,6 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
   public selectedModuleName: string | null = null;
   public selectedCountry = this.countries[0];
 
-  // Img Upload
-  public preview = false;
-  public url_img_preview: string = '';
-  public file: File | null = null;
-  private static readonly AVATAR_MAX_BYTES = 5 * 1024 * 1024;
-
   public editandoEmail: boolean = false;
   public editandoPassword: boolean = false;
   public editandoCodigoAuth: boolean = false;
@@ -171,9 +167,24 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     public encryptService: EncryptService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private contadoresPortal: ContadoresPortalService,
   ) {
     super();
+  }
+
+  /** Logo de la empresa en sesión; si no hay, avatar del usuario (SP-2221). */
+  get imagenPortadaUsuario(): string {
+    const auth = this.apiService.auth_user() ?? {};
+    const logoPath = pathLogoEmpresa(
+      auth.empresa?.logo,
+      this.contadoresPortal.leerContextoEmpresa()?.logo,
+    );
+    return urlImagenEmpresaOAvatar(
+      this.apiService.baseUrl,
+      logoPath,
+      this.usuario?.avatar ?? auth.avatar,
+    );
   }
   public authUser: any = {};
 
@@ -350,11 +361,6 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
           'Usuario guardado',
           'El usuario fue guardado exitosamente.'
         );
-        if (this.file) {
-          this.subirAvatarPendiente();
-        } else {
-          this.preview = false;
-        }
         this.cdr.markForCheck();
       },
       (error) => {
@@ -369,31 +375,6 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
         this.cdr.markForCheck();
       }
     );
-  }
-
-  setFile(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const picked = input.files?.[0];
-    if (!picked) {
-      return;
-    }
-    if (picked.size > UsuarioComponent.AVATAR_MAX_BYTES) {
-      this.alertService.error('La imagen no puede superar 5 MB.');
-      input.value = '';
-      return;
-    }
-    this.file = picked;
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.url_img_preview = String(reader.result ?? '');
-      this.preview = true;
-      this.cdr.markForCheck();
-    };
-    reader.readAsDataURL(picked);
-
-    if (this.usuario?.id) {
-      this.subirAvatarPendiente();
-    }
   }
 
   mostrarPassword(campo: string): boolean {
@@ -707,39 +688,6 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
     module.expanded = !module.expanded;
     this.cdr.markForCheck();
   }
-
-  private subirAvatarPendiente(): void {
-    if (!this.file || !this.usuario?.id) {
-      return;
-    }
-    const formData = new FormData();
-    formData.append('file', this.file);
-    formData.append('id', String(this.usuario.id));
-    this.apiService.store('usuario/avatar', formData)
-      .pipe(this.untilDestroyed())
-      .subscribe({
-        next: (response: any) => {
-          if (response?.avatar) {
-            this.usuario.avatar = response.avatar;
-          }
-          const auth = this.apiService.auth_user();
-          if (auth?.id === this.usuario.id && response?.avatar) {
-            auth.avatar = response.avatar;
-            localStorage.setItem('SP_auth_user', JSON.stringify(auth));
-          }
-          this.file = null;
-          this.preview = false;
-          this.url_img_preview = '';
-          this.alertService.success('Foto actualizada', 'La foto de perfil se guardó correctamente.');
-          this.cdr.markForCheck();
-        },
-        error: (error) => {
-          this.alertService.error(error);
-          this.cdr.markForCheck();
-        },
-      });
-  }
-
 
   onCountryChange(country: any) {
     this.selectedCountry = country;

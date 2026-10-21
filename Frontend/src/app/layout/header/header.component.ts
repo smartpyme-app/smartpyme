@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, Inject, DestroyRef, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,6 +14,7 @@ import { LazyImageDirective } from '../../directives/lazy-image.directive';
 import { ContadorEmpresaBarComponent } from './contador-empresa-bar.component';
 import { ContadoresPortalService } from '@services/contadores-portal.service';
 import { syncLayoutSidebarInset } from '../layout-sidebar-inset';
+import { pathLogoEmpresa, urlImagenEmpresaOAvatar } from '@shared/utils/imagen-empresa-o-avatar';
 
 // declare var $:any;
 
@@ -36,6 +37,7 @@ export class HeaderComponent implements OnInit {
     public isVisible: boolean = false;
 
     private destroyRef = inject(DestroyRef);
+    private cdr = inject(ChangeDetectorRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
      constructor(
@@ -71,6 +73,13 @@ export class HeaderComponent implements OnInit {
         this.elem = document.documentElement;
 
         this.loadNotificaciones();
+
+        this.apiService.refreshEmpresaEnSesion()
+            .pipe(this.untilDestroyed())
+            .subscribe(() => {
+                this.usuario = this.apiService.auth_user() ?? {};
+                this.cdr.markForCheck();
+            });
     }
 
     private refreshDisplayRole(): void {
@@ -79,12 +88,12 @@ export class HeaderComponent implements OnInit {
 
     /** Logo de la empresa activa; si no hay, avatar del usuario (SP-2221). */
     get imagenHeaderUsuario(): string {
-        const base = `${this.apiService.baseUrl}/img/`;
-        const logo = (this.usuario?.empresa?.logo ?? this.contadoresPortal.leerContextoEmpresa()?.logo)?.trim();
-        if (logo && !logo.includes('default.jpg')) {
-            return base + logo.replace(/^\//, '');
-        }
-        return base + (this.usuario?.avatar ?? '');
+        const auth = this.apiService.auth_user() ?? {};
+        const logoPath = pathLogoEmpresa(
+            auth.empresa?.logo,
+            this.contadoresPortal.leerContextoEmpresa()?.logo,
+        );
+        return urlImagenEmpresaOAvatar(this.apiService.baseUrl, logoPath, auth.avatar);
     }
 
     irAPerfil() {
