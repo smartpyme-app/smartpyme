@@ -239,6 +239,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
 
     ngOnDestroy() {
         this.detenerPollingConsolidacion();
+        this.detenerPollingExportacionWoo();
     }
 
 
@@ -286,6 +287,10 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
                 this.cargarShopifyLocations();
             }
 
+            if (this.empresa && this.empresa.status_conexion_woocommerce === 'connected') {
+                this.consultarEstadoExportacionWoo(false);
+            }
+
             const tabSlug = this.route.snapshot.queryParamMap.get('tab');
             if (tabSlug) {
                 this.activeTabSlug = tabSlug.toLowerCase();
@@ -308,6 +313,54 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
       ? this.empresa.woocommerce_sync_mode
       : 'bidirectional';
     return m === 'bidirectional' || m === 'wc_to_sp';
+  }
+
+  public get wooSyncImportDesdeTienda(): boolean {
+    return this.woocommerceModoPuedeImportarDesdeWoo();
+  }
+
+  public get wooSyncEnviarATienda(): boolean {
+    return this.woocommerceModoPuedeEnviarATienda();
+  }
+
+  public onWooSyncImportToggle(importOn: boolean): void {
+    const exportOn = this.wooSyncEnviarATienda;
+    this.aplicarModoSyncWooDesdeValores(importOn, exportOn);
+    this.finalizarCambioModoWoo(importOn, exportOn);
+  }
+
+  public onWooSyncExportToggle(exportOn: boolean): void {
+    const importOn = this.wooSyncImportDesdeTienda;
+    this.aplicarModoSyncWooDesdeValores(importOn, exportOn);
+    this.finalizarCambioModoWoo(importOn, exportOn);
+  }
+
+  private finalizarCambioModoWoo(importOn: boolean, exportOn: boolean): void {
+    if (!importOn && !exportOn) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Solo pedidos en línea',
+        text: 'Sin catálogo activo en ningún sentido. Los pedidos WooCommerce siguen registrándose; active al menos una dirección para catálogo.',
+        timer: 4500,
+        showConfirmButton: false,
+      });
+    }
+    this.onSubmit();
+  }
+
+  private aplicarModoSyncWooDesdeValores(importDesde: boolean, enviarA: boolean): void {
+    if (!this.empresa) {
+      return;
+    }
+    if (importDesde && enviarA) {
+      this.empresa.woocommerce_sync_mode = 'bidirectional';
+    } else if (importDesde) {
+      this.empresa.woocommerce_sync_mode = 'wc_to_sp';
+    } else if (enviarA) {
+      this.empresa.woocommerce_sync_mode = 'sp_to_wc';
+    } else {
+      this.empresa.woocommerce_sync_mode = 'orders_only';
+    }
   }
 
     public async onSubmit(): Promise<any> {
@@ -1429,50 +1482,67 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
 
     }
 
-    public exportarWooCommerce() {
-        Swal.fire({
-            title: '¿Está seguro de exportar sus productos a WooCommerce?',
-            html: `
-                <p>Esta acción iniciará una migración asincrónica de productos a WooCommerce:</p>
-                <ul style="text-align: left; margin-top: 1em;">
-                    <li>Solo se migrarán los productos relacionados con su usuario y sucursal actual</li>
-                    <li>Los productos vinculados a otras sucursales no serán exportados</li>
-                    <li>El proceso se ejecutará en segundo plano y puede tomar varios minutos</li>
-                    <li>Esta acción no se puede revertir</li>
-                </ul>
-            `,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Sí, iniciar exportación',
-            cancelButtonText: 'Cancelar'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                Swal.fire({
-                    title: 'Iniciando exportación...',
-                    text: 'La migración de productos ha comenzado y continuará en segundo plano',
-                    icon: 'info',
-                    showConfirmButton: false,
-                    timer: 3000
-                });
+    public exportarWooCommerce(template?: TemplateRef<any>) {
+        if (localStorage.getItem(this.WOO_EXPORT_SKIP_PREVIEW_KEY) === '1') {
+            this.ejecutarExportacionWoo(this.wooExportSoloConStock);
+            return;
+        }
+        if (!template) {
+            this.ejecutarExportacionWoo(this.wooExportSoloConStock);
+            return;
+        }
+        this.wooExportOmitirPreview = false;
+        this.cargarVistaPreviaExportacionWoo();
+        this.modalRef = this.modalService.show(template, { class: 'modal-xl' });
+    }
 
-                this.apiService.store('producto/exportar-woocommerce', {})
-                    .pipe(this.untilDestroyed())
-                    .subscribe(
-                    response => {
-                        Swal.fire({
-                            title: 'Proceso iniciado',
-                            text: 'La migración de productos a WooCommerce se está ejecutando en segundo plano',
-                            icon: 'success'
-                        });
-                    },
-                    error => {
-                        this.alertService.error(error);
-                    }
-                );
+    public cargarVistaPreviaExportacionWoo() {
+        this.wooExportPreviewLoading = true;
+        this.apiService.getAll('woocommerce/exportacion/vista-previa', {
+            solo_con_stock: this.wooExportSoloConStock ? 1 : 0,
+        }).subscribe(
+            (res: any) => {
+                this.wooExportPreviewLoading = false;
+                this.wooExportPreviewTotales = res.totales || null;
+                this.wooExportPreviewGrupos = res.grupos || [];
+            },
+            (err: any) => {
+                this.wooExportPreviewLoading = false;
+                this.alertService.error(err);
             }
-        });
+        );
+    }
+
+    public onWooExportFiltroStockChange() {
+        this.cargarVistaPreviaExportacionWoo();
+    }
+
+    public confirmarExportacionWooDesdeModal() {
+        if (this.wooExportOmitirPreview) {
+            localStorage.setItem(this.WOO_EXPORT_SKIP_PREVIEW_KEY, '1');
+        }
+        if (this.modalRef) {
+            this.modalRef.hide();
+        }
+        this.ejecutarExportacionWoo(this.wooExportSoloConStock);
+    }
+
+    private ejecutarExportacionWoo(soloConStock: boolean) {
+        this.apiService.store('producto/exportar-woocommerce', { solo_con_stock: soloConStock })
+            .pipe(this.untilDestroyed())
+            .subscribe(
+                () => {
+                    Swal.fire({
+                        title: 'Proceso iniciado',
+                        text: 'La exportación a WooCommerce se está ejecutando en segundo plano.',
+                        icon: 'success',
+                    });
+                    this.tabWooCommerceActiva = 'productos';
+                    this.consultarEstadoExportacionWoo(false);
+                    this.iniciarPollingExportacionWoo();
+                },
+                (error) => this.alertService.error(error)
+            );
     }
 
     public exportarShopify() {
@@ -2910,7 +2980,19 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
     // ==========================================
     // SHOPIFY MULTI-SUCURSAL LOCATIONS
     // ==========================================
+    public tabWooCommerceActiva: 'credenciales' | 'webhooks' | 'configuracion' | 'productos' = 'credenciales';
+    public estadoExportacionWoo: any = null;
+    public procesandoExportacionWoo = false;
+    private pollingExportacionWooInterval: ReturnType<typeof setInterval> | null = null;
+    private readonly WOO_EXPORT_SKIP_PREVIEW_KEY = 'smartpyme_woo_export_skip_preview';
+    public wooExportSoloConStock = true;
+    public wooExportOmitirPreview = false;
+    public wooExportPreviewLoading = false;
+    public wooExportPreviewTotales: any = null;
+    public wooExportPreviewGrupos: any[] = [];
     public tabShopifyActiva: 'credenciales' | 'configuracion' | 'sucursales' | 'productos' = 'credenciales';
+    public mostrarGuiaWebhooksWooCommerce = true;
+    public webhooksWooCommerceEnEspanol = true;
     public mostrarWebhooksShopify = false;
     public webhooksShopifyEnEspanol = true;
     public shopifyLocations: any[] = [];
@@ -3258,6 +3340,51 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
         if (this.pollingConsolidacionInterval) {
             clearInterval(this.pollingConsolidacionInterval);
             this.pollingConsolidacionInterval = null;
+        }
+    }
+
+    public consultarEstadoExportacionWoo(mostrarAlertaFinal = true) {
+        this.apiService.getAll('woocommerce/exportacion/estado').subscribe(
+            (res: any) => {
+                if (!res) {
+                    return;
+                }
+                this.estadoExportacionWoo = res;
+                if (res.estado === 'procesando') {
+                    this.procesandoExportacionWoo = true;
+                    if (!this.pollingExportacionWooInterval) {
+                        this.iniciarPollingExportacionWoo();
+                    }
+                } else {
+                    const estaba = this.procesandoExportacionWoo;
+                    this.procesandoExportacionWoo = false;
+                    this.detenerPollingExportacionWoo();
+                    if (mostrarAlertaFinal && estaba && res.estado === 'completado') {
+                        Swal.fire({
+                            title: 'Exportación completada',
+                            html: `Creados: <strong>${res.creados || 0}</strong><br>Actualizados: <strong>${res.actualizados || 0}</strong><br>Errores: <strong>${res.errores || 0}</strong>`,
+                            icon: 'success',
+                        });
+                    } else if (mostrarAlertaFinal && estaba && res.estado === 'error') {
+                        Swal.fire('Error en exportación', res.mensaje || 'Ocurrió un fallo.', 'error');
+                    }
+                }
+            },
+            (err: any) => console.error('Error consultando exportación WooCommerce:', err)
+        );
+    }
+
+    public iniciarPollingExportacionWoo() {
+        this.detenerPollingExportacionWoo();
+        this.pollingExportacionWooInterval = setInterval(() => {
+            this.consultarEstadoExportacionWoo(true);
+        }, 2500);
+    }
+
+    public detenerPollingExportacionWoo() {
+        if (this.pollingExportacionWooInterval) {
+            clearInterval(this.pollingExportacionWooInterval);
+            this.pollingExportacionWooInterval = null;
         }
     }
 

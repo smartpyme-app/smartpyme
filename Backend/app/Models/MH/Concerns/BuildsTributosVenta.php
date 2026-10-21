@@ -74,24 +74,29 @@ trait BuildsTributosVenta
 
     /**
      * Resumen DTE (CCF / notas): un registro por impuesto con código MH, descripción y monto.
+     * Cuando se provee $totalGravada, el tributo 20 (IVA 13%) se calcula como ROUND(totalGravada * 0.13, 2)
+     * para cumplir la regla de Hacienda en DTE-03/05/06.
      */
-    protected function buildTributosResumen(): ?Collection
+    protected function buildTributosResumen(?float $totalGravada = null): ?Collection
     {
         $filas = $this->filasImpuestosDocumento();
+        $ivaDesdeBase = ($totalGravada !== null && $totalGravada > 0)
+            ? floatval(number_format(round($totalGravada * 0.13, 2), 2, '.', ''))
+            : null;
 
         if ($filas->isEmpty()) {
             if ($this->documentoTieneIva()) {
                 return collect([[
                     'codigo' => '20',
                     'descripcion' => 'Impuesto al Valor Agregado 13%',
-                    'valor' => floatval(number_format($this->montoIvaDocumento(), 2, '.', '')),
+                    'valor' => $ivaDesdeBase ?? floatval(number_format($this->montoIvaDocumento(), 2, '.', '')),
                 ]]);
             }
 
             return null;
         }
 
-        $tributos = $filas->map(function ($vi) {
+        $tributos = $filas->map(function ($vi) use ($ivaDesdeBase) {
             $impuesto = $vi->impuesto;
             $codigo = $this->resolverCodigoMhImpuesto($impuesto);
 
@@ -99,10 +104,14 @@ trait BuildsTributosVenta
                 return null;
             }
 
+            $valor = ($codigo === '20' && $ivaDesdeBase !== null)
+                ? $ivaDesdeBase
+                : floatval(number_format($vi->monto, 2, '.', ''));
+
             return [
                 'codigo' => $codigo,
                 'descripcion' => $impuesto ? $impuesto->nombre : 'Impuesto',
-                'valor' => floatval(number_format($vi->monto, 2, '.', '')),
+                'valor' => $valor,
             ];
         })->filter()->values();
 
@@ -110,7 +119,7 @@ trait BuildsTributosVenta
             return collect([[
                 'codigo' => '20',
                 'descripcion' => 'Impuesto al Valor Agregado 13%',
-                'valor' => floatval(number_format($this->montoIvaDocumento(), 2, '.', '')),
+                'valor' => $ivaDesdeBase ?? floatval(number_format($this->montoIvaDocumento(), 2, '.', '')),
             ]]);
         }
 
