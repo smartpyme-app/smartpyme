@@ -181,7 +181,7 @@ class MHCCF extends Model
         $pagoCond = $this->condicionOperacionYPagoPlazo();
         $cuerpoDocumento = $this->detalles();
         $bases = $this->resumenVentasDesdeCuerpoDocumento($cuerpoDocumento);
-        $tributos = $this->buildTributosResumen();
+        $tributos = $this->buildTributosResumen($bases['totalGravada']);
         $subTotal = $bases['subTotalVentas'];
         $totalDescu = 0.0;
         $montoTotalOperacion = $this->montoTotalOperacionConTributos($subTotal, $tributos, $totalDescu);
@@ -315,10 +315,10 @@ class MHCCF extends Model
 
             // Producto no Gravado
                if ($detalle->cuenta_a_terceros > 0) {
-                   $precioUni = round(floatval($detalle->precio), 4);
+                   $precioUni = round(floatval($detalle->precio), 6);
                    $cantidad = round(floatval($detalle->cantidad), 2);
-                   $montoDescu = round(floatval($detalle->descuento), 2);
-                   $ventaItem = round($precioUni * $cantidad - $montoDescu, 2);
+                   $montoDescu = round(floatval($detalle->descuento), 4);
+                   $ventaItem = round($precioUni * $cantidad - $montoDescu, 4);
                    $detalles->push([
                        "numItem" => count($detalles) + 1,
                        "tipoItem" => $detalle->tipo_item,
@@ -329,10 +329,10 @@ class MHCCF extends Model
                        "uniMedida" => $detalle->cod_medida,
                        "descripcion" => $detalle->nombre_producto,
                        "precioUni" => floatval(number_format($precioUni, 6, '.', '')),
-                       "montoDescu" => floatval(number_format($montoDescu, 2, '.', '')),
-                       "ventaNoSuj" => floatval(number_format($detalle->no_sujeta > 0 ? $ventaItem : 0, 2, '.', '')),
-                       "ventaExenta" => floatval(number_format($detalle->exenta > 0 ? $ventaItem : 0, 2, '.', '')),
-                       "ventaGravada" => floatval(number_format($detalle->gravada > 0 ? $ventaItem : 0, 2, '.', '')),
+                       "montoDescu" => floatval(number_format($montoDescu, 4, '.', '')),
+                       "ventaNoSuj" => floatval(number_format($detalle->no_sujeta > 0 ? $ventaItem : 0, 4, '.', '')),
+                       "ventaExenta" => floatval(number_format($detalle->exenta > 0 ? $ventaItem : 0, 4, '.', '')),
+                       "ventaGravada" => floatval(number_format($detalle->gravada > 0 ? $ventaItem : 0, 4, '.', '')),
                        "tributos" => $tributos,
                        "psv" => 0,
                        "noGravado" => 0,
@@ -360,8 +360,8 @@ class MHCCF extends Model
                }else{
                    $precioUni = round(floatval($detalle->precio), 6);
                    $cantidad = round(floatval($detalle->cantidad), 2);
-                   $montoDescu = round(floatval($detalle->descuento), 2);
-                   $ventaItem = round($precioUni * $cantidad - $montoDescu, 2);
+                   $montoDescu = round(floatval($detalle->descuento), 4);
+                   $ventaItem = round($precioUni * $cantidad - $montoDescu, 4);
                    $detalles->push([
                        "numItem" => count($detalles) + 1,
                        "tipoItem" => $detalle->tipo_item,
@@ -372,10 +372,10 @@ class MHCCF extends Model
                        "uniMedida" => $detalle->cod_medida,
                        "descripcion" => $detalle->nombre_producto,
                        "precioUni" => floatval(number_format($precioUni, 6, '.', '')),
-                       "montoDescu" => floatval(number_format($montoDescu, 2, '.', '')),
-                       "ventaNoSuj" => floatval(number_format($detalle->no_sujeta > 0 ? $ventaItem : 0, 2, '.', '')),
-                       "ventaExenta" => floatval(number_format($detalle->exenta > 0 ? $ventaItem : 0, 2, '.', '')),
-                       "ventaGravada" => floatval(number_format($detalle->gravada > 0 ? $ventaItem : 0, 2, '.', '')),
+                       "montoDescu" => floatval(number_format($montoDescu, 4, '.', '')),
+                       "ventaNoSuj" => floatval(number_format($detalle->no_sujeta > 0 ? $ventaItem : 0, 4, '.', '')),
+                       "ventaExenta" => floatval(number_format($detalle->exenta > 0 ? $ventaItem : 0, 4, '.', '')),
+                       "ventaGravada" => floatval(number_format($detalle->gravada > 0 ? $ventaItem : 0, 4, '.', '')),
                        "tributos" => $tributos,
                        "psv" => 0,
                        "noGravado" => 0,
