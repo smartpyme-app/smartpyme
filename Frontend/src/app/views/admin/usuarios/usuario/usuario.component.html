@@ -19,31 +19,17 @@
             <div class="card-header bg-white py-4">
                 <div class="row align-items-center">
                     <div class="col-auto">
-                        <figure class="usuario-avatar-edit img-thumbnail rounded-circle file-upload d-flex justify-content-center align-items-center m-0 overflow-hidden"
-                                aria-label="Cambiar foto de perfil">
-                            @if (!usuario.avatar && !preview) {
+                        <figure class="usuario-portada-thumb rounded-circle d-flex justify-content-center align-items-center m-0 overflow-hidden bg-light">
+                            @if (imagenPortadaUsuario) {
+                              <img [src]="imagenPortadaUsuario" class="usuario-portada-thumb__img" alt="">
+                            } @else {
                               <i class="fa fa-user fa-2x text-muted"></i>
                             }
-                            @if (usuario.avatar && !preview) {
-                              <img [src]="apiService.baseUrl + '/img/' + usuario.avatar" class="usuario-avatar-edit__img" alt="">
-                            }
-                            @if (url_img_preview && preview) {
-                              <img [src]="url_img_preview" class="usuario-avatar-edit__img" alt="">
-                            }
-                            <span class="usuario-avatar-edit__overlay" aria-hidden="true">
-                                <i class="fa fa-camera fa-lg"></i>
-                                <span>Cambiar foto</span>
-                            </span>
-                            <input type="file" name="img" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
                         </figure>
-                        <p class="usuario-avatar-edit__hint text-muted small text-center mt-2 mb-0">Foto editable</p>
                     </div>
                     <div class="col">
                         <h3 class="h4 mb-1">{{usuario.name}}</h3>
-                        <p class="text-muted mb-2 fs-6">{{rol.name}}</p>
-                        <a class="usuario-editable-hint" href="#info" data-bs-toggle="tab" role="tab">
-                            <i class="fa fa-pencil me-1" aria-hidden="true"></i>Editar nombre y rol
-                        </a>
+                        <p class="text-muted mb-0 fs-6">{{rol.name}}</p>
                     </div>
                     <div class="col-auto">
                         <span class="badge rounded-pill px-3 py-2"
