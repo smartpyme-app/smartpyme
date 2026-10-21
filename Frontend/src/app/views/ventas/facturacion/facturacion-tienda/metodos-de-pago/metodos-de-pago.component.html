@@ -16,6 +16,24 @@
                             <td>{{ formaPago.nombre }}:</td>
                             <td width="150px"><input autocomplete="off" type="text" [(ngModel)]="formaPago.total" (ngModelChange)="sumTotal()" [name]="'total-' + $index" class="form-control text-end"></td>
                         </tr>
+                        <tr *ngIf="muestraCodigoGiftCard()">
+                            <td colspan="2">
+                                <label for="codigo_gift_card_multiple">Código gift card</label>
+                                <div class="input-group">
+                                    <input id="codigo_gift_card_multiple" autocomplete="off" class="form-control" type="text"
+                                        [(ngModel)]="venta.codigo_gift_card" name="codigo_gift_card_multiple"
+                                        (blur)="consultarCodigoGiftCard()" placeholder="Ej. GC-XXXX">
+                                    <button type="button" class="btn btn-outline-secondary" (click)="consultarCodigoGiftCard()"
+                                        [disabled]="giftCardLookupLoading">
+                                        <i class="fa fa-search"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted d-block mt-1" *ngIf="giftCardInfo">
+                                    Saldo: {{ giftCardInfo.saldo | currency }} · {{ giftCardInfo.estado }}
+                                </small>
+                                <small class="text-danger d-block mt-1" *ngIf="giftCardLookupError">{{ giftCardLookupError }}</small>
+                            </td>
+                        </tr>
                         <tr>
                             <td><b>Total de la venta: </b></td>
                             <td class="text-end"><b>{{ totalAPagar() | currency }}</b></td>
