@@ -149,7 +149,7 @@ class GastosService
         }
 
         $cuenta_forma_pago = $this->cuentaFormaPago($abono);
-        $refTxt = ($gasto->tipo_documento ?? 'Documento') . ' #' . ($gasto->referencia ?? $gasto->id);
+        $refTxt = ($gasto->tipo_documento ?? 'Documento') . ' #' . ($gasto->referencia ?? $gasto->id) . ' ' . $gasto->nombre_proveedor;
         $concepto = 'Abono a cuenta por pagar gasto ' . $refTxt;
 
         return [
