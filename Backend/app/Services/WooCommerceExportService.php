@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\Log;
 
 class WooCommerceExportService
 {
+    /** Visible en admin Woo como "Pending review"; no en la tienda hasta publicar. */
+    private const WC_EXPORT_PRODUCT_STATUS = 'pending';
+
     /** @var WooCommerceSkuResolver */
     protected $skuResolver;
 
@@ -109,8 +112,6 @@ class WooCommerceExportService
         try {
             $stock = $stocks[$producto->id] ?? 0;
             $productData = $this->prepararDatosProducto($producto, $stock, $client);
-            $esImportadoWooCommerce = !empty($producto->imported_from_woocommerce_csv);
-
             if (!empty($producto->woocommerce_id) && empty($producto->woocommerce_parent_id)) {
                 if ($this->actualizarProductoExistente($client, $producto, $productData, $resultados)) {
                     return;
@@ -129,12 +130,6 @@ class WooCommerceExportService
                 } catch (\Exception $e) {
                     $this->registrarError($producto, $e, $resultados);
                 }
-
-                return;
-            }
-
-            if ($esImportadoWooCommerce) {
-                $resultados['omitidos'] = ($resultados['omitidos'] ?? 0) + 1;
 
                 return;
             }
@@ -180,8 +175,24 @@ class WooCommerceExportService
 
         if ($parentWooId) {
             unset($parentPayload['sku']);
-            $client->put("products/{$parentWooId}", $parentPayload);
-        } else {
+            try {
+                $client->put("products/{$parentWooId}", $parentPayload);
+            } catch (\Exception $e) {
+                if (WooCommerceRemoteIdGuard::isMissingRemoteProduct($e)) {
+                    Log::info('Padre WooCommerce inexistente; se crea producto variable nuevo', [
+                        'sku_grupo' => $sku,
+                        'woocommerce_parent_id' => $parentWooId,
+                    ]);
+                    foreach ($items as $p) {
+                        WooCommerceRemoteIdGuard::clearLocalIds($p);
+                    }
+                    $parentWooId = null;
+                } else {
+                    throw $e;
+                }
+            }
+        }
+        if (!$parentWooId) {
             $parentPayload['type'] = 'variable';
             unset(
                 $parentPayload['sku'],
@@ -211,11 +222,18 @@ class WooCommerceExportService
             ];
 
             if (!empty($producto->woocommerce_id) && (int) $producto->woocommerce_parent_id === (int) $parentWooId) {
-                $client->put("products/{$parentWooId}/variations/{$producto->woocommerce_id}", $variationPayload);
-                $producto->last_woocommerce_sync = now();
-                $producto->saveQuietly();
-                $this->registrarExito($resultados, $producto, 'actualizado', $producto->woocommerce_id);
-                continue;
+                try {
+                    $client->put("products/{$parentWooId}/variations/{$producto->woocommerce_id}", $variationPayload);
+                    $producto->last_woocommerce_sync = now();
+                    $producto->saveQuietly();
+                    $this->registrarExito($resultados, $producto, 'actualizado', $producto->woocommerce_id);
+                    continue;
+                } catch (\Exception $e) {
+                    if (!WooCommerceRemoteIdGuard::isMissingRemoteProduct($e)) {
+                        throw $e;
+                    }
+                    WooCommerceRemoteIdGuard::clearLocalIds($producto);
+                }
             }
 
             $resolution = $this->skuResolver->resolveBySku($client, $row['variation_sku']);
@@ -303,6 +321,10 @@ class WooCommerceExportService
                 'woocommerce_id' => $producto->woocommerce_id,
                 'woocommerce_parent_id' => $producto->woocommerce_parent_id ?? null
             ]);
+            if (WooCommerceRemoteIdGuard::isMissingRemoteProduct($e)) {
+                WooCommerceRemoteIdGuard::clearLocalIds($producto);
+            }
+
             return false;
         }
     }
@@ -393,7 +415,7 @@ class WooCommerceExportService
 
         $productData = [
             'name' => $nombreWoo,
-            'status' => 'publish',
+            'status' => self::WC_EXPORT_PRODUCT_STATUS,
             'featured' => false,
             'catalog_visibility' => 'visible',
             'sku' => $producto->codigo ?: $producto->barcode,

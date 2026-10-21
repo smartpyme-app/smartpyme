@@ -1305,7 +1305,7 @@ class PartidasController extends Controller
 
             $ventaRef = Venta::find($abono->id_venta);
             $refTxt = $ventaRef
-                ? (($ventaRef->nombre_documento ?? 'Documento').' #'.($ventaRef->correlativo ?? ''))
+                ? (($ventaRef->nombre_documento ?? 'Documento').' #'.($ventaRef->correlativo ?? '').' '.$ventaRef->nombre_cliente)
                 : ('Venta #'.$abono->id_venta);
 
             $detalles[] = [
@@ -1690,7 +1690,7 @@ class PartidasController extends Controller
 
             $compraRef = Compra::find($abono->id_compra);
             $refTxt = $compraRef
-                ? (($compraRef->tipo_documento ?? 'Documento').' #'.($compraRef->referencia ?? ''))
+                ? (($compraRef->tipo_documento ?? 'Documento').' #'.($compraRef->referencia ?? '').' '.$compraRef->nombre_proveedor)
                 : ('Compra #'.$abono->id_compra);
 
             $detalles[] = [

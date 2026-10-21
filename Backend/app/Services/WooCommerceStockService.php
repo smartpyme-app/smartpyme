@@ -177,6 +177,10 @@ class WooCommerceStockService
             return true;
         } catch (\Exception $e) {
             Log::warning("Error actualizando producto por ID en WooCommerce: " . $e->getMessage());
+            if (WooCommerceRemoteIdGuard::isMissingRemoteProduct($e)) {
+                WooCommerceRemoteIdGuard::clearLocalIds($producto);
+            }
+
             return false;
         }
     }
