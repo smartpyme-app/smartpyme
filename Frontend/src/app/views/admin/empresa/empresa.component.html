@@ -7,17 +7,24 @@
         <form name="form" (ngSubmit)="onSubmit()">
             <section class="bg-white p-4 rounded mb-3">
                <div class="row justify-content-center">
-                   <div class="form-group col-6 col-sm-4 col-md-2">
-                       <figure class="img-thumbnail file-upload d-flex justify-content-center align-items-center" tooltip="Agregar" style="min-height: 100px;">
-                           <!-- <img class="img-fluid" src="" alt="logo"> -->
+                   <div class="form-group col-auto text-center">
+                       <figure class="empresa-logo-edit img-thumbnail file-upload d-flex justify-content-center align-items-center m-0 overflow-hidden"
+                               aria-label="Cambiar logo de la empresa">
                            @if (empresa.logo != null) {
-                             <img class="img-fluid" [appLazyImage]="apiService.baseUrl + '/img/' + empresa.logo" alt="logo">
+                             <img class="empresa-logo-edit__img" [appLazyImage]="apiService.baseUrl + '/img/' + empresa.logo" alt="Logo de la empresa">
+                           } @else {
+                             <i class="fa fa-building fa-2x text-muted" aria-hidden="true"></i>
                            }
-                           @if (empresa.logo == null) {
-                             <img class="img-fluid" src="https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg" alt="logo">
-                           }
+                           <span class="empresa-logo-edit__badge" aria-hidden="true">
+                               <i class="fa fa-pencil"></i>
+                           </span>
+                           <span class="empresa-logo-edit__overlay" aria-hidden="true">
+                               <i class="fa fa-camera fa-lg"></i>
+                               <span>Cambiar logo</span>
+                           </span>
                            <input type="file" name="img" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
                        </figure>
+                       <p class="empresa-logo-edit__hint text-muted small mb-0 mt-2">Clic para cambiar el logo</p>
                    </div>
                </div>
                <div class="row justify-content-center">

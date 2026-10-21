@@ -117,3 +117,70 @@
   box-shadow: 0 2px 4px rgba(13, 110, 253, 0.25);
 }
 
+.empresa-logo-edit {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  cursor: pointer;
+  border: 2px dashed #adb5bd;
+  transition: border-color 0.15s ease;
+}
+
+.empresa-logo-edit.file-upload:hover {
+  opacity: 1;
+}
+
+.empresa-logo-edit:hover,
+.empresa-logo-edit:focus-within {
+  border-color: var(--bs-primary, #0d6efd);
+}
+
+.empresa-logo-edit__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 0.35rem;
+}
+
+.empresa-logo-edit__badge {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--bs-primary, #0d6efd);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.2);
+  pointer-events: none;
+  font-size: 0.75rem;
+}
+
+.empresa-logo-edit__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #fff;
+  background: rgb(0 0 0 / 0.45);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.empresa-logo-edit:hover .empresa-logo-edit__overlay,
+.empresa-logo-edit:focus-within .empresa-logo-edit__overlay {
+  opacity: 1;
+}
+

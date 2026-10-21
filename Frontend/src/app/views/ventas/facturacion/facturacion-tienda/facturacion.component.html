@@ -514,7 +514,10 @@
                             <option [value]="forma.nombre">{{ forma.nombre }}</option>
                         }
                     </select>
-                    <app-metodos-de-pago [venta]="venta" [formaPagos]="formaPagos" (update)="totalPorMetodoDePago()"></app-metodos-de-pago>
+                    <app-metodos-de-pago [venta]="venta" [formaPagos]="formaPagos" [giftCardsActivo]="giftCardsActivo"
+                        [giftCardInfo]="giftCardInfo" [giftCardLookupError]="giftCardLookupError"
+                        [giftCardLookupLoading]="giftCardLookupLoading" (consultarCodigo)="consultarGiftCard()"
+                        (update)="totalPorMetodoDePago()"></app-metodos-de-pago>
                 </div>
             </div>
         }

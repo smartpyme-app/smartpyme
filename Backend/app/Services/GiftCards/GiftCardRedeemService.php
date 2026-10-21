@@ -103,6 +103,12 @@ class GiftCardRedeemService
         }
 
         $saldo = (float) $card->saldo;
+        if ($saldo <= 0) {
+            $card->saldo = 0;
+            $card->estado = GiftCard::ESTADO_INACTIVA;
+            ($this->persistirGiftCard)($card);
+            throw new DomainException('Saldo insuficiente');
+        }
         if ($saldo < $monto) {
             throw new DomainException('Saldo insuficiente');
         }
@@ -110,7 +116,7 @@ class GiftCardRedeemService
         $card->saldo = round($saldo - $monto, 4);
         if ($card->saldo <= 0) {
             $card->saldo = 0;
-            $card->estado = GiftCard::ESTADO_AGOTADA;
+            $card->estado = GiftCard::ESTADO_INACTIVA;
         }
         ($this->persistirGiftCard)($card);
 

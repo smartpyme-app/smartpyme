@@ -17,6 +17,7 @@ class GiftCard extends Model
 
     const ESTADO_ACTIVA = 'activa';
     const ESTADO_AGOTADA = 'agotada';
+    const ESTADO_INACTIVA = 'inactiva';
     const ESTADO_ANULADA = 'anulada';
 
     protected $fillable = [

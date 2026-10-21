@@ -309,6 +309,9 @@ class VentasController extends Controller
     {
         $venta = Venta::where('id', $id)
             ->with('devoluciones', 'detalles.composiciones', 'detalles.vendedor', 'detalles.producto.impuestos', 'abonos.usuario', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')
+            ->with(['giftCardsEmitidas' => function ($query) {
+                $query->select('id', 'id_venta_emision', 'codigo', 'saldo', 'estado', 'monto_inicial');
+            }])
             ->withSum(['abonos' => function ($query) {
                 $query->where('estado', 'Confirmado');
             }], 'total')

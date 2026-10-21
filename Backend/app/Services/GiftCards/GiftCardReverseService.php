@@ -152,7 +152,7 @@ class GiftCardReverseService
         if ($card->saldo > $montoInicial) {
             $card->saldo = $montoInicial;
         }
-        if ($card->saldo > 0 && ($card->estado ?? null) === GiftCard::ESTADO_AGOTADA) {
+        if ($card->saldo > 0 && in_array($card->estado ?? null, [GiftCard::ESTADO_AGOTADA, GiftCard::ESTADO_INACTIVA], true)) {
             $card->estado = GiftCard::ESTADO_ACTIVA;
         }
         ($this->persistirGiftCard)($card);
