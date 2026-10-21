@@ -101,7 +101,23 @@ class WooCommerceTransformer
             'id_usuario' => $wooData['id_usuario'],
             'id_sucursal' => $wooData['id_sucursal'],
             'id_canal' => $wooData['id_canal'],
+            'num_orden' => $this->numeroOrdenWoo($wooData),
         ];
+    }
+
+    /**
+     * Número visible del pedido en Woo (como order_number en Shopify).
+     */
+    private function numeroOrdenWoo(array $wooData): ?string
+    {
+        if (isset($wooData['number']) && $wooData['number'] !== '') {
+            return (string) $wooData['number'];
+        }
+        if (!empty($wooData['id'])) {
+            return (string) $wooData['id'];
+        }
+
+        return null;
     }
 
     /**
@@ -149,7 +165,7 @@ class WooCommerceTransformer
     {
         $mapeo = [
             'pending' => 'Pendiente',
-            'processing' => 'En Proceso',
+            'processing' => 'Pendiente',
             'on-hold' => 'Pendiente',
             'completed' => 'Pagada',
             'cancelled' => 'Anulada',

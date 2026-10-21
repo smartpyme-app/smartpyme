@@ -82,11 +82,13 @@ class WooCommerceTransformerTest extends TestCase
         $this->assertSame('Pagada', $venta['estado']);
         $this->assertSame(88.78, $venta['total']);
         $this->assertSame(82.0, $venta['sub_total']);
+        $this->assertSame('5823', $venta['num_orden']);
     }
 
     public function test_mapear_estado_completed_a_pagada(): void
     {
         $this->assertSame('Pagada', $this->transformer->mapearEstado('completed'));
+        $this->assertSame('Pendiente', $this->transformer->mapearEstado('processing'));
         $this->assertSame('Anulada', $this->transformer->mapearEstado('cancelled'));
     }
 
@@ -94,6 +96,7 @@ class WooCommerceTransformerTest extends TestCase
     {
         return [
             'id' => 5823,
+            'number' => '5823',
             'status' => 'completed',
             'total' => '88.78',
             'total_tax' => '0.00',
