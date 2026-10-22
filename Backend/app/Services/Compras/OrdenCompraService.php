@@ -568,11 +568,16 @@ class OrdenCompraService
             'tipo_documento'
         ];
 
-        foreach ($filtros as $key => $filtro) {
+        foreach ($filtros as $filtro) {
             if (is_callable($filtro)) {
                 $filtro($query, $request);
-            } elseif ($request->has($filtro)) {
-                $query->where($filtro, $request->$filtro);
+                continue;
+            }
+            // ponytail: igual que CotizacionesController en main — when($request->id_proveedor);
+            // has('') aplica WHERE con string vacío y deja el listado en cero.
+            $valor = $request->input($filtro);
+            if ($valor !== null && $valor !== '') {
+                $query->where($filtro, $valor);
             }
         }
 
