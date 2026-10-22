@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\CotizacionConstants;
 use App\Models\CotizacionVenta;
 use App\Models\CotizacionVentaDetalle;
 use App\Services\Ventas\CotizacionService;
@@ -13,6 +14,12 @@ class CotizacionVentaController extends Controller
 {
     public function store(StoreCotizacionVentaRequest $request, CotizacionService $cotizacionService)
     {
+        if (CotizacionConstants::esVentasLimitado($request->user())) {
+            abort(403, $request->filled('id')
+                ? 'No autorizado a modificar la cotización'
+                : 'No autorizado a crear cotizaciones');
+        }
+
         DB::beginTransaction();
         try {
             $cotizacion = $cotizacionService->crearOActualizarCotizacion($request->all());
@@ -31,6 +38,9 @@ class CotizacionVentaController extends Controller
 
             // Misma forma que facturacion/listados FE: el modelo en la raíz
             return response()->json($cotizacion, 200);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            DB::rollBack();
+            throw $e;
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['error' => $e->getMessage()], 500);
@@ -116,6 +126,10 @@ class CotizacionVentaController extends Controller
 
     public function destroy(int $id)
     {
+        if (CotizacionConstants::esVentasLimitado(auth()->user())) {
+            abort(403, 'No autorizado a modificar la cotización');
+        }
+
         $cotizacion = CotizacionVenta::with('detalles.customFields')->findOrFail($id);
 
         foreach ($cotizacion->detalles as $detalle) {

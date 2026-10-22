@@ -452,6 +452,10 @@ class ClientesController extends Controller
             unset($data['habilita_credito'], $data['dias_credito'], $data['limite_credito']);
         }
 
+        if ($request->id && \App\Constants\CotizacionConstants::esVentasLimitado($request->user())) {
+            unset($data['enable']);
+        }
+
         $cliente->fill($data);
         $cliente->save();
 
@@ -513,6 +517,10 @@ class ClientesController extends Controller
 
         if (!$this->puedeEditarCreditoCliente()) {
             unset($data['habilita_credito'], $data['dias_credito'], $data['limite_credito']);
+        }
+
+        if (\App\Constants\CotizacionConstants::esVentasLimitado($request->user())) {
+            unset($data['enable']);
         }
 
         $cliente->fill($data);

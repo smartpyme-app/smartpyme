@@ -445,6 +445,10 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
   public loadAll() {
     this.route.params.pipe(this.untilDestroyed()).subscribe((params: any) => {
       if (params.id) {
+        if (this.apiService.isVentasLimitado()) {
+          this.router.navigate(['/cliente/detalles', params.id]);
+          return;
+        }
         this.esNuevo = false;
         this.loading = true;
         this.apiService.read('cliente/', params.id).pipe(this.untilDestroyed()).subscribe(

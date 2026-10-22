@@ -23,6 +23,11 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
         $this->request = $request;
     }
 
+    private function mostrarCosto(): bool
+    {
+        return !\App\Constants\CotizacionConstants::esVentasLimitado(Auth::user());
+    }
+
     private function incluirComponenteQuimico(): bool
     {
         $user = Auth::user();
@@ -70,10 +75,12 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
         if ($this->incluirComponenteQuimico()) {
             $headings[] = 'Componente químico';
         }
-        $headings = array_merge($headings, [
-            'Costo',
-            'Precio sin IVA',
-            'Ganancia',
+        $precios = ['Precio sin IVA'];
+        if ($this->mostrarCosto()) {
+            array_unshift($precios, 'Costo');
+            $precios[] = 'Ganancia';
+        }
+        $headings = array_merge($headings, $precios, [
             'Precio con IVA',
             'Stock',
             'Proveedor',
@@ -109,10 +116,15 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
         if ($this->incluirComponenteQuimico()) {
             $fields[] = $row->componente_quimico ?? '';
         }
-        $fields = array_merge($fields, [
-            $row->empresa()->pluck('valor_inventario')->first() == 'promedio' ? number_format($row->costo_promedio, 2) : number_format($row->costo, 2),
-            number_format($row->precio, 2),
-            number_format($row->precio - $row->costo, 2),
+        $precios = [number_format($row->precio, 2)];
+        if ($this->mostrarCosto()) {
+            $costo = $row->empresa()->pluck('valor_inventario')->first() == 'promedio'
+                ? number_format($row->costo_promedio, 2)
+                : number_format($row->costo, 2);
+            array_unshift($precios, $costo);
+            $precios[] = number_format($row->precio - $row->costo, 2);
+        }
+        $fields = array_merge($fields, $precios, [
             number_format($row->precio + ($row->precio * ($row->empresa()->pluck('iva')->first() ? $row->empresa()->pluck('iva')->first() / 100 : 0)), 2),
             $stockSum,
             $row->proveedores()->count() ? $row->proveedores()->first()->nombre_proveedor : '',

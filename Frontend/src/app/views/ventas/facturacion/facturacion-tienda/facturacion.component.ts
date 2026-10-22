@@ -875,6 +875,11 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
     // Para cotizaciones Pre-venta
     if (this.route.snapshot.queryParamMap.get('cotizacion')) {
+      if (this.apiService.isVentasLimitado()) {
+        this.alertService.error('No puede crear ni editar cotizaciones.');
+        this.router.navigate(['/cotizaciones']);
+        return;
+      }
       this.venta.cotizacion = 1;
       this.venta.estado = 'pendiente';
       this.venta.tipo = 'cotizacion'; // Identificador para cotización
@@ -954,6 +959,11 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
     // Para editar cotizaciones Pre-venta / ventas
     if (this.route.snapshot.paramMap.get('id')) {
+      if (this.apiService.isVentasLimitado() && this.router.url.includes('/cotizacion/')) {
+        this.alertService.error('No puede editar cotizaciones.');
+        this.router.navigate(['/cotizaciones']);
+        return;
+      }
       this.editar = true;
       const isCotizacion = this.venta.cotizacion == 1;
       const endpoint = isCotizacion ? 'cotizacionVentas/' : 'venta/';
@@ -1058,7 +1068,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       this.route.snapshot.queryParamMap.get('facturar_cotizacion') &&
       this.route.snapshot.queryParamMap.get('id_venta')
     ) {
-      if (this.apiService.restriccionesCotizacionesVendedoresActivas()) {
+      if (this.apiService.restriccionesCotizacionesVendedoresActivas() && !this.apiService.isVentasLimitado()) {
         this.alertService.error('No tiene permiso para facturar cotizaciones.');
         this.router.navigate(['/cotizaciones']);
       } else {
@@ -1068,6 +1078,11 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
           .read('cotizacionVentas/', +this.route.snapshot.queryParamMap.get('id_venta')!)
           .subscribe(
             (venta) => {
+              if (this.apiService.isVentasLimitado() && String(venta?.estado || '').toLowerCase() !== 'pendiente') {
+                this.alertService.error('Solo puede facturar cotizaciones pendientes.');
+                this.router.navigate(['/cotizaciones']);
+                return;
+              }
               this.venta = this.adaptarCotizacionVentaSiAplica(venta, false);
               this.retencionIvaGcUsuarioDecidio = true;
               this.normalizarDetallesTipoGravado(this.venta);

@@ -353,11 +353,17 @@ export class FacturacionV2Component implements OnInit {
     this.verificarAccesoCreditosClientes();
   }
 
+  /** Admin y Ventas Limitado eligen bodega de cualquier sucursal. El resto queda en la suya. */
+  private limitaSucursalPropia(): boolean {
+    const auth = this.apiService.auth_user();
+    return auth?.tipo != 'Administrador' && !this.apiService.isVentasLimitado();
+  }
+
   public loadData() {
     this.apiService.getAll('sucursales/list').subscribe(
       (sucursales) => {
         this.sucursales = sucursales;
-        if (this.apiService.auth_user().tipo != 'Administrador') {
+        if (this.limitaSucursalPropia()) {
           this.sucursales = this.sucursales.filter(
             (item: any) => item.id == this.apiService.auth_user().id_sucursal
           );
@@ -371,7 +377,7 @@ export class FacturacionV2Component implements OnInit {
     this.apiService.getAll('bodegas/list').subscribe(
       (bodegas) => {
         this.bodegas = bodegas;
-        if (this.apiService.auth_user().tipo != 'Administrador') {
+        if (this.limitaSucursalPropia()) {
           this.bodegas = this.bodegas.filter(
             (item: any) =>
               item.id_sucursal == this.apiService.auth_user().id_sucursal
@@ -684,6 +690,11 @@ export class FacturacionV2Component implements OnInit {
 
     // Para cotizaciones Pre-venta
     if (this.route.snapshot.queryParamMap.get('cotizacion')) {
+      if (this.apiService.isVentasLimitado()) {
+        this.alertService.error('No puede crear ni editar cotizaciones.');
+        this.router.navigate(['/cotizaciones']);
+        return;
+      }
       this.venta.cotizacion = 1;
       this.venta.estado = 'Pendiente';
       this.syncVentaCreditoConsignaFlagsFromEstado();
@@ -820,7 +831,7 @@ export class FacturacionV2Component implements OnInit {
       this.route.snapshot.queryParamMap.get('facturar_cotizacion')! &&
       this.route.snapshot.queryParamMap.get('id_venta')!
     ) {
-      if (this.apiService.restriccionesCotizacionesVendedoresActivas()) {
+      if (this.apiService.restriccionesCotizacionesVendedoresActivas() && !this.apiService.isVentasLimitado()) {
         this.alertService.error('No tiene permiso para facturar cotizaciones.');
         this.router.navigate(['/cotizaciones']);
       } else {
@@ -829,6 +840,11 @@ export class FacturacionV2Component implements OnInit {
           .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
           .subscribe(
             (venta) => {
+              if (this.apiService.isVentasLimitado() && String(venta?.estado || '').toLowerCase() !== 'pendiente') {
+                this.alertService.error('Solo puede facturar cotizaciones pendientes.');
+                this.router.navigate(['/cotizaciones']);
+                return;
+              }
               this.venta = venta;
               this.retencionIvaGcUsuarioDecidio = true;
               this.normalizarDetallesTipoGravado(this.venta);

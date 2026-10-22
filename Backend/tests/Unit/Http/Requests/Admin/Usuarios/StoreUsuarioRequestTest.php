@@ -4,6 +4,7 @@ namespace Tests\Unit\Http\Requests\Admin\Usuarios;
 
 use App\Http\Requests\Admin\Usuarios\StoreUsuarioRequest;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rules\Unique;
 use Tests\TestCase;
 
 /**
@@ -64,5 +65,51 @@ class StoreUsuarioRequestTest extends TestCase
         $prep->invoke($request);
 
         $this->assertSame(99, (int) $request->input('id_empresa'));
+    }
+
+    public function test_update_no_exige_telefono_unico(): void
+    {
+        $request = StoreUsuarioRequest::createFrom(
+            Request::create('/api/usuario', 'POST', [
+                'id' => 10,
+                'name' => 'Test',
+                'email' => 'test@example.com',
+                'telefono' => '50322222222',
+                'id_empresa' => 1,
+                'id_sucursal' => 1,
+                'id_bodega' => 1,
+                'rol_id' => 3,
+            ])
+        );
+
+        $this->assertFalse($this->reglaTelefonoEsUnica($request));
+    }
+
+    public function test_create_sigue_exigiendo_telefono_unico(): void
+    {
+        $request = StoreUsuarioRequest::createFrom(
+            Request::create('/api/usuario', 'POST', [
+                'name' => 'Test',
+                'email' => 'test@example.com',
+                'telefono' => '50322222222',
+                'id_empresa' => 1,
+                'id_sucursal' => 1,
+                'id_bodega' => 1,
+                'rol_id' => 3,
+            ])
+        );
+
+        $this->assertTrue($this->reglaTelefonoEsUnica($request));
+    }
+
+    private function reglaTelefonoEsUnica(StoreUsuarioRequest $request): bool
+    {
+        foreach ($request->rules()['telefono'] as $rule) {
+            if ($rule instanceof Unique) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -86,6 +86,8 @@ class User extends Authenticatable implements JWTSubject
                 $this->tipo = config('constants.TIPO_USUARIO_ADMINISTRADOR', 'Administrador');
             } elseif (in_array($role->name, [config('constants.ROL_USUARIO_VENDEDOR', 'usuario_vendedor'), 'usuario_ventas', 'vendedor'])) {
                 $this->tipo = config('constants.TIPO_USUARIO_VENDEDOR', 'Vendedor');
+            } elseif ($role->name === config('constants.ROL_VENTAS_LIMITADO', 'ventas_limitado')) {
+                $this->tipo = 'Ventas Limitado';
             } else {
                 $this->tipo = ucfirst(str_replace('_', ' ', $role->name));
             }

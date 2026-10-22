@@ -21,6 +21,7 @@ class UserRoleSeeder extends Seeder
             'Administrador'  => config('constants.ROL_ADMIN'),
             'Operativo'    => config('constants.ROL_USUARIO'),
             'Ventas'       => config('constants.ROL_USUARIO_VENTAS'),
+            'Ventas Limitado' => config('constants.ROL_VENTAS_LIMITADO', 'ventas_limitado'),
             'Operador'     => config('constants.ROL_GERENTE_OPERACIONES'),
             'Contador'     => config('constants.ROL_CONTADOR_SUPERIOR'),
             'Contador Auxiliar' => config('constants.ROL_CONTADOR_AUXILIAR'),

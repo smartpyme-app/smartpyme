@@ -98,6 +98,11 @@ export class KardexComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    if (this.apiService.isVentasLimitado()) {
+      this.alertService.error('No puede ver el costo de los productos.');
+      this.router.navigate(['/productos']);
+      return;
+    }
     this.filtros.inicio = this.apiService.date();
     this.filtros.fin = this.apiService.date();
     this.filtros.id_inventario = this.apiService.auth_user().id_bodega;

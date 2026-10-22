@@ -111,6 +111,7 @@ class AuthorizationApprovedListener
                                 'admin' => 'Administrador',
                                 'usuario' => 'Operativo',
                                 'usuario_ventas' => 'Ventas',
+                                'ventas_limitado' => 'Ventas Limitado',
                                 'gerente_operaciones' => 'Gerente Operaciones',
                                 'contador_superior' => 'Contador',
                                 'contador_auxiliar' => 'Contador Auxiliar',

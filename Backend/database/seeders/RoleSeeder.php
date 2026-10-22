@@ -554,5 +554,7 @@ class RoleSeeder extends Seeder
                 $role->revokePermissionTo($reporteria);
             }
         }
+
+        (new VentasLimitadoRoleSeeder())->run();
     }
 }
