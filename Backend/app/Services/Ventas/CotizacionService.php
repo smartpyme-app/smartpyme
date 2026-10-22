@@ -2,6 +2,7 @@
 
 namespace App\Services\Ventas;
 
+use App\Constants\CotizacionConstants;
 use App\Models\CotizacionVenta;
 use App\Models\CotizacionVentaDetalle;
 use App\Models\Admin\Documento;
@@ -19,6 +20,12 @@ class CotizacionService
      */
     public function crearOActualizarCotizacion(array $data): CotizacionVenta
     {
+        if (CotizacionConstants::esVentasLimitado(Auth::user())) {
+            abort(403, empty($data['id'])
+                ? 'No autorizado a crear cotizaciones'
+                : 'No autorizado a modificar la cotización');
+        }
+
         if (isset($data['id'])) {
             $cotizacion = CotizacionVenta::findOrFail($data['id']);
         } else {

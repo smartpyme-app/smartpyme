@@ -33,6 +33,10 @@ for (const file of [
   assert.match(html, /\[routerLink\]="\['\/auditoria'\]"/, file);
 }
 
+const sidebarVentas = fs.readFileSync(path.join(root, 'src/app/layout/sidebar/sidebar-ventas/sidebar-ventas.component.html'), 'utf8');
+assert.match(sidebarVentas, /ventas\.cotizaciones\.ver/);
+assert.doesNotMatch(sidebarVentas, /canShowOption\('cotizaciones\.ver'\)/);
+
 assert.doesNotMatch(sidebar, /!apiService\.hasPermission\('planilla/);
 assert.match(sidebar, /apiService\.hasPermission\('planilla\.ver'\)/);
 assert.match(sidebar, /canAccederOperacionesInventario\(\) && apiService\.hasPermission\('consignas\.ver'\)/);

@@ -148,6 +148,14 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
     return ventas;
   }
 
+  /** Pendiente factura, facturada imprime, anulada y el resto no actúan. */
+  accionVentasLimitado(estado: string): 'facturar' | 'imprimir' | null {
+    const valor = (estado || '').toLowerCase();
+    if (valor === 'pendiente') return 'facturar';
+    if (valor === 'facturada') return 'imprimir';
+    return null;
+  }
+
   public setEstado(cotizacion: any) {
     // Agregamos el distintivo
     cotizacion.cotizacion_id = 1;

@@ -209,7 +209,11 @@ class CotizacionesController extends Controller
 
     public function store(StoreCotizacionRequest $request)
     {
-
+        if (CotizacionConstants::esVentasLimitado(Auth::user())) {
+            abort(403, $request->filled('id')
+                ? 'No autorizado a modificar la cotización'
+                : 'No autorizado a crear cotizaciones');
+        }
 
         if ($request->cotizacion_id != null) {
             if ($request->id)
@@ -249,6 +253,11 @@ class CotizacionesController extends Controller
 
     public function facturacion(FacturacionCotizacionRequest $request)
     {
+        if (CotizacionConstants::esVentasLimitado(Auth::user())) {
+            abort(403, $request->filled('id')
+                ? 'No autorizado a modificar la cotización'
+                : 'No autorizado a crear cotizaciones');
+        }
 
         // Guardamos el cliente
         if (isset($request->cliente['id']) || isset($request->cliente['nombre'])) {
@@ -296,6 +305,10 @@ class CotizacionesController extends Controller
 
     public function delete($id)
     {
+        if (CotizacionConstants::esVentasLimitado(Auth::user())) {
+            abort(403, 'No autorizado a modificar la cotización');
+        }
+
         $orden = CotizacionVenta::with('detalles')->findOrFail($id);
         if ($this->esUsuarioRolVentasCotizaciones() && (int) $orden->id_usuario !== (int) Auth::id()) {
             abort(403, 'No autorizado');
@@ -328,6 +341,10 @@ class CotizacionesController extends Controller
 
             if ($this->esUsuarioRolVentasCotizaciones() && (int) $venta->id_usuario !== (int) Auth::id()) {
                 abort(403, 'No autorizado');
+            }
+            if (CotizacionConstants::esVentasLimitado(Auth::user())
+                && CotizacionConstants::accionVentasLimitado($venta->estado) !== 'imprimir') {
+                abort(403, 'No autorizado a imprimir esta cotización');
             }
 
             $pdfData = array_merge(compact('venta'), $this->cotizacionPdfViewData($venta));
@@ -390,6 +407,10 @@ class CotizacionesController extends Controller
 
     public function changeStateCotizacion(Request $request)
     {
+        if (CotizacionConstants::esVentasLimitado(Auth::user())) {
+            abort(403, 'No autorizado a modificar el estado de la cotización');
+        }
+
         $cotizacion = CotizacionVenta::findOrFail($request->id);
         $cotizacion->estado = $request->estado;
         $cotizacion->save();
@@ -398,6 +419,10 @@ class CotizacionesController extends Controller
 
     public function duplicarCotizacion(Request $request)
     {
+        if (CotizacionConstants::esVentasLimitado(Auth::user())) {
+            abort(403, 'No autorizado a crear cotizaciones');
+        }
+
         $cotizacion = CotizacionVenta::with('detalles')->findOrFail($request->id);
         $nuevaCotizacion = $cotizacion->replicate();
         $nuevaCotizacion->estado = 'pendiente';
