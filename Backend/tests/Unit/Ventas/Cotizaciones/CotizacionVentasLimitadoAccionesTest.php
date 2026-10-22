@@ -19,4 +19,26 @@ class CotizacionVentasLimitadoAccionesTest extends TestCase
         $this->assertFalse(CotizacionConstants::esVentasLimitado((object) ['tipo' => 'Ventas']));
         $this->assertFalse(CotizacionConstants::esVentasLimitado(null));
     }
+
+    public function test_ventas_limitado_crea_cotizacion_solo_con_permiso(): void
+    {
+        $conPermiso = new class {
+            public string $tipo = 'Ventas Limitado';
+            public function can(string $permiso): bool
+            {
+                return $permiso === 'ventas.cotizaciones.crear';
+            }
+        };
+        $sinPermiso = new class {
+            public string $tipo = 'Ventas Limitado';
+            public function can(string $permiso): bool
+            {
+                return false;
+            }
+        };
+
+        $this->assertTrue(CotizacionConstants::puedeCrearCotizacion($conPermiso));
+        $this->assertFalse(CotizacionConstants::puedeCrearCotizacion($sinPermiso));
+        $this->assertTrue(CotizacionConstants::puedeCrearCotizacion((object) ['tipo' => 'Ventas']));
+    }
 }

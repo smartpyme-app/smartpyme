@@ -88,8 +88,11 @@ export class AdminGuard  {
       }
     }
 
-    // Para otras rutas del admin, permitir acceso a roles administrativos
-    if (this.apiService.isAdminRole() || 
+    // isAdmin() cubre Supervisor Limitado (el rol Spatie no está en isAdminRole()
+    // ni trae admin.acceder). Sin esto el menú muestra ventas/compras/gastos
+    // y el guard rebota a /.
+    if (this.apiService.isAdminRole() ||
+        this.apiService.isAdmin() ||
         this.apiService.hasPermission('admin.acceder')) {
       return true;
     }

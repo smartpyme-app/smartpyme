@@ -20,10 +20,14 @@ class CotizacionService
      */
     public function crearOActualizarCotizacion(array $data): CotizacionVenta
     {
-        if (CotizacionConstants::esVentasLimitado(Auth::user())) {
-            abort(403, empty($data['id'])
-                ? 'No autorizado a crear cotizaciones'
-                : 'No autorizado a modificar la cotización');
+        $user = Auth::user();
+        if (CotizacionConstants::esVentasLimitado($user)) {
+            $creando = empty($data['id']);
+            if (! $creando || ! CotizacionConstants::puedeCrearCotizacion($user)) {
+                abort(403, $creando
+                    ? 'No autorizado a crear cotizaciones'
+                    : 'No autorizado a modificar la cotización');
+            }
         }
 
         if (isset($data['id'])) {
