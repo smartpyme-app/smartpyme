@@ -288,11 +288,11 @@
                                         routerLink="/producto/editar/{{producto.id}}" class="btn text-start border-0">
                                         <img src="/assets/icons/edit.png" class="icon me-2">Editar
                                     </button>
-                                    <button type="button" [routerLink]="['/kardex', producto.id]"
+                                    <button *ngIf="!apiService.isVentasLimitado()" type="button" [routerLink]="['/kardex', producto.id]"
                                         class="btn text-start border-0">
                                         <img src="/assets/icons/file-text.png" class="icon me-2">Kardex
                                     </button>
-                                    <button type="button"
+                                    <button *ngIf="!apiService.isVentasLimitado()" type="button"
                                         [routerLink]="['/detalle-producto', producto.id]"
                                         fragment="historial-precio-costo"
                                         class="btn text-start border-0">
@@ -473,11 +473,11 @@
                     <span *ngIf="downloading">Descargando...</span>
                 </button>
             </div>
-            <div class="d-grid my-4">
+            <div class="d-grid my-4" *ngIf="!apiService.isVentasLimitado()">
                 <label class="form-label">Detalle de inventario</label>
                 <app-descargar-inventario></app-descargar-inventario>
             </div>
-            <div class="d-grid">
+            <div class="d-grid" *ngIf="!apiService.isVentasLimitado()">
                 <label class="form-label">Kardex (productos del listado)</label>
                 <button [disabled]="loading || !productos?.data?.length"
                     (click)="openDescargarKardex(mdescargarKardex)" class="btn btn-primary">
@@ -485,7 +485,7 @@
                     <span *ngIf="loading">Descargando...</span>
                 </button>
             </div>
-            <div class="d-grid my-4">
+            <div class="d-grid my-4" *ngIf="!apiService.isVentasLimitado()">
                 <label class="form-label">Kardex masivo por correo</label>
                 <button [disabled]="loading" (click)="openDescargarKardexMasivo(mdescargarKardexMasivo)" class="btn btn-primary">
                     <span *ngIf="!loading">Solicitar por correo</span>

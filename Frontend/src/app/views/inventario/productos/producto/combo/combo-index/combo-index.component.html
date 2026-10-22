@@ -83,7 +83,9 @@
             <th>Codigo</th>
             <th>Nombre combo</th>
             <th class="d-none d-lg-table-cell">Descripción</th>
+            @if (!apiService.isVentasLimitado()) {
             <th>Costo</th>
+            }
             <th>Precio total con iva</th>
             <th>Estado</th>
             <td></td>
@@ -110,7 +112,9 @@
                   <td>{{combo.codigo_combo}}</td>
                   <td>{{ combo.nombre }}</td>
                   <td>{{combo.descripcion}}</td>
+                  @if (!apiService.isVentasLimitado()) {
                   <td>{{combo.costo_total | currency}}</td>
+                  }
                   <td>{{combo.precio_total |currency}} </td>
                   <td>
                       <select name="estado" class="form-select w-auto border-0" [(ngModel)]="combo.estado"
