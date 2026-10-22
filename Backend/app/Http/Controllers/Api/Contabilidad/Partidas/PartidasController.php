@@ -629,12 +629,15 @@ class PartidasController extends Controller
                         ->where('estado', '!=', 'Pendiente')
                         ->where('fecha', $request->fecha)
                         ->where('id_empresa', auth()->user()->id_empresa)
-                        ->select(['id', 'fecha', 'correlativo', 'id_documento', 'forma_pago', 
+                        ->select(['id', 'fecha', 'correlativo', 'id_documento', 'id_cliente', 'forma_pago', 
                                  'total', 'sub_total', 'iva', 'iva_retenido', 'total_costo', 
                                  'id_sucursal', 'estado'])
                         ->with([
                             'documento' => function($query) {
                                 $query->select(['id', 'nombre']);
+                            },
+                            'cliente' => function ($query) {
+                                $query->select(['id', 'tipo', 'nombre', 'apellido', 'nombre_empresa', 'nombre_comercial']);
                             },
                             'detalles' => function($query) {
                                 $query->select(ReglaMontoIngresoVentaDetalle::COLUMNAS_DETALLE_VENTA);
@@ -666,11 +669,14 @@ class PartidasController extends Controller
                             ->select(['id', 'fecha', 'total', 'forma_pago', 'detalle_banco', 'id_venta', 'id_sucursal'])
                             ->with([
                                 'venta' => function($query) {
-                                    $query->select(['id', 'correlativo', 'id_documento']);
+                                    $query->select(['id', 'correlativo', 'id_documento', 'id_cliente']);
                                 },
                                 'venta.documento' => function($query) {
                                     $query->select(['id', 'nombre']);
-                                }
+                                },
+                                'venta.cliente' => function ($query) {
+                                    $query->select(['id', 'tipo', 'nombre', 'apellido', 'nombre_empresa', 'nombre_comercial']);
+                                },
                             ])
                             ->get();
 
