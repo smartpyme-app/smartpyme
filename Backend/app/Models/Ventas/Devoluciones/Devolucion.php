@@ -28,6 +28,7 @@ class Devolucion extends Model {
         'iva',
         'iva_retenido',
         'observaciones',
+        'motivo_fe_cr',
         'id_cliente',
         'id_bodega',
         'id_sucursal',

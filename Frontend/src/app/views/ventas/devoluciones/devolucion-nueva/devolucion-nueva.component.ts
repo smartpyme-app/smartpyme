@@ -111,6 +111,7 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
                     descuento: venta.descuento,
                     total_costo: venta.total_costo,
                     total: venta.total,
+                    ...(this.esFeCostaRica() ? { motivo_fe_cr: 'devolucion' } : {}),
                 };
                 this.cargarDocumentos();
                 this.loading = false;
@@ -213,6 +214,9 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
         this.devolucion.id_bodega = this.apiService.auth_user().id_bodega;
         this.devolucion.id_empresa = this.apiService.auth_user().id_empresa;
         this.devolucion.enable = true;
+        if (this.esFeCostaRica()) {
+            this.devolucion.motivo_fe_cr = 'devolucion';
+        }
         this.cargarDocumentos();
         this.imprimir = true;
     }

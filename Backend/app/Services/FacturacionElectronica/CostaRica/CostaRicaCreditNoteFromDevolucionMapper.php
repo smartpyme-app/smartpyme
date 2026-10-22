@@ -5,6 +5,7 @@ namespace App\Services\FacturacionElectronica\CostaRica;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Venta;
+use App\Support\FacturacionElectronica\CostaRica\ReferenciaComprobanteCr;
 use App\Support\FacturacionElectronica\CostaRicaFeDteDocumento;
 use Carbon\Carbon;
 use DOMDocument;
@@ -71,11 +72,16 @@ final class CostaRicaCreditNoteFromDevolucionMapper
             $lineItems
         );
 
+        $motivo = (string) ($devolucion->motivo_fe_cr ?: ReferenciaComprobanteCr::MOTIVO_DEVOLUCION);
         $referenced = [[
             'document_type' => '01',
             'document_number' => $claveFactura,
             'emission_date' => $fechaFactura,
-            'referenced_code' => '06',
+            'referenced_code' => ReferenciaComprobanteCr::codigoNota(
+                $motivo,
+                Carbon::parse($facturaOriginal->fecha)->timezone('America/Costa_Rica'),
+                Carbon::now('America/Costa_Rica'),
+            ),
             'reason' => mb_substr(strip_tags((string) ($devolucion->observaciones ?: 'Devolución de mercancía')), 0, 180),
         ]];
 

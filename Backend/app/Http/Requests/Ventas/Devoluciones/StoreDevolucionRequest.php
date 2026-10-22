@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Ventas\Devoluciones;
 
+use App\Support\FacturacionElectronica\CostaRica\ReferenciaComprobanteCr;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreDevolucionRequest extends FormRequest
 {
@@ -24,6 +26,16 @@ class StoreDevolucionRequest extends FormRequest
             'fecha' => 'required|date',
             'enable' => 'required|boolean',
             'observaciones' => 'required|string|max:500',
+            'motivo_fe_cr' => [
+                'nullable',
+                'string',
+                'max:40',
+                Rule::in([
+                    ReferenciaComprobanteCr::MOTIVO_DEVOLUCION,
+                    ReferenciaComprobanteCr::MOTIVO_ANULA,
+                    ReferenciaComprobanteCr::MOTIVO_EXONERACION_POSTERIOR,
+                ]),
+            ],
             'tipo' => 'required|string|in:devolucion,descuento_ajuste,anulacion_factura',
             'id_usuario' => 'required|integer|exists:users,id',
         ];
@@ -42,6 +54,7 @@ class StoreDevolucionRequest extends FormRequest
             'enable.boolean' => 'El estado enable debe ser verdadero o falso.',
             'observaciones.required' => 'Las observaciones son obligatorias.',
             'observaciones.max' => 'Las observaciones no pueden exceder 500 caracteres.',
+            'motivo_fe_cr.in' => 'El motivo debe ser: devolución, anula el documento o exoneración posterior.',
             'tipo.required' => 'El tipo es obligatorio.',
             'tipo.in' => 'El tipo debe ser: devolucion, descuento_ajuste o anulacion_factura.',
             'id_usuario.required' => 'El usuario es obligatorio.',

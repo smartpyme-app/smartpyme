@@ -8,6 +8,7 @@ use App\Models\Compras\Gastos\Gasto;
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Venta;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
+use App\Support\FacturacionElectronica\CostaRica\ReferenciaComprobanteCr;
 use App\Support\FacturacionElectronica\CostaRicaFeDteDocumento;
 use App\Support\FacturacionElectronica\XmlRespuestaHaciendaCr;
 use DazzaDev\DgtCr\Client;
@@ -232,6 +233,19 @@ final class CostaRicaFeEmitService
     }
 
     /**
+     * Código de referencia de la nota de débito. Motivo fijo: corrige monto.
+     * Mismo mes → 02. Mes anterior → 14.
+     */
+    public static function codigoReferenciaNotaDebito(\DateTimeInterface $fechaFactura, \DateTimeInterface $fechaNota): string
+    {
+        return ReferenciaComprobanteCr::codigoNota(
+            ReferenciaComprobanteCr::MOTIVO_CORRIGE_MONTO,
+            $fechaFactura,
+            $fechaNota,
+        );
+    }
+
+    /**
      * Nota de débito (02) que referencia una factura 01 aceptada (ajuste de montos).
      * El consecutivo es el {@link Devolucion::correlativo} de la devolución tipo nota de débito ligada a la venta.
      *
@@ -353,7 +367,10 @@ final class CostaRicaFeEmitService
                 'document_type' => '01',
                 'document_number' => $claveFactura,
                 'emission_date' => $fechaFactura,
-                'referenced_code' => '02',
+                'referenced_code' => self::codigoReferenciaNotaDebito(
+                    \Carbon\Carbon::parse($venta->fecha)->timezone('America/Costa_Rica'),
+                    \Carbon\Carbon::now('America/Costa_Rica'),
+                ),
                 'reason' => mb_substr(strip_tags($motivo ?: 'Corrección de montos'), 0, 180),
             ]],
         ]);
