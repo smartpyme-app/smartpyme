@@ -58,6 +58,16 @@ export class ProductoComponent implements OnInit {
       });
 
 		this.route.params.subscribe((params:any) => {
+	      	if (this.apiService.isVentasLimitado()) {
+	      	  if (params.id && !this.apiService.canEditTest('productos.editar')) {
+	      	    this.router.navigate(['/detalle-producto', params.id]);
+	      	    return;
+	      	  }
+	      	  if (!params.id && !this.apiService.canCreateTest('productos.crear')) {
+	      	    this.router.navigate(['/vendedor/productos']);
+	      	    return;
+	      	  }
+	      	}
 	      	if (params.id) {
 		        this.loading = true;
 		        this.apiService.read('producto/', params.id).subscribe(producto => {
