@@ -1461,12 +1461,8 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       this.venta = v;
       this.correoEnvioDte = '';
       this.openModal(template);
-      if (!this.venta.dte && !this.venta.dte_en_s3) {
-        if (this.esReemisionRechazoCr()) {
-          this.reemitirComprobanteRechazado();
-        } else {
-          this.emitirDTE();
-        }
+      if (!this.venta.dte && !this.venta.dte_en_s3 && !this.esReemisionRechazoCr()) {
+        this.emitirDTE();
       }
     };
 

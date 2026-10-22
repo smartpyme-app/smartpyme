@@ -65,6 +65,15 @@ final class ReferenciaComprobanteCrTest extends TestCase
         self::assertSame('506310126...', $ref['document_number']);
     }
 
+    public function test_fecha_de_emision_sale_de_la_clave(): void
+    {
+        $clave = '506150826'.str_repeat('0', 41);
+
+        self::assertSame('2026-08-15T00:00:00-06:00', ReferenciaComprobanteCr::fechaEmisionDesdeClave($clave));
+        self::assertNull(ReferenciaComprobanteCr::fechaEmisionDesdeClave('506'));
+        self::assertNull(ReferenciaComprobanteCr::fechaEmisionDesdeClave('506320126'.str_repeat('0', 41)));
+    }
+
     public function test_referencia_de_rechazado_rechaza_clave_vacia(): void
     {
         $this->expectException(InvalidArgumentException::class);

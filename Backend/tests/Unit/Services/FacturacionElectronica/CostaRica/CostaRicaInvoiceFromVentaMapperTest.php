@@ -51,6 +51,27 @@ final class CostaRicaInvoiceFromVentaMapperTest extends TestCase
         self::assertSame('01', $refs[0]['document_type']);
         self::assertSame($clave, $refs[0]['document_number']);
         self::assertSame('15', $refs[0]['referenced_code']);
+        self::assertStringStartsWith('2026-09-02T', $refs[0]['emission_date']);
+    }
+
+    public function test_tiquete_sustituido_usa_tipo_04_y_la_fecha_sale_de_la_clave(): void
+    {
+        $clave = '506150826'.str_repeat('1', 41);
+        $attrs = [
+            'clave_sustituida' => $clave,
+            'codigo_nota_anulacion' => '01',
+            'fecha' => '2026-11-02 10:00:00',
+        ];
+
+        $factura = $this->mapper->referencedDocumentsSustitucionORechazo($this->ventaAtributos($attrs));
+        self::assertSame('01', $factura[0]['document_type']);
+        self::assertSame('07', $factura[0]['referenced_code']);
+        self::assertSame('2026-08-15T00:00:00-06:00', $factura[0]['emission_date']);
+
+        $tiquete = $this->mapper->referencedDocumentsSustitucionORechazo($this->ventaAtributos($attrs), true);
+        self::assertSame('04', $tiquete[0]['document_type']);
+        self::assertSame('07', $tiquete[0]['referenced_code']);
+        self::assertSame('2026-08-15T00:00:00-06:00', $tiquete[0]['emission_date']);
     }
 
     public function test_despues_de_anular_con_01_la_factura_referencia_07(): void

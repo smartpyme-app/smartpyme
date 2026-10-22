@@ -190,12 +190,15 @@ final class CostaRicaFeEmitService
                 $e,
                 $client,
                 $data,
-                function (string $clave, array $estado) use ($client, $devolucion): array {
+                function (string $clave, array $estado) use ($client, $devolucion, $data): array {
                     $devolucion->codigo_generacion = $clave;
                     $devolucion->tipo_dte = '03';
                     $devolucion->sello_mh = $clave;
                     $devolucion->dte = $this->persistirDteCrAceptado($client, $estado);
                     $devolucion->save();
+                    if ($devolucion->venta instanceof Venta) {
+                        $this->guardarCodigoNotaAnulacion($devolucion->venta, $data);
+                    }
 
                     return [
                         'clave' => $clave,
@@ -229,6 +232,7 @@ final class CostaRicaFeEmitService
         $devolucion->sello_mh = $clave;
         $devolucion->dte = $this->persistirDteCrAceptado($client, $estado);
         $devolucion->save();
+        $this->guardarCodigoNotaAnulacion($ventaOrigen, $data);
 
         return [
             'clave' => $clave,
@@ -673,11 +677,12 @@ final class CostaRicaFeEmitService
                 return $recuperado;
             }
             Log::error('FE CR sendDocument', ['venta' => $venta->id, 'tipo' => $dgtType, 'error' => $e->getMessage()]);
+            $claveFallo = $this->persistirClaveSiFalloEnvio($venta, $client);
             [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
             throw new CostaRicaFeEmisionFallidaException(
                 'Error al enviar el comprobante a Hacienda: '.$e->getMessage(),
                 $data,
-                null,
+                $claveFallo,
                 null,
                 $xmlSin,
                 $xmlFirm,
@@ -727,6 +732,46 @@ final class CostaRicaFeEmitService
         $data['referenced_documents'] = $refs;
 
         return $data;
+    }
+
+    private function persistirClaveSiFalloEnvio(Venta $venta, Client $client): ?string
+    {
+        try {
+            $clave = trim((string) $client->getDocumentKey());
+        } catch (Throwable) {
+            return null;
+        }
+        if ($clave === '') {
+            return null;
+        }
+
+        $this->guardarClaveRechazada($venta, $clave);
+        if ($venta->isDirty('clave_rechazada')) {
+            $venta->save();
+        }
+
+        return $clave;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function guardarCodigoNotaAnulacion(Venta $venta, array $data): void
+    {
+        if (! Schema::hasColumn('ventas', 'codigo_nota_anulacion')) {
+            return;
+        }
+
+        $refs = $data['referenced_documents'] ?? null;
+        $codigo = is_array($refs) ? trim((string) ($refs[0]['referenced_code'] ?? '')) : '';
+        if (! in_array($codigo, ['01', '13'], true)) {
+            return;
+        }
+
+        $venta->codigo_nota_anulacion = $codigo;
+        if ($venta->isDirty('codigo_nota_anulacion')) {
+            $venta->save();
+        }
     }
 
     private function recordarClaveRechazada(Venta $venta, CostaRicaFeEmisionFallidaException $e): void

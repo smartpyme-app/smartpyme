@@ -113,7 +113,7 @@ final class CostaRicaInvoiceFromVentaMapper
      *
      * @return list<array<string, mixed>>
      */
-    public function referencedDocumentsSustitucionORechazo(Venta $venta): array
+    public function referencedDocumentsSustitucionORechazo(Venta $venta, bool $esTiquete = false): array
     {
         $rechazada = trim((string) ($venta->clave_rechazada ?? ''));
         if ($rechazada !== '') {
@@ -128,7 +128,7 @@ final class CostaRicaInvoiceFromVentaMapper
         $codigoNota = trim((string) ($venta->codigo_nota_anulacion ?? ''));
         if (strlen($clave) === 50 && in_array($codigoNota, ['01', '13'], true)) {
             return [$this->referenciaConFechaYRazon($venta, [
-                'document_type' => '01',
+                'document_type' => $esTiquete ? '04' : '01',
                 'document_number' => $clave,
                 'referenced_code' => ReferenciaComprobanteCr::codigoSustitucion($codigoNota),
             ], 'Sustituye comprobante anulado')];
@@ -138,22 +138,27 @@ final class CostaRicaInvoiceFromVentaMapper
     }
 
     /**
-     * FechaEmisionIR y Razon son obligatorias en el generador XML. La fecha es la de la venta
-     * cuando existe; si no, el instante de emisión en Costa Rica.
+     * FechaEmisionIR es la del comprobante referenciado (ddMMyy de la clave).
+     * Si la clave no trae fecha válida, se usa la fecha de la venta y, si tampoco, la hora de emisión.
      *
      * @param  array{document_type: string, document_number: string, referenced_code: string}  $referencia
      * @return array<string, mixed>
      */
     private function referenciaConFechaYRazon(Venta $venta, array $referencia, string $razon): array
     {
-        $referencia['emission_date'] = $this->fechaReferenciaVenta($venta);
+        $referencia['emission_date'] = $this->fechaReferenciaVenta($venta, (string) ($referencia['document_number'] ?? ''));
         $referencia['reason'] = mb_substr($razon, 0, 180);
 
         return $referencia;
     }
 
-    private function fechaReferenciaVenta(Venta $venta): string
+    private function fechaReferenciaVenta(Venta $venta, string $claveReferencia = ''): string
     {
+        $desdeClave = ReferenciaComprobanteCr::fechaEmisionDesdeClave($claveReferencia);
+        if ($desdeClave !== null) {
+            return $desdeClave;
+        }
+
         $raw = $venta->fecha ?? null;
         if ($raw !== null && trim((string) $raw) !== '') {
             try {
@@ -176,6 +181,12 @@ final class CostaRicaInvoiceFromVentaMapper
     public function buildTicketDocumentData(Venta $venta, Empresa $empresa, int $secuencial): array
     {
         $data = $this->buildDocumentData($venta, $empresa, $secuencial);
+        $referencias = $this->referencedDocumentsSustitucionORechazo($venta, true);
+        if ($referencias !== []) {
+            $data['referenced_documents'] = $referencias;
+        } else {
+            unset($data['referenced_documents']);
+        }
         $data['receiver'] = $this->receptorGenericoTiquete($empresa);
 
         // XSD v4.4 tiquete: LineaDetalle no incluye TipoTransaccion; quitar clave para que Twig/plantilla no emita el nodo.

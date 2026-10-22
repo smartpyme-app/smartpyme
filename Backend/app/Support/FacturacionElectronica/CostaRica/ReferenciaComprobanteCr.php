@@ -63,6 +63,38 @@ final class ReferenciaComprobanteCr
         ];
     }
 
+    /**
+     * Fecha de emisión embebida en la clave: 3 caracteres de país y luego ddMMyy.
+     * Medianoche en America/Costa_Rica. Null si la clave no trae una fecha válida.
+     */
+    public static function fechaEmisionDesdeClave(string $clave): ?string
+    {
+        $clave = trim($clave);
+        if (strlen($clave) < 9) {
+            return null;
+        }
+
+        $ddMMyy = substr($clave, 3, 6);
+        if (preg_match('/^\d{6}$/', $ddMMyy) !== 1) {
+            return null;
+        }
+
+        $tz = new \DateTimeZone('America/Costa_Rica');
+        $fecha = \DateTimeImmutable::createFromFormat('!dmy', $ddMMyy, $tz);
+        $errores = \DateTimeImmutable::getLastErrors();
+        if (! $fecha instanceof \DateTimeImmutable) {
+            return null;
+        }
+        if (is_array($errores) && (($errores['warning_count'] ?? 0) > 0 || ($errores['error_count'] ?? 0) > 0)) {
+            return null;
+        }
+        if ($fecha->format('dmy') !== $ddMMyy) {
+            return null;
+        }
+
+        return $fecha->format('Y-m-d\TH:i:sP');
+    }
+
     public static function esPeriodoAnterior(\DateTimeInterface $fechaOriginal, \DateTimeInterface $fechaNota): bool
     {
         return self::periodoEnCostaRica($fechaOriginal) < self::periodoEnCostaRica($fechaNota);
