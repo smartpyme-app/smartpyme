@@ -353,11 +353,17 @@ export class FacturacionV2Component implements OnInit {
     this.verificarAccesoCreditosClientes();
   }
 
+  /** Admin y Ventas Limitado eligen bodega de cualquier sucursal. El resto queda en la suya. */
+  private limitaSucursalPropia(): boolean {
+    const auth = this.apiService.auth_user();
+    return auth?.tipo != 'Administrador' && !this.apiService.isVentasLimitado();
+  }
+
   public loadData() {
     this.apiService.getAll('sucursales/list').subscribe(
       (sucursales) => {
         this.sucursales = sucursales;
-        if (this.apiService.auth_user().tipo != 'Administrador') {
+        if (this.limitaSucursalPropia()) {
           this.sucursales = this.sucursales.filter(
             (item: any) => item.id == this.apiService.auth_user().id_sucursal
           );
@@ -371,7 +377,7 @@ export class FacturacionV2Component implements OnInit {
     this.apiService.getAll('bodegas/list').subscribe(
       (bodegas) => {
         this.bodegas = bodegas;
-        if (this.apiService.auth_user().tipo != 'Administrador') {
+        if (this.limitaSucursalPropia()) {
           this.bodegas = this.bodegas.filter(
             (item: any) =>
               item.id_sucursal == this.apiService.auth_user().id_sucursal
