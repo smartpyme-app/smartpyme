@@ -1,7 +1,7 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
     <h2 class="page-heading">Inventario</h2>
     <!-- <button *ngIf="apiService.auth_user().tipo == 'Vendedor' || apiService.auth_user().empresa.vendedor_inventario" routerLink="/producto/crear" tooltip="Crear producto (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto</button> -->
-    @if (apiService.validateRole('usuario_vendedor', true) || apiService.auth_user().empresa.vendedor_inventario) {
+    @if (puedeCrearProductos()) {
         <button routerLink="/producto/crear" tooltip="Crear producto (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img appLazyImage="/assets/icons/plus.png" class="icon me-2"> Añadir producto</button>
     }
 
@@ -65,7 +65,7 @@
                         <th (click)="setOrden('precio')" [ngClass]="{'sorted-asc': filtros.orden == 'precio' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'precio' && filtros.direccion == 'desc'}" class="click text-right">Precio</th>
                         <th (click)="setOrden('stock')" [ngClass]="{'sorted-asc': filtros.orden == 'stock' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'stock' && filtros.direccion == 'desc'}" class="click text-center">Stock</th>
                         <!-- <th *ngIf="apiService.auth_user().tipo == 'Vendedor' || apiService.auth_user().empresa.vendedor_inventario"  class="text-center">Más</th> -->
-                        @if (apiService.validateRole('usuario_vendedor', true) || apiService.auth_user().empresa.vendedor_inventario) {
+                        @if (puedeEditarProductos()) {
                             <th class="text-center">Más</th>
                         }
                     </tr>
@@ -92,10 +92,16 @@
                                 {{ producto.nombre }}
                             </td>
                             <td class="d-none d-lg-table-cell">
-                                <select name="enable" class="form-select w-auto border-0" (change)="setEstado(producto)" [(ngModel)]="producto.enable" [ngClass]="{'bg-light-danger' : producto?.enable == 0, 'bg-light-success' : producto?.enable == 1}">
-                                    <option value="1">Activo</option>
-                                    <option value="0">Inactivo</option>
-                                </select>
+                                @if (puedeEditarProductos()) {
+                                    <select name="enable" class="form-select w-auto border-0" (change)="setEstado(producto)" [(ngModel)]="producto.enable" [ngClass]="{'bg-light-danger' : producto?.enable == 0, 'bg-light-success' : producto?.enable == 1}">
+                                        <option value="1">Activo</option>
+                                        <option value="0">Inactivo</option>
+                                    </select>
+                                } @else {
+                                    <span class="badge" [ngClass]="producto?.enable == 1 ? 'bg-light-success' : 'bg-light-danger'">
+                                        {{ producto?.enable == 1 ? 'Activo' : 'Inactivo' }}
+                                    </span>
+                                }
                             </td>
                             <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
                             <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
@@ -129,7 +135,7 @@
                                     </ng-template>
                                 </div> -->
                             </td>
-                            @if (apiService.validateRole('usuario_vendedor', true) || apiService.auth_user().empresa.vendedor_inventario) {
+                            @if (puedeEditarProductos()) {
                                 <td class="text-center">
                                     <a class="btn btn-default" routerLink="/producto/editar/{{producto.id}}" tooltip="Ver y editar">
                                         <i class="fa fa-pencil-alt"></i>

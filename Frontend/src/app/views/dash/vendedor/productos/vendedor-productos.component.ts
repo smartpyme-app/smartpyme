@@ -112,7 +112,39 @@ export class VendedorProductosComponent extends BaseCrudComponent<any> implement
           });
     }
 
+    /** Ventas limitado y roles Spatie: solo con permiso; legado vendedor + flag empresa si no es limitado. */
+    puedeEditarProductos(): boolean {
+        if (this.apiService.canEditTest('productos.editar')) {
+            return true;
+        }
+        if (this.apiService.isVentasLimitado()) {
+            return false;
+        }
+        const empresa = this.apiService.auth_user()?.empresa;
+        return (
+            this.apiService.validateRole('usuario_vendedor', true) ||
+            !!empresa?.vendedor_inventario
+        );
+    }
+
+    puedeCrearProductos(): boolean {
+        if (this.apiService.canCreateTest('productos.crear')) {
+            return true;
+        }
+        if (this.apiService.isVentasLimitado()) {
+            return false;
+        }
+        const empresa = this.apiService.auth_user()?.empresa;
+        return (
+            this.apiService.validateRole('usuario_vendedor', true) ||
+            !!empresa?.vendedor_inventario
+        );
+    }
+
     public setEstado(producto: any){
+        if (!this.puedeEditarProductos()) {
+            return;
+        }
         this.onSubmit(producto, true);
     }
 
