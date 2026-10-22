@@ -26,6 +26,11 @@ final class TipoIdentificacionReceptor
         if ($guardado !== null && in_array($guardado, self::CODIGOS_CR, true)) {
             return $guardado;
         }
+        if (self::cedulaJuridicaConLetra($nitDigits) || self::cedulaJuridicaConLetra($duiDigits)) {
+            return '02';
+        }
+        $nitDigits = preg_replace('/\D/', '', $nitDigits) ?? '';
+        $duiDigits = preg_replace('/\D/', '', $duiDigits) ?? '';
         if (strlen($nitDigits) >= 9) {
             return '02';
         }
@@ -120,6 +125,18 @@ final class TipoIdentificacionReceptor
         }
 
         return $duiVal ?: $nitClean;
+    }
+
+    /**
+     * 10 alfanuméricos con al menos una letra, ya sin espacios ni guiones. Va antes del conteo de dígitos.
+     */
+    private static function cedulaJuridicaConLetra(string $raw): bool
+    {
+        $n = preg_replace('/[\s-]/', '', $raw) ?? '';
+
+        return strlen($n) === 10
+            && preg_match('/^[0-9A-Za-z]{10}$/', $n) === 1
+            && preg_match('/[A-Za-z]/', $n) === 1;
     }
 
     private static function tieneValor(?string $v): bool

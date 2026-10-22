@@ -27,6 +27,14 @@ final class TipoIdentificacionReceptorCrFacturaTest extends TestCase
         self::assertFalse(TipoIdentificacionReceptor::estructuraValidaCostaRicaFactura('02', '3101A0000'));
     }
 
+    public function test_juridica_3101AB0001_es_tipo_02_y_conserva_letras(): void
+    {
+        self::assertSame('02', TipoIdentificacionReceptor::costaRica(null, '3101AB0001', ''));
+        self::assertSame('3101AB0001', TipoIdentificacionReceptor::numeroCostaRica('02', '3101AB0001', ''));
+        self::assertSame('02', TipoIdentificacionReceptor::costaRica(null, '', '3101AB0001'));
+        self::assertSame('3101AB0001', TipoIdentificacionReceptor::numeroCostaRica('02', '', '3101AB0001'));
+    }
+
     public function test_cedula_fisica_sigue_siendo_9_digitos(): void
     {
         self::assertTrue(TipoIdentificacionReceptor::estructuraValidaCostaRicaFactura('01', '123456789'));

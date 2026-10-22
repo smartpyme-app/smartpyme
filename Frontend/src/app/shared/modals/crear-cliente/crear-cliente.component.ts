@@ -361,7 +361,11 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
             return;
         }
         if (this.cliente?.tipo === 'Empresa') {
-            this.cliente.nit = String(this.cliente.nit ?? '').replace(/[^0-9A-Za-z]/g, '');
+            const normalizado = String(this.cliente.nit ?? '').replace(/[^0-9A-Za-z]/g, '');
+            if (/[A-Za-z]/.test(normalizado)) {
+                this.cliente.tipo_documento = '02';
+            }
+            this.cliente.nit = normalizado;
             return;
         }
         this.cliente.dui = String(this.cliente.dui ?? '').replace(/[^0-9A-Za-z]/g, '');

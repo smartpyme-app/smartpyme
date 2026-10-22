@@ -904,7 +904,7 @@ final class CostaRicaInvoiceFromVentaMapper
         $duiRaw = (string) ($cliente->dui ?? '');
         $nit = $this->soloDigitos($nitRaw);
         $dui = $this->soloDigitos($duiRaw);
-        $tipo = TipoIdentificacionReceptor::costaRica($cliente->tipo_documento ?? null, $nit, $dui);
+        $tipo = TipoIdentificacionReceptor::costaRica($cliente->tipo_documento ?? null, $nitRaw, $duiRaw);
         $num = $this->numeroIdentificacionCr($tipo, $nitRaw, $duiRaw, $nit, $dui);
         if ($tipo === null || $num === null) {
             return $this->receptorGenerico($empresa, trim(($cliente->nombre ?? '').' '.($cliente->apellido ?? '')) ?: 'Cliente');
@@ -1957,7 +1957,7 @@ final class CostaRicaInvoiceFromVentaMapper
         $duiRaw = (string) ($proveedor->dui ?? '');
         $nit = $this->soloDigitos($nitRaw);
         $dui = $this->soloDigitos($duiRaw);
-        $tipo = TipoIdentificacionReceptor::costaRica($proveedor->tipo_documento ?? null, $nit, $dui);
+        $tipo = TipoIdentificacionReceptor::costaRica($proveedor->tipo_documento ?? null, $nitRaw, $duiRaw);
         $num = $this->numeroIdentificacionCr($tipo, $nitRaw, $duiRaw, $nit, $dui);
         if ($tipo === null || $num === null) {
             $tipo = '06';
