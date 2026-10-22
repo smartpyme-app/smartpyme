@@ -23,9 +23,12 @@ class NotificacionesController extends Controller
         }
 
         // UI: "Usuario Ventas" = Spatie usuario_ventas (puede fallar hasRole por guard api vs web)
-        $rolVentas = config('constants.ROL_USUARIO_VENTAS', 'usuario_ventas');
+        $rolesVentas = [
+            config('constants.ROL_USUARIO_VENTAS', 'usuario_ventas'),
+            config('constants.ROL_VENTAS_LIMITADO', 'ventas_limitado'),
+        ];
 
-        return $user->roles()->where('name', $rolVentas)->exists();
+        return $user->roles()->whereIn('name', $rolesVentas)->exists();
     }
 
     public function index(Request $request)

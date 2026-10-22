@@ -126,6 +126,7 @@ return [
     'ROL_USUARIO_CITAS'        => 'usuario_citas',
     'ROL_USUARIO_CONSULTAS'    => 'usuario_consultas',
     'ROL_SUPERVISOR_LIMITADO'  => 'supervisor_limitado',
+    'ROL_VENTAS_LIMITADO'      => 'ventas_limitado',
     // Los siguientes roles están comentados en el seeder y no se usan actualmente:
     // 'ROL_USUARIO_CAJERO'      => 'usuario_cajero',
     // 'ROL_USUARIO_VENDEDOR'    => 'usuario_vendedor',

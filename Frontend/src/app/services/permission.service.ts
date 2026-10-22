@@ -321,15 +321,26 @@ export class PermissionService {
   }
 
   isVentasLimitado(): boolean {
-    let usuario = this.getAuthUser();
+    const userPermissions = localStorage.getItem('SP_user_permissions');
+    if (userPermissions) {
+      try {
+        const { role } = JSON.parse(userPermissions);
+        if (role === 'ventas_limitado') return true;
+      } catch {
+        /* fallback al tipo */
+      }
+    }
+
+    const usuario = this.getAuthUser();
     if (!usuario) return false;
     return usuario.tipo == 'Ventas Limitado';
   }
 
   isVentas(): boolean {
-    let usuario = this.getAuthUser();
+    if (this.isVentasLimitado()) return true;
+    const usuario = this.getAuthUser();
     if (!usuario) return false;
-    return usuario.tipo == 'Ventas' || usuario.tipo == 'Ventas Limitado';
+    return usuario.tipo == 'Ventas';
   }
 }
 
