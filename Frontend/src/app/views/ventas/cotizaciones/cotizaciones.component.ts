@@ -90,7 +90,9 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
   public override loadAll() {
     this.filtros.id_sucursal = '';
     this.filtros.id_cliente = '';
-    this.filtros.id_usuario = this.apiService.isVentas() ? this.apiService.auth_user().id : '';
+    this.filtros.id_usuario = this.apiService.soloVeCotizacionesPropiasEnListado()
+      ? this.apiService.auth_user().id
+      : '';
     this.filtros.id_canal = '';
     this.filtros.id_proyecto = '';
     this.filtros.forma_pago = '';
@@ -111,7 +113,7 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
         if (resetPage) {
             this.filtros.page = 1;
         }
-        if (this.apiService.isVentas()) {
+        if (this.apiService.soloVeCotizacionesPropiasEnListado()) {
             this.filtros.id_usuario = this.apiService.auth_user().id;
         }
         this.loading = true;
