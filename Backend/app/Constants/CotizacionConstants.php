@@ -23,7 +23,27 @@ class CotizacionConstants
 
     public static function esVentasLimitado($user): bool
     {
-        return $user && ($user->tipo ?? null) === 'Ventas Limitado';
+        if (! $user) {
+            return false;
+        }
+        if (($user->tipo ?? null) === 'Ventas Limitado') {
+            return true;
+        }
+        if (is_object($user) && method_exists($user, 'hasRole')) {
+            return $user->hasRole(config('constants.ROL_VENTAS_LIMITADO', 'ventas_limitado'));
+        }
+
+        return false;
+    }
+
+    /** Vendedor Ventas (no ventas limitado): solo sus cotizaciones. Ventas limitado ve las de la empresa. */
+    public static function soloListadoCotizacionesPropias($user): bool
+    {
+        if (! $user || self::esVentasLimitado($user)) {
+            return false;
+        }
+
+        return ($user->tipo ?? null) === 'Ventas';
     }
 
     /** Crear sí, si el rol tiene ventas.cotizaciones.crear. Editar sigue bloqueado en el llamador. */

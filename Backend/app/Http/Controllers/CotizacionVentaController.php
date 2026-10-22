@@ -7,6 +7,7 @@ use App\Models\CotizacionVenta;
 use App\Models\CotizacionVentaDetalle;
 use App\Services\Ventas\CotizacionService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\StoreCotizacionVentaRequest;
 
@@ -52,6 +53,9 @@ class CotizacionVentaController extends Controller
 
     public function index(Request $request)
     {
+        $user = Auth::user();
+        $soloPropias = CotizacionConstants::soloListadoCotizacionesPropias($user);
+
         $orden = $request->get('orden') ?: 'fecha';
         $direccion = $request->get('direccion') ?: 'desc';
         $paginate = (int) ($request->get('paginate') ?: 10);
@@ -66,9 +70,17 @@ class CotizacionVentaController extends Controller
             ->when($request->id_sucursal, function ($query) use ($request) {
                 return $query->where('id_sucursal', $request->id_sucursal);
             })
-            ->when($request->id_usuario, function ($query) use ($request) {
-                return $query->where('id_usuario', $request->id_usuario);
+            ->when($soloPropias, function ($query) use ($user) {
+                return $query->where('id_usuario', $user->id);
             })
+            ->when(
+                ! $soloPropias
+                    && ! CotizacionConstants::esVentasLimitado($user)
+                    && $request->filled('id_usuario'),
+                function ($query) use ($request) {
+                    return $query->where('id_usuario', $request->id_usuario);
+                }
+            )
             ->when($request->id_cliente, function ($query) use ($request) {
                 return $query->where('id_cliente', $request->id_cliente);
             })
