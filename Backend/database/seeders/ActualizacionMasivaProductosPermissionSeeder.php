@@ -7,6 +7,7 @@ use App\Models\Admin\ModulePermission;
 use App\Models\Admin\Submodule;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class ActualizacionMasivaProductosPermissionSeeder extends Seeder
@@ -47,6 +48,11 @@ class ActualizacionMasivaProductosPermissionSeeder extends Seeder
             ],
             ['permission_type' => 'base']
         );
+
+        Role::query()
+            ->whereIn('name', ['admin', 'super_admin'])
+            ->get()
+            ->each(fn (Role $role) => $role->givePermissionTo($permission));
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
