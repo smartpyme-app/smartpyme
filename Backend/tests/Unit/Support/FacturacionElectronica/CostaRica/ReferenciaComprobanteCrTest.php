@@ -3,6 +3,7 @@
 namespace Tests\Unit\Support\FacturacionElectronica\CostaRica;
 
 use App\Support\FacturacionElectronica\CostaRica\ReferenciaComprobanteCr;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 final class ReferenciaComprobanteCrTest extends TestCase
@@ -48,6 +49,26 @@ final class ReferenciaComprobanteCrTest extends TestCase
         );
 
         self::assertSame('12', $codigo);
+    }
+
+    public function test_despues_de_anular_con_13_el_comprobante_nuevo_usa_15(): void
+    {
+        self::assertSame('15', ReferenciaComprobanteCr::codigoSustitucion('13'));
+        self::assertSame('07', ReferenciaComprobanteCr::codigoSustitucion('01'));
+    }
+
+    public function test_rechazado_usa_tipo_10_y_codigo_16(): void
+    {
+        $ref = ReferenciaComprobanteCr::referenciaDeRechazado('506310126...');
+        self::assertSame('10', $ref['document_type']);
+        self::assertSame('16', $ref['referenced_code']);
+        self::assertSame('506310126...', $ref['document_number']);
+    }
+
+    public function test_referencia_de_rechazado_rechaza_clave_vacia(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        ReferenciaComprobanteCr::referenciaDeRechazado('   ');
     }
 
     public function test_recibo_de_pago_no_acepta_notas(): void

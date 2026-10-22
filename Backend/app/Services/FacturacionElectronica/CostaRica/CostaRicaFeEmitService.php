@@ -15,6 +15,7 @@ use DazzaDev\DgtCr\Client;
 use DOMDocument;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use ReflectionClass;
 use ReflectionException;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeNota23Catalog;
@@ -55,6 +56,7 @@ final class CostaRicaFeEmitService
 
         $sec = $this->secuencialDesdeCorrelativo($venta->correlativo);
         $data = $this->mapper->buildDocumentData($venta, $venta->empresa, $sec);
+        $data = $this->adjuntarReferenciasSustitucionORechazo($venta, $data);
         $this->mapper->assertReceptorFacturaElectronicaCr($data['receiver']);
 
         return $this->enviarYPersistirVenta($venta, 'invoice', '01', 'FacturaElectronica', $data);
@@ -78,6 +80,7 @@ final class CostaRicaFeEmitService
 
         $sec = $this->secuencialDesdeCorrelativo($venta->correlativo);
         $data = $this->mapper->buildTicketDocumentData($venta, $venta->empresa, $sec);
+        $data = $this->adjuntarReferenciasSustitucionORechazo($venta, $data);
 
         return $this->enviarYPersistirVenta($venta, 'ticket', '04', 'TiqueteElectronico', $data);
     }
@@ -627,6 +630,7 @@ final class CostaRicaFeEmitService
      */
     private function enviarYPersistirVenta(Venta $venta, string $dgtType, string $tipoDte, string $tipoNombre, array $data): array
     {
+        $data = $this->adjuntarReferenciasSustitucionORechazo($venta, $data);
         $empresa = $venta->empresa;
         $client = $this->factory->make($empresa);
         $this->configurarClienteEmisorReceptor($client, $data);
@@ -637,25 +641,31 @@ final class CostaRicaFeEmitService
         try {
             $envio = $client->sendDocument();
         } catch (Throwable $e) {
-            $recuperado = $this->intentarRecuperarEmisionSiConsecutivoDuplicado(
-                $e,
-                $client,
-                $data,
-                function (string $clave, array $estado) use ($client, $venta, $tipoDte): array {
-                    $venta->codigo_generacion = $clave;
-                    $venta->tipo_dte = $tipoDte;
-                    $venta->sello_mh = $clave;
-                    $venta->dte = $this->persistirDteCrAceptado($client, $estado);
-                    $venta->save();
+            try {
+                $recuperado = $this->intentarRecuperarEmisionSiConsecutivoDuplicado(
+                    $e,
+                    $client,
+                    $data,
+                    function (string $clave, array $estado) use ($client, $venta, $tipoDte): array {
+                        $venta->codigo_generacion = $clave;
+                        $venta->tipo_dte = $tipoDte;
+                        $venta->sello_mh = $clave;
+                        $venta->dte = $this->persistirDteCrAceptado($client, $estado);
+                        $this->olvidarClaveRechazada($venta);
+                        $venta->save();
 
-                    return [
-                        'clave' => $clave,
-                        'aceptada' => true,
-                        'detalle_estado' => $estado,
-                        'venta' => $venta->fresh(),
-                    ];
-                }
-            );
+                        return [
+                            'clave' => $clave,
+                            'aceptada' => true,
+                            'detalle_estado' => $estado,
+                            'venta' => $venta->fresh(),
+                        ];
+                    }
+                );
+            } catch (CostaRicaFeEmisionFallidaException $rechazo) {
+                $this->recordarClaveRechazada($venta, $rechazo);
+                throw $rechazo;
+            }
             if ($recuperado !== null) {
                 return $recuperado;
             }
@@ -673,13 +683,19 @@ final class CostaRicaFeEmitService
         }
 
         $clave = $client->getDocumentKey();
-        $estado = $this->assertEstadoHaciendaAceptadoOFallar($client, $clave, $data);
+        try {
+            $estado = $this->assertEstadoHaciendaAceptadoOFallar($client, $clave, $data);
+        } catch (CostaRicaFeEmisionFallidaException $e) {
+            $this->recordarClaveRechazada($venta, $e);
+            throw $e;
+        }
 
         $venta->codigo_generacion = $clave;
         $venta->tipo_dte = $tipoDte;
         /** Igual criterio práctico que FE SV: sello_mh informado para listados/UI; valor = clave DGT (50 caracteres). */
         $venta->sello_mh = $clave;
         $venta->dte = $this->persistirDteCrAceptado($client, $estado);
+        $this->olvidarClaveRechazada($venta);
         $venta->save();
 
         return [
@@ -688,6 +704,59 @@ final class CostaRicaFeEmitService
             'detalle_estado' => $estado,
             'venta' => $venta->fresh(),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function adjuntarReferenciasSustitucionORechazo(Venta $venta, array $data): array
+    {
+        if (! empty($data['referenced_documents'])) {
+            return $data;
+        }
+
+        $refs = $this->mapper->referencedDocumentsSustitucionORechazo($venta);
+        if ($refs === []) {
+            return $data;
+        }
+
+        $data['referenced_documents'] = $refs;
+
+        return $data;
+    }
+
+    private function recordarClaveRechazada(Venta $venta, CostaRicaFeEmisionFallidaException $e): void
+    {
+        $estado = $e->getDetalleEstado();
+        $status = is_array($estado) ? $this->normalizarIndEstadoHacienda($estado['status'] ?? null) : '';
+        if ($status !== 'rechazado') {
+            return;
+        }
+
+        $this->guardarClaveRechazada($venta, (string) ($e->getClave() ?? ''));
+        if ($venta->isDirty('clave_rechazada')) {
+            $venta->save();
+        }
+    }
+
+    private function guardarClaveRechazada(Venta $venta, string $clave): void
+    {
+        $clave = trim($clave);
+        if ($clave === '' || ! Schema::hasColumn('ventas', 'clave_rechazada')) {
+            return;
+        }
+
+        $venta->clave_rechazada = $clave;
+    }
+
+    private function olvidarClaveRechazada(Venta $venta): void
+    {
+        if (! Schema::hasColumn('ventas', 'clave_rechazada')) {
+            return;
+        }
+
+        $venta->clave_rechazada = null;
     }
 
     /**
@@ -1411,6 +1480,9 @@ final class CostaRicaFeEmitService
         $status = $this->normalizarIndEstadoHacienda($estado['status'] ?? null);
 
         if ($status === 'rechazado') {
+            if ($model instanceof Venta) {
+                $this->guardarClaveRechazada($model, $clave);
+            }
             $model->codigo_generacion = null;
             $model->sello_mh = null;
             $model->tipo_dte = null;

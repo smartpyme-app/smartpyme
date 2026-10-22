@@ -44,6 +44,25 @@ final class ReferenciaComprobanteCr
         };
     }
 
+    /**
+     * Referencia de un comprobante que Hacienda rechazó (tipo 10, código 16).
+     *
+     * @return array{document_type: string, referenced_code: string, document_number: string}
+     */
+    public static function referenciaDeRechazado(string $claveRechazada): array
+    {
+        $clave = trim($claveRechazada);
+        if ($clave === '') {
+            throw new InvalidArgumentException('La clave del comprobante rechazado es obligatoria.');
+        }
+
+        return [
+            'document_type' => self::TIPO_RECHAZADO,
+            'referenced_code' => self::CODIGO_RECHAZADO,
+            'document_number' => $clave,
+        ];
+    }
+
     public static function esPeriodoAnterior(\DateTimeInterface $fechaOriginal, \DateTimeInterface $fechaNota): bool
     {
         return self::periodoEnCostaRica($fechaOriginal) < self::periodoEnCostaRica($fechaNota);

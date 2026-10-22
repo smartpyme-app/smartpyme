@@ -16,6 +16,7 @@ use App\Models\Ventas\Devoluciones\Detalle as DetalleDevolucion;
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Venta;
 use App\Support\ActividadEconomicaEmisor;
+use App\Support\FacturacionElectronica\CostaRica\ReferenciaComprobanteCr;
 use App\Support\FacturacionElectronica\TipoIdentificacionReceptor;
 use Carbon\Carbon;
 use InvalidArgumentException;
@@ -97,7 +98,72 @@ final class CostaRicaInvoiceFromVentaMapper
             $payload['fe_cr_exoneracion'] = $metaEx;
         }
 
+        $referencias = $this->referencedDocumentsSustitucionORechazo($venta);
+        if ($referencias !== []) {
+            $payload['referenced_documents'] = $referencias;
+        }
+
         return $payload;
+    }
+
+    /**
+     * Factura o tiquete de venta: una sola InformacionReferencia, y solo al sustituir
+     * un comprobante anulado (07/15) o al reemitir uno rechazado por Hacienda (10/16).
+     * La FEC de compra sigue en referencedDocumentsFacturaElectronicaCompra (código 04).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function referencedDocumentsSustitucionORechazo(Venta $venta): array
+    {
+        $rechazada = trim((string) ($venta->clave_rechazada ?? ''));
+        if ($rechazada !== '') {
+            return [$this->referenciaConFechaYRazon(
+                $venta,
+                ReferenciaComprobanteCr::referenciaDeRechazado($rechazada),
+                'Sustituye comprobante rechazado por Hacienda'
+            )];
+        }
+
+        $clave = trim((string) ($venta->clave_sustituida ?? ''));
+        $codigoNota = trim((string) ($venta->codigo_nota_anulacion ?? ''));
+        if (strlen($clave) === 50 && in_array($codigoNota, ['01', '13'], true)) {
+            return [$this->referenciaConFechaYRazon($venta, [
+                'document_type' => '01',
+                'document_number' => $clave,
+                'referenced_code' => ReferenciaComprobanteCr::codigoSustitucion($codigoNota),
+            ], 'Sustituye comprobante anulado')];
+        }
+
+        return [];
+    }
+
+    /**
+     * FechaEmisionIR y Razon son obligatorias en el generador XML. La fecha es la de la venta
+     * cuando existe; si no, el instante de emisión en Costa Rica.
+     *
+     * @param  array{document_type: string, document_number: string, referenced_code: string}  $referencia
+     * @return array<string, mixed>
+     */
+    private function referenciaConFechaYRazon(Venta $venta, array $referencia, string $razon): array
+    {
+        $referencia['emission_date'] = $this->fechaReferenciaVenta($venta);
+        $referencia['reason'] = mb_substr($razon, 0, 180);
+
+        return $referencia;
+    }
+
+    private function fechaReferenciaVenta(Venta $venta): string
+    {
+        $raw = $venta->fecha ?? null;
+        if ($raw !== null && trim((string) $raw) !== '') {
+            try {
+                return Carbon::parse($raw)->timezone('America/Costa_Rica')->format('Y-m-d\TH:i:sP');
+            } catch (\Throwable) {
+                // seguir con la hora de emisión
+            }
+        }
+
+        return $this->fechaEmisionXmlCr();
     }
 
     /**

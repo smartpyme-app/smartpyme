@@ -1,0 +1,27 @@
+diff --git a/src/Data/codigos-referencia.json b/src/Data/codigos-referencia.json
+index 1509047..6b38cf5 100644
+--- a/src/Data/codigos-referencia.json
++++ b/src/Data/codigos-referencia.json
+@@ -43,6 +43,22 @@
+     "name": "Crédito por exoneración posterior a la facturación",
+     "code": "12"
+   },
++  {
++    "name": "Anula documento de referencia del período anterior",
++    "code": "13"
++  },
++  {
++    "name": "Corrige monto del período anterior",
++    "code": "14"
++  },
++  {
++    "name": "Sustituye comprobante electrónico del período anterior",
++    "code": "15"
++  },
++  {
++    "name": "Sustituye comprobante electrónico rechazado",
++    "code": "16"
++  },
+   {
+     "name": "Otros",
+     "code": "99"

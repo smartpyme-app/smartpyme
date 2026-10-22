@@ -744,9 +744,9 @@
                     @if (consulting) {
                         <p class="alert alert-info">{{ 'country.tax.fe.alreadyEmittedInfo' | translate }}</p>
                     }
-                    <button [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary w-100">
+                    <button [disabled]="saving" (click)="esReemisionRechazoCr() ? reemitirComprobanteRechazado() : emitirDTE()" class="mb-3 btn btn-primary w-100">
                         @if (!saving && !consulting) {
-                            <span>{{ 'country.tax.fe.emitButton' | translate }}</span>
+                            <span>{{ esReemisionRechazoCr() ? 'Reemitir' : ('country.tax.fe.emitButton' | translate) }}</span>
                         }
                         @if (saving) {
                             <span>Emitiendo...</span>

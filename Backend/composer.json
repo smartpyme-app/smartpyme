@@ -65,7 +65,8 @@
         },
         "patches": {
             "dazza-dev/dgt-xml-generator": {
-                "Receptor: omitir ubicacion, telefono y correo cuando no vienen del cliente": "patches/dgt-xml-generator-receptor-contacto-opcional.patch"
+                "Receptor: omitir ubicacion, telefono y correo cuando no vienen del cliente": "patches/dgt-xml-generator-receptor-contacto-opcional.patch",
+                "Codigos de referencia 13 a 16 de anexos 4.4": "patches/dgt-xml-generator-codigos-referencia-13-16.patch"
             }
         }
     },
