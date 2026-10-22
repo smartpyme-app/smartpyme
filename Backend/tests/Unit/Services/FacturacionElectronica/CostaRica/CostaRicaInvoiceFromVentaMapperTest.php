@@ -10,6 +10,7 @@ use App\Models\Ventas\Devoluciones\Detalle as DetalleDevolucion;
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Venta;
 use App\Services\FacturacionElectronica\CostaRica\BccrTipoCambioClient;
+use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeEmitService;
 use App\Support\FacturacionElectronica\CostaRica\ReferenciaComprobanteCr;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaInvoiceFromVentaMapper;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaTipoCambioService;
@@ -73,6 +74,17 @@ final class CostaRicaInvoiceFromVentaMapperTest extends TestCase
         ]));
 
         self::assertSame([], $refs);
+    }
+
+    public function test_renumera_correlativo_solo_si_rechazado_y_sin_clave_aceptada(): void
+    {
+        $clave = '50631012600310123456700100001010000000001199999999';
+
+        self::assertTrue(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(true, $clave, false));
+        self::assertFalse(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(true, '', false));
+        self::assertFalse(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(true, '   ', false));
+        self::assertFalse(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(true, $clave, true));
+        self::assertFalse(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(false, $clave, false));
     }
 
     public function test_reemision_de_rechazado_referencia_tipo_10_codigo_16(): void

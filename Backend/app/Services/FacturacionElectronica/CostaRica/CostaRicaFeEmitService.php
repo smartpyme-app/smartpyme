@@ -8,6 +8,7 @@ use App\Models\Compras\Gastos\Gasto;
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Venta;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
+use App\Services\Ventas\VentaService;
 use App\Support\FacturacionElectronica\CostaRica\ReferenciaComprobanteCr;
 use App\Support\FacturacionElectronica\CostaRicaFeDteDocumento;
 use App\Support\FacturacionElectronica\XmlRespuestaHaciendaCr;
@@ -54,6 +55,7 @@ final class CostaRicaFeEmitService
             throw new RuntimeException('La venta ya tiene comprobante electrónico emitido (clave registrada).');
         }
 
+        $this->asignarCorrelativoSiRechazado($venta);
         $sec = $this->secuencialDesdeCorrelativo($venta->correlativo);
         $data = $this->mapper->buildDocumentData($venta, $venta->empresa, $sec);
         $data = $this->adjuntarReferenciasSustitucionORechazo($venta, $data);
@@ -78,6 +80,7 @@ final class CostaRicaFeEmitService
             throw new RuntimeException('La venta ya tiene comprobante electrónico emitido (clave registrada).');
         }
 
+        $this->asignarCorrelativoSiRechazado($venta);
         $sec = $this->secuencialDesdeCorrelativo($venta->correlativo);
         $data = $this->mapper->buildTicketDocumentData($venta, $venta->empresa, $sec);
         $data = $this->adjuntarReferenciasSustitucionORechazo($venta, $data);
@@ -1055,6 +1058,33 @@ final class CostaRicaFeEmitService
             $venta->sello_mh,
             $venta->dte
         );
+    }
+
+    /**
+     * Hacienda ya registró el consecutivo del XML rechazado (-99 si se reutiliza).
+     * Solo entonces se toma el siguiente correlativo del documento de la venta.
+     */
+    public static function debeRenumerarCorrelativoTrasRechazo(
+        bool $columnaClaveRechazadaExiste,
+        ?string $claveRechazada,
+        bool $tieneClaveFeAceptada
+    ): bool {
+        if (! $columnaClaveRechazadaExiste || $tieneClaveFeAceptada) {
+            return false;
+        }
+
+        return trim((string) $claveRechazada) !== '';
+    }
+
+    private function asignarCorrelativoSiRechazado(Venta $venta): void
+    {
+        $columna = Schema::hasColumn('ventas', 'clave_rechazada');
+        $clave = $columna ? (string) ($venta->clave_rechazada ?? '') : '';
+        if (! self::debeRenumerarCorrelativoTrasRechazo($columna, $clave, $this->ventaTieneClaveFeCr($venta))) {
+            return;
+        }
+
+        (new VentaService())->asignarCorrelativo($venta, (int) $venta->id_documento);
     }
 
     private function compraTieneClaveFeCr(Compra $compra): bool
