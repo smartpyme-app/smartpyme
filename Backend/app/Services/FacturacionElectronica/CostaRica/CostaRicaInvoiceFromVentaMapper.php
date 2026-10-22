@@ -222,7 +222,7 @@ final class CostaRicaInvoiceFromVentaMapper
     public function assertReceptorFacturaElectronicaCr(array $receiver): void
     {
         $tipo = trim((string) ($receiver['identification_type'] ?? ''));
-        $num = preg_replace('/\D/', '', (string) ($receiver['identification_number'] ?? '')) ?? '';
+        $num = (string) ($receiver['identification_number'] ?? '');
         if (TipoIdentificacionReceptor::estructuraValidaCostaRicaFactura($tipo, $num)) {
             return;
         }
@@ -860,7 +860,11 @@ final class CostaRicaInvoiceFromVentaMapper
         }
         $codAct = $this->codigoActividadEconomicaParaDgt($actividadCampo);
 
-        $nit = $this->soloDigitos((string) ($empresa->nit ?? ''));
+        $tipoEmisor = $this->tipoIdentificacionEmisorCr($empresa);
+        $nitRaw = (string) ($empresa->nit ?? '');
+        $nit = $tipoEmisor === '02'
+            ? TipoIdentificacionReceptor::normalizarNumeroCostaRica('02', $nitRaw)
+            : $this->soloDigitos($nitRaw);
         if (strlen($nit) < 9) {
             throw new InvalidArgumentException('El número de identificación del emisor no es válido para Costa Rica (mínimo 9 dígitos, según tipo configurado).');
         }
@@ -873,7 +877,7 @@ final class CostaRicaInvoiceFromVentaMapper
         }
 
         $emisor = [
-            'identification_type' => $this->tipoIdentificacionEmisorCr($empresa),
+            'identification_type' => $tipoEmisor,
             'identification_number' => $nit,
             'name' => $this->nombreTerceroCr((string) ($empresa->nombre ?? ''), 'Emisor'),
             'activity' => $codAct,
@@ -896,10 +900,12 @@ final class CostaRicaInvoiceFromVentaMapper
             return $this->receptorGenerico($empresa);
         }
 
-        $nit = $this->soloDigitos((string) ($cliente->nit ?? ''));
-        $dui = $this->soloDigitos((string) ($cliente->dui ?? ''));
+        $nitRaw = (string) ($cliente->nit ?? '');
+        $duiRaw = (string) ($cliente->dui ?? '');
+        $nit = $this->soloDigitos($nitRaw);
+        $dui = $this->soloDigitos($duiRaw);
         $tipo = TipoIdentificacionReceptor::costaRica($cliente->tipo_documento ?? null, $nit, $dui);
-        $num = $tipo !== null ? TipoIdentificacionReceptor::numeroCostaRica($tipo, $nit, $dui) : null;
+        $num = $this->numeroIdentificacionCr($tipo, $nitRaw, $duiRaw, $nit, $dui);
         if ($tipo === null || $num === null) {
             return $this->receptorGenerico($empresa, trim(($cliente->nombre ?? '').' '.($cliente->apellido ?? '')) ?: 'Cliente');
         }
@@ -1871,9 +1877,9 @@ final class CostaRicaInvoiceFromVentaMapper
             $docRef = trim((string) $numeroControl);
         }
         if ($docRef !== '') {
-            // Tipo 01: Hacienda valida que Numero sea clave de comprobante electrónico (50 dígitos); otras referencias → 99.
+            // Tipo 01: Hacienda valida que Numero sea clave de comprobante electrónico (50 caracteres); otras referencias → 99.
             if ($this->esClaveComprobanteElectronicoCr($docRef)) {
-                $clave50 = preg_replace('/\D/', '', $docRef);
+                $clave50 = preg_replace('/[^0-9A-Za-z]/', '', $docRef) ?? '';
 
                 return [[
                     'document_type' => '01',
@@ -1910,13 +1916,29 @@ final class CostaRicaInvoiceFromVentaMapper
     }
 
     /**
-     * Clave numérica de comprobante electrónico CR: 50 dígitos (Hacienda rechaza -29 si no coincide).
+     * Clave de comprobante electrónico CR: 50 caracteres alfanuméricos (Hacienda rechaza -29 si no coincide).
      */
     private function esClaveComprobanteElectronicoCr(string $s): bool
     {
-        $d = preg_replace('/\D/', '', $s);
+        $clave = strtoupper(preg_replace('/[^0-9A-Za-z]/', '', $s) ?? '');
 
-        return strlen($d) === 50;
+        return strlen($clave) === 50;
+    }
+
+    private function numeroIdentificacionCr(?string $tipo, string $nitRaw, string $duiRaw, string $nitDigitos, string $duiDigitos): ?string
+    {
+        if ($tipo === null) {
+            return null;
+        }
+        if ($tipo === '02') {
+            return TipoIdentificacionReceptor::numeroCostaRica(
+                '02',
+                TipoIdentificacionReceptor::normalizarNumeroCostaRica('02', $nitRaw),
+                TipoIdentificacionReceptor::normalizarNumeroCostaRica('02', $duiRaw)
+            );
+        }
+
+        return TipoIdentificacionReceptor::numeroCostaRica($tipo, $nitDigitos, $duiDigitos);
     }
 
     private function condicionCompraOGasto(string $condicion): string
@@ -1931,10 +1953,12 @@ final class CostaRicaInvoiceFromVentaMapper
      */
     private function receptorProveedor(Proveedor $proveedor, Empresa $empresaCompradora): array
     {
-        $nit = $this->soloDigitos((string) ($proveedor->nit ?? ''));
-        $dui = $this->soloDigitos((string) ($proveedor->dui ?? ''));
+        $nitRaw = (string) ($proveedor->nit ?? '');
+        $duiRaw = (string) ($proveedor->dui ?? '');
+        $nit = $this->soloDigitos($nitRaw);
+        $dui = $this->soloDigitos($duiRaw);
         $tipo = TipoIdentificacionReceptor::costaRica($proveedor->tipo_documento ?? null, $nit, $dui);
-        $num = $tipo !== null ? TipoIdentificacionReceptor::numeroCostaRica($tipo, $nit, $dui) : null;
+        $num = $this->numeroIdentificacionCr($tipo, $nitRaw, $duiRaw, $nit, $dui);
         if ($tipo === null || $num === null) {
             $tipo = '06';
             $num = '00000000000000';

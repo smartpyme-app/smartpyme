@@ -26,9 +26,21 @@ export class HaciendaContribuyenteClientService {
     this.baseUrl = (env.haciendaPublicApiUrl ?? 'https://api.hacienda.go.cr').replace(/\/$/, '');
   }
 
-  getContribuyente(identificacion: string): Observable<unknown> {
-    const id = identificacion.replace(/\D/g, '');
-    if (id.length < 9 || id.length > 12) {
+  getContribuyente(identificacion: string, tipo?: string): Observable<unknown> {
+    const crudo = String(identificacion ?? '');
+    const juridica = tipo === '02' || /[A-Za-z]/.test(crudo);
+    const id = juridica ? crudo.replace(/[^0-9A-Za-z]/g, '') : crudo.replace(/\D/g, '');
+    if (juridica) {
+      if (id.length !== 10) {
+        return throwError(
+          () =>
+            new HttpErrorResponse({
+              status: 422,
+              error: { error: 'identificacion jurídica debe tener 10 caracteres alfanuméricos.' },
+            }),
+        );
+      }
+    } else if (id.length < 9 || id.length > 12) {
       return throwError(
         () =>
           new HttpErrorResponse({

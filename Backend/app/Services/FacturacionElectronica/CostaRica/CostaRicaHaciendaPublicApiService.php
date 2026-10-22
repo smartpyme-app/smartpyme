@@ -49,7 +49,7 @@ final class CostaRicaHaciendaPublicApiService
      */
     public function contribuyente(string $identificacion): array
     {
-        $id = preg_replace('/\D/', '', $identificacion);
+        $id = preg_replace('/[^0-9A-Za-z]/', '', $identificacion) ?? '';
         $key = 'fe_cr:hacienda:ae:'.$id;
         $ttl = (int) config('services.hacienda_cr.cache.contribuyente_seconds', 43200);
 

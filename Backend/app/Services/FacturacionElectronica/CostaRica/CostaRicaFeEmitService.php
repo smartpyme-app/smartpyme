@@ -11,6 +11,7 @@ use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
 use App\Services\Ventas\VentaService;
 use App\Support\FacturacionElectronica\CostaRica\ReferenciaComprobanteCr;
 use App\Support\FacturacionElectronica\CostaRicaFeDteDocumento;
+use App\Support\FacturacionElectronica\TipoIdentificacionReceptor;
 use App\Support\FacturacionElectronica\XmlRespuestaHaciendaCr;
 use DazzaDev\DgtCr\Client;
 use DOMDocument;
@@ -1070,11 +1071,17 @@ final class CostaRicaFeEmitService
     {
         $client->setIssuer([
             'identification_type' => $data['issuer']['identification_type'],
-            'identification_number' => $this->soloDigitos($data['issuer']['identification_number']),
+            'identification_number' => $this->numeroIdentificacionParaApi(
+                (string) ($data['issuer']['identification_type'] ?? ''),
+                (string) ($data['issuer']['identification_number'] ?? '')
+            ),
         ]);
         $client->setReceiver([
             'identification_type' => $data['receiver']['identification_type'],
-            'identification_number' => $this->soloDigitos($data['receiver']['identification_number']),
+            'identification_number' => $this->numeroIdentificacionParaApi(
+                (string) ($data['receiver']['identification_type'] ?? ''),
+                (string) ($data['receiver']['identification_number'] ?? '')
+            ),
         ]);
     }
 
@@ -1150,6 +1157,15 @@ final class CostaRicaFeEmitService
     private function soloDigitos(string $s): string
     {
         return preg_replace('/\D/', '', $s) ?? '';
+    }
+
+    private function numeroIdentificacionParaApi(string $tipo, string $numero): string
+    {
+        if ($tipo === '02') {
+            return TipoIdentificacionReceptor::normalizarNumeroCostaRica('02', $numero);
+        }
+
+        return $this->soloDigitos($numero);
     }
 
     /**

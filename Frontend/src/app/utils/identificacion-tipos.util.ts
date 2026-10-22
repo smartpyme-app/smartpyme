@@ -136,7 +136,7 @@ export function mascaraIdentificacion(
       return dui;
     }
     if (c === '02') {
-      return nit;
+      return '';
     }
     return '';
   }

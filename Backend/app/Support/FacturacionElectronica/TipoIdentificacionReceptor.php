@@ -56,8 +56,25 @@ final class TipoIdentificacionReceptor
         return $tipo;
     }
 
+    /**
+     * Tipo 02 conserva letras (cédula jurídica). El resto queda solo dígitos.
+     */
+    public static function normalizarNumeroCostaRica(string $tipo, string $raw): string
+    {
+        if ($tipo === '02') {
+            return preg_replace('/[^0-9A-Za-z]/', '', $raw) ?? '';
+        }
+
+        return preg_replace('/\D/', '', $raw) ?? '';
+    }
+
     public static function numeroCostaRica(string $tipo, string $nitDigits, string $duiDigits): ?string
     {
+        if ($tipo === '02') {
+            $nitDigits = self::normalizarNumeroCostaRica('02', $nitDigits);
+            $duiDigits = self::normalizarNumeroCostaRica('02', $duiDigits);
+        }
+
         if (in_array($tipo, ['02', '04'], true) && strlen($nitDigits) >= 9) {
             return $nitDigits;
         }
@@ -79,7 +96,7 @@ final class TipoIdentificacionReceptor
      */
     public static function estructuraValidaCostaRicaFactura(string $tipo, string $numeroSoloDigitos): bool
     {
-        $n = preg_replace('/\D/', '', $numeroSoloDigitos) ?? '';
+        $n = self::normalizarNumeroCostaRica($tipo, $numeroSoloDigitos);
         if ($n === '' || preg_match('/^0+$/', $n) === 1) {
             return false;
         }

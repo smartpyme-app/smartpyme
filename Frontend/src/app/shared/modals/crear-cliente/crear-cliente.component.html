@@ -89,7 +89,8 @@
                             <label for="cliente_cr_ident_persona_modal">{{ labelIdentificacionDui() }}</label>
                             @for (maskDui of [mascaraIdentificacionDui()]; track maskDui) {
                             <input type="text" class="form-control" id="cliente_cr_ident_persona_modal" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui"
-                              (ngModelChange)="onIdentificacionClienteCrDebounced()" [dropSpecialCharacters]="false" [mask]="maskDui">
+                              (ngModelChange)="onIdentificacionClienteCrDebounced()" [dropSpecialCharacters]="false" [mask]="maskDui"
+                              [attr.maxlength]="cliente?.tipo_documento === '02' ? 12 : null">
                             }
                             @if (contribuyenteCargandoCr) {
                               <small class="text-muted">Consultando Hacienda…</small>
@@ -311,7 +312,7 @@
                         <div class="form-group col-12 col-md-6 col-lg-4">
                             <label for="nit_cr_empresa_modal">{{ 'country.tax.nit' | translate }}</label>
                             <input type="text" class="form-control" id="nit_cr_empresa_modal" placeholder="Escribe aquí" name="nit" [(ngModel)]="cliente.nit"
-                              (ngModelChange)="onIdentificacionClienteCrDebounced()" [dropSpecialCharacters]="false" [mask]="apiService.auth_user().empresa.validador_nit || ''">
+                              (ngModelChange)="onIdentificacionClienteCrDebounced()" [dropSpecialCharacters]="false" [mask]="mascaraIdentificacionNitCr()" maxlength="12">
                             @if (contribuyenteCargandoCr) {
                               <small class="text-muted">Consultando Hacienda…</small>
                             }
