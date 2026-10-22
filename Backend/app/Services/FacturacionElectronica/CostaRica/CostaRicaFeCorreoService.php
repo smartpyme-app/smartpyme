@@ -9,6 +9,7 @@ use App\Models\Compras\Compra;
 use App\Models\Compras\Gastos\Gasto;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Ventas\Venta;
+use App\Support\FacturacionElectronica\ClaveComprobanteCr;
 use App\Support\FacturacionElectronica\CorreoDestinoDte;
 use App\Support\FacturacionElectronica\CostaRicaFeDteDocumento;
 use App\Support\FacturacionElectronica\XmlRespuestaHaciendaCr;
@@ -70,8 +71,8 @@ final class CostaRicaFeCorreoService
         $xmlRespuesta = XmlRespuestaHaciendaCr::normalizar($xmlRespuesta);
 
         $clave = (string) ($datosPdf['clave'] ?? '');
-        $claveDigitos = preg_replace('/\D/', '', $clave) ?? '';
-        $nombreBase = strlen($claveDigitos) >= 40 ? $claveDigitos : ($clave !== '' ? $clave : 'comprobante-'.$id);
+        $claveArchivo = ClaveComprobanteCr::paraQrYArchivo($clave);
+        $nombreBase = $claveArchivo !== '' ? $claveArchivo : ($clave !== '' ? $clave : 'comprobante-'.$id);
 
         $pdfBin = $this->pdfService->pdfBinary($datosPdf);
 

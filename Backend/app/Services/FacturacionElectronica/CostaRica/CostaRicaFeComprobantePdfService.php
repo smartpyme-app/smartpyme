@@ -8,6 +8,7 @@ use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Admin\Documento;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Venta;
+use App\Support\FacturacionElectronica\ClaveComprobanteCr;
 use App\Support\FacturacionElectronica\CostaRicaFeComprobantePdfAggregates;
 use App\Support\FacturacionElectronica\CostaRicaFeDteDocumento;
 use Illuminate\Contracts\View\View;
@@ -57,9 +58,9 @@ final class CostaRicaFeComprobantePdfService
         $moneda = strtoupper((string) (($documentoFe['currency']['currency_code'] ?? 'CRC')));
         $feCrPdf = CostaRicaFeComprobantePdfAggregates::fromDocument($documentoFe, $clave, $moneda);
 
-        $claveSoloDigitos = preg_replace('/\D/', '', $clave);
-        $venta->qr = strlen($claveSoloDigitos) >= 40
-            ? $claveSoloDigitos
+        $claveQr = ClaveComprobanteCr::paraQrYArchivo($clave);
+        $venta->qr = $claveQr !== ''
+            ? $claveQr
             : 'https://atv.hacienda.go.cr/ATV/frmConsultaFactura.aspx';
 
         $viewData = compact('venta', 'empresa', 'documento', 'documentoFe', 'clave', 'titulo', 'tipoDteCodigo', 'feCrPdf');

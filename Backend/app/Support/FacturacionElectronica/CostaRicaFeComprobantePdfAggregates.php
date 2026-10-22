@@ -166,7 +166,7 @@ final class CostaRicaFeComprobantePdfAggregates
 
     private static function formatearClave(string $clave): string
     {
-        $d = preg_replace('/\D/', '', $clave);
+        $d = preg_replace('/[^0-9A-Za-z]/', '', $clave) ?? '';
 
         return $d !== '' ? trim(chunk_split($d, 5, ' ')) : $clave;
     }
