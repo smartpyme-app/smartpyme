@@ -74,6 +74,8 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
     public modalRefContacto: any;
 
     public diasCreditoOpciones = [3, 8, 10, 15, 30, 45, 60];
+    public regalarPuntos = false;
+    public puntosRegalo: number | null = null;
 
     actividadesContribuyenteCr: ContribuyenteActividadOption[] = [];
     actividadContribuyenteSeleccionada: ContribuyenteActividadOption | null = null;
@@ -108,6 +110,10 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
 
     esCostaRicaFe(): boolean {
         return this.feCrUbic.esCostaRicaFe();
+    }
+
+    mostrarRegaloPuntos(): boolean {
+        return this.esNuevo && this.apiService.isFidelizacionCompleta();
     }
 
     mostrarRegistroSecundarioCliente(): boolean {
@@ -447,7 +453,14 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
         this.saving = true;
         let routeUrl = this.esNuevo ? 'cliente' : 'cliente/update';
 
-        this.apiService.store(routeUrl, this.cliente)
+        const payload = { ...this.cliente };
+        if (this.mostrarRegaloPuntos() && this.regalarPuntos && this.puntosRegalo != null && this.puntosRegalo > 0) {
+            payload.puntos_regalo = Math.floor(Number(this.puntosRegalo));
+        } else {
+            delete payload.puntos_regalo;
+        }
+
+        this.apiService.store(routeUrl, payload)
             .pipe(this.untilDestroyed())
             .subscribe({
             next: (cliente) => {
