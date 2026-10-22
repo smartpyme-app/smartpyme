@@ -58,12 +58,14 @@ class StoreUsuarioRequest extends FormRequest
             'id_sucursal'   => 'required|integer|exists:sucursales,id',
             'id_bodega'     => 'required|integer|exists:sucursal_bodegas,id',
             'id_canal'      => 'sometimes|nullable|numeric',
-            'telefono'      => [
+            'telefono'      => array_values(array_filter([
                 'sometimes',
                 'nullable',
                 'string',
-                Rule::unique('users', 'telefono')->ignore($id),
-            ],
+                // En edición el formulario reenvía el teléfono ya guardado. No bloquear el cambio de rol
+                // si ese número también está en otro usuario.
+                $isUpdate ? null : Rule::unique('users', 'telefono'),
+            ])),
             'password'      => array_merge(
                 $isUpdate ? ['nullable'] : ['required'],
                 [
