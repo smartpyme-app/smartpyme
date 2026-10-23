@@ -36,11 +36,14 @@ class CotizacionConstants
         return false;
     }
 
-    /** Vendedor Ventas (no ventas limitado): solo sus cotizaciones. Ventas limitado ve las de la empresa. */
+    /** Ventas y Ventas limitado: solo sus cotizaciones en listado/export. */
     public static function soloListadoCotizacionesPropias($user): bool
     {
-        if (! $user || self::esVentasLimitado($user)) {
+        if (! $user) {
             return false;
+        }
+        if (self::esVentasLimitado($user)) {
+            return true;
         }
 
         return ($user->tipo ?? null) === 'Ventas';

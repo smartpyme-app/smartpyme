@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Constants\CotizacionConstants;
 use App\Models\CotizacionVenta;
 use App\Models\Ventas\Venta as Cotizacion;
 use Illuminate\Support\Facades\Auth;
@@ -45,7 +46,7 @@ class CotizacionesExport implements FromCollection, WithHeadings, WithMapping
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
 
         $user = Auth::user();
-        $soloCotizacionesPropiasVendedor = $user && $user->tipo === 'Ventas';
+        $soloCotizacionesPropiasVendedor = CotizacionConstants::soloListadoCotizacionesPropias($user);
 
         $ventas = Cotizacion::when($soloCotizacionesPropiasVendedor, function ($query) use ($user) {
                             $query->where('id_usuario', $user->id);
