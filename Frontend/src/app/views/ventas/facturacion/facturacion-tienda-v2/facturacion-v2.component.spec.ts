@@ -619,6 +619,40 @@ describe('FacturacionV2Component', () => {
     expect(urls).not.toContain('contabilidad/partida/venta');
   });
 
+  it('facturar cotizacion lee cotizacionVentas y no la venta', () => {
+    const component: any = Object.create(FacturacionV2Component.prototype);
+    const params: Record<string, string> = { facturar_cotizacion: '1', id_venta: '48' };
+    const read = jasmine.createSpy('read').and.returnValue({ subscribe() {} });
+    component.route = { snapshot: { queryParamMap: { get: (key: string) => params[key] ?? null } } };
+    component.apiService = {
+      restriccionesCotizacionesVendedoresActivas: () => false,
+      isVentasLimitado: () => false,
+      read,
+    };
+
+    component.cargarCotizacionParaFacturar();
+
+    expect(read).toHaveBeenCalledOnceWith('cotizacionVentas/', 48);
+  });
+
+  it('adapta la cotizacion al shape de la venta', () => {
+    const component: any = Object.create(FacturacionV2Component.prototype);
+    const venta = component.adaptarCotizacionVenta({
+      id: 48,
+      aplicar_retencion: 1,
+      detalles: [{
+        descripcion: '',
+        producto: { nombre: 'Tornillo', img: 'tornillo.png', costo: 2 },
+      }],
+    });
+
+    expect(venta.retencion).toBe(1);
+    expect(venta.detalles[0].descripcion).toBe('Tornillo');
+    expect(venta.detalles[0].nombre_producto).toBe('Tornillo');
+    expect(venta.detalles[0].costo).toBe(2);
+    expect(venta.detalles[0].img).toBe('tornillo.png');
+  });
+
   it('crear otra venta Boxful limpia el formulario sin ir al listado', () => {
     const component: any = Object.create(FacturacionV2Component.prototype);
     component.mostrarModalBoxful = true;

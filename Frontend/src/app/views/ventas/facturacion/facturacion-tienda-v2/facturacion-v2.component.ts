@@ -835,98 +835,7 @@ export class FacturacionV2Component implements OnInit {
         );
     }
 
-    // Facturar cotizacion
-    if (
-      this.route.snapshot.queryParamMap.get('facturar_cotizacion')! &&
-      this.route.snapshot.queryParamMap.get('id_venta')!
-    ) {
-      if (this.apiService.restriccionesCotizacionesVendedoresActivas() && !this.apiService.isVentasLimitado()) {
-        this.alertService.error('No tiene permiso para facturar cotizaciones.');
-        this.router.navigate(['/cotizaciones']);
-      } else {
-        this.facturarCotizacion = true;
-        this.apiService
-          .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
-          .subscribe(
-            (venta) => {
-              if (this.apiService.isVentasLimitado() && String(venta?.estado || '').toLowerCase() !== 'pendiente') {
-                this.alertService.error('Solo puede facturar cotizaciones pendientes.');
-                this.router.navigate(['/cotizaciones']);
-                return;
-              }
-              this.venta = venta;
-              this.retencionIvaGcUsuarioDecidio = true;
-              this.normalizarDetallesTipoGravado(this.venta);
-              hidratarImpuestosProductosEnDetalles(
-                this.venta.detalles,
-                this.apiService.auth_user()?.empresa?.iva
-              );
-              if (!this.venta.cliente) {
-                this.venta.cliente = {};
-              } else {
-                this.venta.cliente.nombre =
-                  this.venta.cliente.tipo == 'Empresa'
-                    ? this.venta.cliente.nombre_empresa
-                    : this.venta.cliente.nombre_completo;
-              }
-              this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
-              this.migrarExoneracionCrLegacyADetalles();
-              this.venta.fecha = this.apiService.date();
-              this.venta.fecha_pago = this.apiService.date();
-              this.venta.id_documento = null;
-              this.venta.correlativo = null;
-              this.venta.estado = 'Pagada';
-              this.venta.condicion = 'Contado';
-              this.venta.impuestos = this.impuestos;
-              this.venta.observaciones = '';
-              this.venta.cotizacion = 0;
-              this.venta.num_cotizacion = this.venta.id;
-              this.venta.id = null;
-              this.syncVentaCreditoConsignaFlagsFromEstado();
-              this.refrescarMonedaTrasResetFecha();
-
-              const indicesExonerada = (this.venta.detalles || [])
-                .map((d: any, i: number) => String(d?.tipo_gravado || '').toLowerCase() === 'exonerada' ? i : -1)
-                .filter((i: number) => i >= 0);
-              prepararDetallesParaFacturarDesdeCotizacion(
-                this.venta.detalles,
-                !!this.venta.cobrar_impuestos,
-                Number(this.apiService.auth_user()?.empresa?.iva ?? 0),
-                {
-                  preservePrecioIva: true,
-                  paisEmpresa: this.apiService.auth_user()?.empresa?.pais,
-                }
-              );
-              indicesExonerada.forEach((i: number) => {
-                const detalle = this.venta.detalles[i];
-                if (!detalle) {
-                  return;
-                }
-                detalle.tipo_gravado = 'exonerada';
-                const precioSinIva = parseFloat(detalle.precio || 0);
-                detalle.sub_total = Number((parseFloat(detalle.cantidad || 0) * precioSinIva).toFixed(4));
-                detalle.total = (parseFloat(detalle.sub_total) - parseFloat(detalle.descuento || 0)).toFixed(4);
-                detalle.gravada = detalle.total;
-                detalle.exenta = 0;
-                detalle.no_sujeta = 0;
-                detalle.total_iva = detalle.total;
-              });
-              this.reiniciarDocumentoTrasCargarVentaBase();
-
-              this.sumTotal();
-
-              // Para proyectos
-              if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
-                this.venta.detalles = [];
-              }
-            },
-            (error) => {
-              this.alertService.error(error);
-              this.loading = false;
-            },
-          );
-      }
-    }
+    this.cargarCotizacionParaFacturar();
 
     // Facturar orden de compra
     if (this.route.snapshot.queryParamMap.get('facturar_orden_compra')!) {
@@ -1803,6 +1712,116 @@ export class FacturacionV2Component implements OnInit {
         });
     }
 
+    private cargarCotizacionParaFacturar(): void {
+        if (
+            !this.route.snapshot.queryParamMap.get('facturar_cotizacion') ||
+            !this.route.snapshot.queryParamMap.get('id_venta')
+        ) {
+            return;
+        }
+        if (this.apiService.restriccionesCotizacionesVendedoresActivas() && !this.apiService.isVentasLimitado()) {
+            this.alertService.error('No tiene permiso para facturar cotizaciones.');
+            this.router.navigate(['/cotizaciones']);
+            return;
+        }
+        this.facturarCotizacion = true;
+        const idCotizacion = +this.route.snapshot.queryParamMap.get('id_venta')!;
+        this.apiService.read('cotizacionVentas/', idCotizacion).subscribe(
+            (venta) => {
+                if (this.apiService.isVentasLimitado() && String(venta?.estado || '').toLowerCase() !== 'pendiente') {
+                    this.alertService.error('Solo puede facturar cotizaciones pendientes.');
+                    this.router.navigate(['/cotizaciones']);
+                    return;
+                }
+                this.venta = this.adaptarCotizacionVenta(venta);
+                this.retencionIvaGcUsuarioDecidio = true;
+                this.normalizarDetallesTipoGravado(this.venta);
+                hidratarImpuestosProductosEnDetalles(
+                    this.venta.detalles,
+                    this.apiService.auth_user()?.empresa?.iva
+                );
+                if (!this.venta.cliente) {
+                    this.venta.cliente = {};
+                } else {
+                    this.venta.cliente.nombre =
+                        this.venta.cliente.tipo == 'Empresa'
+                            ? this.venta.cliente.nombre_empresa
+                            : this.venta.cliente.nombre_completo;
+                }
+                this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
+                this.migrarExoneracionCrLegacyADetalles();
+                this.venta.fecha = this.apiService.date();
+                this.venta.fecha_pago = this.apiService.date();
+                this.venta.id_documento = null;
+                this.venta.correlativo = null;
+                this.venta.estado = 'Pagada';
+                this.venta.condicion = 'Contado';
+                this.venta.impuestos = this.impuestos;
+                this.venta.observaciones = '';
+                this.venta.cotizacion = 0;
+                this.venta.num_cotizacion = idCotizacion;
+                this.venta.id = null;
+                this.syncVentaCreditoConsignaFlagsFromEstado();
+                this.refrescarMonedaTrasResetFecha();
+
+                const indicesExonerada = (this.venta.detalles || [])
+                    .map((d: any, i: number) => String(d?.tipo_gravado || '').toLowerCase() === 'exonerada' ? i : -1)
+                    .filter((i: number) => i >= 0);
+                prepararDetallesParaFacturarDesdeCotizacion(
+                    this.venta.detalles,
+                    !!this.venta.cobrar_impuestos,
+                    Number(this.apiService.auth_user()?.empresa?.iva ?? 0),
+                    {
+                        preservePrecioIva: true,
+                        paisEmpresa: this.apiService.auth_user()?.empresa?.pais,
+                    }
+                );
+                indicesExonerada.forEach((i: number) => {
+                    const detalle = this.venta.detalles[i];
+                    if (!detalle) {
+                        return;
+                    }
+                    detalle.tipo_gravado = 'exonerada';
+                    const precioSinIva = parseFloat(detalle.precio || 0);
+                    detalle.sub_total = Number((parseFloat(detalle.cantidad || 0) * precioSinIva).toFixed(4));
+                    detalle.total = (parseFloat(detalle.sub_total) - parseFloat(detalle.descuento || 0)).toFixed(4);
+                    detalle.gravada = detalle.total;
+                    detalle.exenta = 0;
+                    detalle.no_sujeta = 0;
+                    detalle.total_iva = detalle.total;
+                });
+                this.reiniciarDocumentoTrasCargarVentaBase();
+                this.sumTotal();
+
+                if (this.route.snapshot.queryParamMap.get('id_proyecto')) {
+                    this.venta.detalles = [];
+                }
+            },
+            (error) => {
+                this.alertService.error(error);
+                this.loading = false;
+            },
+        );
+    }
+
+    /** La cotización vive en cotizacion_ventas; el formulario espera el shape de una venta. */
+    private adaptarCotizacionVenta(venta: any) {
+        if (!venta) {
+            return venta;
+        }
+        venta.retencion = venta.aplicar_retencion ?? venta.retencion;
+        if (Array.isArray(venta.detalles)) {
+            venta.detalles = venta.detalles.map((detalle: any) => ({
+                ...detalle,
+                descripcion: detalle.descripcion || detalle.producto?.nombre || detalle.nombre_producto || '',
+                nombre_producto: detalle.nombre_producto || detalle.producto?.nombre || detalle.descripcion || '',
+                img: detalle.img || detalle.producto?.img,
+                costo: detalle.costo ?? detalle.total_costo ?? detalle.producto?.costo ?? 0,
+            }));
+        }
+        return venta;
+    }
+
     private cargarVentaParaFacturar(): void {
         if (
             !this.route.snapshot.queryParamMap.get('facturar') ||
@@ -2671,28 +2690,6 @@ export class FacturacionV2Component implements OnInit {
 
         if (this.venta.cotizacion != 1) {
           this.generarPartidaVentaSiAutomatico(venta);
-        }
-
-        // Si es cotización
-        if (this.facturarCotizacion) {
-          this.apiService
-            .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
-            .subscribe(
-              (venta) => {
-                venta.estado = 'Facturada';
-                this.apiService.store('venta', venta).subscribe(
-                  (venta) => {},
-                  (error) => {
-                    this.alertService.error(error);
-                    this.saving = false;
-                  }
-                );
-              },
-              (error) => {
-                this.alertService.error(error);
-                this.saving = false;
-              }
-            );
         }
 
         if (this.modalRef) {
