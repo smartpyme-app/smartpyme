@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, EventEmitter, Input, Output, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -21,10 +21,12 @@ import Swal from 'sweetalert2';
     imports: [CommonModule, RouterModule, FormsModule, CompraProductoComponent, DistribucionLotesModalComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CompraDetallesComponent extends BaseModalComponent implements OnInit {
+export class CompraDetallesComponent extends BaseModalComponent implements OnInit, OnChanges {
 
   @Input() compra: any = {};
   @Input() isOrdenCompra: boolean = false;
+  /** OC: ocultar costo/total si el rol no tiene compras.ordenes_compra.ver_total */
+  @Input() ocultarMontosOrdenCompra = false;
   @Input() contabilidadHabilitada = false;
   public detalle: any = {};
   public supervisor: any = {};
@@ -43,6 +45,20 @@ export class CompraDetallesComponent extends BaseModalComponent implements OnIni
     public override loading:boolean = false;
     public skipLimpiarLotes = false;
 
+  public mostrarColumnasCostoOrdenCompra(): boolean {
+    if (this.isOrdenCompra && this.ocultarMontosOrdenCompra) {
+      return false;
+    }
+    return !this.apiService.isSupervisorLimitado();
+  }
+
+  public mostrarColumnaTotalOrdenCompra(): boolean {
+    if (this.isOrdenCompra && this.ocultarMontosOrdenCompra) {
+      return false;
+    }
+    return !this.apiService.supervisorLimitadoRestringidoEnCompras();
+  }
+
   constructor(
     public apiService: ApiService,
     protected override alertService: AlertService,
@@ -54,6 +70,12 @@ export class CompraDetallesComponent extends BaseModalComponent implements OnIni
 
   ngOnInit() {
 
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['compra']) {
+      this.cdr.markForCheck();
+    }
   }
 
   colspanDetalles(): number {

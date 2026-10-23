@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, timeout } from 'rxjs';
 import { ApiService } from './api.service';
 import { 
   TipoClienteEmpresa, 
@@ -397,14 +397,29 @@ export class FidelizacionService {
 
   // ===== MÉTODOS PARA CANJE FIFO =====
 
+  /** ID de empresa de la sesión (id_empresa o empresa.id). */
+  empresaIdSesion(): number {
+    const user = this.apiService.auth_user();
+    return Number(user?.id_empresa ?? user?.empresa?.id ?? 0);
+  }
+
   /**
    * Obtener información detallada de puntos disponibles para canje
    */
-  getPuntosDisponiblesInfo(clienteId: number, empresaId: number): Observable<ApiResponse<PuntosDisponiblesInfo>> {
+  getPuntosDisponiblesInfo(
+    clienteId: number,
+    empresaId: number,
+    options?: { includeDetalle?: boolean }
+  ): Observable<ApiResponse<PuntosDisponiblesInfo>> {
+    const includeDetalle = options?.includeDetalle ?? true;
     return this.http.post<ApiResponse<PuntosDisponiblesInfo>>(
       `${this.apiService.baseUrl}/api/fidelizacion/canje/puntos-disponibles`,
-      { cliente_id: clienteId, empresa_id: empresaId }
-    );
+      {
+        cliente_id: clienteId,
+        empresa_id: empresaId,
+        include_detalle: includeDetalle,
+      }
+    ).pipe(timeout(20000));
   }
 
 

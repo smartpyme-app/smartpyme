@@ -87,27 +87,32 @@
                             </span>
                         </td>
                         <td class="text-right">{{compra.total | currency}}</td>
-                        <td class="text-center">
-                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                        <td class="text-center align-middle" style="width: 1%; white-space: nowrap">
+                            <span
+                                class="btn py-0 px-2"
+                                [popover]="accionesTemplate"
+                                container="body"
+                                placement="left"
+                                [outsideClick]="true"
+                                tooltip="Acciones"
+                            >
                                 <i class="fa fa-ellipsis-vertical fa-fw"></i>
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="d-flex flex-column align-items-start">
-                                    
-                                    <!-- <a routerLink="/orden-de-compra/{{compra.id}}" class="btn">
-                                        <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
-                                    </a> -->
-                                    <!-- <a (click)="imprimir(compra)" class="btn">
-                                        <i class="fa fa-fw fa-print"></i> Imprimir
-                                    </a> -->
-                                    @if (compra.id_empresa != apiService.auth_user().id_empresa) {
+                                    <button type="button" class="btn" (click)="verSolicitud(mdetalleSolicitud, compra)">
+                                        <i class="fa fa-fw fa-eye"></i> Ver solicitud
+                                    </button>
+                                    @if (compra.id_empresa != apiService.auth_user()?.id_empresa) {
                                         <a routerLink="/venta/crear" [queryParams]="{ facturar_orden_compra: 1, id_orden_compra: compra.id }" class="btn">
                                             <i class="fa fa-fw fa-money-bill"></i> Facturar
                                         </a>
                                     }
-                                    <!-- <a routerLink="/devolucion-compra/nueva" class="btn text-danger">
-                                        <i class="fa fa-fw fa-trash"></i> Eliminar
-                                    </a> -->
+                                    @if (compra.estado === 'Pendiente' && apiService.canEdit()) {
+                                        <button type="button" class="btn text-danger" (click)="anularSolicitud(compra)">
+                                            <i class="fa fa-fw fa-ban"></i> Anular
+                                        </button>
+                                    }
                                 </div>
                             </ng-template>
                         </td>
@@ -190,5 +195,48 @@
             </button>
         </div>
     </form>
+  </div>
+</ng-template>
+
+<ng-template #mdetalleSolicitud>
+  <div class="modal-header">
+    <h5 class="modal-title">Detalle de solicitud</h5>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    @if (cargandoDetalleSolicitud) {
+      <p class="text-muted">Cargando...</p>
+    } @else if (solicitudDetalle) {
+      <p class="mb-2">
+        <strong>Empresa:</strong> {{ solicitudDetalle.empresa?.nombre }} ·
+        <strong>Estado:</strong> {{ solicitudDetalle.estado }} ·
+        <strong>Referencia:</strong> {{ solicitudDetalle.referencia || '—' }}
+      </p>
+      <div class="table-responsive">
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Producto</th>
+              <th class="text-end">Cantidad</th>
+              <th class="text-end">Total línea</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of solicitudDetalle.detalles; track d.id) {
+              <tr>
+                <td>{{ d.codigo || '—' }}</td>
+                <td>{{ d.nombre_producto || '—' }}</td>
+                <td class="text-end">{{ d.cantidad }}</td>
+                <td class="text-end">{{ d.total | currency }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="text-muted small mb-0">
+        Si un código no existe en su catálogo, puede facturar y completar o mapear el producto en la venta.
+      </p>
+    }
   </div>
 </ng-template>

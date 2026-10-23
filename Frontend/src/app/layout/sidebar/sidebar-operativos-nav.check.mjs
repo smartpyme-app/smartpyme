@@ -43,6 +43,13 @@ assert.match(sidebar, /canAccederOperacionesInventario\(\) && apiService\.hasPer
 assert.match(sidebar, /mostrarMenuRestaurante && apiService\.hasPermission\('restaurante\.ver'\)/);
 assert.match(sidebar, /mostrarMenuPedidos && apiService\.hasPermission\('pedidos\.ver'\)/);
 assert.match(sidebar, /organizacion\.usuarios\.ver/);
+assert.match(sidebar, /mostrarMenuLicenciasOrganizacion/);
+assert.match(sidebar, /mostrarMenuSolicitudesCompra/);
+assert.match(sidebar, /organizacion\.empresas\.ver/);
+assert.match(sidebarVentas, /mostrarMenuSolicitudesCompra/);
+assert.match(sidebarVentas, /solicitudes-compra/);
+const sidebarOrg = fs.readFileSync(path.join(root, 'src/app/layout/sidebar/sidebar-organizaciones/sidebar-organizaciones.component.html'), 'utf8');
+assert.doesNotMatch(sidebarOrg, /organizaciones\./);
 assert.match(sidebar, /administracion\.sucursales\.ver/);
 assert.match(sidebar, /validateRole\('admin', true\)/);
 assert.doesNotMatch(sidebar, /<li \*ngIf="apiService\.auth_user\(\)\.tipo != 'Contador'"/);

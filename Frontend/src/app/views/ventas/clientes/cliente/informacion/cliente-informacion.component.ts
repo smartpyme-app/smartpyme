@@ -75,6 +75,8 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
   public catalogo:any = [];
   public contabilidadHabilitada: boolean = false;
   public diasCreditoOpciones = [3, 8, 10, 15, 30, 45, 60];
+  public regalarPuntos = false;
+  public puntosRegalo: number | null = null;
 
   private cdr = inject(ChangeDetectorRef);
 
@@ -160,6 +162,10 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
 
     esCostaRicaFe(): boolean {
         return this.feCrUbic.esCostaRicaFe();
+    }
+
+    mostrarRegaloPuntos(): boolean {
+        return this.esNuevo && this.apiService.isFidelizacionCompleta();
     }
 
     mostrarRegistroSecundarioCliente(): boolean {
@@ -600,7 +606,13 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
     this.saving = true;
     try {
       const routeUrl = this.esNuevo ? 'cliente' : 'cliente/update';
-      const clienteGuardado = await this.apiService.store(routeUrl, this.cliente)
+      const payload = { ...this.cliente };
+      if (this.mostrarRegaloPuntos() && this.regalarPuntos && this.puntosRegalo != null && this.puntosRegalo > 0) {
+        payload.puntos_regalo = Math.floor(Number(this.puntosRegalo));
+      } else {
+        delete payload.puntos_regalo;
+      }
+      const clienteGuardado = await this.apiService.store(routeUrl, payload)
           .pipe(this.untilDestroyed())
           .toPromise();
 

@@ -694,6 +694,56 @@ class ProductosController extends Controller
         return Response()->json($producto, 200);
     }
 
+    /**
+     * Busca producto para facturar solicitud cross-empresa: catálogo local o empresa origen (hija).
+     */
+    public function searchByCodeForSolicitud(Request $request, $codigo)
+    {
+        $with = [
+            'inventarios',
+            'composiciones.compuesto',
+            'composiciones.opciones',
+            'precios.usuarios',
+            'imagenes',
+            'proveedores.proveedor',
+        ];
+
+        if (Schema::hasTable('producto_impuestos')) {
+            $with[] = 'impuestos';
+        }
+
+        $idEmpresaLocal = (int) Auth::user()->id_empresa;
+        $idEmpresaOrigen = (int) $request->query('id_empresa_orden', 0);
+
+        $buscarEnEmpresa = function (int $empresaId) use ($codigo, $with) {
+            return Producto::withoutGlobalScope('empresa')
+                ->where('id_empresa', $empresaId)
+                ->where('codigo', $codigo)
+                ->with($with)
+                ->first();
+        };
+
+        $local = $buscarEnEmpresa($idEmpresaLocal);
+        if ($local) {
+            return Response()->json([
+                'modo' => 'local',
+                'producto' => $local,
+            ], 200);
+        }
+
+        if ($idEmpresaOrigen > 0 && $idEmpresaOrigen !== $idEmpresaLocal) {
+            $origen = $buscarEnEmpresa($idEmpresaOrigen);
+            if ($origen) {
+                return Response()->json([
+                    'modo' => 'origen',
+                    'producto_origen' => $origen,
+                ], 200);
+            }
+        }
+
+        return Response()->json(['error' => 'No se encontro ningun registro.', 'code' => 404], 404);
+    }
+
     public function searchAll($txt)
     {
 

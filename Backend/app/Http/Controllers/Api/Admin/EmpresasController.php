@@ -141,8 +141,10 @@ class EmpresasController extends Controller
 
     public function read($id)
     {
+        $empresa = Empresa::with(['licencia', 'currency'])->findOrFail($id);
+        $empresa->es_empresa_padre = $empresa->esEmpresaPadre();
+        $empresa->es_empresa_hija = $empresa->esEmpresaHija();
 
-        $empresa = Empresa::findOrFail($id);
         return Response()->json($empresa, 200);
     }
 

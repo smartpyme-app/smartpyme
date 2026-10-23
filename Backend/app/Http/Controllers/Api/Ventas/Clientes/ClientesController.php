@@ -22,7 +22,9 @@ use App\Exports\ClientesExtranjerosPlantillaExport;
 use App\Imports\ClientesExtranjeros;
 use App\Models\Ventas\Clientes\ContactoCliente;
 use App\Models\Admin\EmpresaFuncionalidad;
+use App\Models\FidelizacionClientes\TransaccionPuntos;
 use App\Services\FidelizacionCliente\LicenciaFidelizacionService;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Auth;
 use Illuminate\Support\Facades\Log;
@@ -269,6 +271,8 @@ class ClientesController extends Controller
             $rules['dias_credito'] = 'required|in:3,8,10,15,30,45,60';
         }
 
+        $rules['puntos_regalo'] = 'nullable|integer|min:0|max:999999';
+
         $request->validate($rules, [
             'nombre.required_if' => 'El campo nombre es obligatorio.',
             'nombre_empresa.required_if' => 'El campo empresa es obligatorio.',
@@ -277,7 +281,8 @@ class ClientesController extends Controller
 
         $cliente = new Cliente;
 
-        $data = $request->except('contactos');
+        $puntosRegalo = max(0, (int) $request->input('puntos_regalo', 0));
+        $data = $request->except('contactos', 'puntos_regalo');
 
         if (!$this->puedeEditarCreditoCliente()) {
             unset($data['habilita_credito'], $data['dias_credito'], $data['limite_credito']);
@@ -287,6 +292,7 @@ class ClientesController extends Controller
         $cliente->save();
 
         $this->crearPuntosClienteSiFidelizacion($cliente);
+        $this->aplicarPuntosRegaloAlCrear($cliente, $puntosRegalo);
 
         if ($request->has('contactos') && is_array($request->contactos) && $request->tipo == 'Empresa') {
             foreach ($request->contactos as $contactoData) {
@@ -434,6 +440,10 @@ class ClientesController extends Controller
             $rules['dias_credito'] = 'required|in:3,8,10,15,30,45,60';
         }
 
+        if (!$request->id) {
+            $rules['puntos_regalo'] = 'nullable|integer|min:0|max:999999';
+        }
+
         $request->validate($rules, [
             'nombre.required_if' => 'El campo nombre es obligatorio.',
             'nombre_empresa.required_if' => 'El campo empresa es obligatorio.',
@@ -445,7 +455,8 @@ class ClientesController extends Controller
         else
             $cliente = new Cliente;
 
-        $data = $request->except('contactos');
+        $puntosRegalo = !$request->id ? max(0, (int) $request->input('puntos_regalo', 0)) : 0;
+        $data = $request->except('contactos', 'puntos_regalo');
 
         // Solo Admin y Supervisores pueden modificar campos de crédito
         if (!$this->puedeEditarCreditoCliente()) {
@@ -461,6 +472,7 @@ class ClientesController extends Controller
 
         if (!$request->id) {
             $this->crearPuntosClienteSiFidelizacion($cliente);
+            $this->aplicarPuntosRegaloAlCrear($cliente, $puntosRegalo);
         }
 
         if ($request->has('contactos') && is_array($request->contactos) && $request->tipo == 'Empresa') {
@@ -867,24 +879,76 @@ class ClientesController extends Controller
     private function crearPuntosClienteSiFidelizacion(Cliente $cliente): void
     {
         try {
-            $empresa = $cliente->empresa;
-            if (!$empresa) {
+            if (!$this->empresaTieneFidelizacionClientes($cliente)) {
                 return;
             }
-
-            $empresaEfectiva = $this->licenciaFidelizacionService->getEmpresaEfectiva($empresa);
-
-            $tieneFidelizacion = EmpresaFuncionalidad::where('id_empresa', $empresaEfectiva->id)
-                ->whereHas('funcionalidad', fn ($q) => $q->where('slug', 'fidelizacion-clientes'))
-                ->where('activo', true)
-                ->exists();
-
-            if ($tieneFidelizacion) {
-                $this->licenciaFidelizacionService->crearOActualizarPuntosCliente($cliente, $empresa);
-            }
+            $this->licenciaFidelizacionService->crearOActualizarPuntosCliente($cliente, $cliente->empresa);
         } catch (\Throwable $e) {
             Log::warning('No se pudo crear PuntosCliente al crear cliente', [
                 'cliente_id' => $cliente->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function empresaTieneFidelizacionClientes(Cliente $cliente): bool
+    {
+        $empresa = $cliente->empresa;
+        if (!$empresa) {
+            return false;
+        }
+
+        if ($empresa->tieneFidelizacionHabilitada()) {
+            return true;
+        }
+
+        if ($empresa->esEmpresaHija()) {
+            $padre = $this->licenciaFidelizacionService->getEmpresaEfectiva($empresa);
+
+            return $padre->tieneFidelizacionHabilitada();
+        }
+
+        return EmpresaFuncionalidad::where('id_empresa', $empresa->id)
+            ->whereHas('funcionalidad', fn ($q) => $q->where('slug', 'fidelizacion-clientes'))
+            ->where('activo', true)
+            ->exists();
+    }
+
+    private function aplicarPuntosRegaloAlCrear(Cliente $cliente, int $puntosRegalo): void
+    {
+        if ($puntosRegalo <= 0 || !$this->empresaTieneFidelizacionClientes($cliente)) {
+            return;
+        }
+
+        try {
+            DB::transaction(function () use ($cliente, $puntosRegalo) {
+                $puntosCliente = $this->licenciaFidelizacionService->crearOActualizarPuntosCliente($cliente, $cliente->empresa);
+                $idEmpresaPuntos = (int) $cliente->id_empresa;
+
+                $idempotencyKey = 'regalo_alta_cliente_' . $cliente->id;
+                if (TransaccionPuntos::where('idempotency_key', $idempotencyKey)->exists()) {
+                    return;
+                }
+
+                $puntosAntes = (int) $puntosCliente->puntos_disponibles;
+                $puntosCliente->agregarPuntos($puntosRegalo);
+                $puntosCliente->actualizarActividad();
+
+                TransaccionPuntos::create([
+                    'id_cliente' => $cliente->id,
+                    'id_empresa' => $idEmpresaPuntos,
+                    'tipo' => TransaccionPuntos::TIPO_AJUSTE,
+                    'puntos' => $puntosRegalo,
+                    'puntos_antes' => $puntosAntes,
+                    'puntos_despues' => $puntosAntes + $puntosRegalo,
+                    'descripcion' => 'Puntos de bienvenida al registrar cliente',
+                    'idempotency_key' => $idempotencyKey,
+                ]);
+            });
+        } catch (\Throwable $e) {
+            Log::warning('No se pudieron aplicar puntos de regalo al crear cliente', [
+                'cliente_id' => $cliente->id,
+                'puntos_regalo' => $puntosRegalo,
                 'error' => $e->getMessage(),
             ]);
         }

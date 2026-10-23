@@ -1,4 +1,5 @@
 import { Component, OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { finalize } from 'rxjs/operators';
 import { VentaRecurrenciaConfigComponent } from '@shared/modals/venta-recurrencia-config/venta-recurrencia-config.component';
 import {
   RecurrenciaVentaConfig,
@@ -75,6 +76,7 @@ import {
   isImpresionEnFacturacionActiva,
 } from '@helpers/empresa.helper';
 import { aplicarPrefillCredito, prepararVentaParaFacturarCuota } from '@views/ventas/creditos/creditos-facturar';
+import { urlProductoBuscarSolicitud, resolverProductoSolicitud, etiquetaProductoSolicitud } from '@views/ventas/solicitudes-compra/facturar-solicitud-producto.util';
 import { aplicarCitaEnVenta } from '../cita-venta';
 import {
   aplicarPlanAVenta,
@@ -212,6 +214,8 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   // Propiedades para el botón de puntos
   public puntosCliente: number = 0;
   public loadingPuntos: boolean = false;
+  private puntosCargaSeq = 0;
+  private puntosModalCargaSeq = 0;
 
   // Propiedades para el modal de puntos
   public loadingModalPuntos: boolean = false;
@@ -1148,7 +1152,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             console.log(empresa);
 
             // Solo procesar productos si el cliente existe
-            this.procesarProductosOrdenCompra(ordenCompra.detalles);
+            this.procesarProductosOrdenCompra(ordenCompra.detalles, ordenCompra.id_empresa);
             this.cdr.markForCheck();
           }else{
             const labelDoc = this.countryI18n.t('country.identity.withTaxIdOrFiscal');
@@ -1220,9 +1224,26 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   }
 
     // Método para procesar productos de orden de compra
-  public procesarProductosOrdenCompra(detalles: any[]) {
+  public procesarProductosOrdenCompra(detalles: any[], idEmpresaOrden: number) {
     detalles.forEach((detalleCompra: any) => {
-      this.apiService.getAll('producto/buscar-by-code/'+ detalleCompra.codigo).pipe(this.untilDestroyed()).subscribe((producto) => {
+      const url = urlProductoBuscarSolicitud(detalleCompra.codigo, idEmpresaOrden);
+      this.apiService.getAll(url).pipe(this.untilDestroyed()).subscribe((resp: unknown) => {
+        const resuelto = resolverProductoSolicitud(resp);
+
+        if (resuelto.kind === 'origen') {
+          this.agregarLineaSolicitudSinProductoLocalV1(detalleCompra, resuelto.productoOrigen);
+          const ref = etiquetaProductoSolicitud(detalleCompra, resuelto.productoOrigen);
+          this.alertService.warning(
+            'Producto en empresa solicitante',
+            `${ref}: existe en la empresa que pidió la OC. Elija el producto equivalente en su catálogo o complete la línea.`
+          );
+          this.cdr.markForCheck();
+          return;
+        }
+
+        const producto =
+          resuelto.kind === 'local' || resuelto.kind === 'legacy' ? resuelto.producto : null;
+
         if (producto) {
           let detalle: any = {};
           detalle.cantidad = detalleCompra.cantidad;
@@ -1258,51 +1279,45 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
           this.sumTotal();
           this.cdr.markForCheck();
         } else {
-           Swal.fire({
-             title: 'Producto no encontrado',
-             html: `
-               <div class="text-left">
-                 <p><strong>No se encontró el producto para poder facturar.</strong></p>
-                 <p>Debe verificar o crear el producto con el siguiente código:</p>
-                 <ul class="list-unstyled mt-3">
-                   <li><strong>Código del producto:</strong> ${detalleCompra.codigo || 'Sin código'}</li>
-                   <li><strong>Cantidad solicitada:</strong> ${detalleCompra.cantidad || 'No disponible'}</li>
-                 </ul>
-               </div>
-             `,
-             icon: 'warning',
-             confirmButtonText: 'Entendido',
-             confirmButtonColor: '#3085d6'
-           }).then(() => {
-             window.history.back();
-           });
+          this.agregarLineaSolicitudSinProductoLocalV1(detalleCompra);
+          const ref = etiquetaProductoSolicitud(detalleCompra);
+          this.alertService.warning(
+            'Producto no encontrado',
+            `${ref}: agregue la línea manualmente o cree el producto en su catálogo.`
+          );
           this.cdr.markForCheck();
         }
-      }, (error) => {
-        Swal.fire({
-          title: 'Error al buscar producto',
-          html: `
-            <div class="text-left">
-              <p><strong>Error al buscar el producto.</strong></p>
-              <p>No se pudo encontrar el producto con el siguiente código:</p>
-              <ul class="list-unstyled mt-3">
-                <li><strong>Código del producto:</strong> ${detalleCompra.codigo || 'Sin código'}</li>
-                <li><strong>Cantidad solicitada:</strong> ${detalleCompra.cantidad || 'No disponible'}</li>
-              </ul>
-            </div>
-          `,
-          icon: 'error',
-          confirmButtonText: 'Entendido',
-          confirmButtonColor: '#3085d6'
-        }).then(() => {
-          window.history.back();
-        });
+      }, () => {
+        this.agregarLineaSolicitudSinProductoLocalV1(detalleCompra);
+        const ref = etiquetaProductoSolicitud(detalleCompra);
+        this.alertService.warning(
+          'Producto no encontrado',
+          `${ref}: agregue la línea manualmente o cree el producto en su catálogo.`
+        );
         this.cdr.markForCheck();
       });
     });
 
     this.cargarDocumentos();
     this.loadData();
+  }
+
+  private agregarLineaSolicitudSinProductoLocalV1(detalleCompra: any, productoOrigen?: any): void {
+    const detalle: any = {
+      cantidad: detalleCompra.cantidad,
+      descripcion: productoOrigen?.nombre || detalleCompra.nombre_producto || detalleCompra.codigo || 'Producto solicitud',
+      precio: 0,
+      precios: [{ precio: 0 }],
+      descuento: 0,
+      id_vendedor: this.venta.id_vendedor,
+      exenta: 0,
+      no_sujeta: 0,
+      cuenta_a_terceros: 0,
+      total: 0,
+      gravada: 0,
+    };
+    this.venta.detalles.push(detalle);
+    this.sumTotal();
   }
 
   totalPorMetodoDePago() {
@@ -3278,17 +3293,22 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
    * Resetear información de puntos
    */
   private resetearPuntos(): void {
+    this.puntosCargaSeq++;
+    this.puntosModalCargaSeq++;
+    this.loadingPuntos = false;
+    this.loadingModalPuntos = false;
     this.puntosCanjeados = 0;
     this.descuentoPuntos = 0;
     this.venta.puntos_canjeados = 0;
     this.venta.descuento_puntos = 0;
+    this.cdr.markForCheck();
   }
 
   /**
    * Obtener ID de empresa
    */
   public getEmpresaId(): number {
-    return this.apiService.auth_user().empresa.id;
+    return this.fidelizacionService.empresaIdSesion();
   }
 
   /**
@@ -3306,27 +3326,52 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
    * Cargar puntos del cliente para mostrar en el botón
    */
   private cargarPuntosCliente(): void {
-    if (!this.venta.cliente || !this.venta.cliente.id) {
+    if (!this.venta.cliente?.id) {
       this.puntosCliente = 0;
+      this.loadingPuntos = false;
+      return;
+    }
+    const empresaId = this.getEmpresaId();
+    if (!empresaId) {
+      this.puntosCliente = 0;
+      this.loadingPuntos = false;
       return;
     }
 
+    const seq = ++this.puntosCargaSeq;
     this.loadingPuntos = true;
-    this.fidelizacionService.getPuntosDisponiblesInfo(this.venta.cliente.id, this.getEmpresaId())
+    this.cdr.markForCheck();
+    this.fidelizacionService
+      .getPuntosDisponiblesInfo(this.venta.cliente.id, empresaId, { includeDetalle: false })
+      .pipe(
+        finalize(() => {
+          if (seq !== this.puntosCargaSeq) {
+            return;
+          }
+          this.loadingPuntos = false;
+          this.cdr.markForCheck();
+        })
+      )
       .subscribe({
         next: (response) => {
+          if (seq !== this.puntosCargaSeq) {
+            return;
+          }
           if (response.success && response.data) {
-            this.puntosCliente = response.data.puntos_disponibles;
+            this.puntosCliente = Number(response.data.puntos_disponibles ?? 0);
           } else {
             this.puntosCliente = 0;
           }
-          this.loadingPuntos = false;
+          this.cdr.markForCheck();
         },
         error: (error) => {
+          if (seq !== this.puntosCargaSeq) {
+            return;
+          }
           console.error('Error al cargar puntos del cliente:', error);
           this.puntosCliente = 0;
-          this.loadingPuntos = false;
-        }
+          this.cdr.markForCheck();
+        },
       });
   }
 
@@ -3358,10 +3403,32 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
    * Cargar datos completos para el modal
    */
   private cargarDatosModal(): void {
+    const empresaId = this.getEmpresaId();
+    if (!this.venta.cliente?.id || !empresaId) {
+      this.puntosInfoModal = null;
+      this.configuracionModal = null;
+      this.loadingModalPuntos = false;
+      return;
+    }
+    const seq = ++this.puntosModalCargaSeq;
     this.loadingModalPuntos = true;
-    this.fidelizacionService.getPuntosDisponiblesInfo(this.venta.cliente.id, this.getEmpresaId())
+    this.cdr.markForCheck();
+    this.fidelizacionService
+      .getPuntosDisponiblesInfo(this.venta.cliente.id, empresaId, { includeDetalle: true })
+      .pipe(
+        finalize(() => {
+          if (seq !== this.puntosModalCargaSeq) {
+            return;
+          }
+          this.loadingModalPuntos = false;
+          this.cdr.markForCheck();
+        })
+      )
       .subscribe({
         next: (response) => {
+          if (seq !== this.puntosModalCargaSeq) {
+            return;
+          }
           if (response.success && response.data) {
             this.puntosInfoModal = response.data;
             this.configuracionModal = response.data.configuracion || null;
@@ -3379,14 +3446,17 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             this.puntosInfoModal = null;
             this.configuracionModal = null;
           }
-          this.loadingModalPuntos = false;
+          this.cdr.markForCheck();
         },
         error: (error) => {
+          if (seq !== this.puntosModalCargaSeq) {
+            return;
+          }
           console.error('Error al cargar datos del modal:', error);
           this.puntosInfoModal = null;
           this.configuracionModal = null;
-          this.loadingModalPuntos = false;
-        }
+          this.cdr.markForCheck();
+        },
       });
   }
 
