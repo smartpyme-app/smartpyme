@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '@services/api.service';
 import { errorEmisionFeCr } from './fe-cr-http-error.util';
+import { ventaClienteListoParaExportacionCr } from './fe-cr-exportacion-cliente.util';
 
 /**
  * FE Costa Rica: factura 01, exportación 09, tiquete 04, nota crédito 03 (devolución), nota débito 02.
@@ -14,6 +15,11 @@ export class CostaRicaFacturacionElectronicaService {
    * Factura / exportación / crédito fiscal → emitirFeCrVenta (01 o 09); Ticket / Tiquete → 04.
    */
   emitirComprobanteVenta(venta: any): Promise<any> {
+    const exportCheck = ventaClienteListoParaExportacionCr(venta);
+    if (!exportCheck.ok) {
+      return Promise.reject(new Error(exportCheck.message));
+    }
+
     const doc = (venta.nombre_documento || '').toLowerCase();
     const isTicket = doc.includes('ticket') || doc.includes('tiquete');
     const endpoint = isTicket ? 'emitirFeCrTiqueteVenta' : 'emitirFeCrVenta';

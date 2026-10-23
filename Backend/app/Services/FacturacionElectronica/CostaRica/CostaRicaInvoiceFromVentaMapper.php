@@ -937,10 +937,26 @@ final class CostaRicaInvoiceFromVentaMapper
     private function receptor(Venta $venta, Empresa $empresa, bool $esExportacion = false): array
     {
         $cliente = $venta->cliente;
+        if ($esExportacion) {
+            if (! $cliente instanceof Cliente) {
+                throw new InvalidArgumentException(
+                    'La factura de exportación requiere un cliente registrado con identificación válida. '
+                    .'Seleccione el cliente en la venta; no se permite consumidor final ni datos genéricos.'
+                );
+            }
+
+            return $this->receptorDesdeCliente($cliente, $empresa, true);
+        }
+
         if (! $cliente instanceof Cliente) {
             return $this->receptorGenerico($empresa);
         }
 
+        return $this->receptorDesdeCliente($cliente, $empresa, false);
+    }
+
+    private function receptorDesdeCliente(Cliente $cliente, Empresa $empresa, bool $esExportacion): array
+    {
         $nitRaw = (string) ($cliente->nit ?? '');
         $duiRaw = (string) ($cliente->dui ?? '');
         $nit = $this->soloDigitos($nitRaw);
@@ -950,6 +966,15 @@ final class CostaRicaInvoiceFromVentaMapper
             ? $this->numeroExtranjeroNoDomiciliado($nitRaw, $duiRaw)
             : $this->numeroIdentificacionCr($tipo, $nitRaw, $duiRaw, $nit, $dui);
         if ($tipo === null || $num === null) {
+            if ($esExportacion) {
+                $nombreCliente = trim(($cliente->nombre ?? '').' '.($cliente->apellido ?? ''))
+                    ?: (string) ($cliente->nombre_empresa ?? 'Cliente');
+                throw new InvalidArgumentException(
+                    'La factura de exportación requiere un receptor extranjero (tipo 05, identificación de 1 a 20 caracteres) '
+                    .'o una cédula válida de Hacienda. Complete la identificación del cliente «'.$nombreCliente.'».'
+                );
+            }
+
             return $this->receptorGenerico($empresa, trim(($cliente->nombre ?? '').' '.($cliente->apellido ?? '')) ?: 'Cliente');
         }
         $nombre = in_array($tipo, ['02', '04'], true)

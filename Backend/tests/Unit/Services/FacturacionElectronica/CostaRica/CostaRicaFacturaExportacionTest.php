@@ -2,8 +2,11 @@
 
 namespace Tests\Unit\Services\FacturacionElectronica\CostaRica;
 
+use App\Models\Ventas\Venta;
+use App\Services\FacturacionElectronica\CostaRica\BccrTipoCambioClient;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeEmitService;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaInvoiceFromVentaMapper;
+use App\Services\FacturacionElectronica\CostaRica\CostaRicaTipoCambioService;
 use App\Support\FacturacionElectronica\CostaRica\ReferenciaComprobanteCr;
 use DazzaDev\DgtXmlGenerator\DataLoader;
 use DazzaDev\DgtXmlGenerator\Factories\DocumentBuilderFactory;
@@ -86,6 +89,24 @@ final class CostaRicaFacturaExportacionTest extends TestCase
         $this->expectExceptionMessage('Azúcar');
 
         CostaRicaInvoiceFromVentaMapper::partidaArancelariaDeLinea(true, '2012345678901', '12345', 'Azúcar');
+    }
+
+    public function test_fee_sin_cliente_no_usa_receptor_generico(): void
+    {
+        $mapper = new CostaRicaInvoiceFromVentaMapper(
+            new CostaRicaTipoCambioService($this->createMock(BccrTipoCambioClient::class))
+        );
+        $empresa = (new \ReflectionClass(\App\Models\Admin\Empresa::class))->newInstanceWithoutConstructor();
+        $venta = (new \ReflectionClass(Venta::class))->newInstanceWithoutConstructor();
+        $venta->setRelation('cliente', null);
+
+        $method = new \ReflectionMethod(CostaRicaInvoiceFromVentaMapper::class, 'receptor');
+        $method->setAccessible(true);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('no se permite consumidor final');
+
+        $method->invoke($mapper, $venta, $empresa, true);
     }
 
     public function test_servicio_y_factura_nacional_no_ganan_partida_arancelaria(): void

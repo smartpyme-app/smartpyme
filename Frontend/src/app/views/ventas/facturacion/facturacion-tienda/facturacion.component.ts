@@ -26,6 +26,7 @@ import {
 import { migrarExoneracionCrLegacyADetalles as migrarExoneracionLegacyUtil } from '@shared/modals/fe-cr-exoneracion-detalle/fe-cr-exoneracion-detalle.util';
 import { xmlComprobanteDesdeRechazoFeCr } from '@services/facturacion-electronica/fe-cr-http-error.util';
 import { abrirVentanaTextoFeCr } from '@services/facturacion-electronica/fe-cr-abrir-xml.util';
+import { ventaClienteListoParaExportacionCr } from '@services/facturacion-electronica/fe-cr-exportacion-cliente.util';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { RestauranteService } from '@services/restaurante.service';
 import { ModalManagerService } from '@services/modal-manager.service';
@@ -2661,6 +2662,14 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     if (esVentaPorConsigna(this.venta)) {
       if (!this.venta.id_cliente) {
         this.alertService.error('Debe seleccionar un cliente para ventas por consigna.');
+        return true;
+      }
+    }
+
+    if (this.esFeCostaRicaFacturacion()) {
+      const exportCheck = ventaClienteListoParaExportacionCr(this.venta);
+      if (!exportCheck.ok) {
+        this.alertService.error(exportCheck.message);
         return true;
       }
     }

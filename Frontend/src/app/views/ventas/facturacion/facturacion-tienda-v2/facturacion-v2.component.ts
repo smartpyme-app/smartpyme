@@ -21,6 +21,7 @@ import {
 } from '@views/ventas/documentos/documento-nombre-options';
 import { xmlComprobanteDesdeRechazoFeCr } from '@services/facturacion-electronica/fe-cr-http-error.util';
 import { abrirVentanaTextoFeCr } from '@services/facturacion-electronica/fe-cr-abrir-xml.util';
+import { ventaClienteListoParaExportacionCr } from '@services/facturacion-electronica/fe-cr-exportacion-cliente.util';
 import { BuscadorClientesComponent } from '@shared/parts/buscador-clientes/buscador-clientes.component';
 import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
 import { VentaDetallesV2Component } from './detalles/venta-detalles-v2.component';
@@ -2338,6 +2339,14 @@ export class FacturacionV2Component implements OnInit {
         `El total de la línea "${nombre}" debe ser mayor o igual a 0.`
       );
       return true;
+    }
+
+    if (this.esFeCostaRicaFacturacion()) {
+      const exportCheck = ventaClienteListoParaExportacionCr(this.venta);
+      if (!exportCheck.ok) {
+        this.alertService.error(exportCheck.message);
+        return true;
+      }
     }
 
     return false;
