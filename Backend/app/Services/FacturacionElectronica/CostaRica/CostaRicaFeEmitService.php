@@ -59,7 +59,6 @@ final class CostaRicaFeEmitService
             throw new RuntimeException('La venta ya tiene comprobante electrónico emitido (clave registrada).');
         }
 
-        $this->asignarCorrelativoSiRechazado($venta);
         $sec = $this->secuencialDesdeCorrelativo($venta->correlativo);
         $data = $this->mapper->buildDocumentData($venta, $venta->empresa, $sec);
         $data = $this->adjuntarReferenciasSustitucionORechazo($venta, $data);
@@ -90,7 +89,6 @@ final class CostaRicaFeEmitService
             throw new RuntimeException('La venta ya tiene comprobante electrónico emitido (clave registrada).');
         }
 
-        $this->asignarCorrelativoSiRechazado($venta);
         $sec = $this->secuencialDesdeCorrelativo($venta->correlativo);
         $data = $this->mapper->buildTicketDocumentData($venta, $venta->empresa, $sec);
         $data = $this->adjuntarReferenciasSustitucionORechazo($venta, $data);
@@ -835,16 +833,7 @@ final class CostaRicaFeEmitService
         } catch (Throwable) {
             return null;
         }
-        if ($clave === '') {
-            return null;
-        }
-
-        $this->guardarClaveRechazada($venta, $clave);
-        if ($venta->isDirty('clave_rechazada')) {
-            $venta->save();
-        }
-
-        return $clave;
+        return $clave === '' ? null : $clave;
     }
 
     /**
@@ -878,6 +867,9 @@ final class CostaRicaFeEmitService
 
         $this->guardarClaveRechazada($venta, (string) ($e->getClave() ?? ''));
         if ($venta->isDirty('clave_rechazada')) {
+            if (is_array($estado) && $this->estadoContieneCodigoHacienda($estado, -99)) {
+                (new VentaService())->asignarCorrelativo($venta, (int) $venta->id_documento);
+            }
             $venta->save();
         }
     }
@@ -1126,38 +1118,7 @@ final class CostaRicaFeEmitService
      */
     private function estadoContieneCodigoHacienda(array $estado, int $codigo): bool
     {
-        if ($this->valorContieneCodigoHacienda($estado['messages'] ?? null, $codigo)) {
-            return true;
-        }
-        $xml = $estado['response_xml'] ?? null;
-        if (is_string($xml) && str_contains($xml, (string) $codigo)) {
-            return true;
-        }
-
-        return $this->valorContieneCodigoHacienda($estado, $codigo);
-    }
-
-    private function valorContieneCodigoHacienda(mixed $value, int $codigo): bool
-    {
-        if (is_int($value) || is_float($value)) {
-            return (int) $value === $codigo;
-        }
-        if (is_string($value)) {
-            return preg_match('/\b'.preg_quote((string) $codigo, '/').'\b/', $value) === 1;
-        }
-        if (! is_array($value)) {
-            return false;
-        }
-        foreach ($value as $k => $v) {
-            if (($k === 'codigo' || $k === 'Codigo') && (is_int($v) || is_string($v)) && (int) $v === $codigo) {
-                return true;
-            }
-            if ($this->valorContieneCodigoHacienda($v, $codigo)) {
-                return true;
-            }
-        }
-
-        return false;
+        return self::detalleEstadoContieneCodigoHacienda($estado, $codigo);
     }
 
     private function configurarClienteEmisorReceptor(\DazzaDev\DgtCr\Client $client, array $data): void
@@ -1206,30 +1167,69 @@ final class CostaRicaFeEmitService
     }
 
     /**
-     * Hacienda ya registró el consecutivo del XML rechazado (-99 si se reutiliza).
-     * Solo entonces se toma el siguiente correlativo del documento de la venta.
+     * Solo renumerar si Hacienda devolvió -99 (consecutivo ya registrado). Errores de validación (-488, etc.)
+     * deben reintentarse con el mismo correlativo de la venta.
      */
     public static function debeRenumerarCorrelativoTrasRechazo(
         bool $columnaClaveRechazadaExiste,
         ?string $claveRechazada,
-        bool $tieneClaveFeAceptada
+        bool $tieneClaveFeAceptada,
+        ?array $detalleEstadoRechazo = null
     ): bool {
-        if (! $columnaClaveRechazadaExiste || $tieneClaveFeAceptada) {
+        if (! $columnaClaveRechazadaExiste || $tieneClaveFeAceptada || trim((string) $claveRechazada) === '') {
             return false;
         }
 
-        return trim((string) $claveRechazada) !== '';
-    }
-
-    private function asignarCorrelativoSiRechazado(Venta $venta): void
-    {
-        $columna = Schema::hasColumn('ventas', 'clave_rechazada');
-        $clave = $columna ? (string) ($venta->clave_rechazada ?? '') : '';
-        if (! self::debeRenumerarCorrelativoTrasRechazo($columna, $clave, $this->ventaTieneClaveFeCr($venta))) {
-            return;
+        if ($detalleEstadoRechazo === null) {
+            return false;
         }
 
-        (new VentaService())->asignarCorrelativo($venta, (int) $venta->id_documento);
+        return self::detalleEstadoContieneCodigoHacienda($detalleEstadoRechazo, -99);
+    }
+
+    /**
+     * @param  array<string, mixed>  $estado
+     */
+    public static function detalleEstadoContieneCodigoHacienda(array $estado, int $codigo): bool
+    {
+        if (self::valorContieneCodigoHaciendaEstatico($estado['messages'] ?? null, $codigo)) {
+            return true;
+        }
+        $xml = $estado['response_xml'] ?? null;
+        if (is_string($xml) && str_contains($xml, (string) $codigo)) {
+            return true;
+        }
+
+        return self::valorContieneCodigoHaciendaEstatico($estado, $codigo);
+    }
+
+    private static function valorContieneCodigoHaciendaEstatico(mixed $value, int $codigo): bool
+    {
+        if (is_int($value) || is_float($value)) {
+            return (int) $value === $codigo;
+        }
+        if (is_string($value)) {
+            $literal = preg_quote((string) $codigo, '/');
+            // Códigos Hacienda tipo -99 / -488 van tras espacio; \b no aplica antes del signo menos.
+            $pattern = str_starts_with((string) $codigo, '-')
+                ? '/(?<!\d)'.$literal.'(?!\d)/'
+                : '/\b'.$literal.'\b/';
+
+            return preg_match($pattern, $value) === 1;
+        }
+        if (! is_array($value)) {
+            return false;
+        }
+        foreach ($value as $k => $v) {
+            if (($k === 'codigo' || $k === 'Codigo') && (is_int($v) || is_string($v)) && (int) $v === $codigo) {
+                return true;
+            }
+            if (self::valorContieneCodigoHaciendaEstatico($v, $codigo)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function compraTieneClaveFeCr(Compra $compra): bool

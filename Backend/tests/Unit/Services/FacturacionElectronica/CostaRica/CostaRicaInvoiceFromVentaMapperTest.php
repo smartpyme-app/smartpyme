@@ -115,7 +115,15 @@ final class CostaRicaInvoiceFromVentaMapperTest extends TestCase
     {
         $clave = '50631012600310123456700100001010000000001199999999';
 
-        self::assertTrue(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(true, $clave, false));
+        self::assertFalse(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(true, $clave, false));
+        self::assertFalse(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(true, $clave, false, [
+            'status' => 'rechazado',
+            'messages' => 'Error -488 en desglose de impuesto',
+        ]));
+        self::assertTrue(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(true, $clave, false, [
+            'status' => 'rechazado',
+            'messages' => 'El consecutivo -99 ya existe',
+        ]));
         self::assertFalse(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(true, '', false));
         self::assertFalse(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(true, '   ', false));
         self::assertFalse(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(true, $clave, true));
