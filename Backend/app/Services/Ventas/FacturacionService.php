@@ -19,6 +19,7 @@ use App\Models\Ventas\Detalle;
 use App\Models\Ventas\DetalleCompuesto;
 use App\Models\Ventas\Impuesto;
 use App\Models\Ventas\MetodoDePago;
+use App\Models\CotizacionVenta;
 use App\Models\Ventas\Venta;
 use App\Services\Ventas\VentaDescuentoAutorizacion;
 use App\Services\FidelizacionCliente\ConsumoPuntosService as FidelizacionConsumoPuntosService;
@@ -667,6 +668,10 @@ class FacturacionService
                         ->where('cotizacion', 1)
                         ->where('estado', '!=', 'Anulada')
                         ->update(['estado' => 'Facturada']);
+
+                    CotizacionVenta::where('id', $venta->num_cotizacion)
+                        ->where('estado', '!=', 'anulada')
+                        ->update(['estado' => 'facturada']);
                 }
 
                 DB::commit();
