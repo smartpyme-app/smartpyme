@@ -15,9 +15,12 @@ class CotizacionVentaController extends Controller
     public function store(StoreCotizacionVentaRequest $request, CotizacionService $cotizacionService)
     {
         if (CotizacionConstants::esVentasLimitado($request->user())) {
-            abort(403, $request->filled('id')
-                ? 'No autorizado a modificar la cotización'
-                : 'No autorizado a crear cotizaciones');
+            $creando = ! $request->filled('id');
+            if (! $creando || ! CotizacionConstants::puedeCrearCotizacion($request->user())) {
+                abort(403, $creando
+                    ? 'No autorizado a crear cotizaciones'
+                    : 'No autorizado a modificar la cotización');
+            }
         }
 
         DB::beginTransaction();

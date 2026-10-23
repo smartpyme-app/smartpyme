@@ -690,7 +690,10 @@ export class FacturacionV2Component implements OnInit {
 
     // Para cotizaciones Pre-venta
     if (this.route.snapshot.queryParamMap.get('cotizacion')) {
-      if (this.apiService.isVentasLimitado()) {
+      const esEdicion = !!this.route.snapshot.paramMap.get('id');
+      const puedeCrear = this.apiService.canCreateTest('ventas.cotizaciones.crear')
+        && !this.apiService.restriccionesCotizacionesVendedoresActivas();
+      if (this.apiService.isVentasLimitado() && (esEdicion || !puedeCrear)) {
         this.alertService.error('No puede crear ni editar cotizaciones.');
         this.router.navigate(['/cotizaciones']);
         return;

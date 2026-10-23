@@ -330,7 +330,8 @@ return [
             'ver' => 'compras.ordenes_compra.ver',
             'crear' => 'compras.ordenes_compra.crear',
             'editar' => 'compras.ordenes_compra.editar',
-            'eliminar' => 'compras.ordenes_compra.eliminar'
+            'eliminar' => 'compras.ordenes_compra.eliminar',
+            'ver_total' => 'compras.ordenes_compra.ver_total',
         ],
 
         'proveedores' => [

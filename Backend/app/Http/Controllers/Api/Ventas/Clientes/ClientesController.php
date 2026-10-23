@@ -898,9 +898,17 @@ class ClientesController extends Controller
             return false;
         }
 
-        $empresaEfectiva = $this->licenciaFidelizacionService->getEmpresaEfectiva($empresa);
+        if ($empresa->tieneFidelizacionHabilitada()) {
+            return true;
+        }
 
-        return EmpresaFuncionalidad::where('id_empresa', $empresaEfectiva->id)
+        if ($empresa->esEmpresaHija()) {
+            $padre = $this->licenciaFidelizacionService->getEmpresaEfectiva($empresa);
+
+            return $padre->tieneFidelizacionHabilitada();
+        }
+
+        return EmpresaFuncionalidad::where('id_empresa', $empresa->id)
             ->whereHas('funcionalidad', fn ($q) => $q->where('slug', 'fidelizacion-clientes'))
             ->where('activo', true)
             ->exists();
@@ -914,8 +922,8 @@ class ClientesController extends Controller
 
         try {
             DB::transaction(function () use ($cliente, $puntosRegalo) {
-                $empresaEfectiva = $this->licenciaFidelizacionService->getEmpresaEfectiva($cliente->empresa);
                 $puntosCliente = $this->licenciaFidelizacionService->crearOActualizarPuntosCliente($cliente, $cliente->empresa);
+                $idEmpresaPuntos = (int) $cliente->id_empresa;
 
                 $idempotencyKey = 'regalo_alta_cliente_' . $cliente->id;
                 if (TransaccionPuntos::where('idempotency_key', $idempotencyKey)->exists()) {
@@ -928,7 +936,7 @@ class ClientesController extends Controller
 
                 TransaccionPuntos::create([
                     'id_cliente' => $cliente->id,
-                    'id_empresa' => $empresaEfectiva->id,
+                    'id_empresa' => $idEmpresaPuntos,
                     'tipo' => TransaccionPuntos::TIPO_AJUSTE,
                     'puntos' => $puntosRegalo,
                     'puntos_antes' => $puntosAntes,

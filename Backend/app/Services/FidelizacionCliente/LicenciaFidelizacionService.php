@@ -88,10 +88,21 @@ class LicenciaFidelizacionService
      */
     public function getPuntosClienteEfectivos(Cliente $cliente, Empresa $empresa): ?PuntosCliente
     {
-        $empresaEfectiva = $this->getEmpresaEfectiva($empresa);
-        
+        $idEmpresaPuntos = (int) $cliente->id_empresa;
+
+        $puntos = PuntosCliente::where('id_cliente', $cliente->id)
+            ->where('id_empresa', $idEmpresaPuntos)
+            ->first();
+
+        if ($puntos || !$empresa->esEmpresaHija()) {
+            return $puntos;
+        }
+
+        // ponytail: saldos legacy guardados en padre antes de separar por empresa hija
+        $padreId = $this->getEmpresaEfectiva($empresa)->id;
+
         return PuntosCliente::where('id_cliente', $cliente->id)
-            ->where('id_empresa', $empresaEfectiva->id)
+            ->where('id_empresa', $padreId)
             ->first();
     }
 
@@ -105,16 +116,16 @@ class LicenciaFidelizacionService
      */
     public function crearOActualizarPuntosCliente(Cliente $cliente, Empresa $empresa, array $data = []): PuntosCliente
     {
-        $empresaEfectiva = $this->getEmpresaEfectiva($empresa);
-        
+        $idEmpresaPuntos = (int) $cliente->id_empresa;
+
         $puntosCliente = PuntosCliente::where('id_cliente', $cliente->id)
-            ->where('id_empresa', $empresaEfectiva->id)
+            ->where('id_empresa', $idEmpresaPuntos)
             ->first();
 
         if (!$puntosCliente) {
             $puntosCliente = PuntosCliente::create(array_merge([
                 'id_cliente' => $cliente->id,
-                'id_empresa' => $empresaEfectiva->id,
+                'id_empresa' => $idEmpresaPuntos,
                 'puntos_disponibles' => 0,
                 'puntos_totales_ganados' => 0,
                 'puntos_totales_canjeados' => 0,

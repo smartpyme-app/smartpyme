@@ -26,6 +26,18 @@ class CotizacionConstants
         return $user && ($user->tipo ?? null) === 'Ventas Limitado';
     }
 
+    /** Crear sí, si el rol tiene ventas.cotizaciones.crear. Editar sigue bloqueado en el llamador. */
+    public static function puedeCrearCotizacion($user): bool
+    {
+        if (! self::esVentasLimitado($user)) {
+            return true;
+        }
+
+        return is_object($user)
+            && method_exists($user, 'can')
+            && $user->can('ventas.cotizaciones.crear');
+    }
+
     const ESTADO_PRODUCCION_CREADA = 'creada';
     const ESTADO_PRODUCCION_EN_PROCESO = 'en_proceso';
     const ESTADO_PRODUCCION_ACEPTADA = 'aceptada';

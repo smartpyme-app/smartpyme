@@ -6,10 +6,12 @@ use App\Models\Compras\Compra;
 use App\Models\OrdenCompra;
 use App\Models\OrdenCompraDetalle;
 use App\Models\Authorization\AuthorizationType;
+use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 
 class OrdenCompraService
 {
@@ -132,6 +134,24 @@ class OrdenCompraService
     }
 
     /**
+     * Flujo activo solo si el tipo está habilitado y hay aprobadores en la empresa del usuario.
+     * ponytail: sin aprobadores locales no bloqueamos OC (p. ej. empresa hija sin configurar).
+     */
+    public function debeSolicitarAutorizacionOrdenCompra(?string $authType, User $user): bool
+    {
+        if (!$authType) {
+            return false;
+        }
+
+        $type = AuthorizationType::where('name', $authType)->where('active', true)->first();
+        if (!$type) {
+            return false;
+        }
+
+        return $type->users()->where('users.id_empresa', $user->id_empresa)->exists();
+    }
+
+    /**
      * Verifica si una orden requiere autorización y valida roles excluidos
      *
      * @param \Illuminate\Http\Request $request
@@ -158,12 +178,19 @@ class OrdenCompraService
             ];
         }
 
+        $user = Auth::user();
+        if (!$user || !$this->debeSolicitarAutorizacionOrdenCompra($authType, $user)) {
+            return [
+                'requires_authorization' => false,
+                'ok' => true
+            ];
+        }
+
         // Verificar si el usuario está excluido de autorización por rol
         $authTypeModel = AuthorizationType::where('name', $authType)->first();
 
         if ($authTypeModel && $authTypeModel->conditions) {
             $excludeRoles = $authTypeModel->conditions['exclude_roles'] ?? [];
-            $user = Auth::user();
 
             // Cargar roles del usuario si no están cargados
             if (!$user->relationLoaded('roles')) {
@@ -514,80 +541,267 @@ class OrdenCompraService
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      * @throws \Exception Si el usuario no tiene licencia
      */
-    public function obtenerSolicitudes($request, $user)
+    /**
+     * Compras-cotización visibles como solicitud cross-empresa (licencia).
+     *
+     * @throws \Exception
+     */
+    /**
+     * @return array{licencia: \Illuminate\Database\Eloquent\Model, empresa_padre: \App\Models\Admin\Empresa, empresas_ids: int[]}
+     */
+    private function contextoSolicitudesLicencia($user): array
     {
         $licencia = $user->empresa()->first()->licencia()->first();
-        
+
         if (!$licencia) {
             throw new \Exception('No tienes una licencia');
         }
 
-        $empresaPadre = $licencia->empresa()->first();
-        $empresasLicencia = $licencia->empresas()->pluck('id_empresa')->toArray();
+        return [
+            'licencia' => $licencia,
+            'empresa_padre' => $licencia->empresa()->first(),
+            'empresas_ids' => $licencia->empresas()->pluck('id_empresa')->toArray(),
+        ];
+    }
+
+    private function scopeProveedorCoincideEmpresaPadre($query, $empresaPadre): void
+    {
+        $nitPadre = trim((string) ($empresaPadre->nit ?? ''));
+        $ncrPadre = trim((string) ($empresaPadre->ncr ?? ''));
+
+        $query->whereHas('proveedor', function ($query) use ($nitPadre, $ncrPadre) {
+            $query->withoutGlobalScope('empresa')
+                ->where(function ($q) use ($nitPadre, $ncrPadre) {
+                    $aplico = false;
+                    if ($nitPadre !== '') {
+                        $q->where('nit', $nitPadre);
+                        $aplico = true;
+                    }
+                    if ($ncrPadre !== '') {
+                        $aplico ? $q->orWhere('ncr', $ncrPadre) : $q->where('ncr', $ncrPadre);
+                        $aplico = true;
+                    }
+                    if (!$aplico) {
+                        $q->whereRaw('0 = 1');
+                    }
+                });
+        });
+    }
+
+    private function queryComprasSolicitudLicencia($user)
+    {
+        $ctx = $this->contextoSolicitudesLicencia($user);
 
         $query = Compra::withoutGlobalScope('empresa')
-            ->whereIn('id_empresa', $empresasLicencia)
-            ->whereHas('proveedor', function ($query) use ($empresaPadre) {
-                return $query->withoutGlobalScope('empresa')
-                    ->where(function ($q) use ($empresaPadre) {
-                        $q->where('nit', $empresaPadre->nit)
-                            ->orWhere('ncr', $empresaPadre->ncr);
-                    });
-            })
-            ->where('estado', 'Pendiente')
-            ->where('cotizacion', 1)
-            ->with(['proveedor' => function ($query) {
-                $query->withoutGlobalScope('empresa');
-            }]);
+            ->whereIn('id_empresa', $ctx['empresas_ids'])
+            ->where('cotizacion', 1);
 
-        // Aplicar filtros de búsqueda
+        $this->scopeProveedorCoincideEmpresaPadre($query, $ctx['empresa_padre']);
+
+        return $query;
+    }
+
+    private function queryOrdenesSolicitudLicencia($user)
+    {
+        $ctx = $this->contextoSolicitudesLicencia($user);
+
+        $query = OrdenCompra::withoutGlobalScope('empresa')
+            ->whereIn('id_empresa', $ctx['empresas_ids']);
+
+        $this->scopeProveedorCoincideEmpresaPadre($query, $ctx['empresa_padre']);
+
+        return $query;
+    }
+
+    private function aplicarFiltrosSolicitud($query, $request, string $origen): void
+    {
         if ($request->buscador) {
-            $query->where(function ($q) use ($request) {
-                $q->where('correlativo', 'like', '%' . $request->buscador . '%')
-                    ->orWhere('estado', 'like', '%' . $request->buscador . '%')
-                    ->orWhere('observaciones', 'like', '%' . $request->buscador . '%')
-                    ->orWhere('forma_pago', 'like', '%' . $request->buscador . '%');
+            $buscador = $request->buscador;
+            $query->where(function ($q) use ($buscador, $origen) {
+                if ($origen === 'compra') {
+                    $q->where('correlativo', 'like', '%' . $buscador . '%')
+                        ->orWhere('estado', 'like', '%' . $buscador . '%')
+                        ->orWhere('observaciones', 'like', '%' . $buscador . '%')
+                        ->orWhere('forma_pago', 'like', '%' . $buscador . '%');
+                } else {
+                    $q->where('referencia', 'like', '%' . $buscador . '%')
+                        ->orWhere('estado', 'like', '%' . $buscador . '%')
+                        ->orWhere('observaciones', 'like', '%' . $buscador . '%');
+                }
             });
         }
 
-        // Aplicar otros filtros
-        $filtros = [
-            'inicio' => function ($query, $request) {
-                if ($request->inicio && $request->fin) {
-                    return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
-                }
-            },
-            'id_sucursal',
-            'id_usuario',
-            'id_proveedor',
-            'forma_pago',
-            'id_canal',
-            'id_documento',
-            'estado',
-            'metodo_pago',
-            'tipo_documento'
-        ];
-
-        foreach ($filtros as $filtro) {
-            if (is_callable($filtro)) {
-                $filtro($query, $request);
-                continue;
-            }
-            // ponytail: igual que CotizacionesController en main — when($request->id_proveedor);
-            // has('') aplica WHERE con string vacío y deja el listado en cero.
-            $valor = $request->input($filtro);
-            if ($valor !== null && $valor !== '') {
-                $query->where($filtro, $valor);
-            }
+        if ($request->inicio && $request->fin) {
+            $query->whereBetween('fecha', [$request->inicio, $request->fin]);
         }
 
-        // Ordenamiento
-        $orden = $request->orden ?? 'id';
-        $direccion = $request->direccion ?? 'desc';
-        $query->orderBy($orden, $direccion);
-        $query->orderBy('id', 'desc');
+        $columnas = ['id_sucursal', 'id_usuario', 'id_proveedor', 'estado'];
+        if ($origen === 'compra') {
+            $columnas = array_merge($columnas, [
+                'forma_pago',
+                'id_canal',
+                'id_documento',
+                'metodo_pago',
+                'tipo_documento',
+            ]);
+        }
 
-        return $query->paginate($request->paginate ?? 10);
+        foreach ($columnas as $columna) {
+            $valor = $request->input($columna);
+            if ($valor !== null && $valor !== '') {
+                $query->where($columna, $valor);
+            }
+        }
+    }
+
+    private function mapCompraSolicitudItem(Compra $compra): array
+    {
+        $compra->loadMissing(['proveedor', 'empresa', 'usuario']);
+
+        return [
+            'id' => $compra->id,
+            'fecha' => $compra->fecha,
+            'empresa_nombre' => $compra->empresa?->nombre ?? '',
+            'nombre_usuario' => $compra->nombre_usuario,
+            'proveedor' => $compra->proveedor,
+            'referencia' => $compra->referencia ?? $compra->correlativo,
+            'estado' => $compra->estado,
+            'total' => $compra->total,
+            'id_empresa' => $compra->id_empresa,
+            'origen_solicitud' => 'compra',
+        ];
+    }
+
+    private function mapOrdenCompraSolicitudItem(OrdenCompra $orden): array
+    {
+        $orden->loadMissing(['proveedor', 'empresa', 'usuario']);
+
+        return [
+            'id' => $orden->id,
+            'fecha' => $orden->fecha,
+            'empresa_nombre' => $orden->empresa?->nombre ?? '',
+            'nombre_usuario' => $orden->nombre_usuario,
+            'proveedor' => $orden->proveedor,
+            'referencia' => $orden->referencia,
+            'estado' => $orden->estado,
+            'total' => $orden->total,
+            'id_empresa' => $orden->id_empresa,
+            'origen_solicitud' => 'orden_compra',
+        ];
+    }
+
+    public function buscarCompraSolicitudLicencia(int $id, $user): Compra
+    {
+        return $this->queryComprasSolicitudLicencia($user)
+            ->where('id', $id)
+            ->firstOrFail();
+    }
+
+    /**
+     * Detalle de solicitud cross-empresa para facturar desde la empresa padre (compra-cotización u orden_compras).
+     */
+    public function obtenerSolicitudLicencia(int $id, $user): Compra|OrdenCompra
+    {
+        $compra = $this->queryComprasSolicitudLicencia($user)
+            ->where('id', $id)
+            ->with([
+                'proveedor' => fn ($q) => $q->withoutGlobalScope('empresa'),
+                'detalles',
+                'empresa',
+            ])
+            ->first();
+
+        if ($compra) {
+            return $compra;
+        }
+
+        return $this->queryOrdenesSolicitudLicencia($user)
+            ->where('id', $id)
+            ->with([
+                'proveedor' => fn ($q) => $q->withoutGlobalScope('empresa'),
+                'detalles',
+                'empresa',
+            ])
+            ->firstOrFail();
+    }
+
+    public function anularSolicitudCompra(int $id, $user): Compra|OrdenCompra
+    {
+        $compra = $this->queryComprasSolicitudLicencia($user)
+            ->where('id', $id)
+            ->first();
+
+        if ($compra) {
+            if ($compra->estado !== 'Pendiente') {
+                throw new \Exception('Solo se pueden anular solicitudes pendientes');
+            }
+            $compra->estado = 'Anulada';
+            $compra->save();
+
+            return $compra;
+        }
+
+        $orden = $this->queryOrdenesSolicitudLicencia($user)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        if ($orden->estado !== 'Pendiente') {
+            throw new \Exception('Solo se pueden anular solicitudes pendientes');
+        }
+
+        $orden->estado = 'Anulada';
+        $orden->save();
+
+        return $orden;
+    }
+
+    public function obtenerSolicitudes($request, $user): LengthAwarePaginator
+    {
+        $estado = $request->input('estado');
+        if ($estado === null || $estado === '') {
+            $estado = 'Pendiente';
+        }
+
+        $queryCompras = $this->queryComprasSolicitudLicencia($user)->where('estado', $estado);
+        $this->aplicarFiltrosSolicitud($queryCompras, $request, 'compra');
+
+        $queryOrdenes = $this->queryOrdenesSolicitudLicencia($user)->where('estado', $estado);
+        $this->aplicarFiltrosSolicitud($queryOrdenes, $request, 'orden_compra');
+
+        $compras = $queryCompras
+            ->with(['proveedor' => fn ($q) => $q->withoutGlobalScope('empresa'), 'empresa', 'usuario'])
+            ->get()
+            ->map(fn (Compra $c) => $this->mapCompraSolicitudItem($c));
+
+        $ordenes = $queryOrdenes
+            ->with(['proveedor' => fn ($q) => $q->withoutGlobalScope('empresa'), 'empresa', 'usuario'])
+            ->get()
+            ->map(fn (OrdenCompra $o) => $this->mapOrdenCompraSolicitudItem($o));
+
+        $ordenCampo = $request->orden ?? 'id';
+        $direccion = strtolower((string) ($request->direccion ?? 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        $merged = $compras->concat($ordenes)->sort(function ($a, $b) use ($ordenCampo, $direccion) {
+            $va = $a[$ordenCampo] ?? $a['id'];
+            $vb = $b[$ordenCampo] ?? $b['id'];
+            $cmp = $va <=> $vb;
+            if ($cmp === 0) {
+                $cmp = ($a['id'] <=> $b['id']);
+            }
+
+            return $direccion === 'asc' ? $cmp : -$cmp;
+        })->values();
+
+        $perPage = (int) ($request->paginate ?? 10);
+        $page = max(1, (int) ($request->page ?? 1));
+
+        return new Paginator(
+            $merged->forPage($page, $perPage)->values(),
+            $merged->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
     }
 }
 
