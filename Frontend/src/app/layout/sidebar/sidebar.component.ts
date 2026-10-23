@@ -14,7 +14,10 @@ import { syncLayoutSidebarInset } from '../layout-sidebar-inset';
 import { SLUG_DESCARGA_AUTOMATIZADA_DTES } from '@guards/funcionalidad.guard';
 import { puedeVerMenuCreditos, SLUG_CREDITOS_CLIENTES } from '@views/ventas/creditos/creditos-acceso';
 import { puedeVerMenuPrestamos, SLUG_PRESTAMOS_EMPRESA } from '@views/finanzas/prestamos/prestamos-acceso';
-import { perteneceOrganizacionLicencia } from '@views/ventas/solicitudes-compra/solicitudes-compra-acceso';
+import {
+    perteneceOrganizacionLicencia,
+    mostrarMenuLicenciasOrganizacion as evaluarMenuLicenciasOrganizacion,
+} from '@views/ventas/solicitudes-compra/solicitudes-compra-acceso';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
@@ -131,20 +134,12 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         );
     }
 
-    /** Empresa padre de licencia o permisos de módulo organización (catálogo: organizacion.*). */
+    /** Solo empresa padre del grupo de organizaciones (no hijas ni empresas sin org). */
     public get mostrarMenuLicenciasOrganizacion(): boolean {
-        const e = this.usuario?.empresa;
-        if (!e) {
-            return false;
-        }
-        if (
-            this.apiService.hasPermission('organizacion.empresas.ver')
-            || this.apiService.hasPermission('organizacion.usuarios.ver')
-            || this.apiService.hasPermission('organizacion.licencias.ver')
-        ) {
-            return true;
-        }
-        return !!(e.es_empresa_padre || e.licencia);
+        return evaluarMenuLicenciasOrganizacion(
+            this.usuario?.empresa,
+            (perm) => this.apiService.hasPermission(perm),
+        );
     }
 
     public get mostrarMenuSolicitudesCompra(): boolean {

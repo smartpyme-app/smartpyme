@@ -44,6 +44,11 @@ assert.match(sidebar, /mostrarMenuRestaurante && apiService\.hasPermission\('res
 assert.match(sidebar, /mostrarMenuPedidos && apiService\.hasPermission\('pedidos\.ver'\)/);
 assert.match(sidebar, /organizacion\.usuarios\.ver/);
 assert.match(sidebar, /mostrarMenuLicenciasOrganizacion/);
+const accesoOrg = fs.readFileSync(
+  path.join(root, 'src/app/views/ventas/solicitudes-compra/solicitudes-compra-acceso.ts'),
+  'utf8',
+);
+assert.match(accesoOrg, /mostrarMenuLicenciasOrganizacion[\s\S]*!empresa\?\.es_empresa_padre/);
 assert.match(sidebar, /mostrarMenuSolicitudesCompra/);
 assert.match(sidebar, /organizacion\.empresas\.ver/);
 assert.match(sidebarVentas, /mostrarMenuSolicitudesCompra/);

@@ -7,3 +7,18 @@ export function perteneceOrganizacionLicencia(
     }
     return !!(empresa.licencia || empresa.es_empresa_hija || empresa.es_empresa_padre);
 }
+
+/** Submenú Licencias (Empresas/Usuarios org.): solo empresa padre con permiso organizacion.* */
+export function mostrarMenuLicenciasOrganizacion(
+    empresa: { es_empresa_padre?: boolean } | null | undefined,
+    hasPermission: (perm: string) => boolean,
+): boolean {
+    if (!empresa?.es_empresa_padre) {
+        return false;
+    }
+    return (
+        hasPermission('organizacion.empresas.ver')
+        || hasPermission('organizacion.usuarios.ver')
+        || hasPermission('organizacion.licencias.ver')
+    );
+}
