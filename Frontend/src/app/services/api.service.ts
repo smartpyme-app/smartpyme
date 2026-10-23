@@ -824,9 +824,16 @@ export class ApiService {
                 const prev = u.empresa ?? {};
                 u.empresa = {
                     ...empresa,
-                    licencia: empresa?.licencia ?? prev.licencia,
-                    es_empresa_padre: empresa?.es_empresa_padre ?? prev.es_empresa_padre,
-                    es_empresa_hija: empresa?.es_empresa_hija ?? prev.es_empresa_hija,
+                    // ponytail: `??` conservaba licencia null del API y dejaba org. fantasma en sesión
+                    licencia: empresa?.licencia !== undefined ? empresa.licencia : prev.licencia,
+                    es_empresa_padre:
+                        empresa?.es_empresa_padre !== undefined
+                            ? empresa.es_empresa_padre
+                            : prev.es_empresa_padre,
+                    es_empresa_hija:
+                        empresa?.es_empresa_hija !== undefined
+                            ? empresa.es_empresa_hija
+                            : prev.es_empresa_hija,
                 };
                 localStorage.setItem('SP_auth_user', JSON.stringify(u));
                 this.sesionEmpresaActualizada.next();

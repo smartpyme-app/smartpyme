@@ -48,7 +48,7 @@ const accesoOrg = fs.readFileSync(
   path.join(root, 'src/app/views/ventas/solicitudes-compra/solicitudes-compra-acceso.ts'),
   'utf8',
 );
-assert.match(accesoOrg, /mostrarMenuLicenciasOrganizacion[\s\S]*!empresa\?\.es_empresa_padre/);
+assert.match(accesoOrg, /mostrarMenuLicenciasOrganizacion[\s\S]*!empresa\?\.es_empresa_padre[\s\S]*!empresa\.licencia/);
 assert.match(sidebar, /mostrarMenuSolicitudesCompra/);
 assert.match(sidebar, /organizacion\.empresas\.ver/);
 assert.match(sidebarVentas, /mostrarMenuSolicitudesCompra/);
