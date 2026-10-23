@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Contabilidad;
 
 use App\Http\Controllers\Controller;
+use App\Models\Compras\Compra;
 use App\Models\Ventas\Venta;
 use Illuminate\Http\Request;
 
@@ -69,11 +70,12 @@ class ApiController extends Controller
         return response()->json($resultado, 200);
     }
 
-    public function compra(Request $compra)
+    public function compra(Request $request)
     {
+        $compra = Compra::findOrFail($request->id);
         $this->comprasService->crearPartida($compra);
 
-        return Response()->json($compra, 200);
+        return response()->json($compra, 200);
     }
 
     public function gasto(Request $gasto)
