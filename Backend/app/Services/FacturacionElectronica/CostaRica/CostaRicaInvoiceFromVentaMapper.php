@@ -1129,8 +1129,8 @@ final class CostaRicaInvoiceFromVentaMapper
             return null;
         }
 
-        $codigo = trim((string) $partida);
-        if (preg_match('/^\d{12}$/', $codigo) !== 1) {
+        $codigo = preg_replace('/\D/', '', trim((string) $partida)) ?? '';
+        if (strlen($codigo) !== 12) {
             throw new InvalidArgumentException(
                 "El producto {$nombreProducto} no tiene partida arancelaria de 12 dígitos, obligatoria en la factura de exportación."
             );

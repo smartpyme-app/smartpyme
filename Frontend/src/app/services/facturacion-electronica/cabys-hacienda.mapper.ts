@@ -204,3 +204,19 @@ export function mapCabysApiResponseToOptions(body: unknown): CabysSelectOption[]
 
   return out;
 }
+
+/** Alineado con CostaRicaInvoiceFromVentaMapper::partidaArancelariaDeLinea (bien = CABYS con primer dígito 0–4). */
+export function cabysRequierePartidaArancelaria(codigoCabys: string | null | undefined): boolean {
+  const digitos = String(codigoCabys ?? '').replace(/\D/g, '');
+  if (!digitos) {
+    return false;
+  }
+  const primero = digitos[0];
+  return primero === '0' || primero === '1' || primero === '2' || primero === '3' || primero === '4';
+}
+
+/** Partida FEE CR: 12 dígitos; acepta formato con puntos (p. ej. 0602.20.10.00.00). */
+export function normalizarPartidaArancelariaCr(raw: string | null | undefined): string | null {
+  const digitos = String(raw ?? '').replace(/\D/g, '');
+  return digitos.length === 12 ? digitos : null;
+}

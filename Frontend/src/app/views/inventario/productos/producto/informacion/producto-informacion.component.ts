@@ -29,7 +29,12 @@ import { Subject, of } from 'rxjs';
 import { map, debounceTime, distinctUntilChanged, switchMap, catchError, finalize } from 'rxjs/operators';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
-import { mapCabysApiResponseToOptions, CabysSelectOption } from '@services/facturacion-electronica/cabys-hacienda.mapper';
+import {
+  mapCabysApiResponseToOptions,
+  CabysSelectOption,
+  cabysRequierePartidaArancelaria,
+  normalizarPartidaArancelariaCr,
+} from '@services/facturacion-electronica/cabys-hacienda.mapper';
 import { HaciendaCabysClientService } from '@services/facturacion-electronica/hacienda-cabys-client.service';
 import { CrearCategoriaComponent } from '@shared/modals/crear-categoria/crear-categoria.component';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -361,6 +366,18 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
   }
 
+  requierePartidaArancelaria(): boolean {
+    return cabysRequierePartidaArancelaria(this.producto?.codigo_cabys);
+  }
+
+  onPartidaArancelariaBlur(): void {
+    const norm = normalizarPartidaArancelariaCr(this.producto?.partida_arancelaria);
+    if (norm) {
+      this.producto.partida_arancelaria = norm;
+    }
+    this.cdr.markForCheck();
+  }
+
   onCabysSelectChange(item: CabysSelectOption | null): void {
     if (item) {
       this.producto.codigo_cabys = item.codigo;
@@ -658,6 +675,16 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     }
     this.cabysInvalido = false;
 
+    const partidaNorm = normalizarPartidaArancelariaCr(this.producto?.partida_arancelaria);
+    if (this.requierePartidaArancelaria() && this.producto?.partida_arancelaria && !partidaNorm) {
+      this.alertService.warning(
+        'Partida arancelaria',
+        'Ingrese exactamente 12 dígitos (puede usar el formato con puntos, por ejemplo 0602.20.10.00.00).',
+      );
+      this.cdr.markForCheck();
+      return;
+    }
+
     if (!this.producto.id) {
       if (!this.producto.costo) {
         this.producto.costo = this.producto.costo_promedio;
@@ -673,6 +700,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
 
     const payload = {
       ...this.producto,
+      partida_arancelaria: partidaNorm,
       id_impuestos: Array.isArray(this.producto.id_impuestos) ? this.producto.id_impuestos : [],
     };
 

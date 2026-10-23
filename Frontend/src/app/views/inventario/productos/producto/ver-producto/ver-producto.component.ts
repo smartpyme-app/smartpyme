@@ -13,6 +13,7 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { cabysRequierePartidaArancelaria } from '@services/facturacion-electronica/cabys-hacienda.mapper';
 
 @Component({
     selector: 'app-ver-producto',
@@ -36,6 +37,10 @@ export class VerProductoComponent {
 
   esEmpresaCostaRica(): boolean {
     return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
+  }
+
+  requierePartidaArancelaria(): boolean {
+    return cabysRequierePartidaArancelaria(this.producto?.codigo_cabys);
   }
 
   ngOnInit(){

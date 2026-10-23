@@ -56,9 +56,9 @@
     <hr style="width: 95%; border-top: 2px solid #d7e2ff; margin: 12px auto;">
     <label>CABYS (Costa Rica)</label>
     <p class="mb-0"><strong>{{ producto.codigo_cabys }}</strong></p>
-    @if (producto.partida_arancelaria) {
+    @if (requierePartidaArancelaria()) {
     <label class="mt-2">Partida arancelaria</label>
-    <p class="mb-0"><strong>{{ producto.partida_arancelaria }}</strong></p>
+    <p class="mb-0"><strong>{{ producto.partida_arancelaria || '—' }}</strong></p>
     }
     @if (producto.descripcion_cabys) {
     <p class="text-muted small mb-0">{{ producto.descripcion_cabys }}</p>

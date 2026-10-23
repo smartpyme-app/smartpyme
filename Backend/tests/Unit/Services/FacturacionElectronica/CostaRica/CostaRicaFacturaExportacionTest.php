@@ -77,6 +77,11 @@ final class CostaRicaFacturaExportacionTest extends TestCase
             CostaRicaInvoiceFromVentaMapper::partidaArancelariaDeLinea(true, '4012345678901', '123456789012', 'Café')
         );
 
+        self::assertSame(
+            '060220100000',
+            CostaRicaInvoiceFromVentaMapper::partidaArancelariaDeLinea(true, '4012345678901', '0602.20.10.00.00', 'Shampoo')
+        );
+
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Azúcar');
 

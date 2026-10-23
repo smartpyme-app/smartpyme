@@ -60,7 +60,7 @@
             <tag-input theme='bootstrap' [placeholder]="'Escribe aquí'" secondaryPlaceholder="Escribe aquí" [separatorKeyCodes]="[32]" [(ngModel)]="producto.etiquetas" name="etiquetas"></tag-input>
         </div>
 
-        <div class="form-group col-12" *ngIf="esEmpresaCostaRica()">
+        <div class="form-group col-12" *ngIf="esEmpresaCostaRica()" [ngClass]="requierePartidaArancelaria() ? 'col-lg-8' : 'col-lg-12'">
             <label for="cabys_buscar">Código CABYS <span class="text-danger">*</span></label>
             <ng-select
                 id="cabys_buscar"
@@ -81,10 +81,10 @@
             <small class="text-danger" *ngIf="cabysInvalido">Debe asignar un código CABYS para guardar.</small>
             <small class="text-muted" *ngIf="!cabysInvalido">Requerido para facturación electrónica en Costa Rica (productos y servicios).</small>
         </div>
-        <div class="form-group col-md-6" *ngIf="esEmpresaCostaRica()">
+        <div class="form-group col-12 col-lg-4" *ngIf="esEmpresaCostaRica() && requierePartidaArancelaria()">
             <label for="partida_arancelaria">Partida arancelaria</label>
-            <input type="text" class="form-control" maxlength="12" inputmode="numeric" [(ngModel)]="producto.partida_arancelaria" name="partida_arancelaria" placeholder="12 dígitos">
-            <small class="text-muted">Obligatoria al exportar un bien cuyo CABYS empieza en 0, 1, 2, 3 o 4.</small>
+            <input type="text" class="form-control" maxlength="17" inputmode="decimal" [(ngModel)]="producto.partida_arancelaria" name="partida_arancelaria" placeholder="12 dígitos (ej. 0602.20.10.00.00)" (blur)="onPartidaArancelariaBlur()">
+            <small class="text-muted">Obligatoria al exportar un bien cuyo CABYS empieza en 0, 1, 2, 3 o 4. Se guardan solo los 12 dígitos.</small>
         </div>
 
         <h6 class="my-3 font-weight-bold">Precio</h6>
