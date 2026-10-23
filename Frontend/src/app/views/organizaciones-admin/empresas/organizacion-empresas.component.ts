@@ -55,7 +55,18 @@ export class OrganizacionEmpresasComponent extends BaseCrudComponent<any> implem
     }
 
     ngOnInit() {
-        this.loadAll();
+        const idLicencia = this.idLicenciaSesion();
+        if (idLicencia) {
+            this.loadAll();
+            return;
+        }
+        this.apiService.refreshEmpresaEnSesion()
+            .pipe(this.untilDestroyed())
+            .subscribe(() => this.loadAll());
+    }
+
+    private idLicenciaSesion(): number | undefined {
+        return this.apiService.auth_user()?.empresa?.licencia?.id;
     }
 
     public override loadAll() {
@@ -63,7 +74,13 @@ export class OrganizacionEmpresasComponent extends BaseCrudComponent<any> implem
         this.filtros.buscador = '';
         this.filtros.orden = 'id';
         this.filtros.direccion = 'asc';
-        this.filtros.id_licencia = this.apiService.auth_user().empresa.licencia.id;
+        const idLicencia = this.idLicenciaSesion();
+        if (!idLicencia) {
+            this.loading = false;
+            this.cdr.markForCheck();
+            return;
+        }
+        this.filtros.id_licencia = idLicencia;
         this.filtros.paginate = 10;
 
         this.loading = true;

@@ -778,6 +778,24 @@
                    id="limite_credito_final" name="limite_credito" [(ngModel)]="cliente.limite_credito">
         </div>
     </div>
+    @if (mostrarRegaloPuntos()) {
+    <div class="row mt-2">
+        <div class="col-12">
+            <div class="form-switch border rounded p-2">
+                <label class="form-check-label" for="regalar_puntos_cliente">Regalar puntos de bienvenida</label>
+                <input class="form-check-input float-end" type="checkbox" id="regalar_puntos_cliente"
+                       name="regalar_puntos" [(ngModel)]="regalarPuntos">
+            </div>
+        </div>
+        @if (regalarPuntos) {
+        <div class="form-group col-12 col-md-4 col-lg-3 mt-2">
+            <label for="puntos_regalo_cliente">Cantidad de puntos</label>
+            <input type="number" min="1" step="1" class="form-control" id="puntos_regalo_cliente"
+                   name="puntos_regalo_ui" [(ngModel)]="puntosRegalo" placeholder="Ej: 100">
+        </div>
+        }
+    </div>
+    }
     <div class="row">
         <div class="form-group col-md-12 mt-3">
             <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">

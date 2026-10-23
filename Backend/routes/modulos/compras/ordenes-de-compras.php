@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Route;
     Route::post('/orden-de-compra/detalle',          [DetallesController::class, 'historial']);
 
     Route::get('/ordenes-de-compras/solicitudes',    [CotizacionesController::class, 'solicitudes']);
+    Route::post('/ordenes-de-compras/solicitudes/{id}/anular', [CotizacionesController::class, 'anularSolicitud']);
     Route::get('/orden-de-compra/solicitud/{id}',    [CotizacionesController::class, 'solicitud']);
 
 

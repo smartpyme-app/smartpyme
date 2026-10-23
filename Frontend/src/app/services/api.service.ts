@@ -15,7 +15,7 @@ import { PermissionService } from '@services/permission.service';
 import { UtilityService } from '@services/utility.service';
 import { HttpClient, HttpHeaders, HttpResponse, HttpErrorResponse } from '@angular/common/http';
 import { map, catchError, retry, timeout, switchMap } from 'rxjs/operators';
-import { Observable, throwError, from, of } from 'rxjs';
+import { Observable, throwError, from, of, Subject } from 'rxjs';
 import { AlertService } from '@services/alert.service';
 import { environment } from './../../environments/environment';
 import { ChatService } from '@services/chat/chat.service';
@@ -45,6 +45,10 @@ export class ApiService {
   public appUrl: string = environment.APP_URL;
   public baseUrl: string = environment.API_URL;
   public apiUrl = this.baseUrl + '/api/';
+
+  /** Tras `refreshEmpresaEnSesion` (header al cargar la app). */
+  private readonly sesionEmpresaActualizada = new Subject<void>();
+  readonly sesionEmpresaActualizada$ = this.sesionEmpresaActualizada.asObservable();
 
   constructor(
     private httpService: HttpService,
@@ -817,10 +821,17 @@ export class ApiService {
         }
         return this.read('empresa/', idEmpresa).pipe(
             map((empresa: any) => {
-                u.empresa = empresa;
+                const prev = u.empresa ?? {};
+                u.empresa = {
+                    ...empresa,
+                    licencia: empresa?.licencia ?? prev.licencia,
+                    es_empresa_padre: empresa?.es_empresa_padre ?? prev.es_empresa_padre,
+                    es_empresa_hija: empresa?.es_empresa_hija ?? prev.es_empresa_hija,
+                };
                 localStorage.setItem('SP_auth_user', JSON.stringify(u));
+                this.sesionEmpresaActualizada.next();
                 // Lazy: evita ciclo HTTP_INTERCEPTORS → ApiService → TranslateService → HttpClient
-                this.injector.get(CountryI18nService).applyForEmpresa(empresa).subscribe();
+                this.injector.get(CountryI18nService).applyForEmpresa(u.empresa).subscribe();
                 return undefined;
             }),
             catchError(() => of(undefined))

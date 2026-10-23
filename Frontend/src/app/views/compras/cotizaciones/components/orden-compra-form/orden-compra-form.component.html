@@ -146,8 +146,10 @@
     <h6 class="mt-3">Productos y servicios</h6>
 
     <app-compra-detalles [compra]="compraDTO" (update)="updateDetalle($event)" (sumTotal)="sumTotal()"
-      (OndeletedItem)="updateDetalle($event)" [isOrdenCompra]="true"></app-compra-detalles>
+      (OndeletedItem)="updateDetalle($event)" [isOrdenCompra]="true"
+      [ocultarMontosOrdenCompra]="!puedeVerTotalOrdenCompra()"></app-compra-detalles>
 
+    @if (puedeVerTotalOrdenCompra()) {
     <div class="row">
       <div class="col-md-12">
         <table class="table table-sm table-borderless table-condensed mb-0">
@@ -196,6 +198,7 @@
         </table>
       </div>
     </div>
+    }
   </section>
 
 

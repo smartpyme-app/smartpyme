@@ -75,14 +75,7 @@ class CotizacionesController extends Controller
 
     public function store(StoreOrdenCompraRequest $request)
     {
-        // VERIFICAR AUTORIZACIÓN por niveles de monto
-        $validacion = $this->ordenCompraService->validarAutorizacionRequerida($request);
-
-        if ($validacion['requires_authorization']) {
-            return response()->json($validacion, 403);
-        }
-
-        Log::info("Procesando orden de compra normal o autorizada");
+        // ponytail: main guardaba OC sin validarAutorizacionRequerida; la auth por monto quedó en ComprasAuthorizationService (compras > 3000)
 
         if ($request->id) {
             $cotizacionExistente = OrdenCompra::findOrFail($request->id);
@@ -236,11 +229,29 @@ class CotizacionesController extends Controller
         }
     }
 
-    public function solicitud($id) {
+    public function solicitud($id)
+    {
+        try {
+            $solicitud = $this->ordenCompraService->obtenerSolicitudLicencia((int) $id, Auth::user());
 
-        $cotizacion = Cotizacion::withoutGlobalScope('empresa')->where('id', $id)->with('proveedor', 'detalles')->firstOrFail();
-        return Response()->json($cotizacion, 200);
+            return Response()->json($solicitud, 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return Response()->json(['error' => 'No se encontro ningun registro.', 'code' => 404], 404);
+        } catch (\Exception $e) {
+            return Response()->json(['error' => [$e->getMessage()], 'code' => 403], 403);
+        }
+    }
 
+    public function anularSolicitud($id)
+    {
+        try {
+            $compra = $this->ordenCompraService->anularSolicitudCompra((int) $id, Auth::user());
+            return Response()->json($compra, 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return Response()->json(['error' => 'No se encontro ningun registro.', 'code' => 404], 404);
+        } catch (\Exception $e) {
+            return Response()->json(['error' => $e->getMessage(), 'code' => 400], 400);
+        }
     }
     /**
      * Empresa configurada para impedir que Supervisor limitado altere el estado de órdenes de compra.

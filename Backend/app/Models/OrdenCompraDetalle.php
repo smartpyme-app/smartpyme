@@ -19,7 +19,7 @@ class OrdenCompraDetalle extends Model
         "descuento",
         "total",
     ];
-    protected $appends = ['nombre_producto', 'img'];
+    protected $appends = ['nombre_producto', 'img', 'codigo'];
 
     public function getNombreProductoAttribute()
     {
@@ -28,7 +28,12 @@ class OrdenCompraDetalle extends Model
 
     public function getImgAttribute()
     {
-        return $this->producto()->withoutGlobalScopes()->first()->img;
+        return $this->producto()->withoutGlobalScopes()->first()?->img;
+    }
+
+    public function getCodigoAttribute()
+    {
+        return $this->producto()->withoutGlobalScopes()->pluck('codigo')->first();
     }
 
     public function producto()

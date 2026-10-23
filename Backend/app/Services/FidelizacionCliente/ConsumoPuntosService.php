@@ -534,11 +534,56 @@ class ConsumoPuntosService
      * @param int $empresaId
      * @return array
      */
-    public function obtenerInformacionPuntosDisponibles(int $clienteId, int $empresaId): array
+    public function obtenerInformacionPuntosDisponibles(int $clienteId, int $empresaId, bool $includeDetalle = true): array
     {
-        // Verificar que la empresa tiene fidelización habilitada
         $empresa = \App\Models\Admin\Empresa::find($empresaId);
-        if (!$empresa || !$empresa->tieneFidelizacionHabilitada()) {
+        if (!$empresa) {
+            return [
+                'puntos_disponibles' => 0,
+                'puntos_totales_ganados' => 0,
+                'puntos_totales_canjeados' => 0,
+                'ganancias_detalle' => [],
+                'configuracion' => null,
+                'error' => 'Empresa no encontrada',
+            ];
+        }
+
+        /** @var LicenciaFidelizacionService $licenciaFidelizacion */
+        $licenciaFidelizacion = app(LicenciaFidelizacionService::class);
+        $empresasLicenciaIds = array_map('intval', $licenciaFidelizacion->getEmpresasLicenciaIds($empresa));
+
+        $cliente = \App\Models\Ventas\Clientes\Cliente::with([
+            'tipoCliente.tipoBase',
+            'empresa.licenciaEmpresa.licencia.empresa.tipoClienteDefault.tipoBase',
+            'empresa.tipoClienteDefault.tipoBase',
+        ])->find($clienteId);
+
+        if (!$cliente || !$cliente->empresa) {
+            return [
+                'puntos_disponibles' => 0,
+                'puntos_totales_ganados' => 0,
+                'puntos_totales_canjeados' => 0,
+                'ganancias_detalle' => [],
+                'configuracion' => null,
+                'error' => 'Cliente no encontrado',
+            ];
+        }
+
+        $clienteEmpresaId = (int) $cliente->id_empresa;
+        $puedeConsultar = $clienteEmpresaId === (int) $empresaId
+            || in_array($clienteEmpresaId, $empresasLicenciaIds, true);
+        if (!$puedeConsultar) {
+            return [
+                'puntos_disponibles' => 0,
+                'puntos_totales_ganados' => 0,
+                'puntos_totales_canjeados' => 0,
+                'ganancias_detalle' => [],
+                'configuracion' => null,
+                'error' => 'El cliente no pertenece a esta empresa',
+            ];
+        }
+
+        if (!$this->empresaTieneFidelizacionParaConsulta($cliente->empresa)) {
             return [
                 'puntos_disponibles' => 0,
                 'puntos_totales_ganados' => 0,
@@ -549,13 +594,12 @@ class ConsumoPuntosService
             ];
         }
 
-        $cliente = \App\Models\Ventas\Clientes\Cliente::with(['tipoCliente.tipoBase', 'empresa'])
-            ->find($clienteId);
-        $tipoCliente = $cliente ? $this->resolveTipoClienteParaCliente($cliente) : null;
+        $tipoCliente = $this->resolveTipoClienteParaCliente($cliente);
 
-        $puntosCliente = PuntosCliente::where('id_cliente', $clienteId)
-            ->where('id_empresa', $empresaId)
-            ->first();
+        $puntosCliente = $licenciaFidelizacion->getPuntosClienteEfectivos($cliente, $cliente->empresa);
+        $empresaPuntosId = $puntosCliente
+            ? (int) $puntosCliente->id_empresa
+            : (int) $cliente->id_empresa;
 
         if (!$puntosCliente) {
             return [
@@ -573,26 +617,29 @@ class ConsumoPuntosService
             ];
         }
 
-        // Obtener detalle de ganancias disponibles
-        $gananciasDisponibles = TransaccionPuntos::where('id_cliente', $clienteId)
-            ->where('id_empresa', $empresaId)
-            ->where('tipo', TransaccionPuntos::TIPO_GANANCIA)
-            ->where('fecha_expiracion', '>=', now()->toDateString())
-            ->whereRaw('puntos - puntos_consumidos > 0')
-            ->orderBy('fecha_expiracion', 'asc')
-            ->orderBy('created_at', 'asc')
-            ->get()
-            ->map(function ($ganancia) {
-                return [
-                    'id' => $ganancia->id,
-                    'puntos_originales' => $ganancia->puntos,
-                    'puntos_disponibles' => $ganancia->getPuntosDisponibles(),
-                    'fecha_ganancia' => $ganancia->created_at,
-                    'fecha_expiracion' => $ganancia->fecha_expiracion,
-                    'dias_para_expirar' => now()->diffInDays($ganancia->fecha_expiracion, false),
-                    'venta_id' => $ganancia->id_venta
-                ];
-            });
+        $gananciasDisponibles = collect();
+        if ($includeDetalle) {
+            $gananciasDisponibles = TransaccionPuntos::where('id_cliente', $clienteId)
+                ->where('id_empresa', $empresaPuntosId)
+                ->where('tipo', TransaccionPuntos::TIPO_GANANCIA)
+                ->where('fecha_expiracion', '>=', now()->toDateString())
+                ->whereRaw('puntos - puntos_consumidos > 0')
+                ->orderBy('fecha_expiracion', 'asc')
+                ->orderBy('created_at', 'asc')
+                ->limit(200)
+                ->get()
+                ->map(function ($ganancia) {
+                    return [
+                        'id' => $ganancia->id,
+                        'puntos_originales' => $ganancia->puntos,
+                        'puntos_disponibles' => $ganancia->getPuntosDisponibles(),
+                        'fecha_ganancia' => $ganancia->created_at,
+                        'fecha_expiracion' => $ganancia->fecha_expiracion,
+                        'dias_para_expirar' => $ganancia->getDiasParaExpirar() ?? 0,
+                        'venta_id' => $ganancia->id_venta
+                    ];
+                });
+        }
 
         return [
             'puntos_disponibles' => $puntosCliente->puntos_disponibles,
@@ -608,6 +655,19 @@ class ConsumoPuntosService
                 'puntos_por_dolar' => $tipoCliente->puntos_por_dolar
             ] : null
         ];
+    }
+
+    private function empresaTieneFidelizacionParaConsulta(\App\Models\Admin\Empresa $empresa): bool
+    {
+        if ($empresa->tieneFidelizacionHabilitada()) {
+            return true;
+        }
+
+        if ($empresa->esEmpresaHija()) {
+            return $empresa->getEmpresaPadre()->tieneFidelizacionHabilitada();
+        }
+
+        return false;
     }
 
     /**

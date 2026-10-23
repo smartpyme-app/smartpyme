@@ -76,6 +76,10 @@ export class OrdenCompraFormComponent implements OnInit {
     return empresaEsElSalvador(this.apiService.auth_user()?.empresa);
   }
 
+  puedeVerTotalOrdenCompra(): boolean {
+    return this.apiService.hasPermission('compras.ordenes_compra.ver_total');
+  }
+
   ngOnInit(): void {
     Promise.all(
       [
@@ -110,11 +114,11 @@ export class OrdenCompraFormComponent implements OnInit {
         this.apiService.read('orden-de-compra/', params.id)
           .pipe(this.untilDestroyed())
           .subscribe(compra => {
-          console.log(compra);
-
           this.ordenCompraForm?.patchValue(compra);
-          this.detalles = compra.detalles;
-          this.compraDTO.detalles = [...compra.detalles];
+          const detalles = [...(compra.detalles ?? [])];
+          this.detalles = detalles;
+          // Nueva referencia de compra: CompraDetallesComponent usa OnPush y no detecta solo mutar .detalles
+          this.compraDTO = { ...compra, detalles };
           this.sumTotal();
           this.cdr.markForCheck();
 
@@ -179,9 +183,7 @@ export class OrdenCompraFormComponent implements OnInit {
 
   updateDetalle(compra: any) {
     this.detalles = compra.detalles;
-    console.log(this.detalles);
-
-
     this.sumTotal();
+    this.cdr.markForCheck();
   }
 }

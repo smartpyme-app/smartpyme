@@ -29,7 +29,8 @@ class CanjePuntosController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'cliente_id' => 'required|integer|exists:clientes,id',
-                'empresa_id' => 'required|integer|exists:empresas,id'
+                'empresa_id' => 'required|integer|exists:empresas,id',
+                'include_detalle' => 'sometimes|boolean',
             ]);
 
             if ($validator->fails()) {
@@ -43,15 +44,20 @@ class CanjePuntosController extends Controller
             $clienteId = $request->input('cliente_id');
             $empresaId = $request->input('empresa_id');
 
-            // Verificación de autorización multi-tenant
-            if (Auth::user()->id_empresa !== $empresaId) {
+            // ponytail: id_empresa en JWT/localStorage puede llegar como string; !== daba 403 y el front quedaba en loading
+            if ((int) Auth::user()->id_empresa !== (int) $empresaId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No autorizado para acceder a esta empresa'
                 ], 403);
             }
 
-            $informacionPuntos = $this->consumoPuntosService->obtenerInformacionPuntosDisponibles($clienteId, $empresaId);
+            $includeDetalle = $request->boolean('include_detalle', true);
+            $informacionPuntos = $this->consumoPuntosService->obtenerInformacionPuntosDisponibles(
+                $clienteId,
+                $empresaId,
+                $includeDetalle
+            );
 
             return response()->json([
                 'success' => true,
@@ -106,7 +112,7 @@ class CanjePuntosController extends Controller
             $idempotencyToken = $request->input('idempotency_token');
 
             // Verificación de autorización multi-tenant
-            if (Auth::user()->id_empresa !== $empresaId) {
+            if ((int) Auth::user()->id_empresa !== (int) $empresaId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No autorizado para acceder a esta empresa'
@@ -174,7 +180,7 @@ class CanjePuntosController extends Controller
             $limite = $request->input('limite', 20);
 
             // Verificación de autorización multi-tenant
-            if (Auth::user()->id_empresa !== $empresaId) {
+            if ((int) Auth::user()->id_empresa !== (int) $empresaId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No autorizado para acceder a esta empresa'

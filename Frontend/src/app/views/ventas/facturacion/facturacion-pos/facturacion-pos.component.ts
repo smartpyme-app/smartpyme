@@ -1,4 +1,4 @@
-import { Component, inject, TemplateRef, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
@@ -90,6 +90,7 @@ export class FacturacionPosComponent extends FacturacionV2Component {
       inject(GiftCardsService),
       inject(CountryI18nService),
       inject(PartidaVentaFlowService),
+      inject(ChangeDetectorRef),
     );
   }
 

@@ -9,12 +9,25 @@ import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 @Component({
     selector: 'app-solicitudes-compra',
     templateUrl: './solicitudes-compra.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, LazyImageDirective, CurrencyPipe],
+    imports: [
+        CommonModule,
+        RouterModule,
+        FormsModule,
+        NgSelectModule,
+        LazyImageDirective,
+        CurrencyPipe,
+        PopoverModule,
+        TooltipModule,
+        PaginationComponent,
+    ],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 
@@ -22,6 +35,8 @@ export class SolicitudesCompraComponent extends BaseCrudComponent<any> implement
 
     public compras:any = {};
     public compra:any = {};
+    public solicitudDetalle: any = null;
+    public cargandoDetalleSolicitud = false;
     public downloading:boolean = false;
     public proveedores:any = [];
     public usuarios:any = [];
@@ -119,15 +134,40 @@ export class SolicitudesCompraComponent extends BaseCrudComponent<any> implement
         }
     }
 
-    public async setEstado(cotizacion:any){
+    public async verSolicitud(template: TemplateRef<unknown>, item: { id: number }): Promise<void> {
+        this.cargandoDetalleSolicitud = true;
+        this.solicitudDetalle = null;
+        this.cdr.markForCheck();
         try {
-            await this.apiService.store('orden-de-compra', cotizacion)
+            this.solicitudDetalle = await this.apiService
+                .read('orden-de-compra/solicitud/', item.id)
                 .pipe(this.untilDestroyed())
                 .toPromise();
-
-            this.alertService.success('Solicitud de compra actualizada', 'La solicitud de compra fue actualizada exitosamente.');
+            this.openModal(template);
         } catch (error: any) {
             this.alertService.error(error);
+        } finally {
+            this.cargandoDetalleSolicitud = false;
+            this.cdr.markForCheck();
+        }
+    }
+
+    public async anularSolicitud(compra: { id: number; estado?: string }): Promise<void> {
+        if (compra.estado !== 'Pendiente' || !confirm('¿Anular esta solicitud de compra?')) {
+            return;
+        }
+        this.loading = true;
+        this.cdr.markForCheck();
+        try {
+            await this.apiService.store(`ordenes-de-compras/solicitudes/${compra.id}/anular`, {})
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            this.alertService.success('Solicitud de compra actualizada', 'La solicitud fue anulada exitosamente.');
+            await this.filtrarCompras(false);
+        } catch (error: any) {
+            this.alertService.error(error);
+        } finally {
+            this.loading = false;
             this.cdr.markForCheck();
         }
     }

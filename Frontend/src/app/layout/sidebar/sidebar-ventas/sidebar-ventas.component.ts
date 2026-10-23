@@ -11,6 +11,7 @@ import { filter as rxFilter } from 'rxjs/operators';
 import { RestauranteSidebarLinksComponent } from '../restaurante-sidebar-links.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 import { syncLayoutSidebarInset } from '../../layout-sidebar-inset';
+import { perteneceOrganizacionLicencia } from '@views/ventas/solicitudes-compra/solicitudes-compra-acceso';
 
 @Component({
     selector: 'app-sidebar-ventas',
@@ -41,6 +42,10 @@ export class SidebarVentasComponent implements OnInit {
     public clinicaIsCollapsed = true;
     public mostrarMenuRestaurante = false;
     public mostrarMenuPedidos = false;
+
+    public get mostrarMenuSolicitudesCompra(): boolean {
+        return perteneceOrganizacionLicencia(this.usuario?.empresa);
+    }
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
@@ -102,6 +107,12 @@ export class SidebarVentasComponent implements OnInit {
         }
 
         this.usuario = this.apiService.auth_user();
+
+        this.apiService.sesionEmpresaActualizada$
+            .pipe(this.untilDestroyed())
+            .subscribe(() => {
+                this.usuario = this.apiService.auth_user();
+            });
         this.loadModules();
         this.verificarModuloRestauranteHabilitado();
         this.verificarClinicaPacientes();
