@@ -21,11 +21,12 @@ use Illuminate\Support\Facades\Schema;
 use ReflectionClass;
 use ReflectionException;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeNota23Catalog;
+use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
 
 /**
- * Emisión FE Costa Rica: factura 01 (incl. factura de exportación), tiquete 04, nota crédito 03, nota débito 02 (dazza-dev/dgt-cr).
+ * Emisión FE Costa Rica: factura 01, factura de exportación 09, tiquete 04, nota crédito 03, nota débito 02 (dazza-dev/dgt-cr).
  */
 final class CostaRicaFeEmitService
 {
@@ -49,7 +50,9 @@ final class CostaRicaFeEmitService
         $this->assertEmpresaCr($venta->empresa);
         $this->assertMonedaDocumentoValidaCr($venta->currency_code, $venta->exchange_rate, 'la venta');
         $this->assertDatosExoneracionCrSiAplica($venta);
-        if (! $this->esDocumentoFacturaCr($venta->nombre_documento)) {
+        $nombreDocumento = self::nombreDocumentoVenta($venta);
+        $esExportacion = $this->esDocumentoExportacionCr($nombreDocumento);
+        if (! $esExportacion && ! $this->esDocumentoFacturaCr($nombreDocumento)) {
             throw new RuntimeException('Use emisión de tiquete para documentos tipo Ticket/Tiquete.');
         }
         if ($this->ventaTieneClaveFeCr($venta)) {
@@ -60,9 +63,15 @@ final class CostaRicaFeEmitService
         $sec = $this->secuencialDesdeCorrelativo($venta->correlativo);
         $data = $this->mapper->buildDocumentData($venta, $venta->empresa, $sec);
         $data = $this->adjuntarReferenciasSustitucionORechazo($venta, $data);
-        $this->mapper->assertReceptorFacturaElectronicaCr($data['receiver']);
+        if ($esExportacion) {
+            $this->mapper->assertReceptorFacturaExportacionCr($data['receiver']);
+        } else {
+            $this->mapper->assertReceptorFacturaElectronicaCr($data['receiver']);
+        }
 
-        return $this->enviarYPersistirVenta($venta, 'invoice', '01', 'FacturaElectronica', $data);
+        $emision = self::parametrosEmisionFactura($nombreDocumento);
+
+        return $this->enviarYPersistirVenta($venta, $emision['dgt_type'], $emision['tipo_dte'], $emision['tipo_nombre'], $data);
     }
 
     /**
@@ -302,6 +311,7 @@ final class CostaRicaFeEmitService
         );
 
         $claveFactura = (string) $venta->codigo_generacion;
+        $referenciaNd = self::referenciaNotaSobreComprobante((string) ($venta->tipo_dte ?? ''), $claveFactura);
         $fechaFactura = \Carbon\Carbon::parse($venta->fecha)->timezone('America/Costa_Rica')->format('Y-m-d\TH:i:sP');
 
         $cabys = preg_replace('/\D/', '', (string) $empresa->getCustomConfigValue('facturacion_fe', 'cabys_default', null));
@@ -375,8 +385,8 @@ final class CostaRicaFeEmitService
             'payments' => $this->mapper->pagosDesdeMonto(round($montoLinea, 2)),
             'summary' => $summary,
             'referenced_documents' => [[
-                'document_type' => '01',
-                'document_number' => $claveFactura,
+                'document_type' => $referenciaNd['document_type'],
+                'document_number' => $referenciaNd['document_number'],
                 'emission_date' => $fechaFactura,
                 'referenced_code' => self::codigoReferenciaNotaDebito(
                     \Carbon\Carbon::parse($venta->fecha)->timezone('America/Costa_Rica'),
@@ -611,9 +621,92 @@ final class CostaRicaFeEmitService
         return $n === 'factura'
             || str_contains($n, 'factura electrónica')
             || str_contains($n, 'credito fiscal')
-            || str_contains($n, 'crédito fiscal')
-            || str_contains($n, 'exportación')
-            || str_contains($n, 'exportacion');
+            || str_contains($n, 'crédito fiscal');
+    }
+
+    private function esDocumentoExportacionCr(?string $nombreDocumento): bool
+    {
+        return self::tipoDocumentoExportacion((string) $nombreDocumento) !== null;
+    }
+
+    /**
+     * Nombre del tipo de documento sin disparar el accessor que consulta la tabla documentos.
+     */
+    public static function nombreDocumentoVenta(Venta $venta): string
+    {
+        $attrs = $venta->getAttributes();
+        if (array_key_exists('nombre_documento', $attrs) && trim((string) $attrs['nombre_documento']) !== '') {
+            return trim((string) $attrs['nombre_documento']);
+        }
+
+        if ($venta->relationLoaded('documento') && $venta->documento !== null) {
+            return trim((string) ($venta->documento->nombre ?? ''));
+        }
+
+        return '';
+    }
+
+    /**
+     * Tipo de comprobante del consecutivo (09) cuando el nombre es una factura de exportación.
+     * Null deja la factura nacional en 01.
+     */
+    public static function tipoDocumentoExportacion(string $nombreDocumento): ?string
+    {
+        $n = mb_strtolower(trim($nombreDocumento), 'UTF-8');
+        if (str_contains($n, 'exportación') || str_contains($n, 'exportacion')) {
+            return '09';
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{dgt_type: string, tipo_dte: string, tipo_nombre: string}
+     */
+    public static function parametrosEmisionFactura(string $nombreDocumento): array
+    {
+        $tipo = self::tipoDocumentoExportacion($nombreDocumento);
+        if ($tipo !== null) {
+            return [
+                'dgt_type' => 'export-invoice',
+                'tipo_dte' => $tipo,
+                'tipo_nombre' => 'FacturaElectronicaExportacion',
+            ];
+        }
+
+        return [
+            'dgt_type' => 'invoice',
+            'tipo_dte' => '01',
+            'tipo_nombre' => 'FacturaElectronica',
+        ];
+    }
+
+    /**
+     * Referencia de NC/ND. FEE (tipo_dte 09) usa el tipo 19; si falta la clave, no se degrada a 01.
+     *
+     * @return array{document_type: string, document_number: string}
+     */
+    public static function referenciaNotaSobreComprobante(string $tipoDte, string $clave): array
+    {
+        $clave = trim($clave);
+        if (strlen($clave) !== 50) {
+            throw new InvalidArgumentException('La clave del comprobante referenciado debe tener 50 caracteres.');
+        }
+
+        $tipo = str_pad(trim($tipoDte), 2, '0', STR_PAD_LEFT);
+
+        return [
+            'document_type' => self::tipoReferenciaNotaDesdeTipoDte($tipo),
+            'document_number' => $clave,
+        ];
+    }
+
+    /** tipo_dte 09 (FEE); 11 = legado en PDF antes de alinear con 09. */
+    private static function tipoReferenciaNotaDesdeTipoDte(string $tipoDte): string
+    {
+        return in_array($tipoDte, ['09', '11'], true)
+            ? ReferenciaComprobanteCr::TIPO_EXPORTACION
+            : '01';
     }
 
     private function esDocumentoTiqueteCr(?string $nombreDocumento): bool

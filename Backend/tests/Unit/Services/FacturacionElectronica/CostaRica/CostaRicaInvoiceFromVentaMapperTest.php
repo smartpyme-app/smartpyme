@@ -87,6 +87,20 @@ final class CostaRicaInvoiceFromVentaMapperTest extends TestCase
         self::assertSame('01', $refs[0]['document_type']);
     }
 
+    public function test_fee_sustituida_usa_tipo_19_en_referencia(): void
+    {
+        $clave = str_repeat('E', 50);
+        $refs = $this->mapper->referencedDocumentsSustitucionORechazo($this->ventaAtributos([
+            'nombre_documento' => 'Factura de exportación',
+            'clave_sustituida' => $clave,
+            'codigo_nota_anulacion' => '13',
+        ]));
+
+        self::assertCount(1, $refs);
+        self::assertSame(ReferenciaComprobanteCr::TIPO_EXPORTACION, $refs[0]['document_type']);
+        self::assertSame('15', $refs[0]['referenced_code']);
+    }
+
     public function test_clave_sustituida_que_no_tiene_50_caracteres_no_referencia(): void
     {
         $refs = $this->mapper->referencedDocumentsSustitucionORechazo($this->ventaAtributos([
@@ -348,9 +362,7 @@ final class CostaRicaInvoiceFromVentaMapperTest extends TestCase
     private function ventaAtributos(array $attrs): Venta
     {
         $venta = (new \ReflectionClass(Venta::class))->newInstanceWithoutConstructor();
-        foreach ($attrs as $key => $value) {
-            $venta->{$key} = $value;
-        }
+        $venta->setRawAttributes($attrs, true);
 
         return $venta;
     }

@@ -159,7 +159,7 @@ final class CostaRicaFeCorreoService
         $tipoDte = $request->tipo_dte;
         $id = (int) $request->id;
 
-        if (in_array($tipoDte, ['01', '02', '04', '11'], true)) {
+        if (in_array($tipoDte, ['01', '02', '04', '09', '11'], true)) {
             $v = Venta::with('cliente')->where('id', $id)->firstOrFail();
             $c = $v->cliente;
             $nombre = $c ? trim((string) ($c->nombre ?? '')) : 'Cliente';
@@ -204,7 +204,7 @@ final class CostaRicaFeCorreoService
      */
     private function resolverRutaPdf(string $tipoDte, ?string $tipoCompraGasto): array
     {
-        if (in_array($tipoDte, ['01', '02', '04', '11', '03', '05', '06'], true)) {
+        if (in_array($tipoDte, ['01', '02', '04', '09', '11', '03', '05', '06'], true)) {
             return [$tipoDte, null];
         }
         if ($tipoDte === '14' || $tipoDte === '08') {
@@ -253,6 +253,7 @@ final class CostaRicaFeCorreoService
         $m = [
             '01' => 'Factura electrónica',
             '04' => 'Tiquete electrónico',
+            '09' => 'Factura electrónica de exportación',
             '11' => 'Factura electrónica de exportación',
             '02' => 'Nota de débito electrónica',
             '03' => 'Nota de crédito electrónica',

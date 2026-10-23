@@ -81,6 +81,11 @@
             <small class="text-danger" *ngIf="cabysInvalido">Debe asignar un código CABYS para guardar.</small>
             <small class="text-muted" *ngIf="!cabysInvalido">Requerido para facturación electrónica en Costa Rica (productos y servicios).</small>
         </div>
+        <div class="form-group col-md-6" *ngIf="esEmpresaCostaRica()">
+            <label for="partida_arancelaria">Partida arancelaria</label>
+            <input type="text" class="form-control" maxlength="12" inputmode="numeric" [(ngModel)]="producto.partida_arancelaria" name="partida_arancelaria" placeholder="12 dígitos">
+            <small class="text-muted">Obligatoria al exportar un bien cuyo CABYS empieza en 0, 1, 2, 3 o 4.</small>
+        </div>
 
         <h6 class="my-3 font-weight-bold">Precio</h6>
         <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">

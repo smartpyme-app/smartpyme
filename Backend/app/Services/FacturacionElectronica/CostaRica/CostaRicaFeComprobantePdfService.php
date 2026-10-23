@@ -51,7 +51,7 @@ final class CostaRicaFeComprobantePdfService
         $tipoDteCodigo = $this->resolverTipoDteVenta($venta);
         $titulo = match ($tipoDteCodigo) {
             '04' => 'Tiquete electrónico',
-            '11' => 'Factura de exportación',
+            '09', '11' => 'Factura de exportación',
             default => 'Factura electrónica',
         };
 
@@ -107,7 +107,7 @@ final class CostaRicaFeComprobantePdfService
         $titulo = 'Comprobante electrónico';
         $tipoDteRuta = (string) $tipo;
 
-        if (in_array($tipo, ['01', '04', '11'], true)) {
+        if (in_array($tipo, ['01', '04', '09', '11'], true)) {
             $registro = Venta::query()->with(['empresa', 'cliente'])->findOrFail($id);
             $this->assertMismoEmpresa($registro->id_empresa, $idEmpresaUsuario);
             $dte = $registro->dte;
@@ -121,7 +121,7 @@ final class CostaRicaFeComprobantePdfService
             );
             $titulo = match ($tipo) {
                 '04' => 'Tiquete electrónico',
-                '11' => 'Factura de exportación',
+                '09', '11' => 'Factura de exportación',
                 default => 'Factura electrónica',
             };
         } elseif ($tipo === '02') {
@@ -201,10 +201,10 @@ final class CostaRicaFeComprobantePdfService
 
         if (
             $registro instanceof Venta
-            && in_array($tipo, ['01', '11'], true)
+            && in_array($tipo, ['01', '09', '11'], true)
             && trim((string) ($registro->nombre_documento ?? '')) === 'Factura de exportación'
         ) {
-            $tipoDteRuta = '11';
+            $tipoDteRuta = '09';
             $titulo = 'Factura de exportación';
         }
 
@@ -300,13 +300,13 @@ final class CostaRicaFeComprobantePdfService
     private function resolverTipoDteVenta(Venta $venta): string
     {
         $tipo = str_pad((string) ($venta->tipo_dte ?? ''), 2, '0', STR_PAD_LEFT);
-        if (in_array($tipo, ['01', '04', '11'], true)) {
-            return $tipo;
+        if (in_array($tipo, ['01', '04', '09', '11'], true)) {
+            return $tipo === '11' ? '09' : $tipo;
         }
 
         $nombreDoc = trim((string) ($venta->nombre_documento ?? ''));
         if ($nombreDoc === 'Factura de exportación') {
-            return '11';
+            return '09';
         }
 
         $nombre = strtolower($nombreDoc);

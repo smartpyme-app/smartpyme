@@ -19,6 +19,7 @@ import {
 describe('documentoNombreOpciones', () => {
   it('devuelve CR para Costa Rica', () => {
     expect(documentoNombreOpciones({ pais: 'Costa Rica' })).toEqual(DOCUMENTO_NOMBRE_OPCIONES_CR);
+    expect(DOCUMENTO_NOMBRE_OPCIONES_CR.map((o) => o.value)).toContain('Factura de exportación');
   });
 
   it('devuelve HN para Honduras', () => {

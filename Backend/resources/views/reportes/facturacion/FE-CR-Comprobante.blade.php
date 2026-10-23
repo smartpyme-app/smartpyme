@@ -83,6 +83,7 @@
         '03' => 'Nota de crédito electrónica',
         '04' => 'Tiquete electrónico',
         '08' => 'Factura electrónica de compra',
+        '09' => 'Factura electrónica de exportación',
         '11' => 'Factura electrónica de exportación',
     ];
     $nombreTipoNormativo = $tiposNombre[$tipoDocCodigo] ?? ($titulo ?? 'Comprobante electrónico');

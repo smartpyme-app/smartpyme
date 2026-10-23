@@ -27,11 +27,15 @@ final class CostaRicaCreditNoteFromDevolucionMapper
         }
 
         $claveFactura = trim((string) ($facturaOriginal->codigo_generacion ?? ''));
-        if ($claveFactura === '') {
-            throw new InvalidArgumentException('La factura original no tiene clave electrónica (codigo_generacion).');
-        }
+        $referencia = CostaRicaFeEmitService::referenciaNotaSobreComprobante(
+            (string) ($facturaOriginal->tipo_dte ?? ''),
+            $claveFactura
+        );
 
-        $fechaFactura = Carbon::parse($facturaOriginal->fecha)->timezone('America/Costa_Rica')->format('Y-m-d\TH:i:sP');
+        $fechaReferencia = ReferenciaComprobanteCr::fechaEmisionDesdeClave($claveFactura);
+        if ($fechaReferencia === null) {
+            $fechaReferencia = Carbon::parse($facturaOriginal->fecha)->timezone('America/Costa_Rica')->format('Y-m-d\TH:i:sP');
+        }
 
         $saleCond = '01';
         // Moneda/TC de la NC = los de la factura original: Hacienda exige coherencia con el comprobante referenciado.
@@ -74,9 +78,9 @@ final class CostaRicaCreditNoteFromDevolucionMapper
 
         $motivo = (string) ($devolucion->motivo_fe_cr ?: ReferenciaComprobanteCr::MOTIVO_DEVOLUCION);
         $referenced = [[
-            'document_type' => '01',
-            'document_number' => $claveFactura,
-            'emission_date' => $fechaFactura,
+            'document_type' => $referencia['document_type'],
+            'document_number' => $referencia['document_number'],
+            'emission_date' => $fechaReferencia,
             'referenced_code' => ReferenciaComprobanteCr::codigoNota(
                 $motivo,
                 Carbon::parse($facturaOriginal->fecha)->timezone('America/Costa_Rica'),
