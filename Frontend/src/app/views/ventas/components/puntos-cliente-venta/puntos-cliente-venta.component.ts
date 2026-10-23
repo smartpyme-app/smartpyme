@@ -16,6 +16,7 @@ export class PuntosClienteVentaComponent implements OnInit, OnChanges {
   // Datos de puntos
   public puntosInfo: PuntosDisponiblesInfo | null = null;
   public loading: boolean = false;
+  private cargaSeq = 0;
   public mostrarPuntos: boolean = false;
 
   // Configuración del canje
@@ -53,16 +54,27 @@ export class PuntosClienteVentaComponent implements OnInit, OnChanges {
    * Cargar puntos disponibles del cliente
    */
   cargarPuntosCliente(): void {
+    const empresaId = this.empresaId || this.fidelizacionService.empresaIdSesion();
+    if (!this.cliente?.id || !empresaId) {
+      this.loading = false;
+      this.mostrarPuntos = false;
+      this.puntosInfo = null;
+      return;
+    }
+    const seq = ++this.cargaSeq;
     this.loading = true;
-    this.fidelizacionService.getPuntosDisponiblesInfo(this.cliente.id, this.empresaId)
+    this.fidelizacionService
+      .getPuntosDisponiblesInfo(this.cliente.id, empresaId, { includeDetalle: true })
       .subscribe({
         next: (response) => {
+          if (seq !== this.cargaSeq) {
+            return;
+          }
           if (response.success && response.data) {
             this.puntosInfo = response.data;
-            this.mostrarPuntos = this.puntosInfo.puntos_disponibles > 0;
+            this.mostrarPuntos = (this.puntosInfo.puntos_disponibles ?? 0) > 0;
             this.calcularPuntosProximosAExpirar();
-            
-            // Actualizar configuración desde el backend
+
             if (this.puntosInfo.configuracion) {
               this.valorPunto = this.puntosInfo.configuracion.valor_punto || 0.01;
               this.minimoCanje = this.puntosInfo.configuracion.minimo_canje || 1;
@@ -75,10 +87,13 @@ export class PuntosClienteVentaComponent implements OnInit, OnChanges {
           this.loading = false;
         },
         error: (error) => {
+          if (seq !== this.cargaSeq) {
+            return;
+          }
           console.error('Error al cargar puntos del cliente:', error);
           this.mostrarPuntos = false;
           this.loading = false;
-        }
+        },
       });
   }
 
@@ -88,7 +103,7 @@ export class PuntosClienteVentaComponent implements OnInit, OnChanges {
   calcularPuntosProximosAExpirar(): void {
     if (!this.puntosInfo) return;
     
-    this.puntosProximosAExpirar = this.puntosInfo.ganancias_detalle
+    this.puntosProximosAExpirar = (this.puntosInfo.ganancias_detalle ?? [])
       .filter(ganancia => ganancia.dias_para_expirar <= 30 && ganancia.dias_para_expirar >= 0)
       .slice(0, 3); // Solo mostrar las 3 más próximas
   }

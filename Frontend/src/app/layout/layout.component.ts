@@ -84,6 +84,10 @@ export class LayoutComponent implements OnInit {
         this.recargarVistaSiCambioEmpresaContador();
       });
 
+    this.apiService.sesionEmpresaActualizada$
+      .pipe(this.untilDestroyed())
+      .subscribe(() => this.refrescarUsuarioLayout());
+
     this.getAlertSuscription();
     this.checkDtePendingReviewAlert();
   }

@@ -1,4 +1,5 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { finalize } from 'rxjs/operators';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -32,6 +33,7 @@ import { GiftCardsService, GiftCardLookup } from '@services/gift-cards.service';
 import { esFormaPagoGiftCard, montoPagoGiftCardVenta, ventaUsaGiftCard } from '@utils/gift-card.util';
 import { camposDescuentoFacturaDesdePedido } from '@views/pedidos/pedido-form/pedido-descuento.util';
 import { aplicarPrefillCredito, prepararVentaParaFacturarCuota } from '@views/ventas/creditos/creditos-facturar';
+import { urlProductoBuscarSolicitud, resolverProductoSolicitud, etiquetaProductoSolicitud } from '@views/ventas/solicitudes-compra/facturar-solicitud-producto.util';
 import { aplicarPlanAVenta, generarPreviewCuotas, planCuadra, restoreSnapshotVenta, snapshotVentaMontos, sumaMontosCuotas, SnapshotMontosVenta, PreviewCuota } from '@views/ventas/creditos/creditos-cuotas';
 import { MHService } from '@services/MH.service';
 import { RestauranteService } from '@services/restaurante.service';
@@ -182,6 +184,8 @@ export class FacturacionV2Component implements OnInit {
   public descuentoPuntos: number = 0;
   public puntosCliente: number = 0;
   public loadingPuntos: boolean = false;
+  private puntosCargaSeq = 0;
+  private puntosModalCargaSeq = 0;
   public loadingModalPuntos: boolean = false;
   public puntosInfoModal: PuntosDisponiblesInfo | null = null;
   public configuracionModal: ConfiguracionCliente | null = null;
@@ -225,6 +229,7 @@ export class FacturacionV2Component implements OnInit {
     private giftCardsService: GiftCardsService,
     private countryI18n: CountryI18nService,
     private partidaVentaFlow: PartidaVentaFlowService,
+    private cdr: ChangeDetectorRef,
   ) {
     this.router.routeReuseStrategy.shouldReuseRoute = function () {
       return false;
@@ -933,7 +938,7 @@ export class FacturacionV2Component implements OnInit {
             console.log(empresa);
 
             // Solo procesar productos si el cliente existe
-            this.procesarProductosOrdenCompra(ordenCompra.detalles);
+            this.procesarProductosOrdenCompra(ordenCompra.detalles, ordenCompra.id_empresa);
           }else{
             const labelDoc = this.countryI18n.t('country.identity.withTaxIdOrFiscal');
             Swal.fire({
@@ -993,9 +998,25 @@ export class FacturacionV2Component implements OnInit {
   }
 
     // Método para procesar productos de orden de compra
-  public procesarProductosOrdenCompra(detalles: any[]) {
+  public procesarProductosOrdenCompra(detalles: any[], idEmpresaOrden: number) {
     detalles.forEach((detalleCompra: any) => {
-      this.apiService.getAll('producto/buscar-by-code/'+ detalleCompra.codigo).subscribe((producto) => {
+      const url = urlProductoBuscarSolicitud(detalleCompra.codigo, idEmpresaOrden);
+      this.apiService.getAll(url).subscribe((resp: unknown) => {
+        const resuelto = resolverProductoSolicitud(resp);
+
+        if (resuelto.kind === 'origen') {
+          this.agregarLineaSolicitudSinProductoLocal(detalleCompra, resuelto.productoOrigen);
+          const ref = etiquetaProductoSolicitud(detalleCompra, resuelto.productoOrigen);
+          this.alertService.warning(
+            'Producto en empresa solicitante',
+            `${ref}: existe en la empresa que pidió la OC. Elija el producto equivalente en su catálogo o complete la línea.`
+          );
+          return;
+        }
+
+        const producto =
+          resuelto.kind === 'local' || resuelto.kind === 'legacy' ? resuelto.producto : null;
+
         if (producto) {
           const detalle: any = {};
           detalle.cantidad = detalleCompra.cantidad;
@@ -1072,48 +1093,47 @@ export class FacturacionV2Component implements OnInit {
           this.venta.detalles.push(detalle);
           this.sumTotal();
         } else {
-           Swal.fire({
-             title: 'Producto no encontrado',
-             html: `
-               <div class="text-left">
-                 <p><strong>No se encontró el producto para poder facturar.</strong></p>
-                 <p>Debe verificar o crear el producto con el siguiente código:</p>
-                 <ul class="list-unstyled mt-3">
-                   <li><strong>Código del producto:</strong> ${detalleCompra.codigo || 'Sin código'}</li>
-                   <li><strong>Cantidad solicitada:</strong> ${detalleCompra.cantidad || 'No disponible'}</li>
-                 </ul>
-               </div>
-             `,
-             icon: 'warning',
-             confirmButtonText: 'Entendido',
-             confirmButtonColor: '#3085d6'
-           }).then(() => {
-             window.history.back();
-           });
+          this.agregarLineaSolicitudSinProductoLocal(detalleCompra);
+          const ref = etiquetaProductoSolicitud(detalleCompra);
+          this.alertService.warning(
+            'Producto no encontrado',
+            `${ref}: agregue la línea manualmente o cree el producto en su catálogo.`
+          );
         }
-      }, (error) => {
-        Swal.fire({
-          title: 'Error al buscar producto',
-          html: `
-            <div class="text-left">
-              <p><strong>Error al buscar el producto.</strong></p>
-              <p>No se pudo encontrar el producto con el siguiente código:</p>
-              <ul class="list-unstyled mt-3">
-                <li><strong>Código del producto:</strong> ${detalleCompra.codigo || 'Sin código'}</li>
-                <li><strong>Cantidad solicitada:</strong> ${detalleCompra.cantidad || 'No disponible'}</li>
-              </ul>
-            </div>
-          `,
-          icon: 'error',
-          confirmButtonText: 'Entendido',
-          confirmButtonColor: '#3085d6'
-        }).then(() => {
-          window.history.back();
-        });
+      }, () => {
+        this.agregarLineaSolicitudSinProductoLocal(detalleCompra);
+        const ref = etiquetaProductoSolicitud(detalleCompra);
+        this.alertService.warning(
+          'Producto no encontrado',
+          `${ref}: agregue la línea manualmente o cree el producto en su catálogo.`
+        );
       });
     });
 
     this.cargarDocumentos();
+  }
+
+  private agregarLineaSolicitudSinProductoLocal(detalleCompra: any, productoOrigen?: any): void {
+    const detalle: any = {
+      cantidad: detalleCompra.cantidad,
+      descripcion: productoOrigen?.nombre || detalleCompra.nombre_producto || detalleCompra.codigo || 'Producto solicitud',
+      tipo: 'Producto',
+      tipo_gravado: 'gravada',
+      exenta: 0,
+      no_sujeta: 0,
+      cuenta_a_terceros: 0,
+      descuento: 0,
+      descuento_porcentaje: 0,
+      descuento_monto: 0,
+      descuento_is_monto: false,
+      id_vendedor: this.venta.id_vendedor,
+      precio: '0.000000',
+      precio_iva: '0.00',
+      stock: 0,
+    };
+    this.aplicarLineaGravadaDesdePrecio(detalle);
+    this.venta.detalles.push(detalle);
+    this.sumTotal();
   }
 
   totalPorMetodoDePago() {
@@ -3019,6 +3039,10 @@ export class FacturacionV2Component implements OnInit {
   // ==================== FIDELIZACIÓN - PUNTOS ====================
 
   private resetearPuntos(): void {
+    this.puntosCargaSeq++;
+    this.puntosModalCargaSeq++;
+    this.loadingPuntos = false;
+    this.loadingModalPuntos = false;
     this.puntosCanjeados = 0;
     this.descuentoPuntos = 0;
     this.venta.puntos_canjeados = 0;
@@ -3026,29 +3050,54 @@ export class FacturacionV2Component implements OnInit {
   }
 
   public getEmpresaId(): number {
-    return this.apiService.auth_user().empresa.id;
+    return this.fidelizacionService.empresaIdSesion();
   }
 
   private cargarPuntosCliente(): void {
     if (!this.venta.cliente?.id) {
       this.puntosCliente = 0;
+      this.loadingPuntos = false;
       return;
     }
+    const empresaId = this.getEmpresaId();
+    if (!empresaId) {
+      this.puntosCliente = 0;
+      this.loadingPuntos = false;
+      return;
+    }
+    const seq = ++this.puntosCargaSeq;
     this.loadingPuntos = true;
-    this.fidelizacionService.getPuntosDisponiblesInfo(this.venta.cliente.id, this.getEmpresaId())
+    this.cdr.markForCheck();
+    this.fidelizacionService
+      .getPuntosDisponiblesInfo(this.venta.cliente.id, empresaId, { includeDetalle: false })
+      .pipe(
+        finalize(() => {
+          if (seq !== this.puntosCargaSeq) {
+            return;
+          }
+          this.loadingPuntos = false;
+          this.cdr.markForCheck();
+        })
+      )
       .subscribe({
         next: (response) => {
+          if (seq !== this.puntosCargaSeq) {
+            return;
+          }
           if (response.success && response.data) {
-            this.puntosCliente = response.data.puntos_disponibles;
+            this.puntosCliente = Number(response.data.puntos_disponibles ?? 0);
           } else {
             this.puntosCliente = 0;
           }
-          this.loadingPuntos = false;
+          this.cdr.markForCheck();
         },
         error: () => {
+          if (seq !== this.puntosCargaSeq) {
+            return;
+          }
           this.puntosCliente = 0;
-          this.loadingPuntos = false;
-        }
+          this.cdr.markForCheck();
+        },
       });
   }
 
@@ -3063,10 +3112,32 @@ export class FacturacionV2Component implements OnInit {
   }
 
   private cargarDatosModal(): void {
+    const empresaId = this.getEmpresaId();
+    if (!this.venta.cliente?.id || !empresaId) {
+      this.puntosInfoModal = null;
+      this.configuracionModal = null;
+      this.loadingModalPuntos = false;
+      return;
+    }
+    const seq = ++this.puntosModalCargaSeq;
     this.loadingModalPuntos = true;
-    this.fidelizacionService.getPuntosDisponiblesInfo(this.venta.cliente.id, this.getEmpresaId())
+    this.cdr.markForCheck();
+    this.fidelizacionService
+      .getPuntosDisponiblesInfo(this.venta.cliente.id, empresaId, { includeDetalle: true })
+      .pipe(
+        finalize(() => {
+          if (seq !== this.puntosModalCargaSeq) {
+            return;
+          }
+          this.loadingModalPuntos = false;
+          this.cdr.markForCheck();
+        })
+      )
       .subscribe({
         next: (response) => {
+          if (seq !== this.puntosModalCargaSeq) {
+            return;
+          }
           if (response.success && response.data) {
             this.puntosInfoModal = response.data;
             this.configuracionModal = response.data.configuracion || null;
@@ -3082,13 +3153,16 @@ export class FacturacionV2Component implements OnInit {
             this.puntosInfoModal = null;
             this.configuracionModal = null;
           }
-          this.loadingModalPuntos = false;
+          this.cdr.markForCheck();
         },
         error: () => {
+          if (seq !== this.puntosModalCargaSeq) {
+            return;
+          }
           this.puntosInfoModal = null;
           this.configuracionModal = null;
-          this.loadingModalPuntos = false;
-        }
+          this.cdr.markForCheck();
+        },
       });
   }
 
