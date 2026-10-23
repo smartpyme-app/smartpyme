@@ -72,7 +72,9 @@ final class CostaRicaInvoiceFromVentaMapper
         // keys no secuenciales y desalinear servicios gravados vs mercancías gravadas.
         $esExportacion = CostaRicaFeEmitService::tipoDocumentoExportacion(CostaRicaFeEmitService::nombreDocumentoVenta($venta)) !== null;
         $lineItems = array_values($venta->detalles->map(
-            fn (Detalle $d) => $this->convertirMontosLineaFe($this->linea($d, $empresa, $venta, $esExportacion), $factorMoneda)
+            fn (Detalle $d) => $this->alinearImpuestoLineaXmlFeCr(
+                $this->convertirMontosLineaFe($this->linea($d, $empresa, $venta, $esExportacion), $factorMoneda)
+            )
         )->all());
 
         $payload = [
@@ -673,6 +675,31 @@ final class CostaRicaInvoiceFromVentaMapper
      * @param  array<string, mixed>  $line
      * @return array<string, mixed>
      */
+    /**
+     * Hacienda -488: TotalDesgloseImpuesto se emite con 2 decimales; el Monto del impuesto en línea debe coincidir.
+     */
+    private function alinearImpuestoLineaXmlFeCr(array $line): array
+    {
+        $iva = round((float) ($line['total_tax'] ?? 0), 2);
+        $line['total_tax'] = $iva;
+
+        if (isset($line['taxes']) && is_array($line['taxes'])) {
+            foreach ($line['taxes'] as $i => $tax) {
+                if (! is_array($tax)) {
+                    continue;
+                }
+                if ((float) ($tax['amount'] ?? 0) > 0.00001) {
+                    $line['taxes'][$i]['amount'] = $iva;
+                }
+            }
+        }
+
+        $sub = (float) ($line['sub_total'] ?? 0);
+        $line['total'] = $this->montoTotalLineaCr($sub, $iva, 0.0);
+
+        return $line;
+    }
+
     private function convertirMontosLineaFe(array $line, float $factor): array
     {
         if (abs($factor - 1.0) < 1e-12) {
@@ -2672,7 +2699,7 @@ final class CostaRicaInvoiceFromVentaMapper
                 if ($rate <= 0.00001 || $amount <= 0.00001) {
                     continue;
                 }
-                $esperado = round($base * ($rate / 100), 5);
+                $esperado = round($base * ($rate / 100), 2);
                 if (abs($amount - $esperado) > $tolLinea) {
                     throw new InvalidArgumentException(sprintf(
                         'Línea %d: Monto impuesto %.5f no coincide con BaseImponible×(Tarifa/100) (esperado %.5f).',
