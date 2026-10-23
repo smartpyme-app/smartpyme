@@ -51,10 +51,10 @@ class CotizacionVentasLimitadoAccionesTest extends TestCase
         $this->assertTrue(CotizacionConstants::puedeCrearCotizacion((object) ['tipo' => 'Ventas']));
     }
 
-    public function test_solo_ventas_filtra_listado_por_usuario_no_ventas_limitado(): void
+    public function test_ventas_y_ventas_limitado_filtran_listado_por_usuario(): void
     {
         $this->assertTrue(CotizacionConstants::soloListadoCotizacionesPropias((object) ['tipo' => 'Ventas']));
-        $this->assertFalse(CotizacionConstants::soloListadoCotizacionesPropias((object) ['tipo' => 'Ventas Limitado']));
+        $this->assertTrue(CotizacionConstants::soloListadoCotizacionesPropias((object) ['tipo' => 'Ventas Limitado']));
         $this->assertFalse(CotizacionConstants::soloListadoCotizacionesPropias((object) ['tipo' => 'Administrador']));
 
         $ventasConRolLimitado = new class {
@@ -64,6 +64,6 @@ class CotizacionVentasLimitadoAccionesTest extends TestCase
                 return $role === 'ventas_limitado';
             }
         };
-        $this->assertFalse(CotizacionConstants::soloListadoCotizacionesPropias($ventasConRolLimitado));
+        $this->assertTrue(CotizacionConstants::soloListadoCotizacionesPropias($ventasConRolLimitado));
     }
 }

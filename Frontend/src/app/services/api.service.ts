@@ -850,14 +850,14 @@ export class ApiService {
 
   /**
    * Bloqueos de UI/API extra (facturar cotización desde menú, editar, detalles, cambiar estado): rol Ventas + opción empresa.
-   * El listado solo cotizaciones propias aplica a Ventas (vendedor), no a Ventas limitado.
+   * El listado solo cotizaciones propias aplica a Ventas y Ventas limitado (como en ventas).
    */
   restriccionesCotizacionesVendedoresActivas(): boolean {
     return this.isVentas() && this.empresaBloqueaCotizacionesVendedores();
   }
 
-  /** Vendedor Ventas: solo sus cotizaciones en el listado. Ventas limitado ve las de la empresa. */
+  /** Ventas y Ventas limitado: solo sus cotizaciones en el listado. */
   soloVeCotizacionesPropiasEnListado(): boolean {
-    return this.isVentas() && !this.isVentasLimitado();
+    return this.isVentas();
   }
 }
