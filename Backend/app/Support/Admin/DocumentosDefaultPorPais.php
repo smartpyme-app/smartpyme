@@ -30,6 +30,7 @@ final class DocumentosDefaultPorPais
         if ($pais === FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
             $nombres = [
                 self::CR_FACTURA,
+                'Factura de exportación',
                 self::CR_TIQUETE,
                 'Cotización',
                 'Recibo',
@@ -45,6 +46,7 @@ final class DocumentosDefaultPorPais
                 'seed' => [
                     self::CR_TIQUETE,
                     self::CR_FACTURA,
+                    'Factura de exportación',
                     'Cotización',
                     'Orden de compra',
                 ],

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaDgtUbicacionCatalogService;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaHaciendaPublicApiService;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaTipoCambioService;
+use App\Support\FacturacionElectronica\TipoIdentificacionReceptor;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -60,13 +61,26 @@ class CostaRicaFeCatalogController extends Controller
         // No usar min/max sobre el texto con guiones: puede superar 14 caracteres y fallar antes de normalizar.
         $request->validate([
             'identificacion' => 'required|string|max:64',
+            'tipo' => 'nullable|string|max:2',
         ]);
 
-        $id = preg_replace('/\D/', '', (string) $request->input('identificacion'));
-        if (strlen($id) < 9 || strlen($id) > 12) {
-            return response()->json([
-                'error' => 'identificacion debe tener entre 9 y 12 dígitos (sin guiones).',
-            ], 422);
+        $raw = (string) $request->input('identificacion');
+        $tipo = trim((string) $request->input('tipo', ''));
+        $esJuridica = $tipo === '02' || ($tipo === '' && preg_match('/[A-Za-z]/', $raw) === 1);
+        if ($esJuridica) {
+            $id = TipoIdentificacionReceptor::normalizarNumeroCostaRica('02', $raw);
+            if (strlen($id) !== 10) {
+                return response()->json([
+                    'error' => 'identificacion jurídica debe tener 10 caracteres alfanuméricos.',
+                ], 422);
+            }
+        } else {
+            $id = preg_replace('/\D/', '', $raw) ?? '';
+            if (strlen($id) < 9 || strlen($id) > 12) {
+                return response()->json([
+                    'error' => 'identificacion debe tener entre 9 y 12 dígitos (sin guiones).',
+                ], 422);
+            }
         }
 
         $result = $api->contribuyente($id);

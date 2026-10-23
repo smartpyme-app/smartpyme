@@ -67,6 +67,7 @@ class DocumentosDefaultPorPaisTest extends TestCase
 
         $this->assertContains(DocumentosDefaultPorPais::CR_TIQUETE, $nombres);
         $this->assertContains(DocumentosDefaultPorPais::CR_FACTURA, $nombres);
+        $this->assertContains('Factura de exportación', $nombres);
         $this->assertNotContains('Crédito fiscal', $nombres);
     }
 }

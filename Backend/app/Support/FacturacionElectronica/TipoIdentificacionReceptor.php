@@ -26,6 +26,11 @@ final class TipoIdentificacionReceptor
         if ($guardado !== null && in_array($guardado, self::CODIGOS_CR, true)) {
             return $guardado;
         }
+        if (self::cedulaJuridicaConLetra($nitDigits) || self::cedulaJuridicaConLetra($duiDigits)) {
+            return '02';
+        }
+        $nitDigits = preg_replace('/\D/', '', $nitDigits) ?? '';
+        $duiDigits = preg_replace('/\D/', '', $duiDigits) ?? '';
         if (strlen($nitDigits) >= 9) {
             return '02';
         }
@@ -56,8 +61,25 @@ final class TipoIdentificacionReceptor
         return $tipo;
     }
 
+    /**
+     * Tipo 02 conserva letras (cédula jurídica). El resto queda solo dígitos.
+     */
+    public static function normalizarNumeroCostaRica(string $tipo, string $raw): string
+    {
+        if ($tipo === '02') {
+            return preg_replace('/[^0-9A-Za-z]/', '', $raw) ?? '';
+        }
+
+        return preg_replace('/\D/', '', $raw) ?? '';
+    }
+
     public static function numeroCostaRica(string $tipo, string $nitDigits, string $duiDigits): ?string
     {
+        if ($tipo === '02') {
+            $nitDigits = self::normalizarNumeroCostaRica('02', $nitDigits);
+            $duiDigits = self::normalizarNumeroCostaRica('02', $duiDigits);
+        }
+
         if (in_array($tipo, ['02', '04'], true) && strlen($nitDigits) >= 9) {
             return $nitDigits;
         }
@@ -79,7 +101,7 @@ final class TipoIdentificacionReceptor
      */
     public static function estructuraValidaCostaRicaFactura(string $tipo, string $numeroSoloDigitos): bool
     {
-        $n = preg_replace('/\D/', '', $numeroSoloDigitos) ?? '';
+        $n = self::normalizarNumeroCostaRica($tipo, $numeroSoloDigitos);
         if ($n === '' || preg_match('/^0+$/', $n) === 1) {
             return false;
         }
@@ -103,6 +125,18 @@ final class TipoIdentificacionReceptor
         }
 
         return $duiVal ?: $nitClean;
+    }
+
+    /**
+     * 10 alfanuméricos con al menos una letra, ya sin espacios ni guiones. Va antes del conteo de dígitos.
+     */
+    private static function cedulaJuridicaConLetra(string $raw): bool
+    {
+        $n = preg_replace('/[\s-]/', '', $raw) ?? '';
+
+        return strlen($n) === 10
+            && preg_match('/^[0-9A-Za-z]{10}$/', $n) === 1
+            && preg_match('/[A-Za-z]/', $n) === 1;
     }
 
     private static function tieneValor(?string $v): bool

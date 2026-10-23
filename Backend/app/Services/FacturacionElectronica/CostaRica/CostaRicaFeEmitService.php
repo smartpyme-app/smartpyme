@@ -8,20 +8,25 @@ use App\Models\Compras\Gastos\Gasto;
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Venta;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
+use App\Services\Ventas\VentaService;
+use App\Support\FacturacionElectronica\CostaRica\ReferenciaComprobanteCr;
 use App\Support\FacturacionElectronica\CostaRicaFeDteDocumento;
+use App\Support\FacturacionElectronica\TipoIdentificacionReceptor;
 use App\Support\FacturacionElectronica\XmlRespuestaHaciendaCr;
 use DazzaDev\DgtCr\Client;
 use DOMDocument;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use ReflectionClass;
 use ReflectionException;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeNota23Catalog;
+use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
 
 /**
- * Emisión FE Costa Rica: factura 01 (incl. factura de exportación), tiquete 04, nota crédito 03, nota débito 02 (dazza-dev/dgt-cr).
+ * Emisión FE Costa Rica: factura 01, factura de exportación 09, tiquete 04, nota crédito 03, nota débito 02 (dazza-dev/dgt-cr).
  */
 final class CostaRicaFeEmitService
 {
@@ -45,18 +50,28 @@ final class CostaRicaFeEmitService
         $this->assertEmpresaCr($venta->empresa);
         $this->assertMonedaDocumentoValidaCr($venta->currency_code, $venta->exchange_rate, 'la venta');
         $this->assertDatosExoneracionCrSiAplica($venta);
-        if (! $this->esDocumentoFacturaCr($venta->nombre_documento)) {
+        $nombreDocumento = self::nombreDocumentoVenta($venta);
+        $esExportacion = $this->esDocumentoExportacionCr($nombreDocumento);
+        if (! $esExportacion && ! $this->esDocumentoFacturaCr($nombreDocumento)) {
             throw new RuntimeException('Use emisión de tiquete para documentos tipo Ticket/Tiquete.');
         }
         if ($this->ventaTieneClaveFeCr($venta)) {
             throw new RuntimeException('La venta ya tiene comprobante electrónico emitido (clave registrada).');
         }
 
+        $this->asignarCorrelativoSiRechazado($venta);
         $sec = $this->secuencialDesdeCorrelativo($venta->correlativo);
         $data = $this->mapper->buildDocumentData($venta, $venta->empresa, $sec);
-        $this->mapper->assertReceptorFacturaElectronicaCr($data['receiver']);
+        $data = $this->adjuntarReferenciasSustitucionORechazo($venta, $data);
+        if ($esExportacion) {
+            $this->mapper->assertReceptorFacturaExportacionCr($data['receiver']);
+        } else {
+            $this->mapper->assertReceptorFacturaElectronicaCr($data['receiver']);
+        }
 
-        return $this->enviarYPersistirVenta($venta, 'invoice', '01', 'FacturaElectronica', $data);
+        $emision = self::parametrosEmisionFactura($nombreDocumento);
+
+        return $this->enviarYPersistirVenta($venta, $emision['dgt_type'], $emision['tipo_dte'], $emision['tipo_nombre'], $data);
     }
 
     /**
@@ -75,8 +90,10 @@ final class CostaRicaFeEmitService
             throw new RuntimeException('La venta ya tiene comprobante electrónico emitido (clave registrada).');
         }
 
+        $this->asignarCorrelativoSiRechazado($venta);
         $sec = $this->secuencialDesdeCorrelativo($venta->correlativo);
         $data = $this->mapper->buildTicketDocumentData($venta, $venta->empresa, $sec);
+        $data = $this->adjuntarReferenciasSustitucionORechazo($venta, $data);
 
         return $this->enviarYPersistirVenta($venta, 'ticket', '04', 'TiqueteElectronico', $data);
     }
@@ -183,12 +200,15 @@ final class CostaRicaFeEmitService
                 $e,
                 $client,
                 $data,
-                function (string $clave, array $estado) use ($client, $devolucion): array {
+                function (string $clave, array $estado) use ($client, $devolucion, $data): array {
                     $devolucion->codigo_generacion = $clave;
                     $devolucion->tipo_dte = '03';
                     $devolucion->sello_mh = $clave;
                     $devolucion->dte = $this->persistirDteCrAceptado($client, $estado);
                     $devolucion->save();
+                    if ($devolucion->venta instanceof Venta) {
+                        $this->guardarCodigoNotaAnulacion($devolucion->venta, $data);
+                    }
 
                     return [
                         'clave' => $clave,
@@ -222,6 +242,7 @@ final class CostaRicaFeEmitService
         $devolucion->sello_mh = $clave;
         $devolucion->dte = $this->persistirDteCrAceptado($client, $estado);
         $devolucion->save();
+        $this->guardarCodigoNotaAnulacion($ventaOrigen, $data);
 
         return [
             'clave' => $clave,
@@ -229,6 +250,19 @@ final class CostaRicaFeEmitService
             'detalle_estado' => $estado,
             'devolucion' => $devolucion->fresh(),
         ];
+    }
+
+    /**
+     * Código de referencia de la nota de débito. Motivo fijo: corrige monto.
+     * Mismo mes → 02. Mes anterior → 14.
+     */
+    public static function codigoReferenciaNotaDebito(\DateTimeInterface $fechaFactura, \DateTimeInterface $fechaNota): string
+    {
+        return ReferenciaComprobanteCr::codigoNota(
+            ReferenciaComprobanteCr::MOTIVO_CORRIGE_MONTO,
+            $fechaFactura,
+            $fechaNota,
+        );
     }
 
     /**
@@ -277,6 +311,7 @@ final class CostaRicaFeEmitService
         );
 
         $claveFactura = (string) $venta->codigo_generacion;
+        $referenciaNd = self::referenciaNotaSobreComprobante((string) ($venta->tipo_dte ?? ''), $claveFactura);
         $fechaFactura = \Carbon\Carbon::parse($venta->fecha)->timezone('America/Costa_Rica')->format('Y-m-d\TH:i:sP');
 
         $cabys = preg_replace('/\D/', '', (string) $empresa->getCustomConfigValue('facturacion_fe', 'cabys_default', null));
@@ -350,10 +385,13 @@ final class CostaRicaFeEmitService
             'payments' => $this->mapper->pagosDesdeMonto(round($montoLinea, 2)),
             'summary' => $summary,
             'referenced_documents' => [[
-                'document_type' => '01',
-                'document_number' => $claveFactura,
+                'document_type' => $referenciaNd['document_type'],
+                'document_number' => $referenciaNd['document_number'],
                 'emission_date' => $fechaFactura,
-                'referenced_code' => '02',
+                'referenced_code' => self::codigoReferenciaNotaDebito(
+                    \Carbon\Carbon::parse($venta->fecha)->timezone('America/Costa_Rica'),
+                    \Carbon\Carbon::now('America/Costa_Rica'),
+                ),
                 'reason' => mb_substr(strip_tags($motivo ?: 'Corrección de montos'), 0, 180),
             ]],
         ]);
@@ -583,9 +621,92 @@ final class CostaRicaFeEmitService
         return $n === 'factura'
             || str_contains($n, 'factura electrónica')
             || str_contains($n, 'credito fiscal')
-            || str_contains($n, 'crédito fiscal')
-            || str_contains($n, 'exportación')
-            || str_contains($n, 'exportacion');
+            || str_contains($n, 'crédito fiscal');
+    }
+
+    private function esDocumentoExportacionCr(?string $nombreDocumento): bool
+    {
+        return self::tipoDocumentoExportacion((string) $nombreDocumento) !== null;
+    }
+
+    /**
+     * Nombre del tipo de documento sin disparar el accessor que consulta la tabla documentos.
+     */
+    public static function nombreDocumentoVenta(Venta $venta): string
+    {
+        $attrs = $venta->getAttributes();
+        if (array_key_exists('nombre_documento', $attrs) && trim((string) $attrs['nombre_documento']) !== '') {
+            return trim((string) $attrs['nombre_documento']);
+        }
+
+        if ($venta->relationLoaded('documento') && $venta->documento !== null) {
+            return trim((string) ($venta->documento->nombre ?? ''));
+        }
+
+        return '';
+    }
+
+    /**
+     * Tipo de comprobante del consecutivo (09) cuando el nombre es una factura de exportación.
+     * Null deja la factura nacional en 01.
+     */
+    public static function tipoDocumentoExportacion(string $nombreDocumento): ?string
+    {
+        $n = mb_strtolower(trim($nombreDocumento), 'UTF-8');
+        if (str_contains($n, 'exportación') || str_contains($n, 'exportacion')) {
+            return '09';
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{dgt_type: string, tipo_dte: string, tipo_nombre: string}
+     */
+    public static function parametrosEmisionFactura(string $nombreDocumento): array
+    {
+        $tipo = self::tipoDocumentoExportacion($nombreDocumento);
+        if ($tipo !== null) {
+            return [
+                'dgt_type' => 'export-invoice',
+                'tipo_dte' => $tipo,
+                'tipo_nombre' => 'FacturaElectronicaExportacion',
+            ];
+        }
+
+        return [
+            'dgt_type' => 'invoice',
+            'tipo_dte' => '01',
+            'tipo_nombre' => 'FacturaElectronica',
+        ];
+    }
+
+    /**
+     * Referencia de NC/ND. FEE (tipo_dte 09) usa el tipo 19; si falta la clave, no se degrada a 01.
+     *
+     * @return array{document_type: string, document_number: string}
+     */
+    public static function referenciaNotaSobreComprobante(string $tipoDte, string $clave): array
+    {
+        $clave = trim($clave);
+        if (strlen($clave) !== 50) {
+            throw new InvalidArgumentException('La clave del comprobante referenciado debe tener 50 caracteres.');
+        }
+
+        $tipo = str_pad(trim($tipoDte), 2, '0', STR_PAD_LEFT);
+
+        return [
+            'document_type' => self::tipoReferenciaNotaDesdeTipoDte($tipo),
+            'document_number' => $clave,
+        ];
+    }
+
+    /** tipo_dte 09 (FEE); 11 = legado en PDF antes de alinear con 09. */
+    private static function tipoReferenciaNotaDesdeTipoDte(string $tipoDte): string
+    {
+        return in_array($tipoDte, ['09', '11'], true)
+            ? ReferenciaComprobanteCr::TIPO_EXPORTACION
+            : '01';
     }
 
     private function esDocumentoTiqueteCr(?string $nombreDocumento): bool
@@ -610,6 +731,7 @@ final class CostaRicaFeEmitService
      */
     private function enviarYPersistirVenta(Venta $venta, string $dgtType, string $tipoDte, string $tipoNombre, array $data): array
     {
+        $data = $this->adjuntarReferenciasSustitucionORechazo($venta, $data);
         $empresa = $venta->empresa;
         $client = $this->factory->make($empresa);
         $this->configurarClienteEmisorReceptor($client, $data);
@@ -620,34 +742,41 @@ final class CostaRicaFeEmitService
         try {
             $envio = $client->sendDocument();
         } catch (Throwable $e) {
-            $recuperado = $this->intentarRecuperarEmisionSiConsecutivoDuplicado(
-                $e,
-                $client,
-                $data,
-                function (string $clave, array $estado) use ($client, $venta, $tipoDte): array {
-                    $venta->codigo_generacion = $clave;
-                    $venta->tipo_dte = $tipoDte;
-                    $venta->sello_mh = $clave;
-                    $venta->dte = $this->persistirDteCrAceptado($client, $estado);
-                    $venta->save();
+            try {
+                $recuperado = $this->intentarRecuperarEmisionSiConsecutivoDuplicado(
+                    $e,
+                    $client,
+                    $data,
+                    function (string $clave, array $estado) use ($client, $venta, $tipoDte): array {
+                        $venta->codigo_generacion = $clave;
+                        $venta->tipo_dte = $tipoDte;
+                        $venta->sello_mh = $clave;
+                        $venta->dte = $this->persistirDteCrAceptado($client, $estado);
+                        $this->olvidarClaveRechazada($venta);
+                        $venta->save();
 
-                    return [
-                        'clave' => $clave,
-                        'aceptada' => true,
-                        'detalle_estado' => $estado,
-                        'venta' => $venta->fresh(),
-                    ];
-                }
-            );
+                        return [
+                            'clave' => $clave,
+                            'aceptada' => true,
+                            'detalle_estado' => $estado,
+                            'venta' => $venta->fresh(),
+                        ];
+                    }
+                );
+            } catch (CostaRicaFeEmisionFallidaException $rechazo) {
+                $this->recordarClaveRechazada($venta, $rechazo);
+                throw $rechazo;
+            }
             if ($recuperado !== null) {
                 return $recuperado;
             }
             Log::error('FE CR sendDocument', ['venta' => $venta->id, 'tipo' => $dgtType, 'error' => $e->getMessage()]);
+            $claveFallo = $this->persistirClaveSiFalloEnvio($venta, $client);
             [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
             throw new CostaRicaFeEmisionFallidaException(
                 'Error al enviar el comprobante a Hacienda: '.$e->getMessage(),
                 $data,
-                null,
+                $claveFallo,
                 null,
                 $xmlSin,
                 $xmlFirm,
@@ -656,13 +785,19 @@ final class CostaRicaFeEmitService
         }
 
         $clave = $client->getDocumentKey();
-        $estado = $this->assertEstadoHaciendaAceptadoOFallar($client, $clave, $data);
+        try {
+            $estado = $this->assertEstadoHaciendaAceptadoOFallar($client, $clave, $data);
+        } catch (CostaRicaFeEmisionFallidaException $e) {
+            $this->recordarClaveRechazada($venta, $e);
+            throw $e;
+        }
 
         $venta->codigo_generacion = $clave;
         $venta->tipo_dte = $tipoDte;
         /** Igual criterio práctico que FE SV: sello_mh informado para listados/UI; valor = clave DGT (50 caracteres). */
         $venta->sello_mh = $clave;
         $venta->dte = $this->persistirDteCrAceptado($client, $estado);
+        $this->olvidarClaveRechazada($venta);
         $venta->save();
 
         return [
@@ -671,6 +806,99 @@ final class CostaRicaFeEmitService
             'detalle_estado' => $estado,
             'venta' => $venta->fresh(),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function adjuntarReferenciasSustitucionORechazo(Venta $venta, array $data): array
+    {
+        if (! empty($data['referenced_documents'])) {
+            return $data;
+        }
+
+        $refs = $this->mapper->referencedDocumentsSustitucionORechazo($venta);
+        if ($refs === []) {
+            return $data;
+        }
+
+        $data['referenced_documents'] = $refs;
+
+        return $data;
+    }
+
+    private function persistirClaveSiFalloEnvio(Venta $venta, Client $client): ?string
+    {
+        try {
+            $clave = trim((string) $client->getDocumentKey());
+        } catch (Throwable) {
+            return null;
+        }
+        if ($clave === '') {
+            return null;
+        }
+
+        $this->guardarClaveRechazada($venta, $clave);
+        if ($venta->isDirty('clave_rechazada')) {
+            $venta->save();
+        }
+
+        return $clave;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function guardarCodigoNotaAnulacion(Venta $venta, array $data): void
+    {
+        if (! Schema::hasColumn('ventas', 'codigo_nota_anulacion')) {
+            return;
+        }
+
+        $refs = $data['referenced_documents'] ?? null;
+        $codigo = is_array($refs) ? trim((string) ($refs[0]['referenced_code'] ?? '')) : '';
+        if (! in_array($codigo, ['01', '13'], true)) {
+            return;
+        }
+
+        $venta->codigo_nota_anulacion = $codigo;
+        if ($venta->isDirty('codigo_nota_anulacion')) {
+            $venta->save();
+        }
+    }
+
+    private function recordarClaveRechazada(Venta $venta, CostaRicaFeEmisionFallidaException $e): void
+    {
+        $estado = $e->getDetalleEstado();
+        $status = is_array($estado) ? $this->normalizarIndEstadoHacienda($estado['status'] ?? null) : '';
+        if ($status !== 'rechazado') {
+            return;
+        }
+
+        $this->guardarClaveRechazada($venta, (string) ($e->getClave() ?? ''));
+        if ($venta->isDirty('clave_rechazada')) {
+            $venta->save();
+        }
+    }
+
+    private function guardarClaveRechazada(Venta $venta, string $clave): void
+    {
+        $clave = trim($clave);
+        if ($clave === '' || ! Schema::hasColumn('ventas', 'clave_rechazada')) {
+            return;
+        }
+
+        $venta->clave_rechazada = $clave;
+    }
+
+    private function olvidarClaveRechazada(Venta $venta): void
+    {
+        if (! Schema::hasColumn('ventas', 'clave_rechazada')) {
+            return;
+        }
+
+        $venta->clave_rechazada = null;
     }
 
     /**
@@ -936,11 +1164,17 @@ final class CostaRicaFeEmitService
     {
         $client->setIssuer([
             'identification_type' => $data['issuer']['identification_type'],
-            'identification_number' => $this->soloDigitos($data['issuer']['identification_number']),
+            'identification_number' => $this->numeroIdentificacionParaApi(
+                (string) ($data['issuer']['identification_type'] ?? ''),
+                (string) ($data['issuer']['identification_number'] ?? '')
+            ),
         ]);
         $client->setReceiver([
             'identification_type' => $data['receiver']['identification_type'],
-            'identification_number' => $this->soloDigitos($data['receiver']['identification_number']),
+            'identification_number' => $this->numeroIdentificacionParaApi(
+                (string) ($data['receiver']['identification_type'] ?? ''),
+                (string) ($data['receiver']['identification_number'] ?? '')
+            ),
         ]);
     }
 
@@ -971,6 +1205,33 @@ final class CostaRicaFeEmitService
         );
     }
 
+    /**
+     * Hacienda ya registró el consecutivo del XML rechazado (-99 si se reutiliza).
+     * Solo entonces se toma el siguiente correlativo del documento de la venta.
+     */
+    public static function debeRenumerarCorrelativoTrasRechazo(
+        bool $columnaClaveRechazadaExiste,
+        ?string $claveRechazada,
+        bool $tieneClaveFeAceptada
+    ): bool {
+        if (! $columnaClaveRechazadaExiste || $tieneClaveFeAceptada) {
+            return false;
+        }
+
+        return trim((string) $claveRechazada) !== '';
+    }
+
+    private function asignarCorrelativoSiRechazado(Venta $venta): void
+    {
+        $columna = Schema::hasColumn('ventas', 'clave_rechazada');
+        $clave = $columna ? (string) ($venta->clave_rechazada ?? '') : '';
+        if (! self::debeRenumerarCorrelativoTrasRechazo($columna, $clave, $this->ventaTieneClaveFeCr($venta))) {
+            return;
+        }
+
+        (new VentaService())->asignarCorrelativo($venta, (int) $venta->id_documento);
+    }
+
     private function compraTieneClaveFeCr(Compra $compra): bool
     {
         return trim((string) ($compra->codigo_generacion ?? '')) !== '';
@@ -989,6 +1250,15 @@ final class CostaRicaFeEmitService
     private function soloDigitos(string $s): string
     {
         return preg_replace('/\D/', '', $s) ?? '';
+    }
+
+    private function numeroIdentificacionParaApi(string $tipo, string $numero): string
+    {
+        if ($tipo === '02') {
+            return TipoIdentificacionReceptor::normalizarNumeroCostaRica('02', $numero);
+        }
+
+        return $this->soloDigitos($numero);
     }
 
     /**
@@ -1394,6 +1664,9 @@ final class CostaRicaFeEmitService
         $status = $this->normalizarIndEstadoHacienda($estado['status'] ?? null);
 
         if ($status === 'rechazado') {
+            if ($model instanceof Venta) {
+                $this->guardarClaveRechazada($model, $clave);
+            }
             $model->codigo_generacion = null;
             $model->sello_mh = null;
             $model->tipo_dte = null;

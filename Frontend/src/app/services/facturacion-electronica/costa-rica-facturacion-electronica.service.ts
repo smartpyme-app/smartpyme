@@ -4,14 +4,14 @@ import { ApiService } from '@services/api.service';
 import { errorEmisionFeCr } from './fe-cr-http-error.util';
 
 /**
- * FE Costa Rica: factura 01, tiquete 04, nota crédito 03 (devolución), nota débito 02.
+ * FE Costa Rica: factura 01, exportación 09, tiquete 04, nota crédito 03 (devolución), nota débito 02.
  */
 @Injectable({ providedIn: 'root' })
 export class CostaRicaFacturacionElectronicaService {
   constructor(private readonly api: ApiService) {}
 
   /**
-   * Factura / Crédito fiscal → 01; Ticket / Tiquete → 04.
+   * Factura / exportación / crédito fiscal → emitirFeCrVenta (01 o 09); Ticket / Tiquete → 04.
    */
   emitirComprobanteVenta(venta: any): Promise<any> {
     const doc = (venta.nombre_documento || '').toLowerCase();

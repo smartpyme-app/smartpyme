@@ -1461,7 +1461,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       this.venta = v;
       this.correoEnvioDte = '';
       this.openModal(template);
-      if (!this.venta.dte && !this.venta.dte_en_s3) {
+      if (!this.venta.dte && !this.venta.dte_en_s3 && !this.esReemisionRechazoCr()) {
         this.emitirDTE();
       }
     };
@@ -1507,6 +1507,31 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
           ? p['error']
           : '';
     return typeof msg === 'string' && msg.trim() !== '';
+  }
+
+  esReemisionRechazoCr(venta: any = this.venta): boolean {
+    if (!this.esFeCostaRica() || !venta || venta.codigo_generacion) {
+      return false;
+    }
+    if (venta.clave_rechazada) {
+      return true;
+    }
+    const intento = venta.fe_cr_intento_emision;
+    const status = String(intento?.detalle_estado?.status ?? '').toLowerCase();
+    return status === 'rechazado' && !!intento?.clave;
+  }
+
+  /** Comprobante nuevo con referencia 10/16. No reenvía el XML rechazado. */
+  reemitirComprobanteRechazado(): void {
+    const clave = String(
+      this.venta?.clave_rechazada || this.venta?.fe_cr_intento_emision?.clave || ''
+    ).trim();
+    this.venta = {
+      ...this.venta,
+      ...(clave ? { clave_rechazada: clave } : {}),
+      fe_cr_intento_emision: undefined,
+    };
+    this.emitirDTE();
   }
 
   emitirDTE() {
@@ -1872,7 +1897,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
               'Comprobante rechazado en Hacienda',
               typeof messages === 'string' && messages
                 ? messages
-                : 'Se quitó la clave en el sistema; corrija los datos y vuelva a emitir.'
+                : 'Corrija los datos y use Reemitir. Se crea un comprobante nuevo que referencia la clave rechazada. No se anula con nota de crédito.'
             );
           } else if (ok) {
             this.alertService.success('Estado en Hacienda', 'Comprobante aceptado.');
@@ -1901,6 +1926,9 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
    */
   esVentaFacturaParaNotasCr(venta: any): boolean {
     if (!this.esFeCostaRica() || !venta) {
+      return false;
+    }
+    if (venta.clave_rechazada && !venta.codigo_generacion) {
       return false;
     }
     const n = String(venta.nombre_documento || '').toLowerCase();

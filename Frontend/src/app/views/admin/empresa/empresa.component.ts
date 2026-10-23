@@ -368,6 +368,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
         this.cdr.markForCheck();
         try {
             this.normalizarRtnHonduras();
+            this.normalizarIdentificacionEmisorCr();
             if (this.empresa) {
                 this.empresa.impresion_en_facturacion = isImpresionEnFacturacionActiva(this.empresa);
             }
@@ -656,7 +657,28 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
         if (codPais === 'HN' || this.empresa?.pais === 'Honduras') {
             return '00000000000000';
         }
+        if (this.esCostaRicaFe() && this.tipoIdentificacionEmisorCr() === '02') {
+            return '';
+        }
         return this.apiService.auth_user()?.empresa?.validador_nit ?? '';
+    }
+
+    public maxlengthNit(): number | null {
+        if (this.esCostaRicaFe() && this.tipoIdentificacionEmisorCr() === '02') {
+            return 12;
+        }
+        return null;
+    }
+
+    private tipoIdentificacionEmisorCr(): string {
+        return String(this.customConfig?.facturacion_fe?.emisor_tipo_identificacion ?? '02');
+    }
+
+    private normalizarIdentificacionEmisorCr(): void {
+        if (!this.esCostaRicaFe() || this.tipoIdentificacionEmisorCr() !== '02' || !this.empresa?.nit) {
+            return;
+        }
+        this.empresa.nit = String(this.empresa.nit).replace(/[^0-9A-Za-z]/g, '');
     }
 
     private normalizarRtnHonduras(): void {
@@ -795,12 +817,17 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     cargarActividadesContribuyenteDesdeHacienda(opciones?: { silenciosoSiNitInvalido?: boolean }): void {
-        const nit = String(this.empresa?.nit ?? '').replace(/\D/g, '');
-        if (nit.length < 9 || nit.length > 12) {
+        const tipo = this.tipoIdentificacionEmisorCr();
+        const raw = String(this.empresa?.nit ?? '');
+        const nit = tipo === '02' ? raw.replace(/[^0-9A-Za-z]/g, '') : raw.replace(/\D/g, '');
+        const largoValido = tipo === '02' ? nit.length === 10 : nit.length >= 9 && nit.length <= 12;
+        if (!largoValido) {
             if (!opciones?.silenciosoSiNitInvalido) {
                 this.alertService.warning(
                     'Identificación',
-                    'Ingrese un NIT o cédula jurídica válida (9 a 12 dígitos) en el campo NIT de la empresa.',
+                    tipo === '02'
+                        ? 'Ingrese una cédula jurídica de 10 caracteres (puede incluir letras).'
+                        : 'Ingrese un NIT o cédula válida (9 a 12 dígitos) en el campo NIT de la empresa.',
                 );
             }
 
@@ -810,7 +837,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
         this.contribuyenteCargandoCr = true;
         this.cdr.markForCheck();
         this.haciendaContribuyenteClient
-            .getContribuyente(nit)
+            .getContribuyente(nit, tipo)
             .pipe(
                 this.untilDestroyed(),
                 finalize(() => {

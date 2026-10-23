@@ -154,7 +154,7 @@
                     <div class="form-group col-12 col-md-6 col-lg-4">
                         <label for="nit">{{ 'country.tax.nit' | translate }}</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.nit" name="nit" placeholder="Escriba aquí" [dropSpecialCharacters]="false" [mask]="mascaraNit()"
-                            (ngModelChange)="onNitEmpresaChange()">
+                            [attr.maxlength]="maxlengthNit()" (ngModelChange)="onNitEmpresaChange()">
                     </div>
                     @if (mostrarRegistroSecundarioEmpresa()) {
                     <div class="form-group col-12 col-md-6 col-lg-4">

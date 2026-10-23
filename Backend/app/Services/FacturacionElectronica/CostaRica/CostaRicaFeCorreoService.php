@@ -9,6 +9,7 @@ use App\Models\Compras\Compra;
 use App\Models\Compras\Gastos\Gasto;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Ventas\Venta;
+use App\Support\FacturacionElectronica\ClaveComprobanteCr;
 use App\Support\FacturacionElectronica\CorreoDestinoDte;
 use App\Support\FacturacionElectronica\CostaRicaFeDteDocumento;
 use App\Support\FacturacionElectronica\XmlRespuestaHaciendaCr;
@@ -70,8 +71,8 @@ final class CostaRicaFeCorreoService
         $xmlRespuesta = XmlRespuestaHaciendaCr::normalizar($xmlRespuesta);
 
         $clave = (string) ($datosPdf['clave'] ?? '');
-        $claveDigitos = preg_replace('/\D/', '', $clave) ?? '';
-        $nombreBase = strlen($claveDigitos) >= 40 ? $claveDigitos : ($clave !== '' ? $clave : 'comprobante-'.$id);
+        $claveArchivo = ClaveComprobanteCr::paraQrYArchivo($clave);
+        $nombreBase = $claveArchivo !== '' ? $claveArchivo : ($clave !== '' ? $clave : 'comprobante-'.$id);
 
         $pdfBin = $this->pdfService->pdfBinary($datosPdf);
 
@@ -158,7 +159,7 @@ final class CostaRicaFeCorreoService
         $tipoDte = $request->tipo_dte;
         $id = (int) $request->id;
 
-        if (in_array($tipoDte, ['01', '02', '04', '11'], true)) {
+        if (in_array($tipoDte, ['01', '02', '04', '09', '11'], true)) {
             $v = Venta::with('cliente')->where('id', $id)->firstOrFail();
             $c = $v->cliente;
             $nombre = $c ? trim((string) ($c->nombre ?? '')) : 'Cliente';
@@ -203,7 +204,7 @@ final class CostaRicaFeCorreoService
      */
     private function resolverRutaPdf(string $tipoDte, ?string $tipoCompraGasto): array
     {
-        if (in_array($tipoDte, ['01', '02', '04', '11', '03', '05', '06'], true)) {
+        if (in_array($tipoDte, ['01', '02', '04', '09', '11', '03', '05', '06'], true)) {
             return [$tipoDte, null];
         }
         if ($tipoDte === '14' || $tipoDte === '08') {
@@ -252,6 +253,7 @@ final class CostaRicaFeCorreoService
         $m = [
             '01' => 'Factura electrónica',
             '04' => 'Tiquete electrónico',
+            '09' => 'Factura electrónica de exportación',
             '11' => 'Factura electrónica de exportación',
             '02' => 'Nota de débito electrónica',
             '03' => 'Nota de crédito electrónica',

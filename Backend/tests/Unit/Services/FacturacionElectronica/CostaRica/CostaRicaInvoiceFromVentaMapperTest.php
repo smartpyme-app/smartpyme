@@ -10,6 +10,8 @@ use App\Models\Ventas\Devoluciones\Detalle as DetalleDevolucion;
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Venta;
 use App\Services\FacturacionElectronica\CostaRica\BccrTipoCambioClient;
+use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeEmitService;
+use App\Support\FacturacionElectronica\CostaRica\ReferenciaComprobanteCr;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaInvoiceFromVentaMapper;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaTipoCambioService;
 use Carbon\Carbon;
@@ -27,6 +29,111 @@ final class CostaRicaInvoiceFromVentaMapperTest extends TestCase
         $this->mapper = new CostaRicaInvoiceFromVentaMapper(
             new CostaRicaTipoCambioService($this->createMock(BccrTipoCambioClient::class))
         );
+    }
+
+    public function test_factura_sin_sustitucion_ni_rechazo_no_lleva_referencia(): void
+    {
+        $refs = $this->mapper->referencedDocumentsSustitucionORechazo($this->ventaAtributos([]));
+
+        self::assertSame([], $refs);
+    }
+
+    public function test_despues_de_anular_con_13_la_factura_referencia_15(): void
+    {
+        $clave = str_repeat('A', 50);
+        $refs = $this->mapper->referencedDocumentsSustitucionORechazo($this->ventaAtributos([
+            'clave_sustituida' => $clave,
+            'codigo_nota_anulacion' => '13',
+            'fecha' => '2026-09-02 10:00:00',
+        ]));
+
+        self::assertCount(1, $refs);
+        self::assertSame('01', $refs[0]['document_type']);
+        self::assertSame($clave, $refs[0]['document_number']);
+        self::assertSame('15', $refs[0]['referenced_code']);
+        self::assertStringStartsWith('2026-09-02T', $refs[0]['emission_date']);
+    }
+
+    public function test_tiquete_sustituido_usa_tipo_04_y_la_fecha_sale_de_la_clave(): void
+    {
+        $clave = '506150826'.str_repeat('1', 41);
+        $attrs = [
+            'clave_sustituida' => $clave,
+            'codigo_nota_anulacion' => '01',
+            'fecha' => '2026-11-02 10:00:00',
+        ];
+
+        $factura = $this->mapper->referencedDocumentsSustitucionORechazo($this->ventaAtributos($attrs));
+        self::assertSame('01', $factura[0]['document_type']);
+        self::assertSame('07', $factura[0]['referenced_code']);
+        self::assertSame('2026-08-15T00:00:00-06:00', $factura[0]['emission_date']);
+
+        $tiquete = $this->mapper->referencedDocumentsSustitucionORechazo($this->ventaAtributos($attrs), true);
+        self::assertSame('04', $tiquete[0]['document_type']);
+        self::assertSame('07', $tiquete[0]['referenced_code']);
+        self::assertSame('2026-08-15T00:00:00-06:00', $tiquete[0]['emission_date']);
+    }
+
+    public function test_despues_de_anular_con_01_la_factura_referencia_07(): void
+    {
+        $clave = str_repeat('7', 50);
+        $refs = $this->mapper->referencedDocumentsSustitucionORechazo($this->ventaAtributos([
+            'clave_sustituida' => $clave,
+            'codigo_nota_anulacion' => '01',
+        ]));
+
+        self::assertCount(1, $refs);
+        self::assertSame('07', $refs[0]['referenced_code']);
+        self::assertSame('01', $refs[0]['document_type']);
+    }
+
+    public function test_fee_sustituida_usa_tipo_19_en_referencia(): void
+    {
+        $clave = str_repeat('E', 50);
+        $refs = $this->mapper->referencedDocumentsSustitucionORechazo($this->ventaAtributos([
+            'nombre_documento' => 'Factura de exportación',
+            'clave_sustituida' => $clave,
+            'codigo_nota_anulacion' => '13',
+        ]));
+
+        self::assertCount(1, $refs);
+        self::assertSame(ReferenciaComprobanteCr::TIPO_EXPORTACION, $refs[0]['document_type']);
+        self::assertSame('15', $refs[0]['referenced_code']);
+    }
+
+    public function test_clave_sustituida_que_no_tiene_50_caracteres_no_referencia(): void
+    {
+        $refs = $this->mapper->referencedDocumentsSustitucionORechazo($this->ventaAtributos([
+            'clave_sustituida' => str_repeat('1', 49),
+            'codigo_nota_anulacion' => '13',
+        ]));
+
+        self::assertSame([], $refs);
+    }
+
+    public function test_renumera_correlativo_solo_si_rechazado_y_sin_clave_aceptada(): void
+    {
+        $clave = '50631012600310123456700100001010000000001199999999';
+
+        self::assertTrue(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(true, $clave, false));
+        self::assertFalse(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(true, '', false));
+        self::assertFalse(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(true, '   ', false));
+        self::assertFalse(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(true, $clave, true));
+        self::assertFalse(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(false, $clave, false));
+    }
+
+    public function test_reemision_de_rechazado_referencia_tipo_10_codigo_16(): void
+    {
+        $clave = '50631012600310123456700100001010000000001199999999';
+        $refs = $this->mapper->referencedDocumentsSustitucionORechazo($this->ventaAtributos([
+            'clave_rechazada' => $clave,
+        ]));
+
+        $esperada = ReferenciaComprobanteCr::referenciaDeRechazado($clave);
+        self::assertCount(1, $refs);
+        self::assertSame($esperada['document_type'], $refs[0]['document_type']);
+        self::assertSame($esperada['referenced_code'], $refs[0]['referenced_code']);
+        self::assertSame($esperada['document_number'], $refs[0]['document_number']);
     }
 
     public function test_fecha_emision_xml_usa_hora_real_costa_rica(): void
@@ -247,6 +354,17 @@ final class CostaRicaInvoiceFromVentaMapperTest extends TestCase
         $this->assertSame('02', $line['taxes'][0]['iva_type']);
         $this->assertSame(1.0, $line['taxes'][0]['rate']);
         $this->assertSame(1.0, $line['taxes'][0]['amount']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $attrs
+     */
+    private function ventaAtributos(array $attrs): Venta
+    {
+        $venta = (new \ReflectionClass(Venta::class))->newInstanceWithoutConstructor();
+        $venta->setRawAttributes($attrs, true);
+
+        return $venta;
     }
 
     private function empresaStub(): Empresa

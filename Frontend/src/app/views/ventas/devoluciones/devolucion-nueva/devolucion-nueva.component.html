@@ -36,6 +36,16 @@
                     <option value="anulacion_factura">Anulación de Factura</option>
                 </select>
             </div>
+            @if (esFeCostaRica()) {
+            <div class="form-group col-md-4">
+                <label for="motivo_fe_cr">Motivo de la nota</label>
+                <select name="motivo_fe_cr" id="motivo_fe_cr" [(ngModel)]="devolucion.motivo_fe_cr" class="form-select" required>
+                    <option value="devolucion">Devolución de mercancía</option>
+                    <option value="anula">Anula el documento por error</option>
+                    <option value="exoneracion_posterior">Exoneración de impuesto local posterior a la factura</option>
+                </select>
+            </div>
+            }
             <div class="form-group col-md-4">
                 <div class="form-group">
                     <label for="">Observaciones:</label>

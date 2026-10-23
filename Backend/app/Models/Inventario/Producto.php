@@ -41,6 +41,7 @@ class Producto extends AuditableModel
         'descripcion_completa',
         'codigo',
         'codigo_cabys',
+        'partida_arancelaria',
         'descripcion_cabys',
         'barcode',
         'medida',

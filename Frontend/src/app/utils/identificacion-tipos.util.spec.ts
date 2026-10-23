@@ -53,7 +53,7 @@ describe('identificacion-tipos.util', () => {
 
     const cr = { pais: 'Costa Rica', validador_dui: '0-0000-0000', validador_nit: '0-0000-0000' };
     expect(mascaraIdentificacion('01', cr)).toBe('0-0000-0000');
-    expect(mascaraIdentificacion('02', cr)).toBe('0-0000-0000');
+    expect(mascaraIdentificacion('02', cr)).toBe('');
     expect(mascaraIdentificacion('03', cr)).toBe('');
 
     const hn = { pais: 'Honduras', validador_dui: '0000-0000-00000', validador_nit: '00000000000000' };

@@ -16,6 +16,7 @@ use App\Models\Ventas\Devoluciones\Detalle as DetalleDevolucion;
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Venta;
 use App\Support\ActividadEconomicaEmisor;
+use App\Support\FacturacionElectronica\CostaRica\ReferenciaComprobanteCr;
 use App\Support\FacturacionElectronica\TipoIdentificacionReceptor;
 use Carbon\Carbon;
 use InvalidArgumentException;
@@ -69,8 +70,9 @@ final class CostaRicaInvoiceFromVentaMapper
 
         // Índices 0..n-1: el resumen y Hacienda (-111) emparejan líneas con el XML; sin array_values el map puede conservar
         // keys no secuenciales y desalinear servicios gravados vs mercancías gravadas.
+        $esExportacion = CostaRicaFeEmitService::tipoDocumentoExportacion(CostaRicaFeEmitService::nombreDocumentoVenta($venta)) !== null;
         $lineItems = array_values($venta->detalles->map(
-            fn (Detalle $d) => $this->convertirMontosLineaFe($this->linea($d, $empresa, $venta), $factorMoneda)
+            fn (Detalle $d) => $this->convertirMontosLineaFe($this->linea($d, $empresa, $venta, $esExportacion), $factorMoneda)
         )->all());
 
         $payload = [
@@ -86,7 +88,7 @@ final class CostaRicaInvoiceFromVentaMapper
                 'exchange_rate' => round($tipoCambio, 5),
             ],
             'issuer' => $this->emisor($empresa, $venta->sucursal),
-            'receiver' => $this->receptor($venta, $empresa),
+            'receiver' => $this->receptor($venta, $empresa, $esExportacion),
             'line_items' => $lineItems,
             'payments' => $this->pagosDesdeLineas($lineItems),
             'summary' => $this->resumenAlineadoALineas($venta, $lineItems, $factorMoneda),
@@ -97,7 +99,84 @@ final class CostaRicaInvoiceFromVentaMapper
             $payload['fe_cr_exoneracion'] = $metaEx;
         }
 
+        $referencias = $this->referencedDocumentsSustitucionORechazo($venta);
+        if ($referencias !== []) {
+            $payload['referenced_documents'] = $referencias;
+        }
+
         return $payload;
+    }
+
+    /**
+     * Factura o tiquete de venta: una sola InformacionReferencia, y solo al sustituir
+     * un comprobante anulado (07/15) o al reemitir uno rechazado por Hacienda (10/16).
+     * La FEC de compra sigue en referencedDocumentsFacturaElectronicaCompra (código 04).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function referencedDocumentsSustitucionORechazo(Venta $venta, bool $esTiquete = false): array
+    {
+        $rechazada = trim((string) ($venta->clave_rechazada ?? ''));
+        if ($rechazada !== '') {
+            return [$this->referenciaConFechaYRazon(
+                $venta,
+                ReferenciaComprobanteCr::referenciaDeRechazado($rechazada),
+                'Sustituye comprobante rechazado por Hacienda'
+            )];
+        }
+
+        $clave = trim((string) ($venta->clave_sustituida ?? ''));
+        $codigoNota = trim((string) ($venta->codigo_nota_anulacion ?? ''));
+        if (strlen($clave) === 50 && in_array($codigoNota, ['01', '13'], true)) {
+            $tipoReferencia = '01';
+            if ($esTiquete) {
+                $tipoReferencia = '04';
+            } elseif (CostaRicaFeEmitService::tipoDocumentoExportacion(CostaRicaFeEmitService::nombreDocumentoVenta($venta)) !== null) {
+                $tipoReferencia = ReferenciaComprobanteCr::TIPO_EXPORTACION;
+            }
+
+            return [$this->referenciaConFechaYRazon($venta, [
+                'document_type' => $tipoReferencia,
+                'document_number' => $clave,
+                'referenced_code' => ReferenciaComprobanteCr::codigoSustitucion($codigoNota),
+            ], 'Sustituye comprobante anulado')];
+        }
+
+        return [];
+    }
+
+    /**
+     * FechaEmisionIR es la del comprobante referenciado (ddMMyy de la clave).
+     * Si la clave no trae fecha válida, se usa la fecha de la venta y, si tampoco, la hora de emisión.
+     *
+     * @param  array{document_type: string, document_number: string, referenced_code: string}  $referencia
+     * @return array<string, mixed>
+     */
+    private function referenciaConFechaYRazon(Venta $venta, array $referencia, string $razon): array
+    {
+        $referencia['emission_date'] = $this->fechaReferenciaVenta($venta, (string) ($referencia['document_number'] ?? ''));
+        $referencia['reason'] = mb_substr($razon, 0, 180);
+
+        return $referencia;
+    }
+
+    private function fechaReferenciaVenta(Venta $venta, string $claveReferencia = ''): string
+    {
+        $desdeClave = ReferenciaComprobanteCr::fechaEmisionDesdeClave($claveReferencia);
+        if ($desdeClave !== null) {
+            return $desdeClave;
+        }
+
+        $raw = $venta->fecha ?? null;
+        if ($raw !== null && trim((string) $raw) !== '') {
+            try {
+                return Carbon::parse($raw)->timezone('America/Costa_Rica')->format('Y-m-d\TH:i:sP');
+            } catch (\Throwable) {
+                // seguir con la hora de emisión
+            }
+        }
+
+        return $this->fechaEmisionXmlCr();
     }
 
     /**
@@ -110,6 +189,12 @@ final class CostaRicaInvoiceFromVentaMapper
     public function buildTicketDocumentData(Venta $venta, Empresa $empresa, int $secuencial): array
     {
         $data = $this->buildDocumentData($venta, $empresa, $secuencial);
+        $referencias = $this->referencedDocumentsSustitucionORechazo($venta, true);
+        if ($referencias !== []) {
+            $data['referenced_documents'] = $referencias;
+        } else {
+            unset($data['referenced_documents']);
+        }
         $data['receiver'] = $this->receptorGenericoTiquete($empresa);
 
         // XSD v4.4 tiquete: LineaDetalle no incluye TipoTransaccion; quitar clave para que Twig/plantilla no emita el nodo.
@@ -145,7 +230,7 @@ final class CostaRicaInvoiceFromVentaMapper
     public function assertReceptorFacturaElectronicaCr(array $receiver): void
     {
         $tipo = trim((string) ($receiver['identification_type'] ?? ''));
-        $num = preg_replace('/\D/', '', (string) ($receiver['identification_number'] ?? '')) ?? '';
+        $num = (string) ($receiver['identification_number'] ?? '');
         if (TipoIdentificacionReceptor::estructuraValidaCostaRicaFactura($tipo, $num)) {
             return;
         }
@@ -156,6 +241,39 @@ final class CostaRicaInvoiceFromVentaMapper
             .'(cédula física 9 dígitos, jurídica/NITE 10, DIMEX 11–12). '
             .'Receptor «'.$nombre.'»: tipo '.$tipo.' número «'.$num.'» no es válido para factura. '
             .'Sin cédula use el documento Ticket/Tiquete (04), o complete NIT/cédula del cliente en el maestro.'
+        );
+    }
+
+    /**
+     * FEE 09: extranjero no domiciliado (05) o una identificación nacional válida. El receptor genérico (06) no sirve.
+     *
+     * @param  array<string, mixed>  $receiver
+     */
+    public function assertReceptorFacturaExportacionCr(array $receiver): void
+    {
+        self::assertIdentificacionExportacion(
+            (string) ($receiver['identification_type'] ?? ''),
+            (string) ($receiver['identification_number'] ?? ''),
+            trim((string) ($receiver['name'] ?? 'Receptor'))
+        );
+    }
+
+    public static function assertIdentificacionExportacion(string $tipo, string $numero, string $nombre = 'Receptor'): void
+    {
+        $tipo = trim($tipo);
+        if (in_array($tipo, ['01', '02', '03', '04'], true)
+            && TipoIdentificacionReceptor::estructuraValidaCostaRicaFactura($tipo, $numero)) {
+            return;
+        }
+
+        $n = preg_replace('/[\s-]/', '', $numero) ?? '';
+        if ($tipo === '05' && $n !== '' && strlen($n) <= 20 && preg_match('/^0+$/', $n) !== 1) {
+            return;
+        }
+
+        throw new InvalidArgumentException(
+            'La factura de exportación requiere un receptor extranjero (tipo 05, identificación de 1 a 20 caracteres) '
+            .'o una cédula válida de Hacienda. Receptor «'.$nombre.'»: tipo '.$tipo.' número «'.$numero.'» no es válido.'
         );
     }
 
@@ -783,7 +901,11 @@ final class CostaRicaInvoiceFromVentaMapper
         }
         $codAct = $this->codigoActividadEconomicaParaDgt($actividadCampo);
 
-        $nit = $this->soloDigitos((string) ($empresa->nit ?? ''));
+        $tipoEmisor = $this->tipoIdentificacionEmisorCr($empresa);
+        $nitRaw = (string) ($empresa->nit ?? '');
+        $nit = $tipoEmisor === '02'
+            ? TipoIdentificacionReceptor::normalizarNumeroCostaRica('02', $nitRaw)
+            : $this->soloDigitos($nitRaw);
         if (strlen($nit) < 9) {
             throw new InvalidArgumentException('El número de identificación del emisor no es válido para Costa Rica (mínimo 9 dígitos, según tipo configurado).');
         }
@@ -796,7 +918,7 @@ final class CostaRicaInvoiceFromVentaMapper
         }
 
         $emisor = [
-            'identification_type' => $this->tipoIdentificacionEmisorCr($empresa),
+            'identification_type' => $tipoEmisor,
             'identification_number' => $nit,
             'name' => $this->nombreTerceroCr((string) ($empresa->nombre ?? ''), 'Emisor'),
             'activity' => $codAct,
@@ -812,17 +934,21 @@ final class CostaRicaInvoiceFromVentaMapper
         return $this->conContactoTercero($emisor, $empresa->telefono ?? null, $empresa->correo ?? null);
     }
 
-    private function receptor(Venta $venta, Empresa $empresa): array
+    private function receptor(Venta $venta, Empresa $empresa, bool $esExportacion = false): array
     {
         $cliente = $venta->cliente;
         if (! $cliente instanceof Cliente) {
             return $this->receptorGenerico($empresa);
         }
 
-        $nit = $this->soloDigitos((string) ($cliente->nit ?? ''));
-        $dui = $this->soloDigitos((string) ($cliente->dui ?? ''));
-        $tipo = TipoIdentificacionReceptor::costaRica($cliente->tipo_documento ?? null, $nit, $dui);
-        $num = $tipo !== null ? TipoIdentificacionReceptor::numeroCostaRica($tipo, $nit, $dui) : null;
+        $nitRaw = (string) ($cliente->nit ?? '');
+        $duiRaw = (string) ($cliente->dui ?? '');
+        $nit = $this->soloDigitos($nitRaw);
+        $dui = $this->soloDigitos($duiRaw);
+        $tipo = TipoIdentificacionReceptor::costaRica($cliente->tipo_documento ?? null, $nitRaw, $duiRaw);
+        $num = ($esExportacion && $tipo === '05')
+            ? $this->numeroExtranjeroNoDomiciliado($nitRaw, $duiRaw)
+            : $this->numeroIdentificacionCr($tipo, $nitRaw, $duiRaw, $nit, $dui);
         if ($tipo === null || $num === null) {
             return $this->receptorGenerico($empresa, trim(($cliente->nombre ?? '').' '.($cliente->apellido ?? '')) ?: 'Cliente');
         }
@@ -988,11 +1114,37 @@ final class CostaRicaInvoiceFromVentaMapper
     }
 
     /**
+     * Partida arancelaria de 12 dígitos solo en FEE y solo si el CABYS es un bien (primer dígito 0–4).
+     * Una factura nacional no la lleva. Si el bien no tiene partida válida, falla nombrando el producto.
+     */
+    public static function partidaArancelariaDeLinea(bool $esExportacion, string $cabys, ?string $partida, string $nombreProducto): ?string
+    {
+        if (! $esExportacion) {
+            return null;
+        }
+
+        $digitos = preg_replace('/\D/', '', $cabys) ?? '';
+        $primero = $digitos === '' ? '' : $digitos[0];
+        if (! in_array($primero, ['0', '1', '2', '3', '4'], true)) {
+            return null;
+        }
+
+        $codigo = trim((string) $partida);
+        if (preg_match('/^\d{12}$/', $codigo) !== 1) {
+            throw new InvalidArgumentException(
+                "El producto {$nombreProducto} no tiene partida arancelaria de 12 dígitos, obligatoria en la factura de exportación."
+            );
+        }
+
+        return $codigo;
+    }
+
+    /**
      * Línea de venta para dgt-xml-generator. {@see montoTotalLineaCr}:
      * MontoTotalLinea = SubTotal + ImpuestoNeto − MontoDescuento (5 decimales al final).
      * No usar {@see Detalle::$total}: en BD es el neto sin IVA y puede diferir de sub_total por redondeo de gravada.
      */
-    private function linea(Detalle $detalle, Empresa $empresa, Venta $venta): array
+    private function linea(Detalle $detalle, Empresa $empresa, Venta $venta, bool $esExportacion = false): array
     {
         $producto = $detalle->producto;
         $cabys = $this->resolverCabysLinea($producto, $empresa);
@@ -1058,6 +1210,21 @@ final class CostaRicaInvoiceFromVentaMapper
             $line['fe_cr_exoneracion'] = $this->metadataExoneracionDetalleCr($detalle);
         }
         $line['taxes'] = [$taxLine];
+
+        if ($esExportacion) {
+            $attrs = $producto instanceof Producto ? $producto->getAttributes() : [];
+            $partida = array_key_exists('partida_arancelaria', $attrs) ? $attrs['partida_arancelaria'] : null;
+            $nombreProducto = trim((string) ($producto?->nombre ?: $detalle->descripcion ?: 'sin nombre'));
+            $codigoPartida = self::partidaArancelariaDeLinea(
+                true,
+                $cabys,
+                is_scalar($partida) ? (string) $partida : null,
+                $nombreProducto
+            );
+            if ($codigoPartida !== null) {
+                $line['customs_tariff_code'] = $codigoPartida;
+            }
+        }
 
         return $line;
     }
@@ -1794,9 +1961,9 @@ final class CostaRicaInvoiceFromVentaMapper
             $docRef = trim((string) $numeroControl);
         }
         if ($docRef !== '') {
-            // Tipo 01: Hacienda valida que Numero sea clave de comprobante electrónico (50 dígitos); otras referencias → 99.
+            // Tipo 01: Hacienda valida que Numero sea clave de comprobante electrónico (50 caracteres); otras referencias → 99.
             if ($this->esClaveComprobanteElectronicoCr($docRef)) {
-                $clave50 = preg_replace('/\D/', '', $docRef);
+                $clave50 = preg_replace('/[^0-9A-Za-z]/', '', $docRef) ?? '';
 
                 return [[
                     'document_type' => '01',
@@ -1833,13 +2000,40 @@ final class CostaRicaInvoiceFromVentaMapper
     }
 
     /**
-     * Clave numérica de comprobante electrónico CR: 50 dígitos (Hacienda rechaza -29 si no coincide).
+     * Clave de comprobante electrónico CR: 50 caracteres alfanuméricos (Hacienda rechaza -29 si no coincide).
      */
     private function esClaveComprobanteElectronicoCr(string $s): bool
     {
-        $d = preg_replace('/\D/', '', $s);
+        $clave = strtoupper(preg_replace('/[^0-9A-Za-z]/', '', $s) ?? '');
 
-        return strlen($d) === 50;
+        return strlen($clave) === 50;
+    }
+
+    private function numeroExtranjeroNoDomiciliado(string $nitRaw, string $duiRaw): ?string
+    {
+        $raw = trim($nitRaw) !== '' ? $nitRaw : $duiRaw;
+        $n = preg_replace('/[\s-]/', '', $raw) ?? '';
+        if ($n === '' || strlen($n) > 20 || preg_match('/^0+$/', $n) === 1) {
+            return null;
+        }
+
+        return $n;
+    }
+
+    private function numeroIdentificacionCr(?string $tipo, string $nitRaw, string $duiRaw, string $nitDigitos, string $duiDigitos): ?string
+    {
+        if ($tipo === null) {
+            return null;
+        }
+        if ($tipo === '02') {
+            return TipoIdentificacionReceptor::numeroCostaRica(
+                '02',
+                TipoIdentificacionReceptor::normalizarNumeroCostaRica('02', $nitRaw),
+                TipoIdentificacionReceptor::normalizarNumeroCostaRica('02', $duiRaw)
+            );
+        }
+
+        return TipoIdentificacionReceptor::numeroCostaRica($tipo, $nitDigitos, $duiDigitos);
     }
 
     private function condicionCompraOGasto(string $condicion): string
@@ -1854,10 +2048,12 @@ final class CostaRicaInvoiceFromVentaMapper
      */
     private function receptorProveedor(Proveedor $proveedor, Empresa $empresaCompradora): array
     {
-        $nit = $this->soloDigitos((string) ($proveedor->nit ?? ''));
-        $dui = $this->soloDigitos((string) ($proveedor->dui ?? ''));
-        $tipo = TipoIdentificacionReceptor::costaRica($proveedor->tipo_documento ?? null, $nit, $dui);
-        $num = $tipo !== null ? TipoIdentificacionReceptor::numeroCostaRica($tipo, $nit, $dui) : null;
+        $nitRaw = (string) ($proveedor->nit ?? '');
+        $duiRaw = (string) ($proveedor->dui ?? '');
+        $nit = $this->soloDigitos($nitRaw);
+        $dui = $this->soloDigitos($duiRaw);
+        $tipo = TipoIdentificacionReceptor::costaRica($proveedor->tipo_documento ?? null, $nitRaw, $duiRaw);
+        $num = $this->numeroIdentificacionCr($tipo, $nitRaw, $duiRaw, $nit, $dui);
         if ($tipo === null || $num === null) {
             $tipo = '06';
             $num = '00000000000000';

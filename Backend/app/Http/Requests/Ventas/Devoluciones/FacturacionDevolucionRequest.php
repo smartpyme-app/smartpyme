@@ -3,7 +3,9 @@
 namespace App\Http\Requests\Ventas\Devoluciones;
 
 use App\Helpers\CountryTermsHelper;
+use App\Support\FacturacionElectronica\CostaRica\ReferenciaComprobanteCr;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class FacturacionDevolucionRequest extends FormRequest
 {
@@ -33,6 +35,16 @@ class FacturacionDevolucionRequest extends FormRequest
             'sub_total' => 'required|numeric|min:0',
             'total' => 'required|numeric|min:0',
             'observaciones' => 'required|string|max:500',
+            'motivo_fe_cr' => [
+                'nullable',
+                'string',
+                'max:40',
+                Rule::in([
+                    ReferenciaComprobanteCr::MOTIVO_DEVOLUCION,
+                    ReferenciaComprobanteCr::MOTIVO_ANULA,
+                    ReferenciaComprobanteCr::MOTIVO_EXONERACION_POSTERIOR,
+                ]),
+            ],
             'id_venta' => 'required|integer|exists:ventas,id',
             'id_usuario' => 'required|integer|exists:users,id',
             'id_bodega' => 'required|integer|exists:sucursal_bodegas,id',
@@ -75,6 +87,7 @@ class FacturacionDevolucionRequest extends FormRequest
             'total.min' => 'El total no puede ser negativo.',
             'observaciones.required' => 'Las observaciones son obligatorias.',
             'observaciones.max' => 'Las observaciones no pueden exceder 500 caracteres.',
+            'motivo_fe_cr.in' => 'El motivo debe ser: devolución, anula el documento o exoneración posterior.',
             'id_venta.required' => 'La venta es obligatoria.',
             'id_venta.exists' => 'La venta seleccionada no existe.',
             'id_usuario.required' => 'El usuario es obligatorio.',

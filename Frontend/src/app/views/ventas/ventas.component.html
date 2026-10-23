@@ -657,6 +657,21 @@
                             [(ngModel)]="venta.descripcion_impresion" name="descripcion_impresion" rows="2"></textarea>
                     </div>
                 </div>
+                @if (esFeCostaRica()) {
+                <div class="form-group col-md-6">
+                    <label for="clave_sustituida">Clave que sustituye</label>
+                    <input type="text" class="form-control" name="clave_sustituida" maxlength="50"
+                        [(ngModel)]="venta.clave_sustituida" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="codigo_nota_anulacion">Código de anulación</label>
+                    <select class="form-select" name="codigo_nota_anulacion" [(ngModel)]="venta.codigo_nota_anulacion">
+                        <option [ngValue]="null"></option>
+                        <option value="01">Anula el documento (mismo período)</option>
+                        <option value="13">Anula por error material (período anterior)</option>
+                    </select>
+                </div>
+                }
                 <div class="form-group col-md-12">
                     <label for="observaciones">Observaciones:</label>
                     <textarea class="form-control" [(ngModel)]="venta.observaciones" name="observaciones" cols="30"
@@ -744,9 +759,9 @@
                     @if (consulting) {
                         <p class="alert alert-info">{{ 'country.tax.fe.alreadyEmittedInfo' | translate }}</p>
                     }
-                    <button [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary w-100">
+                    <button [disabled]="saving" (click)="esReemisionRechazoCr() ? reemitirComprobanteRechazado() : emitirDTE()" class="mb-3 btn btn-primary w-100">
                         @if (!saving && !consulting) {
-                            <span>{{ 'country.tax.fe.emitButton' | translate }}</span>
+                            <span>{{ esReemisionRechazoCr() ? 'Reemitir' : ('country.tax.fe.emitButton' | translate) }}</span>
                         }
                         @if (saving) {
                             <span>Emitiendo...</span>

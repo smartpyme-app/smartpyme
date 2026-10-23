@@ -41,6 +41,7 @@ export function esNombreNotaCreditoODebito(nombre: string | null | undefined): b
 /** Costa Rica: denominaciones alineadas con comprobantes electrónicos (DGT). No se lista “Crédito fiscal” (FE 01 = Factura). */
 export const DOCUMENTO_NOMBRE_OPCIONES_CR: DocumentoNombreOption[] = [
   { value: NOMBRE_DOCUMENTO_CR.factura, label: NOMBRE_DOCUMENTO_CR.factura },
+  { value: 'Factura de exportación', label: 'Factura de exportación' },
   { value: NOMBRE_DOCUMENTO_CR.tiquete, label: NOMBRE_DOCUMENTO_CR.tiquete },
   { value: 'Cotización', label: 'Cotización' },
   { value: 'Recibo', label: 'Recibo' },
@@ -161,6 +162,15 @@ export function nombresDocumentosVentaNormales(
       'Recibo',
       NOMBRE_DOCUMENTO_HN.guiaRemision,
       'Abono de Venta',
+    ];
+  }
+  if (cod === FE_PAIS_CR) {
+    return [
+      NOMBRE_DOCUMENTO_CR.factura,
+      'Factura de exportación',
+      NOMBRE_DOCUMENTO_CR.tiquete,
+      'Recibo',
+      NOMBRE_DOCUMENTO_CR.abonoVenta,
     ];
   }
   return [

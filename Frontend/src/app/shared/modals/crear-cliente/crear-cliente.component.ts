@@ -178,14 +178,15 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
         } else {
             return;
         }
-        const id = raw.replace(/\D/g, '');
-        if (id.length < 9 || id.length > 12) {
+        const tipo = this.tipoIdentificacionClienteCr();
+        const id = tipo === '02' ? raw.replace(/[^0-9A-Za-z]/g, '') : raw.replace(/\D/g, '');
+        if (tipo === '02' ? id.length !== 10 : (id.length < 9 || id.length > 12)) {
             return;
         }
 
         this.contribuyenteCargandoCr = true;
         this.haciendaContribuyenteClient
-            .getContribuyente(id)
+            .getContribuyente(id, tipo)
             .pipe(
                 this.untilDestroyed(),
                 finalize(() => {
@@ -343,6 +344,33 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
         return mascaraIdentificacion(this.cliente?.tipo_documento, this.apiService.auth_user()?.empresa);
     }
 
+    mascaraIdentificacionNitCr(): string {
+        return mascaraIdentificacion(this.tipoIdentificacionClienteCr() || '02', this.apiService.auth_user()?.empresa);
+    }
+
+    private tipoIdentificacionClienteCr(): string {
+        const guardado = String(this.cliente?.tipo_documento ?? '').trim();
+        if (guardado !== '') {
+            return guardado;
+        }
+        return this.cliente?.tipo === 'Empresa' ? '02' : '';
+    }
+
+    private normalizarIdentificacionClienteCr(): void {
+        if (!this.esCostaRicaFe() || this.tipoIdentificacionClienteCr() !== '02') {
+            return;
+        }
+        if (this.cliente?.tipo === 'Empresa') {
+            const normalizado = String(this.cliente.nit ?? '').replace(/[^0-9A-Za-z]/g, '');
+            if (/[A-Za-z]/.test(normalizado)) {
+                this.cliente.tipo_documento = '02';
+            }
+            this.cliente.nit = normalizado;
+            return;
+        }
+        this.cliente.dui = String(this.cliente.dui ?? '').replace(/[^0-9A-Za-z]/g, '');
+    }
+
     labelIdentificacionDui(): string {
         return labelCampoIdentificacion(this.identificacionCfg, this.cliente?.tipo_documento);
     }
@@ -444,6 +472,7 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
     }
 
     public onSubmit() {
+        this.normalizarIdentificacionClienteCr();
         this.saving = true;
         let routeUrl = this.esNuevo ? 'cliente' : 'cliente/update';
 
