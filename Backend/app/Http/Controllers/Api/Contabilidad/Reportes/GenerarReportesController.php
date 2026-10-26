@@ -11,6 +11,9 @@ use App\Exports\Contabilidad\FlujoEfectivoExport;
 use App\Exports\Contabilidad\CambiosPatrimonioExport;
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Empresa;
+use App\Models\Admin\ReporteExportacion;
+use App\Services\Contabilidad\ContabilidadReporteStorageService;
+use App\Support\ContabilidadReporteTipos;
 use App\Services\Contabilidad\ArbolCuentas;
 use App\Services\Contabilidad\BalanceGeneralNiifSvPresenter;
 use App\Services\Contabilidad\CambiosPatrimonioNiifSvPresenter;
@@ -88,6 +91,11 @@ class GenerarReportesController extends Controller
         ini_set('memory_limit', '512M');
         set_time_limit(120);
 
+        return $this->buildLibroDiarioPdf($fecha_inicio, $fecha_fin, $cuenta)->stream();
+    }
+
+    private function buildLibroDiarioPdf($fecha_inicio, $fecha_fin, $cuenta = null)
+    {
         $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrfail($empresa_id);
         $startDate = Carbon::createFromFormat('Y-m-d', $fecha_inicio)->startOfDay();
@@ -128,7 +136,7 @@ class GenerarReportesController extends Controller
             'isRemoteEnabled' => false,
         ]);
 
-        return $pdf->stream();
+        return $pdf;
     }
 
     public function generarRepLibroDiarioExcel($fecha_inicio, $fecha_fin, $cuenta = null)
@@ -211,6 +219,11 @@ class GenerarReportesController extends Controller
         ini_set('memory_limit', '512M');
         set_time_limit(120);
 
+        return $this->buildLibroDiarioMayorPdf($fecha_inicio, $fecha_fin, $cuenta, $titulo)->stream();
+    }
+
+    private function buildLibroDiarioMayorPdf($fecha_inicio, $fecha_fin, $cuenta = null, $titulo = 'Reporte Libro Diario Mayor')
+    {
         $empresa_id = auth()->user()->id_empresa;
         $startDate = Carbon::parse($fecha_inicio)->startOfDay();
         $endDate = Carbon::parse($fecha_fin)->endOfDay();
@@ -231,7 +244,7 @@ class GenerarReportesController extends Controller
             'isRemoteEnabled' => false,
         ]);
 
-        return $pdf->stream();
+        return $pdf;
     }
 
     public function generarRepLibroDiarioMayorExcel($fecha_inicio, $fecha_fin, $cuenta = null, $titulo = 'Reporte Libro Diario Mayor')
@@ -378,6 +391,11 @@ class GenerarReportesController extends Controller
 
     public function generarRepBalanceComprobacionPDF($fecha_inicio, $fecha_fin, $cuenta = null)
     {
+        return $this->buildBalanceComprobacionPdf($fecha_inicio, $fecha_fin, $cuenta)->stream();
+    }
+
+    private function buildBalanceComprobacionPdf($fecha_inicio, $fecha_fin, $cuenta = null)
+    {
         $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrFail($empresa_id);
         $startDate = Carbon::parse($fecha_inicio)->startOfDay();
@@ -512,7 +530,7 @@ class GenerarReportesController extends Controller
         $pdf = PDF::loadView('reportes.contabilidad.rep_balance_comprobacion', compact('balance', 'empresa', 'month_name', 'year', 'fecha_inicio', 'fecha_fin', 'totales'));
         $pdf->setPaper('US Letter', 'portrait');
 
-        return $pdf->stream();
+        return $pdf;
     }
 
     public function generarRepBalanceComprobacionExcel($fecha_inicio, $fecha_fin, $cuenta = null)
@@ -661,7 +679,11 @@ class GenerarReportesController extends Controller
 
     public function generarRepMovCuenta($fecha_inicio, $fecha_fin, $cuenta_cod)
     {
+        return $this->buildMovCuentaPdf($fecha_inicio, $fecha_fin, $cuenta_cod)->stream();
+    }
 
+    private function buildMovCuentaPdf($fecha_inicio, $fecha_fin, $cuenta_cod)
+    {
         $empresa_id = auth()->user()->id_empresa;
 
         $cuenta = Cuenta::where('codigo', $cuenta_cod)->where('id_empresa', auth()->user()->id_empresa)->first();
@@ -708,11 +730,14 @@ class GenerarReportesController extends Controller
         $cuenta_reporte->saldo_actual = 0;  //este dato llega a la blade actualizado con el dato de salgo anterior para que se haga el calculo en la blade
         $cuenta_reporte->saldo_anterior = 0;
 
-        $pdf = PDF::loadView('reportes.contabilidad.movimiento_cuenta', compact('cuenta_reporte',  'desde', 'hasta', 'empresa', 'fecha', 'hora'));
+        $desde = $fecha_inicio;
+        $hasta = $fecha_fin;
+
+        $pdf = PDF::loadView('reportes.contabilidad.movimiento_cuenta', compact('cuenta_reporte', 'desde', 'hasta', 'empresa', 'fecha', 'hora'));
 
         $pdf->setPaper('US Letter', 'landscape');
 
-        return $pdf->stream();
+        return $pdf;
     }
 
     public function generarBalanceGeneral($fecha_inicio, $fecha_fin, $type)
@@ -726,6 +751,11 @@ class GenerarReportesController extends Controller
 
     public function generarBalanceGeneralPDF($fecha_inicio, $fecha_fin)
     {
+        return $this->buildBalanceGeneralPdf($fecha_inicio, $fecha_fin)->stream();
+    }
+
+    private function buildBalanceGeneralPdf($fecha_inicio, $fecha_fin)
+    {
         $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrFail($empresa_id);
         $startDate = Carbon::parse($fecha_inicio)->startOfDay();
@@ -736,7 +766,7 @@ class GenerarReportesController extends Controller
         $pdf = PDF::loadView('reportes.contabilidad.balance_general', compact('balance', 'empresa', 'fecha_inicio', 'fecha_fin'));
         $pdf->setPaper('US Letter', 'portrait');
 
-        return $pdf->stream();
+        return $pdf;
     }
 
     public function generarBalanceGeneralExcel($fecha_inicio, $fecha_fin)
@@ -762,6 +792,11 @@ class GenerarReportesController extends Controller
 
     public function generarEstadoResultadosPDF(Request $request, $fecha_inicio, $fecha_fin)
     {
+        return $this->buildEstadoResultadosPdf($request, $fecha_inicio, $fecha_fin)->stream();
+    }
+
+    private function buildEstadoResultadosPdf(Request $request, $fecha_inicio, $fecha_fin)
+    {
         $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrFail($empresa_id);
         $startDate = Carbon::parse($fecha_inicio)->startOfDay();
@@ -785,7 +820,7 @@ class GenerarReportesController extends Controller
         ]);
         $pdf->setPaper('US Letter', 'portrait');
 
-        return $pdf->stream();
+        return $pdf;
     }
 
     public function generarEstadoResultadosExcel(Request $request, $fecha_inicio, $fecha_fin)
@@ -824,6 +859,11 @@ class GenerarReportesController extends Controller
 
     public function generarFlujoEfectivoPDF(Request $request, $fecha_inicio, $fecha_fin)
     {
+        return $this->buildFlujoEfectivoPdf($request, $fecha_inicio, $fecha_fin)->stream();
+    }
+
+    private function buildFlujoEfectivoPdf(Request $request, $fecha_inicio, $fecha_fin)
+    {
         $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrFail($empresa_id);
         $startDate = Carbon::parse($fecha_inicio)->startOfDay();
@@ -841,7 +881,7 @@ class GenerarReportesController extends Controller
         ]);
         $pdf->setPaper('US Letter', 'portrait');
 
-        return $pdf->stream();
+        return $pdf;
     }
 
     public function generarFlujoEfectivoExcel(Request $request, $fecha_inicio, $fecha_fin)
@@ -874,6 +914,11 @@ class GenerarReportesController extends Controller
 
     public function generarCambiosPatrimonioPDF(Request $request, $fecha_inicio, $fecha_fin)
     {
+        return $this->buildCambiosPatrimonioPdf($request, $fecha_inicio, $fecha_fin)->stream();
+    }
+
+    private function buildCambiosPatrimonioPdf(Request $request, $fecha_inicio, $fecha_fin)
+    {
         $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrFail($empresa_id);
         $startDate = Carbon::parse($fecha_inicio)->startOfDay();
@@ -895,7 +940,7 @@ class GenerarReportesController extends Controller
         ]);
         $pdf->setPaper('US Letter', $orientation);
 
-        return $pdf->stream();
+        return $pdf;
     }
 
     public function generarCambiosPatrimonioExcel(Request $request, $fecha_inicio, $fecha_fin)
@@ -991,6 +1036,151 @@ class GenerarReportesController extends Controller
             return ['year' => $year - 1, 'month' => 12];
         }
         return ['year' => $year, 'month' => $month - 1];
+    }
+
+    /**
+     * Genera reporte contable en disco (cola). Requiere usuario autenticado.
+     *
+     * @return array{ruta: string, nombre: string, mime: string}
+     */
+    public function exportarContabilidadAArchivo(
+        string $tipo,
+        string $formato,
+        string $fechaInicio,
+        string $fechaFin,
+        array $params
+    ): array {
+        $storage = app(ContabilidadReporteStorageService::class);
+        $suffix = $fechaInicio . '_' . $fechaFin;
+        $cuenta = $params['cuenta'] ?? 'all';
+        $req = Request::create('/', 'GET', $params);
+
+        if ($formato === ReporteExportacion::FORMATO_PDF) {
+            ini_set('memory_limit', '512M');
+            set_time_limit(0);
+        }
+
+        switch ($tipo) {
+            case ContabilidadReporteTipos::LIBRO_DIARIO:
+                if ($formato === ReporteExportacion::FORMATO_PDF) {
+                    return $storage->persistPdf(
+                        $this->buildLibroDiarioPdf($fechaInicio, $fechaFin, $cuenta),
+                        "libro_diario_{$suffix}.pdf"
+                    );
+                }
+                return $storage->persistBinaryFileResponse(
+                    $this->generarRepLibroDiarioExcel($fechaInicio, $fechaFin, $cuenta),
+                    "libro_diario_{$suffix}.xlsx"
+                );
+
+            case ContabilidadReporteTipos::LIBRO_DIARIO_MAYOR:
+                if ($formato === ReporteExportacion::FORMATO_PDF) {
+                    return $storage->persistPdf(
+                        $this->buildLibroDiarioMayorPdf($fechaInicio, $fechaFin, $cuenta),
+                        "libro_diario_mayor_{$suffix}.pdf"
+                    );
+                }
+                return $storage->persistBinaryFileResponse(
+                    $this->generarRepLibroDiarioMayorExcel($fechaInicio, $fechaFin, $cuenta),
+                    "libro_diario_mayor_{$suffix}.xlsx"
+                );
+
+            case ContabilidadReporteTipos::LIBRO_AUXILIAR:
+                $cuentaAux = $params['cuenta'] ?? null;
+                $idAux = ArbolCuentas::idRequerido($cuentaAux);
+                if ($idAux === null) {
+                    throw new \RuntimeException('Debe seleccionar una cuenta.');
+                }
+                $empresa_id = auth()->user()->id_empresa;
+                $catalogo = Cuenta::where('id_empresa', $empresa_id)->get(['id', 'id_cuenta_padre']);
+                $idsAux = ArbolCuentas::idsDelArbol($catalogo, $idAux);
+                if ($idsAux === []) {
+                    throw new \RuntimeException('Cuenta no encontrada.');
+                }
+                if ($formato === ReporteExportacion::FORMATO_PDF) {
+                    return $storage->persistPdf(
+                        $this->buildLibroDiarioMayorPdf($fechaInicio, $fechaFin, $idsAux, 'Libro auxiliar'),
+                        "libro_auxiliar_{$suffix}.pdf"
+                    );
+                }
+                return $storage->persistBinaryFileResponse(
+                    $this->generarRepLibroDiarioMayorExcel($fechaInicio, $fechaFin, $idsAux, 'Libro auxiliar'),
+                    "libro_auxiliar_{$suffix}.xlsx"
+                );
+
+            case ContabilidadReporteTipos::MOVIMIENTO_CUENTA:
+                $cod = $params['cuenta_cod'] ?? $params['cuenta'] ?? null;
+                if (! $cod) {
+                    throw new \RuntimeException('Debe indicar la cuenta.');
+                }
+                return $storage->persistPdf(
+                    $this->buildMovCuentaPdf($fechaInicio, $fechaFin, $cod),
+                    "movimiento_cuenta_{$suffix}.pdf"
+                );
+
+            case ContabilidadReporteTipos::BALANCE_COMPROBACION:
+                if ($formato === ReporteExportacion::FORMATO_PDF) {
+                    return $storage->persistPdf(
+                        $this->buildBalanceComprobacionPdf($fechaInicio, $fechaFin, $cuenta),
+                        "balance_comprobacion_{$suffix}.pdf"
+                    );
+                }
+                return $storage->persistBinaryFileResponse(
+                    $this->generarRepBalanceComprobacionExcel($fechaInicio, $fechaFin, $cuenta),
+                    "balance_comprobacion_{$suffix}.xlsx"
+                );
+
+            case ContabilidadReporteTipos::BALANCE_GENERAL:
+                if ($formato === ReporteExportacion::FORMATO_PDF) {
+                    return $storage->persistPdf(
+                        $this->buildBalanceGeneralPdf($fechaInicio, $fechaFin),
+                        "balance_general_{$suffix}.pdf"
+                    );
+                }
+                return $storage->persistBinaryFileResponse(
+                    $this->generarBalanceGeneralExcel($fechaInicio, $fechaFin),
+                    "balance_general_{$suffix}.xlsx"
+                );
+
+            case ContabilidadReporteTipos::ESTADO_RESULTADOS:
+                if ($formato === ReporteExportacion::FORMATO_PDF) {
+                    return $storage->persistPdf(
+                        $this->buildEstadoResultadosPdf($req, $fechaInicio, $fechaFin),
+                        "estado_resultados_{$suffix}.pdf"
+                    );
+                }
+                return $storage->persistBinaryFileResponse(
+                    $this->generarEstadoResultadosExcel($req, $fechaInicio, $fechaFin),
+                    "estado_resultados_{$suffix}.xlsx"
+                );
+
+            case ContabilidadReporteTipos::FLUJO_EFECTIVO:
+                if ($formato === ReporteExportacion::FORMATO_PDF) {
+                    return $storage->persistPdf(
+                        $this->buildFlujoEfectivoPdf($req, $fechaInicio, $fechaFin),
+                        "flujo_efectivo_{$suffix}.pdf"
+                    );
+                }
+                return $storage->persistBinaryFileResponse(
+                    $this->generarFlujoEfectivoExcel($req, $fechaInicio, $fechaFin),
+                    "flujo_efectivo_{$suffix}.xlsx"
+                );
+
+            case ContabilidadReporteTipos::CAMBIOS_PATRIMONIO:
+                if ($formato === ReporteExportacion::FORMATO_PDF) {
+                    return $storage->persistPdf(
+                        $this->buildCambiosPatrimonioPdf($req, $fechaInicio, $fechaFin),
+                        "cambios_patrimonio_{$suffix}.pdf"
+                    );
+                }
+                return $storage->persistBinaryFileResponse(
+                    $this->generarCambiosPatrimonioExcel($req, $fechaInicio, $fechaFin),
+                    "cambios_patrimonio_{$suffix}.xlsx"
+                );
+
+            default:
+                throw new \RuntimeException("Tipo de reporte contable no soportado: {$tipo}");
+        }
     }
 
 

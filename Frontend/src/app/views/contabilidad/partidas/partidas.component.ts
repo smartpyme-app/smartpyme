@@ -13,6 +13,10 @@ import { HttpCacheService } from '@services/http-cache.service';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 import { SharedModule } from '@shared/shared.module';
 import { armarOpcionesCuentaAuxiliar, armarOpcionesTipoCuentaReporte } from './cuenta-select.util';
+import {
+  encolarYDescargarReporteContabilidad,
+  validarFormatoPdfContabilidad,
+} from './contabilidad-reporte-async.util';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -53,6 +57,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
   public notasPayload: any = null;
   public notasLoading = false;
   public notasGuardadoId: number | null = null;
+  public reporteContabilidadDescargando = false;
   public catalogo: any = [];
   public opcionesTipoCuentaReporte: Array<{ value: string | number; label: string }> = [
     { value: 'all', label: 'Todas las cuentas' },
@@ -463,264 +468,152 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     return `${this.apiService.baseUrl}${relativePath}?token=${token}&_ts=${Date.now()}`;
   }
 
-  // Métodos existentes sin cambios...
-  public imprimirDiarioAux() {
-    if (
-      this.reporte.fecha_inicio &&
-      this.reporte.fecha_fin &&
-      this.reporte.tipo_descarga &&
-      this.reporte.tipo_cuenta
-    ) {
-      window.open(
-        this.buildReportDownloadUrl(
-          '/api/reportes/libro/diario/' +
-            this.reporte.fecha_inicio +
-            '/' +
-            this.reporte.fecha_fin +
-            '/' +
-            this.reporte.tipo_cuenta +
-            '/' +
-            this.reporte.tipo_descarga
-        )
-      );
-    } else {
-      alert('Por favor, llenar los campos requeridos.');
+  private encolarReporteContabilidad(
+    tipoReporte: string,
+    parametros: Record<string, unknown> = {},
+    opts?: { soloPdf?: boolean; requiereTipoDescarga?: boolean }
+  ): void {
+    const soloPdf = opts?.soloPdf === true;
+    const requiereTipoDescarga = opts?.requiereTipoDescarga !== false;
+
+    if (!this.reporte.fecha_inicio || !this.reporte.fecha_fin) {
+      this.alertService.warning('Reporte', 'Por favor, complete las fechas del periodo.');
+      return;
     }
+    const formato = soloPdf ? 'pdf' : this.reporte.tipo_descarga;
+    if (requiereTipoDescarga && !soloPdf && !formato) {
+      this.alertService.warning('Reporte', 'Seleccione el formato de descarga.');
+      return;
+    }
+
+    const pdfMsg = validarFormatoPdfContabilidad(
+      formato,
+      this.reporte.fecha_inicio,
+      this.reporte.fecha_fin,
+      soloPdf
+    );
+    if (pdfMsg) {
+      this.alertService.warning('Formato PDF', pdfMsg);
+      return;
+    }
+
+    if (this.reporteContabilidadDescargando) {
+      return;
+    }
+
+    const suffix = `${this.reporte.fecha_inicio}_${this.reporte.fecha_fin}`;
+    encolarYDescargarReporteContabilidad(
+      this.apiService,
+      this.alertService,
+      {
+        tipo_reporte: tipoReporte,
+        formato,
+        fecha_inicio: this.reporte.fecha_inicio,
+        fecha_fin: this.reporte.fecha_fin,
+        parametros,
+      },
+      (source) => source.pipe(this.untilDestroyed()),
+      (busy) => {
+        this.reporteContabilidadDescargando = busy;
+        this.cdr.markForCheck();
+      },
+      `${tipoReporte}_${suffix}.${formato === 'pdf' ? 'pdf' : 'xlsx'}`
+    );
+  }
+
+  public imprimirDiarioAux() {
+    if (!this.reporte.tipo_cuenta) {
+      this.alertService.warning('Reporte', 'Seleccione el tipo de cuenta.');
+      return;
+    }
+    this.encolarReporteContabilidad('libro-diario', { cuenta: this.reporte.tipo_cuenta });
   }
 
   public imprimirMayor() {
-    if (this.reporte.fecha_inicio && this.reporte.fecha_fin && this.reporte.concepto) {
-      window.open(
-        this.buildReportDownloadUrl(
-          '/api/reportes/libro/diario/mayor/' +
-            this.reporte.fecha_inicio +
-            '/' +
-            this.reporte.fecha_fin +
-            '/' +
-            this.reporte.tipo_cuenta +
-            '/' +
-            this.reporte.concepto
-        )
-      );
-    } else {
-      alert('Por favor, llenar los campos requeridos.');
+    if (!this.reporte.tipo_cuenta) {
+      this.alertService.warning('Reporte', 'Seleccione el tipo de cuenta.');
+      return;
     }
+    this.encolarReporteContabilidad('libro-diario-mayor', { cuenta: this.reporte.tipo_cuenta });
   }
 
   public imprimirDiarioMayor() {
-    if (
-      this.reporte.fecha_inicio &&
-      this.reporte.fecha_fin &&
-      this.reporte.tipo_descarga &&
-      this.reporte.tipo_cuenta
-    ) {
-      window.open(
-        this.buildReportDownloadUrl(
-          '/api/reportes/libro/diario/mayor/' +
-            this.reporte.fecha_inicio +
-            '/' +
-            this.reporte.fecha_fin +
-            '/' +
-            this.reporte.tipo_cuenta +
-            '/' +
-            this.reporte.tipo_descarga
-        )
-      );
-    } else {
-      console.error('Por favor, llenar los campos requeridos.');
+    if (!this.reporte.tipo_cuenta) {
+      this.alertService.warning('Reporte', 'Seleccione el tipo de cuenta.');
+      return;
     }
+    this.encolarReporteContabilidad('libro-diario-mayor', { cuenta: this.reporte.tipo_cuenta });
   }
 
   public imprimirAuxiliarCuentas() {
-    if (
-      this.reporte.fecha_inicio &&
-      this.reporte.fecha_fin &&
-      this.reporte.tipo_descarga &&
-      this.reporte.cuenta_auxiliar
-    ) {
-      window.open(
-        this.buildReportDownloadUrl(
-          '/api/reportes/libro/auxiliar/' +
-            this.reporte.fecha_inicio +
-            '/' +
-            this.reporte.fecha_fin +
-            '/' +
-            this.reporte.cuenta_auxiliar +
-            '/' +
-            this.reporte.tipo_descarga
-        )
-      );
-    } else {
-      console.error('Por favor, llenar los campos requeridos.');
+    if (!this.reporte.cuenta_auxiliar) {
+      this.alertService.warning('Reporte', 'Seleccione la cuenta auxiliar.');
+      return;
     }
+    this.encolarReporteContabilidad('libro-auxiliar', { cuenta: this.reporte.cuenta_auxiliar });
   }
 
   public imprimirMovCuenta() {
-    if (this.reporte.fecha_inicio && this.reporte.fecha_fin && this.reporte.cuenta) {
-      window.open(
-        this.buildReportDownloadUrl(
-          '/api/reportes/movimiento/cuenta/' +
-            this.reporte.fecha_inicio +
-            '/' +
-            this.reporte.fecha_fin +
-            '/' +
-            this.reporte.cuenta
-        )
-      );
-    } else {
-      alert('Por favor, llenar los campos requeridos.');
+    if (!this.reporte.cuenta) {
+      this.alertService.warning('Reporte', 'Seleccione la cuenta.');
+      return;
     }
+    this.encolarReporteContabilidad(
+      'movimiento-cuenta',
+      { cuenta_cod: this.reporte.cuenta },
+      { soloPdf: true, requiereTipoDescarga: false }
+    );
   }
 
   public imprimirBalanceComprobacion() {
-    if (
-      this.reporte.fecha_inicio &&
-      this.reporte.fecha_fin &&
-      this.reporte.tipo_descarga &&
-      this.reporte.tipo_cuenta
-    ) {
-      window.open(
-        this.buildReportDownloadUrl(
-          '/api/reportes/balance/comprobacion/' +
-            this.reporte.fecha_inicio +
-            '/' +
-            this.reporte.fecha_fin +
-            '/' +
-            this.reporte.tipo_cuenta +
-            '/' +
-            this.reporte.tipo_descarga
-        )
-      );
-    } else {
-      alert('Por favor, llenar los campos requeridos.');
+    if (!this.reporte.tipo_cuenta) {
+      this.alertService.warning('Reporte', 'Seleccione el tipo de cuenta.');
+      return;
     }
+    this.encolarReporteContabilidad('balance-comprobacion', { cuenta: this.reporte.tipo_cuenta });
   }
 
   public imprimirBalanceGeneral() {
-    if (
-      this.reporte.fecha_inicio &&
-      this.reporte.fecha_fin &&
-      this.reporte.tipo_descarga
-    ) {
-      window.open(
-        this.buildReportDownloadUrl(
-          '/api/reportes/balance/general/' +
-            this.reporte.fecha_inicio +
-            '/' +
-            this.reporte.fecha_fin +
-            '/' +
-            this.reporte.tipo_descarga
-        )
-      );
-    } else {
-      alert('Por favor, llenar los campos requeridos.');
-    }
+    this.encolarReporteContabilidad('balance-general');
   }
 
   public imprimirEstadoResultados() {
-    if (
-      this.reporte.fecha_inicio &&
-      this.reporte.fecha_fin &&
-      this.reporte.tipo_descarga
-    ) {
-      const base = this.buildReportDownloadUrl(
-        '/api/reportes/estado/resultados/' +
-          this.reporte.fecha_inicio +
-          '/' +
-          this.reporte.fecha_fin +
-          '/' +
-          this.reporte.tipo_descarga
-      );
-      const url =
-        this.reporte.estadoCompararAnterior === true
-          ? `${base}&comparar=1`
-          : base;
-      window.open(url);
-    } else {
-      alert('Por favor, llenar los campos requeridos.');
-    }
+    this.encolarReporteContabilidad('estado-resultados', {
+      comparar: this.reporte.estadoCompararAnterior === true,
+    });
   }
 
   public imprimirFlujoEfectivo() {
-    if (this.reporte.fecha_inicio && this.reporte.fecha_fin && this.reporte.tipo_descarga) {
-      const base = this.buildReportDownloadUrl(
-        '/api/reportes/flujo/efectivo/' +
-          this.reporte.fecha_inicio +
-          '/' +
-          this.reporte.fecha_fin +
-          '/' +
-          this.reporte.tipo_descarga
-      );
-      const url =
-        this.reporte.flujoCompararAnterior === true ? `${base}&comparar=1` : base;
-      window.open(url);
-    } else {
-      alert('Por favor, llenar los campos requeridos.');
-    }
+    this.encolarReporteContabilidad('flujo-efectivo', {
+      comparar: this.reporte.flujoCompararAnterior === true,
+    });
   }
 
   public imprimirCambiosPatrimonio() {
-    if (this.reporte.fecha_inicio && this.reporte.fecha_fin && this.reporte.tipo_descarga) {
-      let url = this.buildReportDownloadUrl(
-        '/api/reportes/cambios/patrimonio/' +
-          this.reporte.fecha_inicio +
-          '/' +
-          this.reporte.fecha_fin +
-          '/' +
-          this.reporte.tipo_descarga
-      );
-      const params: string[] = [];
-      if (this.reporte.ecpDosAnios === true) {
-        params.push('dos_anios=1');
-      }
-      if (this.reporte.ecpSoloMovimientos === true) {
-        params.push('solo_movimientos=1');
-      }
-      if (params.length) {
-        url += (url.includes('?') ? '&' : '?') + params.join('&');
-      }
-      window.open(url);
-    } else {
-      alert('Por favor, llenar los campos requeridos.');
-    }
+    this.encolarReporteContabilidad('cambios-patrimonio', {
+      dos_anios: this.reporte.ecpDosAnios === true,
+      solo_movimientos: this.reporte.ecpSoloMovimientos === true,
+    });
   }
 
   public imprimirNotasEstadosFinancieros() {
-    if (this.reporte.fecha_inicio && this.reporte.fecha_fin && this.reporte.tipo_descarga) {
-      let url = this.buildReportDownloadUrl(
-        '/api/reportes/notas/estados-financieros/' +
-          this.reporte.fecha_inicio +
-          '/' +
-          this.reporte.fecha_fin +
-          '/' +
-          this.reporte.tipo_descarga
-      );
-      const params = this.buildNotasQueryParams();
-      if (params.length) {
-        url += (url.includes('?') ? '&' : '?') + params.join('&');
-      }
-      window.open(url);
-    } else {
-      alert('Por favor, llenar los campos requeridos.');
-    }
+    this.encolarReporteContabilidad('notas-estados-financieros', this.buildNotasParametrosExport());
   }
 
   public imprimirEstadosFinancierosCompletos() {
-    if (this.reporte.fecha_inicio && this.reporte.fecha_fin) {
-      let url = this.buildReportDownloadUrl(
-        '/api/reportes/estados-financieros/completos/' +
-          this.reporte.fecha_inicio +
-          '/' +
-          this.reporte.fecha_fin
-      );
-      const params = this.buildNotasQueryParams();
-      if (params.length) {
-        url += (url.includes('?') ? '&' : '?') + params.join('&');
-      }
-      window.open(url);
-    } else {
-      alert('Por favor, llenar los campos requeridos.');
-    }
+    this.encolarReporteContabilidad('estados-financieros-completos', this.buildNotasParametrosExport(), {
+      soloPdf: true,
+      requiereTipoDescarga: false,
+    });
+  }
+
+  private buildNotasParametrosExport(): Record<string, unknown> {
+    return {
+      fecha_aprobacion_junta: this.reporte.notasFechaAprobacion || null,
+      incluir_comparativo: this.reporte.notasIncluirComparativo,
+      nivel_detalle: this.reporte.notasNivelDetalle,
+      configuracion: { provision_incobrables_pct: this.reporte.notasProvisionPct },
+    };
   }
 
   public verNotasEnPantalla(template: TemplateRef<any>) {

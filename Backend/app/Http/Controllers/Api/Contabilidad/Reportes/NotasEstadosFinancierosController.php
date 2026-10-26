@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api\Contabilidad\Reportes;
 use App\Exports\Contabilidad\NotasEstadosFinancierosExport;
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Empresa;
+use App\Models\Admin\ReporteExportacion;
+use App\Services\Contabilidad\ContabilidadReporteStorageService;
+use App\Support\ContabilidadReporteTipos;
 use App\Models\Contabilidad\NotasEstadosFinancieros;
 use App\Services\Contabilidad\BalanceGeneralNiifSvPresenter;
 use App\Services\Contabilidad\CambiosPatrimonioNiifSvPresenter;
@@ -122,27 +125,88 @@ class NotasEstadosFinancierosController extends Controller
     public function exportar(Request $request, string $fecha_inicio, string $fecha_fin, string $type)
     {
         $this->autorizarVer();
-        $params = $this->validarParametros($request->merge([
-            'fecha_inicio' => $fecha_inicio,
-            'fecha_fin' => $fecha_fin,
-        ]));
-        $params['empresa_id'] = auth()->user()->id_empresa;
 
+        if ($type === 'pdf') {
+            return $this->buildNotasExportPdf($request, $fecha_inicio, $fecha_fin)->stream();
+        }
+
+        return $this->buildNotasExportExcel($request, $fecha_inicio, $fecha_fin);
+    }
+
+    public function exportarCompletos(Request $request, string $fecha_inicio, string $fecha_fin)
+    {
+        $this->autorizarVer();
+
+        return $this->buildEstadosFinancierosCompletosPdf($request, $fecha_inicio, $fecha_fin)->stream();
+    }
+
+    /**
+     * @return array{ruta: string, nombre: string, mime: string}
+     */
+    public function exportarContabilidadAArchivo(
+        string $tipo,
+        string $formato,
+        string $fechaInicio,
+        string $fechaFin,
+        array $params
+    ): array {
+        $this->autorizarVer();
+        $storage = app(ContabilidadReporteStorageService::class);
+        $req = Request::create('/', 'GET', array_merge($params, [
+            'fecha_inicio' => $fechaInicio,
+            'fecha_fin' => $fechaFin,
+        ]));
+        $suffix = $fechaInicio . '_' . $fechaFin;
+
+        if ($tipo === ContabilidadReporteTipos::NOTAS_EEFF) {
+            if ($formato === ReporteExportacion::FORMATO_PDF) {
+                ini_set('memory_limit', '512M');
+                return $storage->persistPdf(
+                    $this->buildNotasExportPdf($req, $fechaInicio, $fechaFin),
+                    "notas_estados_financieros_{$suffix}.pdf"
+                );
+            }
+            return $storage->persistBinaryFileResponse(
+                $this->buildNotasExportExcel($req, $fechaInicio, $fechaFin),
+                "notas_estados_financieros_{$suffix}.xlsx"
+            );
+        }
+
+        if ($tipo === ContabilidadReporteTipos::ESTADOS_FINANCIEROS_COMPLETOS) {
+            ini_set('memory_limit', '512M');
+            return $storage->persistPdf(
+                $this->buildEstadosFinancierosCompletosPdf($req, $fechaInicio, $fechaFin),
+                "estados_financieros_completos_{$suffix}.pdf"
+            );
+        }
+
+        throw new \RuntimeException("Tipo de reporte de notas no soportado: {$tipo}");
+    }
+
+    private function buildNotasExportPdf(Request $request, string $fecha_inicio, string $fecha_fin)
+    {
+        $params = $this->validarParametros($request);
+        $params['empresa_id'] = auth()->user()->id_empresa;
         $payload = $this->service->generar($params);
         $empresa = Empresa::findOrFail($params['empresa_id']);
 
-        if ($type === 'pdf') {
-            $pdf = PDF::loadView('reportes.contabilidad.notas_estados_financieros', [
-                'notas' => $payload,
-                'empresa' => $empresa,
-                'fecha_inicio' => $fecha_inicio,
-                'fecha_fin' => $fecha_fin,
-            ]);
-            $pdf->setPaper('US Letter', 'portrait');
+        $pdf = PDF::loadView('reportes.contabilidad.notas_estados_financieros', [
+            'notas' => $payload,
+            'empresa' => $empresa,
+            'fecha_inicio' => $fecha_inicio,
+            'fecha_fin' => $fecha_fin,
+        ]);
+        $pdf->setPaper('US Letter', 'portrait');
 
-            return $pdf->stream();
-        }
+        return $pdf;
+    }
 
+    private function buildNotasExportExcel(Request $request, string $fecha_inicio, string $fecha_fin)
+    {
+        $params = $this->validarParametros($request);
+        $params['empresa_id'] = auth()->user()->id_empresa;
+        $payload = $this->service->generar($params);
+        $empresa = Empresa::findOrFail($params['empresa_id']);
         $fname = 'notas_estados_financieros_' . $fecha_inicio . '_' . $fecha_fin . '.xlsx';
 
         return Excel::download(
@@ -151,9 +215,8 @@ class NotasEstadosFinancierosController extends Controller
         );
     }
 
-    public function exportarCompletos(Request $request, string $fecha_inicio, string $fecha_fin)
+    private function buildEstadosFinancierosCompletosPdf(Request $request, string $fecha_inicio, string $fecha_fin)
     {
-        $this->autorizarVer();
         $empresaId = auth()->user()->id_empresa;
         $empresa = Empresa::findOrFail($empresaId);
         $startDate = Carbon::parse($fecha_inicio)->startOfDay();
@@ -183,7 +246,7 @@ class NotasEstadosFinancierosController extends Controller
         ));
         $pdf->setPaper('US Letter', 'portrait');
 
-        return $pdf->stream();
+        return $pdf;
     }
 
     public function catalogo()
