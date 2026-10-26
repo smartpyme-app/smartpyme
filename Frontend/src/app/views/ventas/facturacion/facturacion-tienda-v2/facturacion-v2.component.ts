@@ -2757,7 +2757,7 @@ export class FacturacionV2Component implements OnInit {
             'Cotización creada',
             'La cotizacion fue añadida exitosamente.'
           );
-        } else if (debeEmitirDteAlFacturar(this.apiService.auth_user()?.empresa)) {
+        } else if (debeEmitirDteAlFacturar(this.apiService.auth_user()?.empresa, this.venta.nombre_documento)) {
           this.emitirDTE();
         } else {
           if (debeImprimirTrasFacturar(this.apiService.auth_user()?.empresa, this.debeImprimir)) {

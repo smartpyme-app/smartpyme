@@ -536,6 +536,20 @@ describe('FacturacionV2Component', () => {
     expect(component.imprimir).not.toHaveBeenCalled();
   });
 
+  it('con impresion, FE y documento Ticket solo imprime', () => {
+    const component = componenteTrasFacturar({
+      impresion_en_facturacion: true,
+      facturacion_electronica: true,
+    });
+    component.venta.nombre_documento = 'Ticket';
+
+    component.onSubmit();
+
+    expect(component.emitirDTE).not.toHaveBeenCalled();
+    expect(component.imprimir).toHaveBeenCalled();
+    expect(component.router.navigate).toHaveBeenCalledWith(['/ventas']);
+  });
+
   it('con impresion y sin FE solo imprime', () => {
     const component = componenteTrasFacturar({
       impresion_en_facturacion: true,
