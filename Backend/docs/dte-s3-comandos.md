@@ -56,7 +56,43 @@ El slug del nombre se obtiene de la tabla `empresas` para el `id_empresa` de la 
 
 ---
 
-## 2. Migración de base de datos (columnas S3)
+## 2. `php artisan dte:actualizar-correo-emisor`
+
+**Qué hace:** Para ventas y/o compras de una empresa, lee cada DTE (`dte` / `dte_invalidacion`) desde la columna en MySQL **o** desde S3 (`dte_s3_key` / `dte_invalidacion_s3_key`). Si `emisor.correo` **no** coincide con el correo que indicas, lo reemplaza; si ya coincide, no toca el registro. Actualiza **ambas ubicaciones** cuando existan (BD y objeto S3).
+
+**Nota:** Solo aplica a JSON de El Salvador. Los comprobantes XML de Costa Rica se omiten.
+
+### Opciones
+
+| Opción | Explicación |
+|--------|-------------|
+| `--id-empresa=` | **Obligatorio.** Empresa dueña de los documentos. |
+| `--correo=` | **Obligatorio.** Correo correcto del emisor. |
+| `--dry-run` | Muestra qué cambiaría sin escribir. |
+| `--table=` | `ventas` (defecto), `compras` o `both`. |
+| `--mes=` | `YYYY-MM` — filtra por columna `fecha` (misma carpeta `AAAA/MM` en S3). |
+| `--desde=` / `--hasta=` | Rango inclusive en `fecha`; no combinar con `--mes`. |
+| `--skip-invalidacion` | Solo revisa `dte`, no anulaciones. |
+| `--limit=` | Máximo de filas a revisar por tabla. |
+
+### Ejemplos
+
+```bash
+# Simular: empresa 675, junio 2025
+php artisan dte:actualizar-correo-emisor --dry-run --id-empresa=675 --correo=contabilidad@miempresa.com --mes=2025-06
+
+# Aplicar en ventas de todo 2025
+php artisan dte:actualizar-correo-emisor --id-empresa=675 --correo=contabilidad@miempresa.com --desde=2025-01-01 --hasta=2025-12-31
+
+# Ventas y compras, sin invalidaciones
+php artisan dte:actualizar-correo-emisor --id-empresa=120 --correo=facturacion@cliente.sv --table=both --mes=2026-03 --skip-invalidacion
+```
+
+El comando anterior específico de Sagrivet (`dte:actualizar-correo-emisor-sagrivet`) sigue disponible; este es el genérico por empresa y correo destino.
+
+---
+
+## 3. Migración de base de datos (columnas S3)
 
 Aplica o revierte las columnas `dte_s3_key`, `dte_migrated_at`, `dte_invalidacion_s3_key`, `dte_invalidacion_migrated_at` en `ventas` y `compras`.
 
@@ -75,7 +111,7 @@ php artisan migrate:rollback --step=1
 
 ---
 
-## 3. Programación automática (cron de Laravel)
+## 4. Programación automática (cron de Laravel)
 
 Si en `.env` está `DTE_S3_SCHEDULE_ENABLED=true`, en `app/Console/Kernel.php` queda programado:
 
@@ -91,7 +127,7 @@ Para que el scheduler ejecute lo programado, el servidor debe tener el cron de L
 
 ---
 
-## 4. Comandos útiles de soporte
+## 5. Comandos útiles de soporte
 
 ```bash
 # Listar el comando y ver todas las opciones
@@ -104,7 +140,7 @@ php artisan config:cache
 
 ---
 
-## 5. Variables de entorno relevantes (`.env`)
+## 6. Variables de entorno relevantes (`.env`)
 
 | Variable | Uso |
 |----------|-----|
@@ -117,7 +153,7 @@ php artisan config:cache
 
 ---
 
-## 6. Resumen rápido
+## 7. Resumen rápido
 
 | Objetivo | Comando |
 |----------|---------|
@@ -126,6 +162,7 @@ php artisan config:cache
 | Migrar ventas de un año | `--table=ventas --desde=YYYY-01-01 --hasta=YYYY-12-31` |
 | Tanda pequeña | Añadir `--limit=N` |
 | Ignorar JSON de anulación en S3 | `--skip-invalidacion` |
+| Corregir correo del emisor en DTE | `dte:actualizar-correo-emisor --id-empresa=… --correo=…` |
 | Crear columnas en BD | `php artisan migrate` |
 | Ver opciones | `php artisan dte:migrate-to-s3 --help` |
 
