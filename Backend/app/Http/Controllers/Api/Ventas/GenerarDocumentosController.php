@@ -50,16 +50,15 @@ class GenerarDocumentosController extends Controller
 
     public function generarDoc($id){
 
-        // Si tiene facturación electrónica (pruebas o producción)
-            $empresa = JWTAuth::parseToken()->authenticate()->empresa()->first();
+        $empresa = JWTAuth::parseToken()->authenticate()->empresa()->first();
+        $venta = Venta::where('id', $id)->with('detalles', 'cliente', 'empresa')->firstOrFail();
+        $documento = Documento::findOrFail($venta->id_documento);
 
-            if ($empresa->facturacion_electronica) {
+        // Si tiene facturación electrónica (pruebas o producción). Ticket: impresión interna, sin DTE.
+            if ($empresa->facturacion_electronica && $documento->nombre !== 'Ticket') {
                 if (FacturacionElectronicaCountryResolver::resolveCodigoPaisFe($empresa) === FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
                     return app(CostaRicaFeComprobantePdfService::class)->generarTicketImpresion((int) $id, $empresa);
                 }
-
-                $venta = Venta::where('id', $id)->with('detalles', 'cliente', 'empresa')->firstOrFail();
-                $documento = Documento::findOrFail($venta->id_documento);
 
                 $DTE = $venta->dte;
 
@@ -102,9 +101,6 @@ class GenerarDocumentosController extends Controller
                 }
 
             }
-
-        $venta = Venta::where('id', $id)->with('detalles', 'empresa')->firstOrFail();
-        $documento = Documento::findOrfail($venta->id_documento);
 
         if (Ticket80mm::aplica($empresa, $documento)) {
             return Ticket80mm::imprimir($venta, $empresa, $documento);

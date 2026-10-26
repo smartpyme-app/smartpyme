@@ -49,6 +49,7 @@ import {
 import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { VentaRecurrenciaConfigComponent } from '@shared/modals/venta-recurrencia-config/venta-recurrencia-config.component';
 import { PartidaVentaFlowService } from '@services/contabilidad/partida-venta-flow.service';
+import { ventaEsTicketSinEmisionFe } from '@helpers/empresa.helper';
 
 export type VentasExportPeriodoTipo = 'detalles' | 'ventas' | 'general';
 
@@ -128,6 +129,8 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   public esFeCostaRica(): boolean {
     return this.facturacionElectronica.isCostaRicaFe();
   }
+
+  public readonly ventaEsTicketSinEmisionFe = ventaEsTicketSinEmisionFe;
 
   /** Fecha, tipo y correlativo quedan fijos si el comprobante ya tiene sello. */
   public ventaEmitida(venta: any = this.venta): boolean {

@@ -257,7 +257,7 @@
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
 
-                                    @if (apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh && !puedeFacturarVentaCuota(venta)) {
+                                    @if (apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh && !puedeFacturarVentaCuota(venta) && !ventaEsTicketSinEmisionFe(venta)) {
                                         <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" [tooltip]="'country.tax.fe.emit' | translate">
                                             <i class="fa fa-fw fa-file-invoice"></i> {{ 'country.tax.fe.emit' | translate }}
                                         </a>
@@ -267,7 +267,7 @@
                                             <i class="fa fa-fw fa-file-invoice"></i> {{ 'country.tax.fe.emitContingency' | translate }}
                                         </a>
                                     }
-                                    @if (apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh) {
+                                    @if (apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh && !ventaEsTicketSinEmisionFe(venta)) {
                                         <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" [tooltip]="'country.tax.fe.view' | translate">
                                             <i class="fa fa-fw fa-file-invoice"></i> {{ 'country.tax.fe.view' | translate }}
                                         </a>
