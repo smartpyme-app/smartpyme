@@ -11,6 +11,7 @@ import { VentasComponent } from './sections/ventas/ventas.component';
 import { GastosComponent } from './sections/gastos/gastos.component';
 import { ControlCuentasComponent } from './sections/control-cuentas/control-cuentas.component';
 import { InventarioComponent } from './sections/inventario/inventario.component';
+import { FinanzasComponent } from './sections/finanzas/finanzas.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -24,6 +25,7 @@ import { InventarioComponent } from './sections/inventario/inventario.component'
     GastosComponent,
     ControlCuentasComponent,
     InventarioComponent,
+    FinanzasComponent,
   ]
 })
 export class DashboardComponent implements OnInit, OnDestroy {
@@ -39,6 +41,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     'Gastos',
     'Control de cuentas',
     'Inventario',
+    'Finanzas',
   ]);
 
   private destroy$ = new Subject<void>();
@@ -81,13 +84,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   datosInventarioCompletos = false;
   filtrosPorSeccion: { [seccion: string]: any } = {};
 
-  // Finanzas: oculta hasta estar lista — añadir de nuevo `{ nombre: 'Finanzas', ... }` aquí y el *ngSwitchCase* en el HTML.
   secciones = [
     { nombre: 'Resultados', activo: true, componente: 'Resultados' },
     { nombre: 'Ventas', activo: false, componente: 'Ventas' },
     { nombre: 'Gastos', activo: false, componente: 'Gastos' },
     { nombre: 'Control de cuentas', activo: false, componente: 'Control de cuentas' },
-    { nombre: 'Inventario', activo: false, componente: 'Inventario' }
+    { nombre: 'Inventario', activo: false, componente: 'Inventario' },
+    { nombre: 'Finanzas', activo: false, componente: 'Finanzas' },
   ];
 
 

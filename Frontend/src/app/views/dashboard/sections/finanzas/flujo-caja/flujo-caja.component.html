@@ -1,0 +1,175 @@
+<div class="flujo-caja-dashboard ventas-dashboard">
+  <div class="row mb-2">
+    <div class="col-12">
+      <div class="card card-performance">
+        <div class="card-body p-4">
+          <div class="metrics-flex-row mb-3">
+            @for (item of kpiChartItems(); track item.metric.title) {
+              <div class="metric-flex-col">
+                <app-chart-card [data]="item.metric"></app-chart-card>
+                @if (item.sublinea) {
+                  <p class="text-muted small mb-0 mt-1 ps-1">{{ item.sublinea }}</p>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="flujo-context-bar d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+            <div class="flujo-context-metrics d-flex flex-wrap align-items-center gap-3 gap-md-4">
+              <span class="flujo-context-item">
+                Efectivo inicial:
+                <strong>{{ formatMonto(data.efectivoInicial) }}</strong>
+                ({{ data.efectivoInicialFecha }})
+                <button type="button" class="btn btn-link btn-sm flujo-editar-link p-0 align-baseline">editar</button>
+              </span>
+              <span class="flujo-context-item">
+                Colchón: <strong>{{ formatMonto(data.colchon) }}</strong>
+              </span>
+              <span class="flujo-context-item">
+                Ciclo de efectivo: <strong>{{ data.cicloEfectivoDias }} días</strong>
+              </span>
+            </div>
+            <div class="flujo-vista-group" role="group" aria-label="Vista">
+              @for (opt of vistaOpciones; track opt.id) {
+                <button
+                  type="button"
+                  class="flujo-vista-btn"
+                  [class.flujo-vista-btn--active]="vista === opt.id"
+                  [attr.aria-pressed]="vista === opt.id"
+                  (click)="seleccionarVista(opt.id)">
+                  {{ opt.label }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-lg-4 col-xl-3">
+              <div class="card h-100">
+                <div class="card-header bg-white border-0 py-3">
+                  <div class="ventas-card-title mb-0 d-flex align-items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M4 21v-7" /><path d="M4 10v-3" /><path d="M12 21v-9" /><path d="M12 8v-6" /><path d="M20 21v-5" /><path d="M20 12v-8" />
+                    </svg>
+                    Supuestos
+                  </div>
+                </div>
+                <div class="card-body pt-0">
+                  <label class="flujo-slider-block">
+                    <div class="d-flex justify-content-between align-items-baseline gap-2 mb-2">
+                      <span class="flujo-slider-label mb-0">Cobro de cuentas por cobrar</span>
+                      <span class="flujo-slider-valor">{{ cobroCxCPct }}%</span>
+                    </div>
+                    <div class="flujo-slider-track-wrap">
+                      <input
+                        type="range"
+                        class="flujo-slider"
+                        min="50"
+                        max="100"
+                        step="1"
+                        [(ngModel)]="cobroCxCPct"
+                        (ngModelChange)="onSupuestosChange()" />
+                      <span
+                        class="flujo-slider-marker"
+                        [style.left.%]="sliderMarkerLeft(cobroCxCPct, 50, 100)"
+                        aria-hidden="true"></span>
+                      <span
+                        class="flujo-slider-marker flujo-slider-marker--historial"
+                        [style.left.%]="sliderMarkerLeft(data.cobroCxCHistoricoPct, 50, 100)"
+                        aria-hidden="true"></span>
+                    </div>
+                    <div class="flujo-slider-scale">
+                      <span>50%</span>
+                      <span class="flujo-slider-historial">historial {{ data.cobroCxCHistoricoPct }}%</span>
+                      <span>100%</span>
+                    </div>
+                  </label>
+
+                  <label class="flujo-slider-block mb-0">
+                    <div class="d-flex justify-content-between align-items-baseline gap-2 mb-2">
+                      <span class="flujo-slider-label mb-0">Cumplimiento de la meta de ventas</span>
+                      <span class="flujo-slider-valor">{{ cumplimientoMetaPct }}%</span>
+                    </div>
+                    <div class="flujo-slider-track-wrap">
+                      <input
+                        type="range"
+                        class="flujo-slider"
+                        min="70"
+                        max="130"
+                        step="1"
+                        [(ngModel)]="cumplimientoMetaPct"
+                        (ngModelChange)="onSupuestosChange()" />
+                      <span
+                        class="flujo-slider-marker"
+                        [style.left.%]="sliderMarkerLeft(cumplimientoMetaPct, 70, 130)"
+                        aria-hidden="true"></span>
+                      <span
+                        class="flujo-slider-marker flujo-slider-marker--historial"
+                        [style.left.%]="sliderMarkerLeft(data.metaRitmoPct, 70, 130)"
+                        aria-hidden="true"></span>
+                    </div>
+                    <div class="flujo-slider-scale">
+                      <span>70%</span>
+                      <span class="flujo-slider-historial">actual {{ data.metaRitmoPct }}%</span>
+                      <span>130%</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-8 col-xl-9">
+              <div class="card h-100">
+                <div class="card-header bg-white border-0 py-3 text-center">
+                  <div class="ventas-card-title mb-0 d-inline-flex align-items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M3 12h4l3 9 4 -16 3 7h4" />
+                    </svg>
+                    Proyección — 12 semanas
+                  </div>
+                </div>
+                <div class="card-body pt-0">
+                  <div class="flujo-chart-wrap">
+                    <div echarts [options]="chartOption" class="flujo-chart"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-2">
+    <div class="col-12">
+      <div class="card card-performance">
+        <div class="card-body p-4">
+          <app-flujo-caja-posicion></app-flujo-caja-posicion>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-2">
+    <div class="col-12">
+      <div class="card card-performance">
+        <div class="card-body p-4">
+          <app-flujo-caja-semanal #flujoSemanal></app-flujo-caja-semanal>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @if (flujoSemanal.desgloseSemana(); as desglose) {
+    <div class="row mb-2">
+      <div class="col-12">
+        <div class="card card-performance">
+          <div class="card-body p-4">
+            <app-flujo-caja-semana-desglose [desglose]="desglose"></app-flujo-caja-semana-desglose>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

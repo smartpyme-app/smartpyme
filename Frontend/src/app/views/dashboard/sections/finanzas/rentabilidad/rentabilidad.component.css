@@ -1,0 +1,1093 @@
+/* Shell alineado con dashboard Ventas (card-performance, metric-card) */
+.rentabilidad-dashboard.ventas-dashboard .card {
+  margin-bottom: 0 !important;
+}
+
+.rentabilidad-dashboard .card-performance {
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 118, 227, 0.15) !important;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 118, 227, 0.08) !important;
+}
+
+.rentabilidad-dashboard .card-performance .card {
+  border: 1px solid rgba(0, 118, 227, 0.15) !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+
+.metrics-flex-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.metric-flex-col {
+  flex: 1 1 160px;
+  min-width: 155px;
+  max-width: 100%;
+}
+
+.ventas-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.rent-dashboard-table thead th {
+  background-color: #66a3ff !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-align: center;
+  vertical-align: middle;
+  border: none;
+  padding: 12px 16px;
+}
+
+.rent-dashboard-table thead th:first-child {
+  text-align: left;
+}
+
+.rent-dashboard-table tbody tr {
+  border-bottom: 1px solid #e0e0e0;
+  transition: background-color 0.15s ease;
+}
+
+.rent-dashboard-table tbody tr:nth-child(even) {
+  background-color: #f7f7f7;
+}
+
+.rent-dashboard-table tbody tr:nth-child(odd) {
+  background-color: #ffffff;
+}
+
+.rent-dashboard-table tbody tr:hover {
+  background-color: #e8f0fe;
+}
+
+.rent-dashboard-table tbody td {
+  padding: 12px 14px;
+  font-size: 0.875rem;
+  vertical-align: middle;
+  border: none;
+}
+
+.rent-detalle--suite {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  gap: 1rem;
+}
+
+.rent-detalle-kpis .rent-kpi-card {
+  border: 1px solid rgba(0, 118, 227, 0.15);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.rent-detalle-kpis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(7.5rem, 1fr));
+  gap: 0.75rem;
+}
+
+.rent-kpi-card {
+  border: 1px solid #e8eaed;
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.85rem 1rem 0.75rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.rent-kpi-titulo {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.35rem;
+}
+
+.rent-kpi-valor {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.15;
+}
+
+.rent-kpi-valor--rojo {
+  color: #dc2626;
+}
+
+.rent-kpi-valor--azul {
+  color: #2563eb;
+}
+
+.rent-kpi-valor--naranja {
+  color: #ea580c;
+}
+
+.rent-kpi-valor--verde {
+  color: #16a34a;
+}
+
+.rent-kpi-valor--azul {
+  color: #2563eb;
+}
+
+.rent-kpi-linea {
+  margin-top: 0.2rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.rent-kpi-sublinea {
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.rent-kpi-accion {
+  margin-top: 0.2rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #2563eb;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rent-horizonte-group {
+  display: inline-flex;
+  gap: 0.15rem;
+  padding: 0.2rem;
+  border: 1px solid #e8eaed;
+  border-radius: 999px;
+  background: #fff;
+  align-self: center;
+}
+
+.rent-horizonte-btn {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.rent-horizonte-btn--active {
+  background: #1e3a5f;
+  color: #fff;
+}
+
+.rent-dimension-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.4rem;
+  background: #fff;
+  border: 1px solid #e8eaed;
+  border-radius: 12px;
+}
+
+.rent-dimension-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.rent-dimension-tab--active {
+  background: #e8f1fc;
+  color: #2563eb;
+}
+
+.rent-dimension-icon,
+.rent-tabla-titulo-icon {
+  display: inline-flex;
+  line-height: 0;
+}
+
+.rent-detalle {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.rent-tabla-titulo,
+.rent-detalle-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.85rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.rent-tabla-titulo-icon {
+  color: #64748b;
+}
+
+.rent-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.rent-tabla thead th,
+.rent-mini thead th {
+  padding: 0.55rem 0.45rem;
+  color: #94a3b8;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.rent-tabla tbody td,
+.rent-mini tbody td {
+  padding: 0.7rem 0.45rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+}
+
+.rent-fila {
+  cursor: pointer;
+}
+
+.rent-fila:hover,
+.rent-fila:focus-visible,
+.rent-fila--activa {
+  background: #f4f8ff;
+  outline: none;
+}
+
+.rent-fila:hover td:first-child,
+.rent-fila:focus-visible td:first-child,
+.rent-fila--activa td:first-child {
+  box-shadow: inset 3px 0 0 #3b82f6;
+}
+
+.rent-th-num {
+  text-align: right;
+}
+
+.rent-th-spark {
+  text-align: center;
+  width: 4.5rem;
+}
+
+.rent-prod-nombre {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.rent-prod-meta {
+  margin-top: 0.1rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.rent-prod-fila {
+  cursor: pointer;
+}
+
+.rent-prod-fila--activa {
+  background: #f4f8ff !important;
+}
+
+.rent-prod-fila--activa td:first-child {
+  box-shadow: inset 3px 0 0 #3b82f6;
+}
+
+.rent-prod-detalle-header {
+  align-items: flex-start;
+}
+
+.rent-prod-detalle-sub {
+  margin: 0.15rem 0 0;
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+.rent-prod-detalle-kpis {
+  grid-template-columns: repeat(6, minmax(7rem, 1fr));
+}
+
+.rent-prod-detalle-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem 2rem;
+  margin-top: 0.5rem;
+}
+
+.rent-prod-detalle-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.rent-chart-wrap {
+  border: 1px solid #f1f5f9;
+  border-radius: 10px;
+  padding: 0.75rem 0.85rem 0.5rem;
+  background: #fafbfc;
+}
+
+.rent-chart {
+  width: 100%;
+  height: 7.5rem;
+  display: block;
+}
+
+.rent-chart-precio {
+  stroke: #3b82f6;
+}
+
+.rent-chart-costo {
+  stroke: #fb923c;
+}
+
+.rent-chart-legend {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.45rem;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.rent-legend-dot {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  margin-right: 0.25rem;
+}
+
+.rent-legend-dot--precio {
+  background: #3b82f6;
+}
+
+.rent-legend-dot--costo {
+  background: #fb923c;
+}
+
+.rent-chart-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.35rem;
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.rent-prod-clientes td:first-child {
+  max-width: 11rem;
+}
+
+.rent-descuento-card {
+  align-self: flex-start;
+  min-width: 10rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+}
+
+.rent-descuento-titulo {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #9a3412;
+}
+
+.rent-descuento-valor {
+  margin-top: 0.2rem;
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #ea580c;
+  line-height: 1.1;
+}
+
+.rent-descuento-monto {
+  font-size: 0.82rem;
+  color: #9a3412;
+}
+
+.rent-prod-fila--riesgo {
+  background: #fff7ed;
+}
+
+.rent-prod-fila--muerta {
+  background: #fef2f2;
+}
+
+.rent-precio-costo {
+  white-space: nowrap;
+}
+
+.rent-tabla-cliente .rent-th-spark {
+  width: 4.5rem;
+}
+
+.rent-cliente-celda {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+}
+
+.rent-cliente-nombre {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.rent-cliente-badge {
+  display: inline-block;
+  margin-top: 0.2rem;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.rent-cliente-badge--rojo {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.rent-cliente-badge--naranja {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.rent-cliente-fila {
+  cursor: pointer;
+}
+
+.rent-cliente-fila--activa {
+  background: #f4f8ff !important;
+}
+
+.rent-cliente-fila--activa td:first-child {
+  box-shadow: inset 3px 0 0 #3b82f6;
+}
+
+.rent-cliente-fila--alerta {
+  background: #fff7ed;
+}
+
+.rent-text-warn {
+  color: #ea580c;
+  font-weight: 600;
+}
+
+.rent-proveedor-nombre {
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.rent-proveedor-meta {
+  margin-top: 0.1rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.rent-proveedor-fila {
+  cursor: pointer;
+}
+
+.rent-proveedor-fila--activa {
+  background: #f4f8ff !important;
+}
+
+.rent-proveedor-fila--activa td:first-child {
+  box-shadow: inset 3px 0 0 #3b82f6;
+}
+
+.rent-proveedor-fila--alerta {
+  background: #fff7ed;
+}
+
+.rent-proveedor-fila--alerta td:first-child {
+  box-shadow: inset 3px 0 0 #fb923c;
+}
+
+.rent-proyecto-nombre {
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.rent-proyecto-cliente {
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.rent-proyecto-fila {
+  cursor: pointer;
+}
+
+.rent-proyecto-fila--seleccionada {
+  background: #f4f8ff !important;
+}
+
+.rent-proyecto-fila--seleccionada td:first-child {
+  box-shadow: inset 3px 0 0 #3b82f6;
+}
+
+.rent-tabla-proyecto .rent-th-progreso {
+  min-width: 7.5rem;
+}
+
+.rent-tabla-progreso {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.rent-tabla-progreso-track {
+  flex: 1;
+  max-width: 5.5rem;
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.rent-tabla-progreso-track .rent-barra-fill {
+  height: 100%;
+}
+
+.rent-tabla-progreso-pct {
+  flex-shrink: 0;
+  min-width: 2.25rem;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: #334155;
+}
+
+.rent-barra-fill--verde {
+  background: #22c55e;
+}
+
+.rent-barra-fill--rojo {
+  background: #ef4444;
+}
+
+.rent-proy-detalle-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 1.25rem 1.5rem;
+  align-items: start;
+}
+
+.rent-proy-avances {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid #f1f5f9;
+  border-radius: 10px;
+  background: #fafbfc;
+}
+
+.rent-proy-avance-row {
+  display: grid;
+  grid-template-columns: minmax(8rem, 10rem) minmax(4rem, 1fr) 2.5rem;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.rent-proy-avance-label {
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+.rent-proy-avance-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.rent-proy-avance-track .rent-barra-fill {
+  height: 100%;
+}
+
+.rent-proy-avance-pct {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: right;
+  color: #334155;
+  font-variant-numeric: tabular-nums;
+}
+
+.rent-proy-resultado {
+  margin-bottom: 1rem;
+}
+
+.rent-tabla-proyecto-presup {
+  margin-bottom: 1rem;
+}
+
+.rent-tabla-progreso--presup {
+  justify-content: flex-start;
+}
+
+.rent-tabla-progreso--presup .rent-tabla-progreso-track {
+  max-width: 4.5rem;
+}
+
+.rent-proy-total-row td {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 0.55rem;
+}
+
+.rent-proy-cat-row {
+  grid-template-columns: minmax(6.5rem, 8rem) minmax(3rem, 1fr) 2.25rem auto;
+}
+
+.rent-proy-chart-wrap {
+  border: 1px solid #f1f5f9;
+  border-radius: 10px;
+  padding: 0.75rem 0.85rem 0.65rem;
+  background: #fafbfc;
+}
+
+.rent-proy-chart-svg {
+  width: 100%;
+  height: 6.5rem;
+  display: block;
+}
+
+.rent-proy-chart-area {
+  fill: rgba(34, 197, 94, 0.22);
+  stroke: none;
+}
+
+.rent-proy-chart-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rent-proy-chart-line--gasto {
+  stroke: #fb923c;
+}
+
+.rent-proy-chart-line--factura {
+  stroke: #60a5fa;
+}
+
+.rent-proy-chart-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.35rem;
+  font-size: 0.65rem;
+  color: #94a3b8;
+}
+
+.rent-proy-chart-legend {
+  margin-top: 0.5rem;
+}
+
+.rent-proy-materiales td {
+  font-size: 0.8rem;
+  vertical-align: top;
+}
+
+.rent-prov-chart-wrap {
+  border: 1px solid #f1f5f9;
+  border-radius: 10px;
+  padding: 0.75rem 0.85rem;
+  background: #fafbfc;
+}
+
+.rent-prov-chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.35rem;
+  height: 7rem;
+}
+
+.rent-prov-chart-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.rent-prov-chart-bars-inner {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.15rem;
+  height: 100%;
+  width: 100%;
+  justify-content: center;
+}
+
+.rent-prov-bar {
+  width: 0.45rem;
+  border-radius: 3px 3px 0 0;
+  min-height: 4px;
+}
+
+.rent-prov-bar--compra {
+  background: #fb923c;
+}
+
+.rent-prov-bar--venta {
+  background: #60a5fa;
+}
+
+.rent-prov-chart-label {
+  font-size: 0.65rem;
+  color: #94a3b8;
+}
+
+.rent-prov-margen-line {
+  width: 100%;
+  height: 2.2rem;
+  margin-top: 0.35rem;
+  display: block;
+}
+
+.rent-prov-margen-stroke {
+  stroke: #1e3a5f;
+}
+
+.rent-legend-dot--naranja {
+  background: #fb923c;
+}
+
+.rent-legend-dot--azul {
+  background: #60a5fa;
+}
+
+.rent-legend-dot--indigo {
+  background: #1e3a5f;
+}
+
+.rent-prov-cliente-row {
+  grid-template-columns: minmax(7rem, 11rem) minmax(4rem, 1fr) auto auto;
+}
+
+.rent-prov-resumen td:first-child {
+  font-weight: 500;
+}
+
+.rent-col-fuerte {
+  font-weight: 700;
+}
+
+.rent-text-neg {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.rent-text-pos {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.rent-text-muted {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.rent-spark {
+  width: 3.5rem;
+  height: 1.5rem;
+  display: inline-block;
+}
+
+.rent-spark-up {
+  stroke: #16a34a;
+}
+
+.rent-spark-down {
+  stroke: #dc2626;
+}
+
+.rent-detalle-header {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.9rem;
+}
+
+.rent-detalle-header .rent-detalle-titulo {
+  margin: 0;
+}
+
+.rent-detalle-icon {
+  display: inline-flex;
+  color: #64748b;
+  line-height: 0;
+}
+
+.rent-detalle-periodo {
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.rent-detalle-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem 2rem;
+  margin-top: 1.25rem;
+}
+
+.rent-bloque-titulo {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.rent-bloque-titulo-monto {
+  font-weight: 600;
+  color: #64748b;
+}
+
+.rent-puente-row,
+.rent-barra-row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 11rem) minmax(4rem, 1fr) auto auto;
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.4rem 0;
+}
+
+.rent-puente-row--cierre {
+  border-top: 1px solid #e5e7eb;
+  margin-top: 0.25rem;
+  padding-top: 0.55rem;
+}
+
+.rent-puente-label,
+.rent-barra-label {
+  font-size: 0.84rem;
+  color: #334155;
+}
+
+.rent-puente-track,
+.rent-barra-track {
+  height: 8px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.rent-puente-fill,
+.rent-barra-fill {
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  min-width: 4px;
+}
+
+.rent-puente-fill--azul,
+.rent-barra-fill--azul {
+  background: #3b82f6;
+}
+
+.rent-puente-fill--naranja,
+.rent-barra-fill--naranja {
+  background: #fb923c;
+}
+
+.rent-puente-fill--rojo {
+  background: #ef4444;
+}
+
+.rent-puente-fill--verde {
+  background: #22c55e;
+}
+
+.rent-puente-fill--rosa {
+  background: #fda4af;
+}
+
+.rent-puente-fill--neutral {
+  background: #cbd5e1;
+}
+
+.rent-cli-cien {
+  margin-top: 0.25rem;
+}
+
+.rent-cien-leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin-bottom: 0.65rem;
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.rent-legend-dot--gris {
+  background: #94a3b8;
+}
+
+.rent-legend-dot--rosa {
+  background: #fda4af;
+}
+
+.rent-legend-dot--verde {
+  background: #22c55e;
+}
+
+.rent-cien-row {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.45rem;
+}
+
+.rent-cien-label {
+  font-size: 0.82rem;
+  color: #334155;
+  font-weight: 600;
+}
+
+.rent-cien-stack {
+  display: flex;
+  height: 1.65rem;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.rent-cien-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.rent-cien-seg--gris {
+  background: #cbd5e1;
+}
+
+.rent-cien-seg--rosa {
+  background: #fecdd3;
+}
+
+.rent-cien-seg--verde {
+  background: #bbf7d0;
+  color: #166534;
+}
+
+.rent-facturas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rent-factura-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.65rem 1rem;
+  align-items: baseline;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.82rem;
+}
+
+.rent-factura-codigo {
+  color: #334155;
+}
+
+.rent-factura-monto {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.rent-factura-nota {
+  color: #64748b;
+  text-align: right;
+}
+
+.rent-puente-monto,
+.rent-barra-monto {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #0f172a;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rent-puente-pct,
+.rent-barra-pct {
+  font-size: 0.8rem;
+  color: #64748b;
+  text-align: right;
+  min-width: 3.2rem;
+}
+
+.rent-mini {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.rent-vacio {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.rent-placeholder {
+  padding: 1.5rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 1200px) {
+  .rent-kpi-grid,
+  .rent-detalle-kpis,
+  .rent-detalle-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .rent-kpi-grid,
+  .rent-detalle-kpis,
+  .rent-detalle-grid,
+  .rent-puente-row,
+  .rent-barra-row {
+    grid-template-columns: 1fr;
+  }
+}

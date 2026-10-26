@@ -1,0 +1,41 @@
+<p class="text-muted small pl-gastos-caption mb-3">
+  Cada gasto medido contra las ventas del mismo mes
+</p>
+
+<div class="pl-gastos-list">
+  @for (fila of data.filas; track fila.concepto) {
+    <div class="rent-barra-row pl-gastos-row">
+      <div class="rent-barra-label">{{ fila.concepto }}</div>
+      <div class="pl-gastos-bar-wrap">
+        <div class="pl-gastos-bar-track" aria-hidden="true">
+          <span
+            class="rent-barra-fill"
+            [class.rent-barra-fill--naranja]="fila.barTone === 'orange'"
+            [class.rent-barra-fill--azul]="fila.barTone === 'blue'"
+            [style.width.%]="anchoBarra(fila.pctMes)">
+          </span>
+          <span class="pl-gastos-bar-marker" [style.left.%]="anchoBarra(fila.promedio6m)"></span>
+        </div>
+      </div>
+      <div class="rent-barra-pct fw-semibold">{{ fila.pctMes }}%</div>
+      <div class="pl-gastos-delta">
+        <span [class.text-danger]="fila.deltaPts > 0" [class.text-success]="fila.deltaPts < 0">
+          {{ formatoDelta(fila.deltaPts) }} pts
+        </span>
+        <span class="text-muted"> vs. {{ fila.promedio6m }}%</span>
+      </div>
+      <div class="pl-gastos-spark">
+        <svg class="rent-spark" viewBox="0 0 76 30" preserveAspectRatio="none" aria-hidden="true">
+          <path
+            [attr.d]="sparklinePath(fila)"
+            fill="none"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            [class.rent-spark-up]="fila.tendenciaAlcista"
+            [class.rent-spark-down]="!fila.tendenciaAlcista" />
+        </svg>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,235 @@
+/* Compartido: P&L Gerencial, Rentabilidad y tabs de Suite Financiera */
+
+.finanzas-suite-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.rent-kpi-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.rent-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(8.5rem, 1fr));
+  gap: 0.75rem;
+  flex: 1 1 40rem;
+}
+
+.rent-kpi-card {
+  border: 1px solid #e8eaed;
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.85rem 1rem 0.75rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.rent-kpi-titulo {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.35rem;
+}
+
+.rent-kpi-valor {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.15;
+}
+
+.rent-kpi-valor--rojo {
+  color: #dc2626;
+}
+
+.rent-kpi-valor--azul {
+  color: #2563eb;
+}
+
+.rent-kpi-valor--naranja {
+  color: #ea580c;
+}
+
+.rent-kpi-sublinea {
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.rent-horizonte-group {
+  display: inline-flex;
+  gap: 0.15rem;
+  padding: 0.2rem;
+  border: 1px solid #e8eaed;
+  border-radius: 999px;
+  background: #fff;
+  align-self: center;
+}
+
+.rent-horizonte-btn {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.rent-horizonte-btn--active {
+  background: #1e3a5f;
+  color: #fff;
+}
+
+.rent-tabla-card {
+  border: 1px solid #e8eaed;
+  border-radius: 12px;
+  background: #fff;
+  padding: 1rem 1.15rem 1.15rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.rent-tabla-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.85rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.rent-tabla-titulo-icon {
+  display: inline-flex;
+  line-height: 0;
+  color: #64748b;
+}
+
+.rent-bloque-titulo {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.rent-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.rent-tabla thead th {
+  padding: 0.55rem 0.45rem;
+  color: #94a3b8;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.rent-tabla tbody td {
+  padding: 0.7rem 0.45rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+}
+
+.rent-th-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rent-col-fuerte {
+  font-weight: 700;
+}
+
+.rent-text-pos {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.rent-text-neg {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.rent-text-muted {
+  color: #94a3b8;
+}
+
+.rent-barra-row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 11rem) minmax(4rem, 1fr) auto auto;
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.4rem 0;
+}
+
+.rent-barra-label {
+  font-size: 0.84rem;
+  color: #334155;
+  font-weight: 600;
+}
+
+.rent-barra-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.rent-barra-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  min-width: 4px;
+}
+
+.rent-barra-fill--azul {
+  background: #3b82f6;
+}
+
+.rent-barra-fill--naranja {
+  background: #fb923c;
+}
+
+.rent-barra-pct,
+.rent-barra-monto {
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.rent-spark {
+  width: 56px;
+  height: 26px;
+}
+
+.rent-spark-up {
+  stroke: #16a34a;
+}
+
+.rent-spark-down {
+  stroke: #dc2626;
+}
+
+@media (max-width: 1100px) {
+  .rent-kpi-grid {
+    grid-template-columns: repeat(3, minmax(8rem, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .rent-kpi-grid {
+    grid-template-columns: repeat(2, minmax(7rem, 1fr));
+  }
+}

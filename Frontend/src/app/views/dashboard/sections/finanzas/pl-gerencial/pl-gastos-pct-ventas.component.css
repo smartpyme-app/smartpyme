@@ -1,0 +1,75 @@
+@import '../finanzas-suite.shared.css';
+
+.pl-gastos-caption {
+  margin: -0.35rem 0 0.85rem;
+  font-size: 0.8rem;
+}
+
+.pl-gastos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pl-gastos-row {
+  grid-template-columns: minmax(7.5rem, 10rem) minmax(4rem, 1fr) 3.25rem 7rem 4.5rem;
+}
+
+.pl-gastos-bar-track {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: visible;
+}
+
+.pl-gastos-bar-marker {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: calc(100% + 6px);
+  margin-left: -1px;
+  background: #94a3b8;
+  border-radius: 1px;
+}
+
+.pl-gastos-delta {
+  font-size: 0.78rem;
+  line-height: 1.25;
+  text-align: right;
+}
+
+.pl-gastos-spark {
+  justify-self: end;
+}
+
+@media (max-width: 992px) {
+  .pl-gastos-row {
+    grid-template-columns: 1fr 3.5rem;
+    grid-template-areas:
+      'label valor'
+      'bar bar'
+      'delta spark';
+  }
+
+  .rent-barra-label {
+    grid-area: label;
+  }
+
+  .rent-barra-pct {
+    grid-area: valor;
+  }
+
+  .pl-gastos-bar-wrap {
+    grid-area: bar;
+  }
+
+  .pl-gastos-delta {
+    grid-area: delta;
+    text-align: left;
+  }
+
+  .pl-gastos-spark {
+    grid-area: spark;
+  }
+}

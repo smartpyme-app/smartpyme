@@ -1,0 +1,439 @@
+<div class="alertas-resumenes-dashboard ventas-dashboard">
+  <div class="row mb-2">
+    <div class="col-12">
+      <div class="card card-performance">
+        <div class="card-body p-4">
+          <div class="alertas-banner" role="group" aria-label="Resumen de alertas">
+            <div class="alertas-banner-item">
+              <span class="alertas-banner-kicker">Alertas activas</span>
+              <span class="alertas-banner-valor alertas-banner-valor--azul">
+                {{ config.banner.alertasActivas }} de {{ config.banner.alertasTotal }}
+              </span>
+            </div>
+            <div class="alertas-banner-item">
+              <span class="alertas-banner-kicker">Se enviarían hoy</span>
+              <span class="alertas-banner-valor alertas-banner-valor--naranja">
+                {{ config.banner.enviarianHoy }}
+              </span>
+            </div>
+            <div class="alertas-banner-item">
+              <span class="alertas-banner-kicker">Por canal</span>
+              <span class="alertas-banner-valor alertas-banner-canales">
+                <span class="alertas-banner-wa">{{ config.banner.canalWhatsapp }} WhatsApp</span>
+                <span class="alertas-banner-sep" aria-hidden="true">·</span>
+                <span class="alertas-banner-mail">{{ config.banner.canalCorreo }} correo</span>
+              </span>
+            </div>
+            <div class="alertas-banner-item">
+              <span class="alertas-banner-kicker">Resúmenes</span>
+              <span class="alertas-banner-valor alertas-banner-valor--azul">
+                {{ config.banner.resumenesActivos }} de {{ config.banner.resumenesTotal }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-2 mb-2">
+    <div class="col-lg-5 d-flex flex-column gap-2">
+      <div class="card card-performance">
+        <div class="card-body p-4">
+          <div class="card h-100">
+            <div class="card-body p-3">
+              <h2 class="ventas-card-title alertas-sec-titulo mb-3">
+                <span class="alertas-sec-icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round" />
+                  </svg>
+                </span>
+                Dónde recibe sus avisos
+              </h2>
+              <div class="mb-2">
+                <label class="alertas-label" for="alertas-whatsapp">WhatsApp</label>
+                <input
+                  id="alertas-whatsapp"
+                  type="text"
+                  class="form-control form-control-sm"
+                  [(ngModel)]="config.avisos.whatsapp" />
+              </div>
+              <div class="mb-2">
+                <label class="alertas-label" for="alertas-correo">Correo</label>
+                <input
+                  id="alertas-correo"
+                  type="email"
+                  class="form-control form-control-sm"
+                  [(ngModel)]="config.avisos.correo" />
+              </div>
+              <div>
+                <label class="alertas-label" for="alertas-horario">Horario</label>
+                <select id="alertas-horario" class="form-select form-select-sm" [(ngModel)]="config.avisos.horarioId">
+                  @for (opt of config.avisos.horarioOpciones; track opt.id) {
+                    <option [value]="opt.id">{{ opt.label }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-performance flex-grow-1">
+        <div class="card-body p-4">
+          <div class="card h-100">
+            <div class="card-body p-3">
+              <h2 class="ventas-card-title alertas-sec-titulo mb-3">
+                <span class="alertas-sec-icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round" />
+                  </svg>
+                </span>
+                Resúmenes periódicos
+              </h2>
+
+              <ul class="list-unstyled mb-0 alertas-resumen-list">
+                @for (resumen of resumenes; track resumen.id) {
+                  <li class="alertas-resumen-item">
+                    <label class="alertas-toggle alertas-resumen-toggle" [attr.for]="'resumen-' + resumen.id">
+                      <input
+                        class="alertas-toggle-input"
+                        type="checkbox"
+                        role="switch"
+                        [id]="'resumen-' + resumen.id"
+                        [(ngModel)]="resumen.activo" />
+                      <span class="alertas-toggle-track" aria-hidden="true"></span>
+                    </label>
+                    <div class="alertas-resumen-body">
+                      <div class="alertas-resumen-titulo">{{ resumen.titulo }}</div>
+                      <p class="alertas-resumen-sub mb-1">{{ resumen.subtitulo }}</p>
+                      <button
+                        type="button"
+                        class="btn btn-sm alertas-preview-link"
+                        [class.btn-outline-primary]="resumen.activo"
+                        [class.btn-outline-secondary]="!resumen.activo"
+                        [disabled]="!resumen.activo"
+                        (click)="abrirVistaPrevia(resumen.id)">
+                        Ver vista previa
+                      </button>
+                    </div>
+                    <div
+                      class="alertas-canales alertas-resumen-canales"
+                      role="group"
+                      [attr.aria-label]="'Canales ' + resumen.titulo">
+                      <button
+                        type="button"
+                        class="alertas-canal-btn"
+                        [class.alertas-canal-btn--wa-on]="resumen.whatsapp && resumen.activo"
+                        [class.alertas-canal-btn--off]="!resumen.whatsapp || !resumen.activo"
+                        [disabled]="!resumen.activo"
+                        [attr.aria-pressed]="resumen.whatsapp"
+                        (click)="toggleCanal(resumen, 'whatsapp')">
+                        WhatsApp
+                      </button>
+                      <button
+                        type="button"
+                        class="alertas-canal-btn"
+                        [class.alertas-canal-btn--mail-on]="resumen.correo && resumen.activo"
+                        [class.alertas-canal-btn--off]="!resumen.correo || !resumen.activo"
+                        [disabled]="!resumen.activo"
+                        [attr.aria-pressed]="resumen.correo"
+                        (click)="toggleCanal(resumen, 'correo')">
+                        Correo
+                      </button>
+                    </div>
+                  </li>
+                }
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-7">
+      <div class="card card-performance h-100">
+        <div class="card-body p-4">
+          <div class="card h-100">
+            <div class="card-body p-3 d-flex flex-column">
+              <div class="alertas-preview-head mb-3">
+                <h2 class="ventas-card-title alertas-sec-titulo mb-0">
+                  <span class="alertas-sec-icon" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path
+                        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round" />
+                      <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </span>
+                  Vista previa
+                </h2>
+                <div class="alertas-preview-toggles">
+                  <div class="modelado-tipo-group" role="group" aria-label="Periodo de vista previa">
+                    <button
+                      type="button"
+                      class="modelado-tipo-btn"
+                      [class.modelado-tipo-btn--active]="vistaPeriodo === 'semana'"
+                      (click)="vistaPeriodo = 'semana'">
+                      Semanal
+                    </button>
+                    <button
+                      type="button"
+                      class="modelado-tipo-btn"
+                      [class.modelado-tipo-btn--active]="vistaPeriodo === 'mes'"
+                      (click)="vistaPeriodo = 'mes'">
+                      Mensual
+                    </button>
+                  </div>
+                  <div class="modelado-vista-group" role="group" aria-label="Canal de vista previa">
+                    <button
+                      type="button"
+                      class="modelado-vista-btn"
+                      [class.modelado-vista-btn--active]="vistaCanal === 'whatsapp'"
+                      (click)="vistaCanal = 'whatsapp'">
+                      WhatsApp
+                    </button>
+                    <button
+                      type="button"
+                      class="modelado-vista-btn"
+                      [class.modelado-vista-btn--active]="vistaCanal === 'correo'"
+                      (click)="vistaCanal = 'correo'">
+                      Correo
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="alertas-preview-canvas flex-grow-1"
+                [class.alertas-preview-canvas--correo]="vistaCanal === 'correo'">
+                @if (vistaCanal === 'whatsapp') {
+                  <div class="alertas-wa-bubble">
+                    <div class="alertas-wa-from">
+                      <span class="alertas-wa-avatar" aria-hidden="true">L</span>
+                      <div>
+                        <strong>{{ config.vistaPrevia.remitente }}</strong>
+                        <span class="alertas-wa-verificado">({{ config.vistaPrevia.remitenteVerificado }})</span>
+                      </div>
+                    </div>
+                    <div class="alertas-wa-body">
+                      <p class="alertas-wa-titulo">{{ mensajePrevia().titulo }}</p>
+                      @for (sec of mensajePrevia().secciones; track sec.titulo) {
+                        <p class="alertas-wa-sec-titulo mb-1">{{ sec.titulo }}</p>
+                        @if (sec.numerada) {
+                          <ol class="alertas-wa-lista mb-2">
+                            @for (linea of sec.lineas; track linea) {
+                              <li>{{ linea }}</li>
+                            }
+                          </ol>
+                        } @else {
+                          <ul class="alertas-wa-lista mb-2">
+                            @for (linea of sec.lineas; track linea) {
+                              <li>{{ linea }}</li>
+                            }
+                          </ul>
+                        }
+                      }
+                      @if (mensajePrevia().cierre) {
+                        <p class="alertas-wa-cierre mb-0">{{ mensajePrevia().cierre }}</p>
+                      }
+                    </div>
+                    <div class="alertas-wa-time">{{ mensajePrevia().marcaTiempo }}</div>
+                  </div>
+                } @else {
+                  <div class="alertas-mail-preview">
+                    <p class="alertas-mail-asunto mb-2">
+                      <strong>Asunto:</strong> {{ mensajePrevia().titulo.replace('\n', ' — ') }}
+                    </p>
+                    @for (sec of mensajePrevia().secciones; track sec.titulo) {
+                      <p class="alertas-mail-sec mb-1"><strong>{{ sec.titulo }}</strong></p>
+                      @if (sec.numerada) {
+                        <ol class="alertas-mail-lista">
+                          @for (linea of sec.lineas; track linea) {
+                            <li>{{ linea }}</li>
+                          }
+                        </ol>
+                      } @else {
+                        <ul class="alertas-mail-lista">
+                          @for (linea of sec.lineas; track linea) {
+                            <li>{{ linea }}</li>
+                          }
+                        </ul>
+                      }
+                    }
+                    @if (mensajePrevia().cierre) {
+                      <p class="alertas-mail-cierre">{{ mensajePrevia().cierre }}</p>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-2">
+    <div class="col-12">
+      <div class="card card-performance">
+        <div class="card-body p-4">
+          <div class="card">
+            <div class="card-body p-3">
+              <h2 class="ventas-card-title alertas-sec-titulo mb-3">
+                <span class="alertas-sec-icon" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" />
+                    <path d="M9 17v1a3 3 0 0 0 6 0v-1" />
+                  </svg>
+                </span>
+                Catálogo de alertas
+              </h2>
+
+              <div class="alertas-cat-scroll">
+              @for (categoria of catalogo; track categoria.id) {
+                <section class="alertas-cat" [attr.aria-labelledby]="'alertas-cat-' + categoria.id">
+                  <h3 class="alertas-cat-titulo" [id]="'alertas-cat-' + categoria.id">{{ categoria.titulo }}</h3>
+
+                  <ul class="list-unstyled mb-0">
+                    @for (alerta of categoria.alertas; track alerta.id) {
+                      <li
+                        class="alertas-cat-item"
+                        [class.alertas-cat-item--off]="!alerta.activo">
+                        <div class="alertas-cat-row">
+                          <div class="alertas-cat-controls">
+                            <label class="alertas-toggle" [attr.for]="'alerta-on-' + alerta.id">
+                              <input
+                                class="alertas-toggle-input"
+                                type="checkbox"
+                                role="switch"
+                                [id]="'alerta-on-' + alerta.id"
+                                [(ngModel)]="alerta.activo"
+                                (ngModelChange)="onCatalogoActivoChange(alerta)" />
+                              <span class="alertas-toggle-track" aria-hidden="true"></span>
+                            </label>
+                            <button
+                              type="button"
+                              class="alertas-cat-expand"
+                              [attr.aria-expanded]="catalogoExpandidoEs(alerta.id)"
+                              [class.alertas-cat-expand--disabled]="!alerta.vistaPreviaWhatsapp"
+                              [disabled]="!alerta.vistaPreviaWhatsapp"
+                              (click)="toggleCatalogoExpand(alerta.id)">
+                              <span
+                                class="alertas-cat-chevron"
+                                [class.alertas-cat-chevron--open]="catalogoExpandidoEs(alerta.id)"
+                                aria-hidden="true">›</span>
+                            </button>
+                          </div>
+
+                          <div class="alertas-cat-main">
+                            <div class="alertas-cat-top">
+                              <div class="alertas-cat-nombre">
+                                {{ alerta.titulo }}
+                                @if (alerta.urgente) {
+                                  <span class="alertas-tag-urgente">urgente</span>
+                                }
+                              </div>
+
+                          <div class="alertas-cat-actions">
+                            <div class="alertas-cat-config">
+                              @if (alerta.config.tipo === 'sin_ajustes') {
+                                <span class="alertas-sin-ajustes">sin ajustes</span>
+                              } @else if (alerta.config.tipo === 'variacion_pct') {
+                                <label class="alertas-var-label">
+                                  <span class="alertas-var-texto">Variación</span>
+                                  <span class="alertas-var-campo">
+                                    <input
+                                      type="number"
+                                      class="form-control form-control-sm alertas-var-input"
+                                      [(ngModel)]="alerta.config.valor"
+                                      [disabled]="!alerta.activo"
+                                      [attr.aria-label]="'Variación ' + alerta.titulo" />
+                                    <span class="alertas-var-sufijo">%</span>
+                                  </span>
+                                </label>
+                              } @else if (alerta.config.tipo === 'select' && alerta.config.opciones) {
+                                <label class="alertas-select-wrap">
+                                  <span class="alertas-select-prefijo">{{ alerta.config.prefijo }}</span>
+                                  <select
+                                    class="form-select form-select-sm alertas-select"
+                                    [(ngModel)]="alerta.config.valorSelect"
+                                    [disabled]="!alerta.activo">
+                                    @for (opt of alerta.config.opciones; track opt.id) {
+                                      <option [value]="opt.id">{{ opt.label }}</option>
+                                    }
+                                  </select>
+                                </label>
+                              }
+                            </div>
+
+                            <div class="alertas-cat-canales">
+                              <button
+                                type="button"
+                                class="alertas-canal-btn"
+                                [class.alertas-canal-btn--wa-on]="alerta.whatsapp && alerta.activo"
+                                [class.alertas-canal-btn--off]="!alerta.whatsapp || !alerta.activo"
+                                [disabled]="!alerta.activo"
+                                (click)="toggleCatalogoCanal(alerta, 'whatsapp')">
+                                WhatsApp
+                              </button>
+                              <button
+                                type="button"
+                                class="alertas-canal-btn"
+                                [class.alertas-canal-btn--mail-on]="alerta.correo && alerta.activo"
+                                [class.alertas-canal-btn--off]="!alerta.correo || !alerta.activo"
+                                [disabled]="!alerta.activo"
+                                (click)="toggleCatalogoCanal(alerta, 'correo')">
+                                Correo
+                              </button>
+                            </div>
+
+                            <span
+                              class="alertas-estado-pill"
+                              [class.alertas-estado-pill--hoy]="alerta.estado === 'enviaria_hoy'"
+                              [class.alertas-estado-pill--ok]="alerta.estado === 'sin_novedad'"
+                              [class.alertas-estado-pill--off]="alerta.estado === 'apagada'">
+                              {{ etiquetaEstado(alerta.estado) }}
+                            </span>
+                          </div>
+                            </div>
+                            <p class="alertas-cat-desc mb-0">{{ alerta.descripcion }}</p>
+                          </div>
+                        </div>
+
+                        @if (alerta.vistaPreviaWhatsapp && catalogoExpandidoEs(alerta.id)) {
+                          <div class="alertas-cat-preview">
+                            <div class="alertas-wa-bubble alertas-wa-bubble--inline">
+                              <div class="alertas-wa-from">
+                                <span class="alertas-wa-avatar" aria-hidden="true">L</span>
+                                <div><strong>Lucas · SmartPyme</strong></div>
+                              </div>
+                              <p class="mb-0 alertas-wa-preview-text">{{ alerta.vistaPreviaWhatsapp }}</p>
+                            </div>
+                          </div>
+                        }
+                      </li>
+                    }
+                  </ul>
+                </section>
+              }
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

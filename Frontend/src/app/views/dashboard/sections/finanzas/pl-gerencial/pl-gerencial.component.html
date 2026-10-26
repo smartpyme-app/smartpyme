@@ -1,0 +1,96 @@
+<div class="pl-gerencial-dashboard ventas-dashboard">
+  <div class="row mb-2">
+    <div class="col-12">
+      <div class="card card-performance">
+        <div class="card-body p-4">
+          <div class="metrics-flex-row mb-3">
+            @for (item of kpiItems; track item.metric.title) {
+              <div class="metric-flex-col">
+                <app-chart-card [data]="item.metric"></app-chart-card>
+                @if (item.sublinea) {
+                  <p class="pl-kpi-sublinea text-muted small mb-0 mt-1 ps-1">{{ item.sublinea }}</p>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="row">
+            <div class="col-12 mb-2">
+              <div class="card h-100">
+                <div class="card-header bg-white border-0 py-3 text-center">
+                  <div class="ventas-card-title mb-0">
+                    Estado de resultados — {{ periodoTitulo }}
+                  </div>
+                </div>
+                <div class="card-body pt-0 px-3 pb-3">
+                  <div class="table-responsive">
+                    <table class="table table-sm pl-estado-table mb-0">
+                      <thead>
+                        <tr>
+                          <th scope="col" class="pl-col-concepto">Concepto</th>
+                          <th scope="col" class="text-end">{{ etiquetaPeriodoColumna() }}</th>
+                          <th scope="col" class="text-end">% Ventas</th>
+                          <th scope="col" class="text-end">VS. {{ comparacionTitulo }}</th>
+                          <th scope="col" class="text-end">Acum. {{ anioAcumulado }}</th>
+                          <th scope="col" class="text-end">% Ventas</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (fila of filas; track fila.concepto) {
+                          <tr
+                            [class.pl-row-subtotal]="estiloFila(fila) === 'subtotal'"
+                            [class.pl-row-total]="estiloFila(fila) === 'total'">
+                            <td class="pl-col-concepto" [class.pl-concepto-indent]="fila.indent">
+                              @if (fila.indent) {
+                                <span class="pl-concepto-chevron" aria-hidden="true">›</span>
+                              }
+                              <span class="pl-concepto-text">
+                                {{ fila.concepto }}
+                                @if (fila.detalle) {
+                                  <span class="pl-concepto-detalle">{{ fila.detalle }}</span>
+                                }
+                              </span>
+                            </td>
+                            <td class="text-end">{{ formatMonto(fila.mes) }}</td>
+                            <td class="text-end text-muted">{{ formatPct(fila.pctVentasMes) }}</td>
+                            <td
+                              class="text-end"
+                              [class.text-success]="variacionPositiva(fila)"
+                              [class.text-danger]="variacionNegativa(fila)">
+                              {{ formatVariacion(fila) }}
+                            </td>
+                            <td class="text-end fw-semibold">{{ formatMonto(fila.acum) }}</td>
+                            <td class="text-end text-muted">{{ formatPct(fila.pctVentasAcum) }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-2">
+    <div class="col-12">
+      <div class="card card-performance">
+        <div class="card-body p-4">
+          <div class="card h-100">
+            <div class="card-header bg-white border-0 py-3 text-center">
+              <div class="ventas-card-title mb-0">
+                Gastos como % de ventas — {{ etiquetaMesTitulo() }} vs. su promedio de 6 meses
+              </div>
+            </div>
+            <div class="card-body pt-0">
+              <app-pl-gastos-pct-ventas [mesEtiqueta]="etiquetaMesTitulo()"></app-pl-gastos-pct-ventas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

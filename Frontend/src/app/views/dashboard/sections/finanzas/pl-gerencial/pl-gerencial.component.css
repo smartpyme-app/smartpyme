@@ -1,0 +1,118 @@
+/* Mismo lenguaje visual que dashboard Ventas (card-performance, métricas, cards internas) */
+
+.pl-gerencial-dashboard.ventas-dashboard .card {
+  margin-bottom: 0 !important;
+}
+
+.card-performance {
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 118, 227, 0.15) !important;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 118, 227, 0.08) !important;
+}
+
+.pl-gerencial-dashboard .card-performance .card {
+  border: 1px solid rgba(0, 118, 227, 0.15) !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+
+.metrics-flex-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.metric-flex-col {
+  flex: 1 1 160px;
+  min-width: 155px;
+  max-width: 100%;
+}
+
+.ventas-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.pl-kpi-sublinea {
+  line-height: 1.25;
+}
+
+.pl-col-concepto {
+  min-width: 11rem;
+  text-align: left;
+}
+
+.pl-concepto-indent {
+  padding-left: 0.35rem;
+}
+
+.pl-concepto-chevron {
+  color: #94a3b8;
+  margin-right: 0.35rem;
+}
+
+.pl-concepto-detalle {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.pl-estado-table thead th {
+  background-color: #66a3ff !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-align: center;
+  vertical-align: middle;
+  border: none;
+  padding: 12px 16px;
+}
+
+.pl-estado-table thead th.pl-col-concepto {
+  text-align: left;
+}
+
+.pl-estado-table tbody tr {
+  border-bottom: 1px solid #e0e0e0;
+  transition: background-color 0.15s ease;
+}
+
+.pl-estado-table tbody tr:nth-child(even) {
+  background-color: #f7f7f7;
+}
+
+.pl-estado-table tbody tr:nth-child(odd) {
+  background-color: #ffffff;
+}
+
+.pl-estado-table tbody tr:hover {
+  background-color: #e8f0fe;
+}
+
+.pl-estado-table tbody td {
+  padding: 12px 16px;
+  font-size: 0.875rem;
+  vertical-align: middle;
+  border: none;
+}
+
+.pl-row-subtotal td {
+  font-weight: 700;
+  color: #212529;
+}
+
+.pl-row-total td {
+  font-weight: 700;
+  color: #38528f;
+  background-color: #ffffff !important;
+  border-top: 1px solid #dee2e6;
+}
+
+.pl-row-total:hover td {
+  background-color: #ffffff !important;
+}

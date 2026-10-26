@@ -1,0 +1,111 @@
+<div class="flujo-posicion-grid">
+  <section class="flujo-pos-card" aria-labelledby="flujo-cxc-titulo">
+    <div class="flujo-pos-header">
+      <h2 id="flujo-cxc-titulo" class="flujo-pos-titulo">Cuentas por cobrar</h2>
+      <span class="flujo-pos-total">{{ formatMonto(data.cuentasCobrar.total) }}</span>
+    </div>
+
+    <div class="flujo-bar-stack" aria-hidden="true">
+      @for (seg of data.cuentasCobrar.segmentos; track seg.etiqueta) {
+        <span
+          class="flujo-bar-seg"
+          [ngClass]="claseTono(seg.tono)"
+          [style.width.%]="anchoSegmento(seg, data.cuentasCobrar.total)">
+        </span>
+      }
+    </div>
+
+    <ul class="flujo-leyenda list-unstyled mb-0">
+      @for (seg of data.cuentasCobrar.segmentos; track seg.etiqueta) {
+        <li class="flujo-leyenda-item">
+          <span class="flujo-leyenda-dot" [ngClass]="claseTono(seg.tono)"></span>
+          <span class="flujo-leyenda-texto">{{ seg.etiqueta }}</span>
+          <span class="flujo-leyenda-monto">{{ formatMonto(seg.monto) }}</span>
+        </li>
+      }
+    </ul>
+
+    <h3 class="flujo-subtitulo">A quién llamar primero</h3>
+    <ul class="flujo-lista list-unstyled mb-0">
+      @for (item of data.cuentasCobrar.llamarPrimero; track item.factura) {
+        <li class="flujo-lista-item">
+          <div class="flujo-lista-main">
+            <span class="flujo-lista-nombre">{{ item.nombre }}</span>
+            <span class="flujo-lista-meta">{{ item.factura }} · {{ item.diasVencido }} días vencido</span>
+          </div>
+          <span
+            class="flujo-lista-monto"
+            [class.flujo-lista-monto--urgente]="item.urgente"
+            [class.flujo-lista-monto--normal]="!item.urgente">
+            {{ formatMonto(item.monto) }}
+          </span>
+        </li>
+      }
+    </ul>
+  </section>
+
+  <section class="flujo-pos-card" aria-labelledby="flujo-cxp-titulo">
+    <div class="flujo-pos-header">
+      <h2 id="flujo-cxp-titulo" class="flujo-pos-titulo">Cuentas por pagar</h2>
+      <span class="flujo-pos-total">{{ formatMonto(data.cuentasPagar.total) }}</span>
+    </div>
+
+    <div class="flujo-bar-stack" aria-hidden="true">
+      @for (seg of data.cuentasPagar.segmentos; track seg.etiqueta) {
+        <span
+          class="flujo-bar-seg"
+          [ngClass]="claseTono(seg.tono)"
+          [style.width.%]="anchoSegmento(seg, data.cuentasPagar.total)">
+        </span>
+      }
+    </div>
+
+    <ul class="flujo-leyenda list-unstyled mb-0">
+      @for (seg of data.cuentasPagar.segmentos; track seg.etiqueta) {
+        <li class="flujo-leyenda-item">
+          <span class="flujo-leyenda-dot" [ngClass]="claseTono(seg.tono)"></span>
+          <span class="flujo-leyenda-texto">{{ seg.etiqueta }}</span>
+          <span class="flujo-leyenda-monto">{{ formatMonto(seg.monto) }}</span>
+        </li>
+      }
+    </ul>
+
+    <h3 class="flujo-subtitulo">Pagos grandes que vienen</h3>
+    <ul class="flujo-lista list-unstyled mb-0">
+      @for (pago of data.cuentasPagar.pagosGrandes; track pago.descripcion + pago.vence) {
+        <li class="flujo-lista-item">
+          <div class="flujo-lista-main">
+            <span class="flujo-lista-nombre">{{ pago.descripcion }}</span>
+            <span class="flujo-lista-meta">Vence {{ pago.vence }}</span>
+          </div>
+          <span
+            class="flujo-lista-monto"
+            [class.flujo-lista-monto--urgente]="pago.urgente"
+            [class.flujo-lista-monto--normal]="!pago.urgente">
+            {{ formatMonto(pago.monto) }}
+          </span>
+        </li>
+      }
+    </ul>
+  </section>
+
+  <section class="flujo-pos-card" aria-labelledby="flujo-salidas-titulo">
+    <div class="flujo-pos-header">
+      <h2 id="flujo-salidas-titulo" class="flujo-pos-titulo">Próximas salidas fijas e impuestos</h2>
+      <button type="button" class="flujo-config-btn">configurar</button>
+    </div>
+
+    <ol class="flujo-salidas-list list-unstyled mb-0">
+      @for (item of data.salidasFijas.items; track item.descripcion + item.fecha; let i = $index) {
+        <li class="flujo-salida-item">
+          <span class="flujo-salida-idx">{{ i + 1 }}</span>
+          <div class="flujo-salida-body">
+            <span class="flujo-salida-desc">{{ item.descripcion }}</span>
+            <span class="flujo-salida-fecha">{{ item.fecha }}</span>
+          </div>
+          <span class="flujo-salida-monto">{{ formatMonto(item.monto) }}</span>
+        </li>
+      }
+    </ol>
+  </section>
+</div>

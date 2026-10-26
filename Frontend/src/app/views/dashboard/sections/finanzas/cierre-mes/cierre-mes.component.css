@@ -1,0 +1,315 @@
+.cierre-mes-dashboard.ventas-dashboard .card {
+  margin-bottom: 0 !important;
+}
+
+.cierre-mes-dashboard .card-performance {
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 118, 227, 0.15) !important;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 118, 227, 0.08) !important;
+}
+
+.cierre-mes-dashboard .card-performance > .card-body > .card {
+  border: 1px solid rgba(0, 118, 227, 0.15) !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+
+.ventas-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e3a5f;
+}
+
+.cierre-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cierre-panel-header--impuestos {
+  align-items: center;
+}
+
+.cierre-panel-titulo-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+.cierre-panel-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.cierre-panel-icon--check {
+  background: #e8f5ec;
+  color: #15803d;
+}
+
+.cierre-pendientes {
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #ea580c;
+}
+
+.cierre-checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.84rem;
+  color: #334155;
+}
+
+.cierre-checklist-item:last-child {
+  border-bottom: none;
+}
+
+.cierre-checklist-icon {
+  width: 1.1rem;
+  flex-shrink: 0;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.cierre-checklist-item--ok .cierre-checklist-icon {
+  color: #16a34a;
+}
+
+.cierre-checklist-item--error .cierre-checklist-icon {
+  color: #dc2626;
+}
+
+.cierre-checklist-item--alerta .cierre-checklist-icon {
+  color: #ea580c;
+}
+
+.cierre-checklist-texto {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.cierre-checklist-accion {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.55rem;
+}
+
+.cierre-certificar-btn {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #94a3b8;
+  font-weight: 600;
+  padding: 0.65rem 1rem;
+}
+
+.cierre-impuestos-vence {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #dc2626;
+  white-space: nowrap;
+}
+
+.cierre-impuestos-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0;
+  font-size: 0.9rem;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.cierre-impuestos-row:last-child {
+  border-bottom: none;
+}
+
+.cierre-presupuesto-table thead th {
+  background-color: #66a3ff !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  border: none;
+  padding: 10px 12px;
+  vertical-align: middle;
+}
+
+.cierre-presupuesto-table thead th:first-child {
+  text-align: left;
+}
+
+.cierre-presupuesto-table tbody td {
+  padding: 10px 12px;
+  font-size: 0.84rem;
+  vertical-align: middle;
+  border: none;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.cierre-presupuesto-table tbody tr:nth-child(even) {
+  background-color: #f7f7f7;
+}
+
+.cierre-text-pos {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.cierre-text-neg {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.cierre-text-warn {
+  color: #ea580c;
+  font-weight: 600;
+}
+
+.cierre-text-muted {
+  color: #94a3b8;
+}
+
+.cierre-estado-dot {
+  font-size: 0.65rem;
+  line-height: 1;
+}
+
+.cierre-estado-dot--ok {
+  color: #22c55e;
+}
+
+.cierre-umbral-badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.cierre-fuera-rango-acciones {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.cierre-btn-revisar {
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #c2410c;
+  font-weight: 600;
+}
+
+.cierre-btn-revisar:hover {
+  background: #ffedd5;
+  border-color: #fb923c;
+  color: #9a3412;
+}
+
+.cierre-btn-normal {
+  font-weight: 600;
+  color: #475569;
+}
+
+.cierre-mes-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 1.25rem;
+}
+
+.cierre-mes-meses {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cierre-mes-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.cierre-mes-pill--cerrado:hover:not(:disabled):not(.cierre-mes-pill--seleccionado) {
+  background: #dcfce7;
+}
+
+.cierre-mes-pill--cerrado {
+  background: #e8f5ec;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.cierre-mes-pill--activo {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.15);
+}
+
+.cierre-mes-pill--pendiente {
+  background: #f8fafc;
+  color: #94a3b8;
+  cursor: default;
+}
+
+.cierre-mes-pill:disabled {
+  opacity: 1;
+}
+
+.cierre-mes-lock {
+  display: inline-flex;
+  line-height: 0;
+}
+
+.cierre-mes-resumen {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #15803d;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.cierre-mes-resumen-lock {
+  display: inline-flex;
+  line-height: 0;
+}
+
+.cierre-mes-resumen-texto strong {
+  font-weight: 800;
+}
+
+@media (max-width: 768px) {
+  .cierre-mes-resumen {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

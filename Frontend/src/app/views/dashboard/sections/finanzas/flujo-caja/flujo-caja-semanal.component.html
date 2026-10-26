@@ -1,0 +1,65 @@
+<section class="flujo-semanal-card" aria-labelledby="flujo-semanal-titulo">
+  <div class="flujo-semanal-header">
+    <h2 id="flujo-semanal-titulo" class="flujo-semanal-titulo">Detalle semana a semana</h2>
+  </div>
+
+  <div class="table-responsive">
+    <table class="flujo-semanal-table">
+      <thead>
+        <tr>
+          <th scope="col">Semana</th>
+          <th scope="col" class="flujo-num">Inicial</th>
+          <th scope="col" class="flujo-num flujo-col-ventas">Ventas (sin IVA)</th>
+          <th scope="col" class="flujo-num">De contado</th>
+          <th scope="col" class="flujo-num">Cobros</th>
+          <th scope="col" class="flujo-num">Fijos</th>
+          <th scope="col" class="flujo-num">Impuestos</th>
+          <th scope="col" class="flujo-num">Proveedores</th>
+          <th scope="col" class="flujo-num">Otros</th>
+          <th scope="col" class="flujo-num">Neto</th>
+          <th scope="col" class="flujo-num">Final</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (fila of filas; track fila.id; let i = $index) {
+          <tr
+            class="flujo-semanal-row"
+            [class.flujo-semanal-row--selected]="semanaSeleccionada === fila.id"
+            (click)="seleccionarSemana(fila.id)">
+            <td class="flujo-col-semana">
+              <span class="flujo-semana-id">{{ fila.id }}</span>
+              <span class="flujo-semana-rango">{{ fila.rango }}</span>
+            </td>
+            <td class="flujo-num">{{ formatMonto(fila.inicial) }}</td>
+            <td class="flujo-num flujo-col-ventas" (click)="$event.stopPropagation()">
+              <input
+                type="number"
+                class="flujo-ventas-input"
+                [(ngModel)]="fila.ventasSinIva"
+                (ngModelChange)="onVentasChange(i)"
+                [attr.aria-label]="'Ventas sin IVA ' + fila.id" />
+            </td>
+            <td class="flujo-num flujo-text-blue">{{ formatMonto(fila.deContado) }}</td>
+            <td class="flujo-num flujo-text-muted">{{ formatCobros(fila.cobros) }}</td>
+            <td class="flujo-num">{{ formatMonto(fila.fijos) }}</td>
+            <td class="flujo-num">{{ formatMonto(fila.impuestos) }}</td>
+            <td class="flujo-num">{{ formatMonto(fila.proveedores) }}</td>
+            <td class="flujo-num">{{ formatMonto(fila.otros) }}</td>
+            <td
+              class="flujo-num flujo-neto"
+              [class.flujo-neto--pos]="fila.neto >= 0"
+              [class.flujo-neto--neg]="fila.neto < 0">
+              {{ formatMonto(fila.neto) }}
+            </td>
+            <td class="flujo-num flujo-final">{{ formatMonto(fila.final) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <p class="flujo-semanal-nota">
+    <span aria-hidden="true">ⓘ</span>
+    {{ meta.notaPie }}
+  </p>
+</section>

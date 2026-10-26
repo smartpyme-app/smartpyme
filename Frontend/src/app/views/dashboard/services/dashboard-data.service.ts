@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import {
   ResultadosDashboardDataService,
   CashflowVentasPagina,
@@ -67,6 +67,9 @@ export class DashboardDataService {
         return this.cuentasData.obtenerCuentasProgresivo(filtros);
       case 'Inventario':
         return this.inventarioData.obtenerInventarioProgresivo(filtros);
+      case 'Finanzas':
+        // ponytail: sin endpoint agregado; el componente usa datos locales / ejemplo
+        return of({});
       default:
         return this.resultadosData.obtenerResultadosProgresivo(filtros);
     }
