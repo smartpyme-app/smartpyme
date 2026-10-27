@@ -4,6 +4,7 @@ import { ApiService } from '@services/api.service';
 import { DashboardFiltrosCatalogoService } from '../../services/dashboard-filtros-catalogo.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { PlGerencialComponent } from './pl-gerencial/pl-gerencial.component';
+import { PlGerencialQuery } from '../../services/finanzas-pl-data.service';
 import { RentabilidadComponent } from './rentabilidad/rentabilidad.component';
 import { FlujoCajaComponent } from './flujo-caja/flujo-caja.component';
 import { CierreMesComponent } from './cierre-mes/cierre-mes.component';
@@ -73,6 +74,7 @@ export class FinanzasComponent implements OnInit {
     { id: 'caja', label: 'Caja (con IVA)' },
   ];
 
+  /** Mes por defecto: alinea con dashboard Ventas (un mes, no YTD). */
   plPeriodo: PlPeriodoId = 'mes';
   plBase: PlBaseId = 'gerencial';
   plSucursalId = 'consolidado';
@@ -82,6 +84,7 @@ export class FinanzasComponent implements OnInit {
   plSucursalOpciones: PlSegmentOption[] = [
     { id: 'consolidado', label: 'Consolidado' },
   ];
+  plQuery: PlGerencialQuery = this.buildPlQuery();
 
   ngOnInit(): void {
     this.plComparacionOpciones = this.buildComparacionOpciones();
@@ -103,18 +106,40 @@ export class FinanzasComponent implements OnInit {
 
   seleccionarPlPeriodo(id: PlPeriodoId): void {
     this.plPeriodo = id;
+    this.refreshPlQuery();
   }
 
   seleccionarPlBase(id: PlBaseId): void {
     this.plBase = id;
+    this.refreshPlQuery();
   }
 
   seleccionarPlSucursal(event: Event): void {
     this.plSucursalId = (event.target as HTMLSelectElement).value;
+    this.refreshPlQuery();
   }
 
   seleccionarPlComparacion(id: PlComparacionId): void {
     this.plComparacion = id;
+    this.refreshPlQuery();
+  }
+
+  private refreshPlQuery(): void {
+    this.plQuery = this.buildPlQuery();
+  }
+
+  private buildPlQuery(): PlGerencialQuery {
+    // Año completo llega hasta el mes en curso (igual que Ventas con mes vacío).
+    // Mes suelto sigue en el mes cerrado anterior.
+    const mesRef = this.plPeriodo === 'anio_completo' ? new Date() : this.plMesReferencia;
+    return {
+      periodo: this.plPeriodo,
+      base: this.plBase,
+      sucursalId: this.plSucursalId,
+      comparacion: this.plComparacion,
+      anio: mesRef.getFullYear(),
+      mes: mesRef.getMonth() + 1,
+    };
   }
 
   private buildComparacionOpciones(): PlSegmentOption<PlComparacionId>[] {
@@ -186,7 +211,13 @@ export class FinanzasComponent implements OnInit {
   }
 
   get plAnioAcumulado(): number {
-    return new Date().getFullYear();
+    return this.plMesReferencia.getFullYear();
+  }
+
+  /** Mes de referencia del P&L (mes calendario anterior, alineado al título de periodo). */
+  private get plMesReferencia(): Date {
+    const ref = new Date();
+    return new Date(ref.getFullYear(), ref.getMonth() - 1, 1);
   }
 
   get subtituloContexto(): string {

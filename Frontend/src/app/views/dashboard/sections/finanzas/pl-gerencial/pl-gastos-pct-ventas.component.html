@@ -2,6 +2,9 @@
   Cada gasto medido contra las ventas del mismo mes
 </p>
 
+@if (data.filas.length === 0) {
+  <p class="text-muted small mb-0">Sin datos de estructura de gastos para este periodo.</p>
+} @else {
 <div class="pl-gastos-list">
   @for (fila of data.filas; track fila.concepto) {
     <div class="rent-barra-row pl-gastos-row">
@@ -39,3 +42,4 @@
     </div>
   }
 </div>
+}

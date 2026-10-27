@@ -1,8 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PlGastoPctVentaFila } from './pl-gerencial.model';
-import { PL_GASTOS_PCT_VENTAS_MOCK } from './pl-gerencial.mock';
-
 @Component({
   selector: 'app-pl-gastos-pct-ventas',
   templateUrl: './pl-gastos-pct-ventas.component.html',
@@ -12,8 +10,7 @@ import { PL_GASTOS_PCT_VENTAS_MOCK } from './pl-gerencial.mock';
 })
 export class PlGastosPctVentasComponent {
   @Input() mesEtiqueta = 'septiembre';
-
-  readonly data = PL_GASTOS_PCT_VENTAS_MOCK;
+  @Input() data: { filas: PlGastoPctVentaFila[] } = { filas: [] };
   /** ponytail: escala fija del mock; subir si algún % supera 70 */
   readonly escalaMaxPct = 70;
 

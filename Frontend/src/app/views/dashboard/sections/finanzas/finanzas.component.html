@@ -132,6 +132,7 @@
   <div class="suite-financiera-panel mt-3" role="tabpanel">
     @if (tabActiva === 'pl') {
       <app-pl-gerencial
+        [query]="plQuery"
         [periodoTitulo]="plPeriodoTitulo"
         [comparacionTitulo]="plComparacionTitulo"
         [anioAcumulado]="plAnioAcumulado">
