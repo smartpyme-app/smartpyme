@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Inventario;
 
 use App\Exports\PlantillaInventarioExport;
+use App\Http\Controllers\Concerns\AuthorizesVerCostosInventario;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
@@ -70,6 +71,8 @@ use App\Http\Requests\Inventario\Productos\ImportarShopifyRequest;
 
 class ProductosController extends Controller
 {
+    use AuthorizesVerCostosInventario;
+
     protected $shopifyTransformer;
     protected $shopifyImportService;
     protected $productoService;
@@ -669,6 +672,8 @@ class ProductosController extends Controller
             ->with($with)
             ->firstOrFail();
 
+        $this->ocultarCostosProductoSiAplica($producto);
+
         return Response()->json($producto, 200);
     }
 
@@ -1101,6 +1106,8 @@ class ProductosController extends Controller
      */
     public function historialPrecioCosto(Request $request, $id)
     {
+        $this->authorizeVerCostosInventario($request->user());
+
         $request->validate([
             'inicio'     => 'required|date',
             'fin'        => 'required|date|after_or_equal:inicio',

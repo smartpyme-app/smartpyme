@@ -138,7 +138,8 @@ return [
             'ver' => 'productos.inventario.ver',
             'crear' => 'productos.inventario.crear',
             'editar' => 'productos.inventario.editar',
-            'eliminar' => 'productos.inventario.eliminar'
+            'eliminar' => 'productos.inventario.eliminar',
+            'ver_costos' => 'productos.inventario.ver_costos',
         ],
 
         'bodegas' => [
@@ -305,7 +306,11 @@ return [
         'descuentos' => [
             'aplicar' => 'ventas.descuentos.aplicar',
             'autorizar' => 'ventas.descuentos.autorizar',
-        ]
+        ],
+
+        'facturacion_electronica' => [
+            'emitir' => 'ventas.facturacion_electronica.emitir',
+        ],
     ],
 
     /*
@@ -582,7 +587,12 @@ return [
             'ver' => 'contabilidad.partidas.ver',
             'crear' => 'contabilidad.partidas.crear',
             'editar' => 'contabilidad.partidas.editar',
-            'eliminar' => 'contabilidad.partidas.eliminar'
+            'eliminar' => 'contabilidad.partidas.eliminar',
+            'generar_venta' => 'contabilidad.partidas.generar_venta',
+            'generar_cxc' => 'contabilidad.partidas.generar_cxc',
+            'generar_compra' => 'contabilidad.partidas.generar_compra',
+            'generar_cxp' => 'contabilidad.partidas.generar_cxp',
+            'generar_gasto' => 'contabilidad.partidas.generar_gasto',
         ],
 
         'catalogo_cuentas' => [

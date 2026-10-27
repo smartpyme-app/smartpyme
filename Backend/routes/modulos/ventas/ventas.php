@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\Ventas\VentaRecurrenciaController;
 use App\Http\Controllers\Api\Ventas\VentasController;
 use App\Http\Controllers\Api\Ventas\VentasImportController;
 use App\Http\Controllers\Api\WompiController;
+use App\Support\PermisoAnular;
 use Illuminate\Support\Facades\Route;
 
     Route::get('/ventas',               [VentasController::class, 'index']);
@@ -13,7 +14,8 @@ use Illuminate\Support\Facades\Route;
     Route::post('/venta/{id}/recurrencia', [VentaRecurrenciaController::class, 'guardar']);
     Route::get('/ventas-recurrentes/preferencias', [VentaRecurrenciaController::class, 'preferencias']);
     Route::post('/ventas-recurrentes/preferencias', [VentaRecurrenciaController::class, 'guardarPreferencias']);
-    Route::delete('/venta/{id}',        [VentasController::class, 'delete']);
+    Route::delete('/venta/{id}',        [VentasController::class, 'delete'])
+        ->middleware('permission:'.PermisoAnular::eliminarOAnular('ventas.eliminar'));
 
     Route::post('/venta/facturacion',  [VentasController::class, 'facturacion']);
     Route::post('/venta/facturacion/consigna',  [VentasController::class, 'facturacionConsigna']);
