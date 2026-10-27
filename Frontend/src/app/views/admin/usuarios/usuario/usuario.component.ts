@@ -10,6 +10,9 @@ import { ContadoresPortalService } from '@services/contadores-portal.service';
 import { BaseComponent } from '@shared/base/base.component';
 import { pathLogoEmpresa, urlImagenEmpresaOAvatar } from '@shared/utils/imagen-empresa-o-avatar';
 import { FilterPipe } from '@pipes/filter.pipe';
+import { FuncionalidadesService } from '@services/functionalities.service';
+import { filtrarModulosPermisos } from '@shared/utils/permisos-modulos-empresa';
+import { map, switchMap } from 'rxjs/operators';
 
 
 interface Permission {
@@ -154,6 +157,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
   public modulePermissions: { [key: string]: Permission[] } = {};
   public Object = Object;
   public modules: any[] = [];
+  private modulesSinFiltrar: any[] = [];
   public searchText: string = '';
   public selectedPermissions: string[] = [];
   public addedPermissions: string[] = []; // Permisos que se añadirán
@@ -169,6 +173,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
     public encryptService: EncryptService,
     private cdr: ChangeDetectorRef,
     private contadoresPortal: ContadoresPortalService,
+    private funcionalidadesService: FuncionalidadesService,
   ) {
     super();
   }
@@ -241,6 +246,14 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
     if (id && !isNaN(id)) {
       this.loadPermissions(id);
     }
+
+    this.funcionalidadesService.onCambios()
+      .pipe(this.untilDestroyed())
+      .subscribe(() => {
+        if (this.modulesSinFiltrar.length > 0) {
+          this.aplicarFiltroModulosEmpresa(this.modulesSinFiltrar);
+        }
+      });
   }
 
   public loadAll(id: number) {
@@ -655,20 +668,33 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
     this.cdr.markForCheck();
 
     this.apiService.getAll(`roles-permissions/user/${id}`)
-      .pipe(this.untilDestroyed())
+      .pipe(
+        this.untilDestroyed(),
+        switchMap((response: any) =>
+          this.funcionalidadesService.obtenerSlugsActivos().pipe(
+            map((slugs) => ({ response, slugs })),
+          ),
+        ),
+      )
       .subscribe({
-      next: (response: any) => {
+      next: ({ response, slugs }: { response: any; slugs: ReadonlySet<string> }) => {
         if (response.data) {
-          this.modules = (response.data.modules || []).map((module: any) => ({
+          this.modulesSinFiltrar = (response.data.modules || []).map((module: any) => ({
             ...module,
             expanded: false,
           }));
+          this.modules = filtrarModulosPermisos(this.modulesSinFiltrar, {
+            slugsActivos: slugs,
+            empresa: this.apiService.auth_user()?.empresa,
+            fidelizacionActiva: this.apiService.isFidelizacionActiva(),
+          });
           this.rolePermissions = response.data.rolePermissions || [];
           this.directPermissions = response.data.directPermissions || [];
           this.revokedPermissions = response.data.revokedPermissions || [];
           this.effectivePermissions = response.data.effectivePermissions || [];
           this.applyModuleFilter(this.selectedModuleName);
         } else {
+          this.modulesSinFiltrar = [];
           this.modules = [];
           this.filterModules = [];
         }
@@ -983,6 +1009,20 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
       ? this.modules.filter((mod) => mod.name === moduleName)
       : [...this.modules];
     this.cdr.markForCheck();
+  }
+
+  private aplicarFiltroModulosEmpresa(raw: any[]): void {
+    this.funcionalidadesService.obtenerSlugsActivos()
+      .pipe(this.untilDestroyed())
+      .subscribe((slugs) => {
+        this.modulesSinFiltrar = raw;
+        this.modules = filtrarModulosPermisos(raw, {
+          slugsActivos: slugs,
+          empresa: this.apiService.auth_user()?.empresa,
+          fidelizacionActiva: this.apiService.isFidelizacionActiva(),
+        });
+        this.applyModuleFilter(this.selectedModuleName);
+      });
   }
 
   private formatRoleName(name?: string): string {
