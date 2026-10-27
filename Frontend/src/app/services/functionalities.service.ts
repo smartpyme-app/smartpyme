@@ -9,6 +9,7 @@ import { environment } from 'src/environments/environment';
 })
 export class FuncionalidadesService {
   private accesoCache: { [key: string]: boolean } = {};
+  private slugsActivosEmpresa: string[] = [];
   private readonly cambiosSubject = new Subject<void>();
   private cargandoAccesos$: Observable<boolean> | null = null;
   private accesosCargados = false;
@@ -39,7 +40,8 @@ export class FuncionalidadesService {
     this.cargandoAccesos$ = this.http.get<{ accesos: string[] }>(`${environment.API_URL}/api/verificar-accesos`).pipe(
       map(response => {
         this.accesoCache = {};
-        response.accesos.forEach(s => {
+        this.slugsActivosEmpresa = response.accesos ?? [];
+        this.slugsActivosEmpresa.forEach((s) => {
           this.accesoCache[s] = true;
         });
         this.accesosCargados = true;
@@ -61,9 +63,20 @@ export class FuncionalidadesService {
 
   limpiarCache(): void {
     this.accesoCache = {};
+    this.slugsActivosEmpresa = [];
     this.accesosCargados = false;
     this.cargandoAccesos$ = null;
     this.cambiosSubject.next();
+  }
+
+  /** Slugs de funcionalidades activas para la empresa de la sesión (misma fuente que el sidebar). */
+  obtenerSlugsActivos(): Observable<ReadonlySet<string>> {
+    if (this.accesosCargados) {
+      return of(new Set(this.slugsActivosEmpresa));
+    }
+    return this.verificarAcceso('contabilidad').pipe(
+      map(() => new Set(this.slugsActivosEmpresa)),
+    );
   }
 
   tieneAccesoCacheado(slug: string): boolean {

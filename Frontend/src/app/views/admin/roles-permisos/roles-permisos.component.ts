@@ -8,6 +8,9 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { FuncionalidadesService } from '@services/functionalities.service';
+import { filtrarModulosPermisos } from '@shared/utils/permisos-modulos-empresa';
+import { map, switchMap } from 'rxjs/operators';
 
 @Component({
     selector: 'app-roles-permisos',
@@ -20,6 +23,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 export class RolesPermisosComponent extends BaseModalComponent implements OnInit {
   public roles: any = {};
   public modules: any[] = [];
+  private modulesSinFiltrar: any[] = [];
   public override loading: boolean = false;
   public filtros = {
     buscador: '',
@@ -42,7 +46,8 @@ export class RolesPermisosComponent extends BaseModalComponent implements OnInit
     protected override modalManager: ModalManagerService,
     private route: ActivatedRoute,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private funcionalidadesService: FuncionalidadesService,
   ) {
     super(modalManager, alertService);
   }
@@ -50,28 +55,61 @@ export class RolesPermisosComponent extends BaseModalComponent implements OnInit
   ngOnInit() {
     this.cargarDatos();
     this.cargarModulos();
+
+    this.funcionalidadesService.onCambios()
+      .pipe(this.untilDestroyed())
+      .subscribe(() => {
+        if (this.modulesSinFiltrar.length > 0) {
+          this.aplicarFiltroModulosEmpresa(this.modulesSinFiltrar);
+        }
+      });
   }
 
   cargarModulos() {
     this.apiService.getAll('permissions')
-      .pipe(this.untilDestroyed())
-      .subscribe(
-      response => {
-        console.log('Response modules:', response);
-        this.modules = (response?.modules || []).map((module: any) => ({
+      .pipe(
+        this.untilDestroyed(),
+        switchMap((response) =>
+          this.funcionalidadesService.obtenerSlugsActivos().pipe(
+            map((slugs) => ({ response, slugs })),
+          ),
+        ),
+      )
+      .subscribe({
+      next: ({ response, slugs }) => {
+        this.modulesSinFiltrar = (response?.modules || []).map((module: any) => ({
           ...module,
-          expanded: false 
+          expanded: false,
         }));
-        console.log('Módulos cargados:', this.modules);
+        this.modules = filtrarModulosPermisos(this.modulesSinFiltrar, {
+          slugsActivos: slugs,
+          empresa: this.apiService.auth_user()?.empresa,
+          fidelizacionActiva: this.apiService.isFidelizacionActiva(),
+        });
         this.cdr.markForCheck();
       },
-      error => {
+      error: (error) => {
         console.error('Error al cargar módulos:', error);
         this.alertService.error(error);
+        this.modulesSinFiltrar = [];
         this.modules = [];
         this.cdr.markForCheck();
-      }
-    );
+      },
+    });
+  }
+
+  private aplicarFiltroModulosEmpresa(raw: any[]): void {
+    this.funcionalidadesService.obtenerSlugsActivos()
+      .pipe(this.untilDestroyed())
+      .subscribe((slugs) => {
+        this.modulesSinFiltrar = raw;
+        this.modules = filtrarModulosPermisos(raw, {
+          slugsActivos: slugs,
+          empresa: this.apiService.auth_user()?.empresa,
+          fidelizacionActiva: this.apiService.isFidelizacionActiva(),
+        });
+        this.cdr.markForCheck();
+      });
   }
 
   toggleModule(module: any) {
