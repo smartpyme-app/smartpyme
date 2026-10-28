@@ -114,12 +114,12 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
-                                    @if (apiService.hasPermission('ventas.facturacion_electronica.emitir') && apiService.auth_user().empresa.facturacion_electronica && venta.enable == '1' && !venta.sello_mh) {
+                                    @if (apiService.canEmitirFacturaElectronica() && apiService.auth_user().empresa.facturacion_electronica && venta.enable == '1' && !venta.sello_mh) {
                                         <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" [tooltip]="'country.tax.fe.emit' | translate">
                                             <i class="fa fa-fw fa-file-invoice"></i> {{ 'country.tax.fe.emit' | translate }}
                                         </a>
                                     }
-                                    @if (apiService.hasPermission('ventas.facturacion_electronica.emitir') && apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh) {
+                                    @if (apiService.canEmitirFacturaElectronica() && apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh) {
                                         <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" [tooltip]="'country.tax.fe.view' | translate">
                                             <i class="fa fa-fw fa-file-invoice"></i> {{ 'country.tax.fe.view' | translate }}
                                         </a>

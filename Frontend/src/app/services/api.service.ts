@@ -358,7 +358,8 @@ export class ApiService {
   }
 
   canEmitirFacturaElectronica(): boolean {
-    return this.hasPermission('ventas.facturacion_electronica.emitir');
+    // ponytail: temporal — misma regla que menú ventas; volver a hasPermission('ventas.facturacion_electronica.emitir') tras sembrar roles.
+    return true;
   }
 
   canVerCostosInventario(): boolean {

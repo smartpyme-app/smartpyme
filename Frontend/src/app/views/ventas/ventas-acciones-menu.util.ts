@@ -16,8 +16,9 @@ export function puedeDevolucionVenta(hasPermission: (perm: string) => boolean): 
     return hasPermission('ventas.devoluciones.crear');
 }
 
-export function puedeVerDteVenta(hasPermission: (perm: string) => boolean): boolean {
-    return hasPermission('ventas.facturacion_electronica.emitir');
+export function puedeVerDteVenta(_hasPermission: (perm: string) => boolean): boolean {
+    // ponytail: temporal — menú emitir/ver DTE; reactivar ventas.facturacion_electronica.emitir cuando roles estén asignados.
+    return true;
 }
 
 export function puedeEditarVenta(hasPermission: (perm: string) => boolean): boolean {

@@ -135,7 +135,7 @@ cd Backend && php artisan db:seed --class=Sp2339RolesPermisosSeeder
 
 - [ ] Sin `ventas.abonos.crear` ni editar: no «Pagar venta».
 - [ ] Sin `ventas.devoluciones.crear`: no devolución.
-- [ ] Sin emitir FE: no emitir DTE en ⋮.
+- [ ] **Temporal:** menú emitir/ver DTE no exige `ventas.facturacion_electronica.emitir` en UI (empresa con FE + condiciones de venta siguen aplicando). Reactivar permiso en `ventas-acciones-menu.util` y `ApiService.canEmitirFacturaElectronica()` cuando roles estén asignados.
 - [ ] Solo `ventas.registros.ver`: detalles/imprimir en caja; sin editar, DTE, pagar ni traslado en admin.
 - [ ] Abonos: editar con `ventas.abonos.editar`; imprimir con editar o `ventas.abonos.ver`.
 

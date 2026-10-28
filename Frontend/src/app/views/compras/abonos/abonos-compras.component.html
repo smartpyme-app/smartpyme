@@ -172,15 +172,18 @@
                 </select>
             </div>
 
-            <div class="form-group col-md-6">
-                <label>Proveedor:</label>
-                <ng-select [(ngModel)]="filtros.id_proveedor" class="form-select p-0" name="filtros.id_proveedor">
-                    <ng-option value="">Todos</ng-option>
-                    @for (proveedor of proveedores; track proveedor.id) {
-                        <ng-option [ngValue]="proveedor.id">
-                            {{ proveedor.nombre }}
-                        </ng-option>
-                    }
+            <div class="form-group col-md-12">
+                <label for="filtros.id_proveedor">Proveedor:</label>
+                <ng-select
+                    [(ngModel)]="filtros.id_proveedor"
+                    class="form-select p-0"
+                    name="filtros.id_proveedor"
+                    [clearable]="true"
+                    placeholder="Todos los proveedores"
+                    appendTo="body"
+                    bindLabel="label"
+                    bindValue="id"
+                    [items]="proveedoresSelect">
                 </ng-select>
             </div>
 

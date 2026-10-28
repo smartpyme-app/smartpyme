@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
@@ -17,7 +18,7 @@ import { EditarAbonoComponent } from '@shared/modals/editar-abono/editar-abono.c
     selector: 'app-abonos-compras',
     templateUrl: './abonos-compras.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent, EditarAbonoComponent],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, PopoverModule, TooltipModule, PaginationComponent, EditarAbonoComponent],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 
@@ -28,6 +29,8 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
     public downloading:boolean = false;
     public formaPagos:any = [];
     public proveedores:any = [];
+    /** Opciones ng-select (etiqueta legible; evita `nombre` vacío en proveedores persona/empresa). */
+    public proveedoresSelect: { id: number; label: string }[] = [];
     public usuarios:any = [];
     public sucursales:any = [];
     public documentos:any = [];
@@ -69,6 +72,7 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
 
         this.apiService.getAll('proveedores/list').pipe(this.untilDestroyed()).subscribe(proveedores => {
             this.proveedores = proveedores;
+            this.proveedoresSelect = this.mapProveedoresSelect(proveedores);
             this.cdr.markForCheck();
         }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
@@ -158,7 +162,31 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
                 this.formaPagos = formaPagos;
                 this.cdr.markForCheck();
             }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
+        if (!this.proveedoresSelect.length) {
+            this.apiService.getAll('proveedores/list')
+                .pipe(this.untilDestroyed())
+                .subscribe(proveedores => {
+                    this.proveedores = proveedores;
+                    this.proveedoresSelect = this.mapProveedoresSelect(proveedores);
+                    this.cdr.markForCheck();
+                }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
+        }
         this.openModal(template);
+    }
+
+    private mapProveedoresSelect(proveedores: any[]): { id: number; label: string }[] {
+        return (proveedores || []).map((p) => ({
+            id: p.id,
+            label: this.etiquetaProveedor(p),
+        }));
+    }
+
+    private etiquetaProveedor(proveedor: any): string {
+        const base = proveedor?.tipo === 'Empresa'
+            ? (proveedor.nombre_empresa || proveedor.nombre || '')
+            : (proveedor.nombre_completo || proveedor.nombre || '');
+        const comercial = proveedor?.nombre_comercial?.trim();
+        return comercial ? `${base} (${comercial})` : base;
     }
 
     public descargar(){
