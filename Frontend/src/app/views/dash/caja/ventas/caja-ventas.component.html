@@ -1,6 +1,8 @@
 ﻿<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Registros</h2>
-    <button routerLink="/venta/crear" tooltip="Crear venta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir venta</button>
+    @if (apiService.canCreateTest('ventas.crear')) {
+        <button routerLink="/venta/crear" tooltip="Crear venta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir venta</button>
+    }
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -102,7 +104,7 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
-                                    @if (apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh) {
+                                    @if (canEmitirFeVenta() && apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh) {
                                         <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" [tooltip]="'country.tax.fe.emit' | translate">
                                             <i class="fa fa-fw fa-file-invoice"></i> {{ 'country.tax.fe.emit' | translate }}
                                         </a>
@@ -112,7 +114,7 @@
                                             <i class="fa fa-fw fa-file-invoice"></i> {{ 'country.tax.fe.view' | translate }}
                                         </a>
                                     }
-                                    @if (venta.estado == 'Pendiente') {
+                                    @if (venta.estado == 'Pendiente' && canPagarVenta()) {
                                         <a (click)="openAbono(mabono, venta)" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar venta
                                         </a>
@@ -126,20 +128,26 @@
                                     <a routerLink="/venta/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
-                                  <a (click)="openModalEdit(mventa, venta)" class="list-group-item list-group-item-action border-0 click">
-                                    <i class="fa fa-fw fa-edit"></i> Editar
-                                  </a>
+                                  @if (canEditVentas()) {
+                                    <a (click)="openModalEdit(mventa, venta)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-edit"></i> Editar
+                                    </a>
+                                  }
+                                    @if (canEditVentas()) {
                                     <a (click)="imprimir(venta)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-print"></i> Imprimir
                                     </a>
+                                    }
                                     @if (venta.forma_pago == 'Wompi' && venta.estado == 'Pendiente') {
                                         <a (click)="linkWompi(venta)" class="list-group-item list-group-item-action border-0 click">
                                             <img src="https://wompi.sv/img/icon.png" width="15px" class="img-fluid" alt=""> Generar enlace de pago
                                         </a>
                                     }
+                                    @if (canDevolucionVenta()) {
                                     <a routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id }" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-right-left"></i> Hacer devolucion
                                     </a>
+                                    }
                                 </div>
                             </ng-template>
                         </td>

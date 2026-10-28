@@ -252,6 +252,13 @@ return [
             'eliminar' => 'ventas.cotizaciones.eliminar'
         ],
 
+        'solicitudes' => [
+            'ver' => 'ventas.solicitudes.ver',
+            'crear' => 'ventas.solicitudes.crear',
+            'editar' => 'ventas.solicitudes.editar',
+            'eliminar' => 'ventas.solicitudes.eliminar'
+        ],
+
         'clientes' => [
             'ver' => 'ventas.clientes.ver',
             'crear' => 'ventas.clientes.crear',

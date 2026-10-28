@@ -27,7 +27,7 @@ export class OrganizacionEmpresasComponent extends BaseCrudComponent<any> implem
     public empresa:any = {};
 
     constructor(
-        apiService: ApiService, 
+        public override apiService: ApiService,
         alertService: AlertService,
         modalManager: ModalManagerService,
         private cdr: ChangeDetectorRef
@@ -152,7 +152,7 @@ export class OrganizacionEmpresasComponent extends BaseCrudComponent<any> implem
     override openModal(template: TemplateRef<any>, empresa?: any) {
         this.empresa = empresa || {};
 
-        this.apiService.getAll('empresas/list')
+        this.apiService.getAll('licencias/empresas/select')
             .pipe(this.untilDestroyed())
             .subscribe({
                 next: (empresasList) => {

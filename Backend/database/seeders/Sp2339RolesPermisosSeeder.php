@@ -43,6 +43,8 @@ class Sp2339RolesPermisosSeeder extends Seeder
         $this->sincronizarAnularDesdeEliminar();
         $this->copiarEliminarAAnularEnRoles();
         $this->asignarPartidasGranularesDesdeCrear();
+        $this->asignarSolicitudesCompraDesdeCotizaciones();
+        $this->revocarSolicitudesCompraVentasLimitado();
         $this->aplicarMatrizRolesSp2343();
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
@@ -233,6 +235,53 @@ class Sp2339RolesPermisosSeeder extends Seeder
                 }
             }
         }
+    }
+
+    /** Roles con cotizaciones de ventas reciben solicitudes cross-empresa (excepto ventas_limitado). */
+    private function asignarSolicitudesCompraDesdeCotizaciones(): void
+    {
+        $cotVer = config('permissions.PERMISSION_VENTAS.cotizaciones.ver');
+        $solicitudPerms = $this->permisosSolicitudesCompra();
+        if (! $cotVer || $solicitudPerms === []) {
+            return;
+        }
+
+        $ventasLimitado = config('constants.ROL_VENTAS_LIMITADO', 'ventas_limitado');
+
+        foreach (Role::query()->where('guard_name', 'web')->get() as $role) {
+            if ($role->name === $ventasLimitado) {
+                continue;
+            }
+            if (! $role->hasPermissionTo($cotVer)) {
+                continue;
+            }
+            foreach ($solicitudPerms as $perm) {
+                if ($perm && ! $role->hasPermissionTo($perm)) {
+                    $role->givePermissionTo($perm);
+                }
+            }
+        }
+    }
+
+    private function revocarSolicitudesCompraVentasLimitado(): void
+    {
+        $role = Role::findByName(config('constants.ROL_VENTAS_LIMITADO', 'ventas_limitado'), 'web');
+        if (! $role) {
+            return;
+        }
+        foreach ($this->permisosSolicitudesCompra() as $perm) {
+            if ($perm && $role->hasPermissionTo($perm)) {
+                $role->revokePermissionTo($perm);
+            }
+        }
+    }
+
+    /** @return list<string|null> */
+    private function permisosSolicitudesCompra(): array
+    {
+        $cfg = config('permissions.PERMISSION_VENTAS.solicitudes');
+
+        return is_array($cfg) ? array_values($cfg) : [];
     }
 
     /** Ajustes SP-2343 sobre plantillas (delta, no sync total). */

@@ -125,7 +125,7 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
           .pipe(this.untilDestroyed())
           .subscribe({
             next: (ventas) => {
-              this.ventas = this.normalizeVentas(ventas);
+              this.ventas = ventas;
               this.loading = false;
               if (this.modalRef) {
                 this.modalRef.hide();
@@ -140,21 +140,10 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
           });
     }
 
-  private normalizeVentas(ventas: any) {
-    if (ventas && Array.isArray(ventas.data)) {
-      ventas.data = ventas.data.map((venta: any) => ({
-        ...venta,
-        estado: venta?.estado ? String(venta.estado).toLowerCase() : venta?.estado
-      }));
-    }
-    return ventas;
-  }
-
   /** Pendiente factura, facturada imprime, anulada y el resto no actúan. */
   accionVentasLimitado(estado: string): 'facturar' | 'imprimir' | null {
-    const valor = (estado || '').toLowerCase();
-    if (valor === 'pendiente') return 'facturar';
-    if (valor === 'facturada') return 'imprimir';
+    if (estado === 'Pendiente') return 'facturar';
+    if (estado === 'Facturada') return 'imprimir';
     return null;
   }
 

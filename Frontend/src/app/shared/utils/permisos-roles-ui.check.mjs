@@ -27,5 +27,9 @@ assert.equal(
   esPermisoHijoDePadre('ventas.cotizaciones.ver', 'ventas.ver'),
   true,
 );
+assert.equal(
+  esPermisoHijoDePadre('ventas.solicitudes.ver', 'ventas.ver'),
+  true,
+);
 
 console.log('permisos-roles-ui.check: ok');

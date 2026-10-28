@@ -1728,7 +1728,7 @@ export class FacturacionV2Component implements OnInit {
         const idCotizacion = +this.route.snapshot.queryParamMap.get('id_venta')!;
         this.apiService.read('cotizacionVentas/', idCotizacion).subscribe(
             (venta) => {
-                if (this.apiService.isVentasLimitado() && String(venta?.estado || '').toLowerCase() !== 'pendiente') {
+                if (this.apiService.isVentasLimitado() && venta?.estado !== 'Pendiente') {
                     this.alertService.error('Solo puede facturar cotizaciones pendientes.');
                     this.router.navigate(['/cotizaciones']);
                     return;

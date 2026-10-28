@@ -54,6 +54,23 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
     public override filtros:any = {};
     public filtrado:boolean = false;
 
+    public canEditVentas(): boolean {
+        return this.apiService.canEditTest('ventas.editar');
+    }
+
+    public canPagarVenta(): boolean {
+        return this.apiService.canCreateTest('ventas.abonos.crear')
+            || this.apiService.canEditTest('ventas.editar');
+    }
+
+    public canDevolucionVenta(): boolean {
+        return this.apiService.canCreateTest('ventas.devoluciones.crear');
+    }
+
+    public canEmitirFeVenta(): boolean {
+        return this.apiService.canEmitirFacturaElectronica();
+    }
+
     constructor(
         protected override apiService: ApiService,
         private facturacionElectronica: FacturacionElectronicaService,

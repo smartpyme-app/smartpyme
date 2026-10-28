@@ -696,6 +696,8 @@ class ProductosController extends Controller
             ->with($with)
             ->firstOrFail();
 
+        $this->filtrarPreciosPorUsuarioAutenticado($producto);
+
         return Response()->json($producto, 200);
     }
 
@@ -730,6 +732,8 @@ class ProductosController extends Controller
 
         $local = $buscarEnEmpresa($idEmpresaLocal);
         if ($local) {
+            $this->filtrarPreciosPorUsuarioAutenticado($local);
+
             return Response()->json([
                 'modo' => 'local',
                 'producto' => $local,
@@ -739,6 +743,8 @@ class ProductosController extends Controller
         if ($idEmpresaOrigen > 0 && $idEmpresaOrigen !== $idEmpresaLocal) {
             $origen = $buscarEnEmpresa($idEmpresaOrigen);
             if ($origen) {
+                $this->filtrarPreciosPorUsuarioAutenticado($origen);
+
                 return Response()->json([
                     'modo' => 'origen',
                     'producto_origen' => $origen,
@@ -2653,5 +2659,24 @@ class ProductosController extends Controller
         $barcode = (string) ((int) ($max ?? 0) + 1);
 
         return response()->json(['habilitado' => true, 'barcode' => $barcode, 'codigo' => $barcode]);
+    }
+
+    /** Tarifas con usuarios asignados: solo las del usuario autenticado (+ sin restricción). */
+    protected function filtrarPreciosPorUsuarioAutenticado($producto): void
+    {
+        if (! $producto || ! method_exists($producto, 'relationLoaded') || ! $producto->relationLoaded('precios')) {
+            return;
+        }
+
+        $userId = Auth::id();
+        $filtrados = $producto->precios->filter(function ($precio) use ($userId) {
+            if (! $precio->relationLoaded('usuarios') || $precio->usuarios->isEmpty()) {
+                return true;
+            }
+
+            return $precio->usuarios->contains('id_usuario', $userId);
+        })->values();
+
+        $producto->setRelation('precios', $filtrados);
     }
 }

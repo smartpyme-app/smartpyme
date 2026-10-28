@@ -126,6 +126,27 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     return this.apiService.canCreateTest(this.permisoVentasCrear);
   }
 
+  public canVerVentas(): boolean {
+    return this.apiService.hasPermission('ventas.ver');
+  }
+
+  public canPagarVenta(): boolean {
+    return this.apiService.canCreateTest('ventas.abonos.crear')
+      || this.apiService.canEditTest(this.permisoVentasEditar);
+  }
+
+  public canDevolucionVenta(): boolean {
+    return this.apiService.canCreateTest('ventas.devoluciones.crear');
+  }
+
+  public canAnularVenta(): boolean {
+    return this.apiService.canDeleteTest('ventas.eliminar');
+  }
+
+  public canEmitirFeVenta(): boolean {
+    return this.apiService.canEmitirFacturaElectronica();
+  }
+
   public esFeCostaRica(): boolean {
     return this.facturacionElectronica.isCostaRicaFe();
   }
