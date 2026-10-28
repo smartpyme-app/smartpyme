@@ -1,5 +1,7 @@
+/** Mantener alineado con src/manifest.webmanifest → version */
 export const environment = {
   production: true,
+  appVersion: '26.10.26',
   API_URL: 'https://apiunificado.smartpyme.site',
   //API_URL: 'https://api.smartpyme.site',
   APP_URL: 'https://app-unificado.smartpyme.site',

@@ -40,6 +40,7 @@ class Sp2339RolesPermisosSeeder extends Seeder
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $this->registrarPermisosDesdeConfig();
+        $this->call(VentasSolicitudesCompraPermissionSeeder::class);
         $this->sincronizarAnularDesdeEliminar();
         $this->copiarEliminarAAnularEnRoles();
         $this->asignarPartidasGranularesDesdeCrear();

@@ -113,44 +113,33 @@
                       <td>{{venta.fecha_expiracion | date:'dd/MM/yyyy'}}</td>
                       <td class="text-right">{{venta.total | currency}}</td>
                       <td class="text-center">
-                          @if (!apiService.isVentasLimitado() || accionVentasLimitado(venta.estado)) {
+                          @if (mostrarMenuAccionesCotizacion(venta.estado)) {
                           <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
                               <i class="fa fa-ellipsis-vertical fa-fw"></i>
                           </span>
                           }
                           <ng-template #accionesTemplate>
                               <div class="d-flex flex-column align-items-start">
-                                @if (apiService.isVentasLimitado()) {
-                                  @if (accionVentasLimitado(venta.estado) == 'facturar') {
+                                  @if (puedeFacturarCotizacion(venta.estado) && !apiService.restriccionesCotizacionesVendedoresActivas()) {
                                       <a routerLink="/venta/crear" [queryParams]="{ facturar_cotizacion: 1, id_venta: venta.id }" class="btn">
                                           <i class="fa fa-fw fa-money-bill"></i> Facturar
                                       </a>
                                   }
-                                  @if (accionVentasLimitado(venta.estado) == 'imprimir') {
-                                      <a (click)="imprimir(venta)" class="btn">
-                                          <i class="fa fa-fw fa-print"></i> Imprimir
-                                      </a>
-                                  }
-                                } @else {
-                                  @if (venta.estado == 'Pendiente' && apiService.canEditTest('ventas.cotizaciones.editar') && !apiService.restriccionesCotizacionesVendedoresActivas()) {
+                                  @if (venta.estado == 'Pendiente' && puedeEditarCotizacion() && !apiService.restriccionesCotizacionesVendedoresActivas() && !apiService.isVentasLimitado()) {
                                       <a routerLink="/cotizacion/editar/{{venta.id}}" [queryParams]="{ cotizacion:1 }" class="btn">
                                           <i class="fa fa-fw fa-edit"></i> Editar
                                       </a>
                                   }
-                                  @if (!apiService.restriccionesCotizacionesVendedoresActivas()) {
+                                  @if (puedeVerDetalleCotizacion() && !apiService.restriccionesCotizacionesVendedoresActivas() && !apiService.isVentasLimitado()) {
                                       <a routerLink="/cotizacion/editar/{{venta.id}}" [queryParams]="{ cotizacion:1 }" class="btn">
                                           <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                       </a>
                                   }
-                                  @if (venta.estado == 'Pendiente' && !apiService.restriccionesCotizacionesVendedoresActivas() && apiService.canCreateTest('ventas.crear')) {
-                                      <a routerLink="/venta/crear" [queryParams]="{ facturar_cotizacion: 1, id_venta: venta.id }" class="btn">
-                                          <i class="fa fa-fw fa-money-bill"></i> Facturar
+                                  @if (puedeImprimirFilaCotizacion(venta.estado)) {
+                                      <a (click)="imprimir(venta)" class="btn">
+                                          <i class="fa fa-fw fa-print"></i> Imprimir
                                       </a>
                                   }
-                                  <a (click)="imprimir(venta)" class="btn">
-                                      <i class="fa fa-fw fa-print"></i> Imprimir
-                                  </a>
-                                }
                               </div>
                           </ng-template>
                       </td>

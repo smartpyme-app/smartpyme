@@ -2,8 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 /**
- * Regresión: acciones de abonos deben alinear Imprimir con canEdit()
- * y ocultar "Generar partida contable" sin funcionalidad contabilidad.
+ * Regresión: abonos ventas usan permisos granulares ventas.abonos.*
  */
 describe('Abonos acciones menú', () => {
   const root = path.join(__dirname, '../../..'); // src/app
@@ -13,10 +12,11 @@ describe('Abonos acciones menú', () => {
     return fs.readFileSync(path.join(root, rel), 'utf8');
   }
 
-  it('abonos ventas: Imprimir con canEdit y partida solo con contabilidad', () => {
+  it('abonos ventas: editar/imprimir con ventas.abonos y partida con contabilidad', () => {
     const html = read('views/ventas/abonos/abonos-ventas.component.html');
     expect(html).toContain('(click)="imprimir(abono)"');
-    expect(html).not.toContain("canEditTest('ventas.abonos.editar')");
+    expect(html).toContain("canEditTest('ventas.abonos.editar')");
+    expect(html).toContain("hasPermission('ventas.abonos.ver')");
     expect(html).toContain("canGenerarPartidaContable('cxc'");
     expect(html).toContain('generarPartidaContable(abono)');
   });

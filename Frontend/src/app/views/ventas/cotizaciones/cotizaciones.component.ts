@@ -13,6 +13,12 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
+import {
+  puedeEditarCotizacion,
+  puedeFacturarDesdeCotizacion,
+  puedeImprimirCotizacion,
+  puedeVerDetalleCotizacion,
+} from '@views/ventas/ventas-acciones-menu.util';
 
 @Component({
     selector: 'app-cotizaciones',
@@ -36,6 +42,37 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
   public sucursales: any = [];
   public documentos: any = [];
   public filtrado: boolean = false;
+
+  private perm = (p: string) => this.apiService.hasPermission(p);
+
+  public puedeFacturarCotizacion(estado: string): boolean {
+    return estado === 'Pendiente' && puedeFacturarDesdeCotizacion(this.perm);
+  }
+
+  public puedeImprimirCotizacionEstado(estado: string): boolean {
+    return estado === 'Facturada' && puedeImprimirCotizacion(this.perm);
+  }
+
+  public puedeVerDetalleCotizacion(): boolean {
+    return puedeVerDetalleCotizacion(this.perm);
+  }
+
+  public puedeEditarCotizacion(): boolean {
+    return puedeEditarCotizacion(this.perm);
+  }
+
+  public puedeImprimirFilaCotizacion(estado: string): boolean {
+    if (this.apiService.isVentasLimitado()) {
+      return this.puedeImprimirCotizacionEstado(estado);
+    }
+    return puedeImprimirCotizacion(this.perm);
+  }
+
+  public mostrarMenuAccionesCotizacion(estado: string): boolean {
+    return this.puedeFacturarCotizacion(estado)
+      || this.puedeImprimirFilaCotizacion(estado)
+      || (!this.apiService.isVentasLimitado() && (this.puedeVerDetalleCotizacion() || this.puedeEditarCotizacion()));
+  }
 
   constructor(
     apiService: ApiService,
@@ -139,13 +176,6 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
             }
           });
     }
-
-  /** Pendiente factura, facturada imprime, anulada y el resto no actúan. */
-  accionVentasLimitado(estado: string): 'facturar' | 'imprimir' | null {
-    if (estado === 'Pendiente') return 'facturar';
-    if (estado === 'Facturada') return 'imprimir';
-    return null;
-  }
 
   public setEstado(cotizacion: any) {
     // Agregamos el distintivo

@@ -2,8 +2,10 @@
 // `ng build` replaces `environment.ts` with `environment.prod.ts`.
 // The list of file replacements can be found in `angular.json`.
 
+/** Mantener alineado con src/manifest.webmanifest → version */
 export const environment = {
   production: false,
+  appVersion: '26.10.26',
   // API_URL: 'http://localhost:8000',
    API_URL: 'https://api.smartpyme.test',
   // API_URL: 'https://api.smartpyme.bk.test',

@@ -146,7 +146,20 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         return evaluarMenuSolicitudesCompra(
             this.usuario?.empresa,
             (perm) => this.apiService.hasPermission(perm),
-            this.apiService.isVentasLimitado(),
+        );
+    }
+
+    /** Compras: mostrar sección si tiene permiso de módulo o de algún submódulo (p. ej. solo OC). */
+    public get mostrarMenuCompras(): boolean {
+        return this.apiService.hasAnyPermission([
+            'compras.ver',
+            'compras.ordenes_compra.ver',
+            'compras.proveedores.ver',
+            'compras.retaceo.ver',
+            'compras.consignas.ver',
+        ]) || (
+            this.apiService.canAccederOperacionesInventario()
+            && this.apiService.hasPermission('compras.consignas.ver')
         );
     }
 

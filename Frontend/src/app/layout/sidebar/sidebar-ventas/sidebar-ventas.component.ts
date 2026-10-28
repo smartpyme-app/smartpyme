@@ -47,8 +47,11 @@ export class SidebarVentasComponent implements OnInit {
         return mostrarMenuSolicitudesCompra(
             this.usuario?.empresa,
             (perm) => this.apiService.hasPermission(perm),
-            this.apiService.isVentasLimitado(),
         );
+    }
+
+    public get mostrarMenuOrdenesCompra(): boolean {
+        return this.apiService.hasPermission('compras.ordenes_compra.ver');
     }
 
     private destroyRef = inject(DestroyRef);

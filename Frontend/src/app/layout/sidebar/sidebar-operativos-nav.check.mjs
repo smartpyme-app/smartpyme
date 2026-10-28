@@ -39,7 +39,8 @@ assert.doesNotMatch(sidebarVentas, /canShowOption\('cotizaciones\.ver'\)/);
 
 assert.doesNotMatch(sidebar, /!apiService\.hasPermission\('planilla/);
 assert.match(sidebar, /apiService\.hasPermission\('planilla\.ver'\)/);
-assert.match(sidebar, /canAccederOperacionesInventario\(\) && apiService\.hasPermission\('consignas\.ver'\)/);
+assert.match(sidebar, /mostrarMenuCompras/);
+assert.match(sidebar, /compras\.ordenes_compra\.ver/);
 assert.match(sidebar, /mostrarMenuRestaurante && apiService\.hasPermission\('restaurante\.ver'\)/);
 assert.match(sidebar, /mostrarMenuPedidos && apiService\.hasPermission\('pedidos\.ver'\)/);
 assert.match(sidebar, /organizacion\.usuarios\.ver/);
@@ -53,11 +54,11 @@ assert.match(sidebar, /mostrarMenuSolicitudesCompra/);
 assert.match(sidebar, /organizacion\.empresas\.ver/);
 assert.match(sidebarVentas, /mostrarMenuSolicitudesCompra/);
 assert.match(sidebarVentas, /solicitudes-compra/);
-assert.match(
-  fs.readFileSync(path.join(root, 'src/app/layout/sidebar/sidebar-ventas/sidebar-ventas.component.ts'), 'utf8'),
-  /ventas\.solicitudes\.ver/,
-);
-assert.match(accesoOrg, /mostrarMenuSolicitudesCompra[\s\S]*isVentasLimitado/);
+assert.match(accesoOrg, /ventas\.solicitudes\.ver/);
+assert.doesNotMatch(accesoOrg, /isVentasLimitado/);
+assert.match(sidebar, /mostrarMenuCompras/);
+assert.match(sidebarVentas, /mostrarMenuOrdenesCompra/);
+assert.match(sidebarVentas, /ordenes-de-compras/);
 assert.match(
   fs.readFileSync(path.join(root, 'src/app/views/ventas/ventas.routing.module.ts'), 'utf8'),
   /permission: 'ventas\.solicitudes\.ver'/,

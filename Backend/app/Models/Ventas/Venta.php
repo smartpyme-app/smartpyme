@@ -252,7 +252,66 @@ class Venta extends AuditableModel {
 
     public function getNombreProyectoAttribute()
     {
+        if (!$this->relationLoaded('proyecto')) {
+            return $this->proyecto()->value('nombre');
+        }
+
         return $this->proyecto ? $this->proyecto->nombre : null;
+    }
+
+    /** Columnas mínimas para grillas (caja y /ventas); evita JSON DTE y Schema::getColumnListing por request. */
+    public function scopeSelectListado($query)
+    {
+        return $query->select([
+            'ventas.id',
+            'ventas.created_at',
+            'ventas.fecha',
+            'ventas.correlativo',
+            'ventas.estado',
+            'ventas.forma_pago',
+            'ventas.fecha_pago',
+            'ventas.fecha_expiracion',
+            'ventas.total',
+            'ventas.propina',
+            'ventas.condicion',
+            'ventas.credito',
+            'ventas.id_cliente',
+            'ventas.id_documento',
+            'ventas.id_usuario',
+            'ventas.id_vendedor',
+            'ventas.id_sucursal',
+            'ventas.id_canal',
+            'ventas.id_proyecto',
+            'ventas.id_empresa',
+            'ventas.id_venta_plantilla',
+            'ventas.sello_mh',
+            'ventas.codigo_generacion',
+            'ventas.clave_rechazada',
+            'ventas.num_identificacion',
+            'ventas.motivo_anulacion',
+            'ventas.observaciones',
+        ]);
+    }
+
+    /** Eager loads ligeros para listado=1 (totales abonos/devoluciones, NC/ND, Boxful). */
+    public function scopeWithListadoRelations($query)
+    {
+        return $query
+            ->withAccessorRelations()
+            ->with(['paquetes' => function ($query) {
+                $query->where('transportista', 'Boxful')
+                    ->select('id', 'id_venta', 'num_guia', 'transportista', 'wr', 'peso', 'estado', 'id_cliente')
+                    ->with('boxfulShipment');
+            }])
+            ->with(['devolucionesNcNd' => function ($query) {
+                $query->with('documento:id,nombre');
+            }])
+            ->withSum(['abonos' => function ($query) {
+                $query->where('estado', 'Confirmado');
+            }], 'total')
+            ->withSum(['devoluciones' => function ($query) {
+                $query->where('enable', 1);
+            }], 'total');
     }
 
     public function detalleText(){

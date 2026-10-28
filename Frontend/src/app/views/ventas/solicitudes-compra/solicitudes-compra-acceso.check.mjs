@@ -8,7 +8,7 @@ const dir = path.dirname(fileURLToPath(import.meta.url));
 const src = fs.readFileSync(path.join(dir, 'solicitudes-compra-acceso.ts'), 'utf8');
 
 assert.match(src, /export function mostrarMenuSolicitudesCompra/);
-assert.match(src, /isVentasLimitado/);
+assert.doesNotMatch(src, /isVentasLimitado/);
 assert.match(src, /ventas\.solicitudes\.ver/);
 
 console.log('solicitudes-compra-acceso.check: ok');

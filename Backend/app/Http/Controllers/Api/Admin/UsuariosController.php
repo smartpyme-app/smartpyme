@@ -54,8 +54,10 @@ class UsuariosController extends Controller
                 $q->where('id_sucursal', $request->id_sucursal);
             })
             ->when($request->buscador, function ($query) use ($request) {
-                return $query->where('name', 'like', '%' . $request->buscador . '%')
-                    ->orwhere('email', 'like', "%" . $request->buscador . "%");
+                $query->where(function ($q) use ($request) {
+                    $q->where('name', 'like', '%' . $request->buscador . '%')
+                        ->orWhere('email', 'like', '%' . $request->buscador . '%');
+                });
             })
             // ->orderBy('enable', 'desc')
             ->orderBy($request->orden, $request->direccion)

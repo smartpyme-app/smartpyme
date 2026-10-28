@@ -100,9 +100,11 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="d-flex flex-column align-items-start">
+                                    @if (apiService.hasPermission('ventas.solicitudes.ver')) {
                                     <button type="button" class="btn" (click)="verSolicitud(mdetalleSolicitud, compra)">
                                         <i class="fa fa-fw fa-eye"></i> Ver solicitud
                                     </button>
+                                    }
                                     @if (compra.id_empresa != apiService.auth_user()?.id_empresa && apiService.canCreateTest('ventas.crear')) {
                                         <a routerLink="/venta/crear" [queryParams]="{ facturar_orden_compra: 1, id_orden_compra: compra.id }" class="btn">
                                             <i class="fa fa-fw fa-money-bill"></i> Facturar

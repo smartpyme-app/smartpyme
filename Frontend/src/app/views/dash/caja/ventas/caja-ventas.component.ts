@@ -26,6 +26,14 @@ import {
 import { PipesModule } from '../../../../pipes/pipes.module';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import {
+    puedeDevolucionVenta,
+    puedeEditarVenta,
+    puedeImprimirVenta,
+    puedePagarVenta,
+    puedeVerDetalleVenta,
+    puedeVerDteVenta,
+} from '@views/ventas/ventas-acciones-menu.util';
 
 @Component({
     selector: 'app-caja-ventas',
@@ -54,21 +62,30 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
     public override filtros:any = {};
     public filtrado:boolean = false;
 
+    private perm = (p: string) => this.apiService.hasPermission(p);
+
     public canEditVentas(): boolean {
-        return this.apiService.canEditTest('ventas.editar');
+        return puedeEditarVenta(this.perm);
     }
 
     public canPagarVenta(): boolean {
-        return this.apiService.canCreateTest('ventas.abonos.crear')
-            || this.apiService.canEditTest('ventas.editar');
+        return puedePagarVenta(this.perm);
     }
 
     public canDevolucionVenta(): boolean {
-        return this.apiService.canCreateTest('ventas.devoluciones.crear');
+        return puedeDevolucionVenta(this.perm);
     }
 
     public canEmitirFeVenta(): boolean {
-        return this.apiService.canEmitirFacturaElectronica();
+        return puedeVerDteVenta(this.perm);
+    }
+
+    public canVerDetalleVenta(): boolean {
+        return puedeVerDetalleVenta(this.perm);
+    }
+
+    public canImprimirVenta(): boolean {
+        return puedeImprimirVenta(this.perm);
     }
 
     constructor(
@@ -136,7 +153,8 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
         this.filtros.buscador = '';
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
-        this.filtros.paginate = 100;
+        this.filtros.listado = 1;
+        this.filtros.paginate = 25;
 
         this.filtrarVentas();
     }

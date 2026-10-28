@@ -267,16 +267,18 @@
                                             <i class="fa fa-fw fa-file-invoice"></i> {{ 'country.tax.fe.emitContingency' | translate }}
                                         </a>
                                     }
-                                    @if (apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh && !ventaEsTicketSinEmisionFe(venta)) {
+                                    @if (canEmitirFeVenta() && apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh && !ventaEsTicketSinEmisionFe(venta)) {
                                         <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" [tooltip]="'country.tax.fe.view' | translate">
                                             <i class="fa fa-fw fa-file-invoice"></i> {{ 'country.tax.fe.view' | translate }}
                                         </a>
                                     }
 
+                                    @if (canVerDetalleVenta()) {
                                     <a [routerLink]="['/venta', venta.id]" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                                     </a>
-                                    @if (puedeFacturarVentaCuota(venta) && canEditVentas()) {
+                                    }
+                                    @if (puedeFacturarVentaCuota(venta) && canCreateVentas()) {
                                         <a [routerLink]="['/venta/crear']" [queryParams]="queryFacturarVenta(venta.id)" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-file-invoice"></i> Facturar
                                         </a>
@@ -311,7 +313,7 @@
                                             <i class="fa fa-fw fa-repeat"></i> Configurar recurrencia
                                         </a>
                                     }
-                                    @if (canEditVentas()) {
+                                    @if (canImprimirVenta()) {
                                         <a (click)="imprimir(venta)" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-print"></i> Imprimir
                                         </a>
@@ -331,19 +333,21 @@
                                             <i class="fa fa-edit"></i> Generar partida contable
                                         </a>
                                     }
-                                    @if (canEditVentas() && (esFeCostaRica() ? esVentaFacturaParaNotasCr(venta) : puedeCrearNotaCreditoDebito(venta))) {
+                                    @if (canNotaCreditoDebitoVenta() && (esFeCostaRica() ? esVentaFacturaParaNotasCr(venta) : puedeCrearNotaCreditoDebito(venta))) {
                                         <a routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id, tipo_documento: 'nota_credito'}" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-folder-minus"></i> Hacer nota de crédito
                                         </a>
                                     }
-                                    @if (canEditVentas() && (esFeCostaRica() ? esVentaFacturaParaNotasCr(venta) : puedeCrearNotaCreditoDebito(venta))) {
+                                    @if (canNotaCreditoDebitoVenta() && (esFeCostaRica() ? esVentaFacturaParaNotasCr(venta) : puedeCrearNotaCreditoDebito(venta))) {
                                         <a routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id, tipo_documento: 'nota_debito'}" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-folder-plus"></i> Hacer nota de débito
                                         </a>
                                     }
+                                    @if (canEditVentas()) {
                                     <a class="list-group-item list-group-item-action border-0 click" (click)="generarTrasladoEmpresa(venta)">
                                         <i class="fa fa-fw fa-exchange"></i> Generar traslado a empresa
                                     </a>
+                                    }
                                     <a *ngIf="puedeGenerarEnvioBoxful(venta)"
                                         class="list-group-item list-group-item-action border-0 click"
                                         (click)="generarEnvioBoxful(venta)">
