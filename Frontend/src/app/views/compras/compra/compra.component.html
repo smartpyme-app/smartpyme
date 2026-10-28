@@ -90,7 +90,7 @@
                         <!-- <th>N°</th> -->
                         <th>Producto</th>
                         <th width="100">Cantidad</th>
-                        @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {
+                        @if (apiService.canVerCostosInventario()) {
                           <th width="100">Costo</th>
                         }
                         @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {
@@ -126,7 +126,7 @@
                             <small *ngIf="detalle.codigo" class="text-muted">SKU: {{ detalle.codigo }}</small>
                         </td>
                         <td>{{ detalle.cantidad }}</td>
-                        @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {
+                        @if (apiService.canVerCostosInventario()) {
                           <td>{{ detalle.costo | currency }}</td>
                         }
                         @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {

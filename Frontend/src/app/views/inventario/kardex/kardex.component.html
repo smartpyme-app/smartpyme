@@ -118,14 +118,14 @@
                 </tr>
                 <tr class="table-light">
                     <th class="text-center">Cantidad</th>
-                    <th class="text-center">Costo Uni</th>
-                    <th class="text-center">Total</th>
+                    <th class="text-center" *ngIf="mostrarCostosInventario">Costo Uni</th>
+                    <th class="text-center" *ngIf="mostrarCostosInventario">Total</th>
                     <th class="text-center">Cantidad</th>
-                    <th class="text-center">Costo Uni</th>
-                    <th class="text-center">Total</th>
+                    <th class="text-center" *ngIf="mostrarCostosInventario">Costo Uni</th>
+                    <th class="text-center" *ngIf="mostrarCostosInventario">Total</th>
                     <th class="text-center">Cantidad</th>
-                    <th class="text-center">Costo Uni</th>
-                    <th class="text-center">Total</th>
+                    <th class="text-center" *ngIf="mostrarCostosInventario">Costo Uni</th>
+                    <th class="text-center" *ngIf="mostrarCostosInventario">Total</th>
                 </tr>
             </thead>
             <tbody>
@@ -145,14 +145,14 @@
                     <td>{{ producto?.nombre || '—' }}</td>
                     <td>{{ movimiento.detalle || '—' }}</td>
                     <td class="text-center">{{ movimiento.entrada_cantidad > 0 ? (movimiento.entrada_cantidad | number:'1.0') : '' }}</td>
-                    <td class="text-center">{{ movimiento.entrada_cantidad > 0 ? (movimiento.costo_unitario | currency) : '' }}</td>
-                    <td class="text-end">{{ movimiento.entrada_cantidad > 0 ? (movimiento.entrada_valor | currency) : '' }}</td>
+                    <td class="text-center" *ngIf="mostrarCostosInventario">{{ movimiento.entrada_cantidad > 0 ? (movimiento.costo_unitario | currency) : '' }}</td>
+                    <td class="text-end" *ngIf="mostrarCostosInventario">{{ movimiento.entrada_cantidad > 0 ? (movimiento.entrada_valor | currency) : '' }}</td>
                     <td class="text-center">{{ movimiento.salida_cantidad > 0 ? (movimiento.salida_cantidad | number:'1.0') : '' }}</td>
-                    <td class="text-center">{{ movimiento.salida_cantidad > 0 ? (movimiento.costo_unitario | currency) : '' }}</td>
-                    <td class="text-end">{{ movimiento.salida_cantidad > 0 ? ((movimiento.salida_cantidad * movimiento.costo_unitario) | currency) : '' }}</td>
+                    <td class="text-center" *ngIf="mostrarCostosInventario">{{ movimiento.salida_cantidad > 0 ? (movimiento.costo_unitario | currency) : '' }}</td>
+                    <td class="text-end" *ngIf="mostrarCostosInventario">{{ movimiento.salida_cantidad > 0 ? ((movimiento.salida_cantidad * movimiento.costo_unitario) | currency) : '' }}</td>
                     <td class="text-center">{{ movimiento.total_cantidad | number:'1.0' }}</td>
-                    <td class="text-center">{{ movimiento.costo_unitario | currency }}</td>
-                    <td class="text-end">{{ movimiento.total_valor | currency }}</td>
+                    <td class="text-center" *ngIf="mostrarCostosInventario">{{ movimiento.costo_unitario | currency }}</td>
+                    <td class="text-end" *ngIf="mostrarCostosInventario">{{ movimiento.total_valor | currency }}</td>
                 </tr>
             </tbody>
         </table>

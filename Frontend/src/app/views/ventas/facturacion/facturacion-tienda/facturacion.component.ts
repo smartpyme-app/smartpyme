@@ -3076,6 +3076,10 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   }
 
   emitirDTE() {
+    if (!this.apiService.canEmitirFacturaElectronica()) {
+      this.alertService.error('No tiene permiso para emitir factura electrónica.');
+      return;
+    }
     this.emiting = true;
     const ventaPreDte = { ...this.venta };
     this.facturacionElectronica

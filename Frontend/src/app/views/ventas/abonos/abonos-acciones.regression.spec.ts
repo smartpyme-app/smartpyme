@@ -17,13 +17,13 @@ describe('Abonos acciones menú', () => {
     const html = read('views/ventas/abonos/abonos-ventas.component.html');
     expect(html).toContain('(click)="imprimir(abono)"');
     expect(html).not.toContain("canEditTest('ventas.abonos.editar')");
-    expect(html).toContain('@if (contabilidadHabilitada)');
+    expect(html).toContain("canGenerarPartidaContable('cxc'");
     expect(html).toContain('generarPartidaContable(abono)');
   });
 
-  it('gastos: partida solo con contabilidad', () => {
+  it('gastos: partida solo con permiso granular', () => {
     const html = read('views/compras/gastos/gastos.component.html');
-    expect(html).toContain('*ngIf="contabilidadHabilitada" (click)="generarPartidaContable(gasto)"');
+    expect(html).toContain("canGenerarPartidaContable('gasto'");
   });
 
   it('producto: switches de restaurante solo con el módulo', () => {
@@ -38,7 +38,7 @@ describe('Abonos acciones menú', () => {
   it('abonos compras: Imprimir con canEdit y partida solo con contabilidad', () => {
     const html = read('views/compras/abonos/abonos-compras.component.html');
     expect(html).toContain('(click)="imprimir(abono)"');
-    expect(html).toContain('@if (contabilidadHabilitada)');
+    expect(html).toContain("canGenerarPartidaContable('cxp'");
     expect(html).toContain('generarPartidaContable(abono)');
   });
 });

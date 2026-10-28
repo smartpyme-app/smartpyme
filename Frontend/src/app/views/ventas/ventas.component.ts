@@ -1538,6 +1538,10 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   }
 
   emitirDTE() {
+    if (!this.apiService.canEmitirFacturaElectronica()) {
+      this.alertService.error('No tiene permiso para emitir factura electrónica.');
+      return;
+    }
     this.saving = true;
     this.cdr.markForCheck();
     this.facturacionElectronica.emitirDTE(this.venta).then((ventaActualizada) => {

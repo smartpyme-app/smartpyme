@@ -7,11 +7,11 @@
         <tr>
           <th>Producto</th>
           <th style="width: 150px;">Cantidad</th>
-          @if (!apiService.isVentasLimitado()) {
+          @if (!apiService.isVentasLimitado() && apiService.canVerCostosInventario()) {
           <th style="width: 150px;">Costo</th>
           }
           <th style="width: 150px;">En combo</th>
-          @if (!apiService.isVentasLimitado()) {
+          @if (!apiService.isVentasLimitado() && apiService.canVerCostosInventario()) {
           <th style="width: 100px;" class="text-right">Total</th>
           }
           <th style="width: 50px;" class="text-center"><i class="fa fa-cog"></i></th>
@@ -37,7 +37,7 @@
                     <input type="number" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)"
                         (keyup)="updateTotal(detalle)" class="form-control">
                 </td>
-                @if (!apiService.isVentasLimitado()) {
+                @if (!apiService.isVentasLimitado() && apiService.canVerCostosInventario()) {
                 <td style="width: 150px;">
                     <input type="number" [(ngModel)]="detalle.costo" (change)="updateTotal(detalle)"
                         (keyup)="updateTotal(detalle)" class="form-control" name="costo">
@@ -47,7 +47,7 @@
                     <input type="number" [(ngModel)]="detalle.cantidad_combo" class="form-control" name="cantidad_combo"
                         disabled>
                 </td>
-                @if (!apiService.isVentasLimitado()) {
+                @if (!apiService.isVentasLimitado() && apiService.canVerCostosInventario()) {
                 <td style="width: 100px;" class="text-right">{{ detalle.total | currency}}
                 </td>
                 }

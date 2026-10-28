@@ -342,6 +342,32 @@ export class ApiService {
     return this.permissionService.canDeleteTest(permission);
   }
 
+  /** SP-2339 / SP-2341: partida manual desde acciones del módulo. */
+  canGenerarPartidaContable(
+    tipo: 'venta' | 'cxc' | 'cxp' | 'compra' | 'gasto',
+    contabilidadHabilitada: boolean,
+  ): boolean {
+    if (!contabilidadHabilitada) {
+      return false;
+    }
+    const especifico = `contabilidad.partidas.generar_${tipo}`;
+    return (
+      this.hasPermission(especifico) ||
+      this.hasPermission('contabilidad.partidas.crear')
+    );
+  }
+
+  canEmitirFacturaElectronica(): boolean {
+    return this.hasPermission('ventas.facturacion_electronica.emitir');
+  }
+
+  canVerCostosInventario(): boolean {
+    if (this.supervisorLimitadoRestringidoEnCompras()) {
+      return false;
+    }
+    return this.hasPermission('productos.inventario.ver_costos');
+  }
+
   verifyRoleAdmin(): boolean {
     return this.permissionService.verifyRoleAdmin();
   }

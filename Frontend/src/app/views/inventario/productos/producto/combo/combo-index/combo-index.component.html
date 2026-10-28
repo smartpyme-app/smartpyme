@@ -83,7 +83,7 @@
             <th>Codigo</th>
             <th>Nombre combo</th>
             <th class="d-none d-lg-table-cell">Descripción</th>
-            @if (!apiService.isVentasLimitado()) {
+            @if (!apiService.isVentasLimitado() && apiService.canVerCostosInventario()) {
             <th>Costo</th>
             }
             <th>Precio total con iva</th>
@@ -112,7 +112,7 @@
                   <td>{{combo.codigo_combo}}</td>
                   <td>{{ combo.nombre }}</td>
                   <td>{{combo.descripcion}}</td>
-                  @if (!apiService.isVentasLimitado()) {
+                  @if (!apiService.isVentasLimitado() && apiService.canVerCostosInventario()) {
                   <td>{{combo.costo_total | currency}}</td>
                   }
                   <td>{{combo.precio_total |currency}} </td>
