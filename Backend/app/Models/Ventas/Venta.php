@@ -274,7 +274,6 @@ class Venta extends AuditableModel {
             'ventas.total',
             'ventas.propina',
             'ventas.condicion',
-            'ventas.credito',
             'ventas.id_cliente',
             'ventas.id_documento',
             'ventas.id_usuario',

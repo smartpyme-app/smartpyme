@@ -187,7 +187,7 @@ Re-login obligatorio.
 - **Cotizaciones en BD** con estados extendidos (`enviada`, `aceptada`, …) no se migran automáticamente; el UI ya no ofrece esos valores. Valorar script SQL de normalización si el cliente lo pide.
 - **`licencias/empresas/select`**: lista empresas del sistema no ligadas a la licencia (excluye empresa padre de la licencia); acotar más si negocio lo requiere.
 - **Precios**: filtro backend solo en búsqueda por código; otras rutas de producto pueden seguir enviando tarifas completas (UI filtra en selector).
-- **Listado ventas (`listado=1`)**: no sustituye el detalle de una venta (`GET venta/{id}`). Filtro por **vendedor** (`id_vendedor`) puede seguir siendo costoso por `orWhereHas('detalles')`; el índice de migración ayuda al patrón empresa + usuario + fecha.
+- **Listado ventas (`listado=1`)**: no sustituye el detalle de una venta (`GET venta/{id}`). Filtro por **vendedor** (`id_vendedor`) puede seguir siendo costoso por `orWhereHas('detalles')`; el índice de migración ayuda al patrón empresa + usuario + fecha. `selectListado` solo columnas reales en `ventas` (no existe columna `credito`; crédito/Boxful usa `condicion`).
 - **Versión en footer**: usa `environment.appVersion`; no depende de descargar `manifest.webmanifest` en runtime.
 
 ---

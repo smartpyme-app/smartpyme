@@ -12,6 +12,8 @@ class VentaListadoSelectTest extends TestCase
         $sql = Venta::query()->selectListado()->toSql();
 
         $this->assertStringNotContainsString('dte', strtolower($sql));
+        $this->assertStringNotContainsString('credito', strtolower($sql));
         $this->assertStringContainsString('sello_mh', $sql);
+        $this->assertStringContainsString('condicion', $sql);
     }
 }
