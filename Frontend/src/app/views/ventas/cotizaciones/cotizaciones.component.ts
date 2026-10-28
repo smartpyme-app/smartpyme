@@ -19,6 +19,10 @@ import {
   puedeImprimirCotizacion,
   puedeVerDetalleCotizacion,
 } from '@views/ventas/ventas-acciones-menu.util';
+import {
+  canonicoEstadoCotizacion,
+  estadoCotizacionBadgeClass,
+} from '@views/ventas/cotizaciones/cotizacion-estado.util';
 
 @Component({
     selector: 'app-cotizaciones',
@@ -45,12 +49,14 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
 
   private perm = (p: string) => this.apiService.hasPermission(p);
 
+  public readonly estadoCotizacionBadgeClass = estadoCotizacionBadgeClass;
+
   public puedeFacturarCotizacion(estado: string): boolean {
-    return estado === 'Pendiente' && puedeFacturarDesdeCotizacion(this.perm);
+    return canonicoEstadoCotizacion(estado) === 'Pendiente' && puedeFacturarDesdeCotizacion(this.perm);
   }
 
   public puedeImprimirCotizacionEstado(estado: string): boolean {
-    return estado === 'Facturada' && puedeImprimirCotizacion(this.perm);
+    return canonicoEstadoCotizacion(estado) === 'Facturada' && puedeImprimirCotizacion(this.perm);
   }
 
   public puedeVerDetalleCotizacion(): boolean {
@@ -163,6 +169,11 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
           .subscribe({
             next: (ventas) => {
               this.ventas = ventas;
+              this.ventas?.data?.forEach((row: { estado?: string }) => {
+                if (row.estado != null) {
+                  row.estado = canonicoEstadoCotizacion(row.estado) as string;
+                }
+              });
               this.loading = false;
               if (this.modalRef) {
                 this.modalRef.hide();

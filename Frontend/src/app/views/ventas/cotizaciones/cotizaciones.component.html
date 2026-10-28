@@ -88,22 +88,14 @@
                       <td>{{venta.nombre_cliente| truncate:30 }}@if (venta.id_cliente && venta.id_cliente != 1) {<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a>}</td>
                       <td>
                         @if (apiService.isVentasLimitado()) {
-                          <span class="badge"
-                                [ngClass]="{
-                                  'bg-light-warning': venta?.estado == 'Pendiente',
-                                  'bg-light-danger': venta?.estado == 'Anulada',
-                                  'bg-light-success': venta?.estado == 'Facturada'
-                                }">{{ venta.estado }}</span>
+                          <span class="badge py-2" style="font-size: 0.8rem;"
+                                [ngClass]="estadoCotizacionBadgeClass(venta?.estado)">{{ venta.estado }}</span>
                         } @else {
-                        <select name="enable" class="form-select w-auto border-0"
+                        <select name="enable" class="form-select w-auto border-0 text-dark"
                                 (change)="setEstado(venta)"
                                 [(ngModel)]="venta.estado"
                                 [disabled]="apiService.restriccionesCotizacionesVendedoresActivas()"
-                                [ngClass]="{
-                                  'bg-light-warning': venta?.estado == 'Pendiente',
-                                  'bg-light-danger': venta?.estado == 'Anulada',
-                                  'bg-light-success': venta?.estado == 'Facturada'
-                                }">
+                                [ngClass]="estadoCotizacionBadgeClass(venta?.estado)">
                           <option value="Pendiente">Pendiente</option>
                           <option value="Facturada">Facturada</option>
                           <option value="Anulada">Anulada</option>

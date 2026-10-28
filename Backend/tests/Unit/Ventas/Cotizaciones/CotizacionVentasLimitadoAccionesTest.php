@@ -12,7 +12,9 @@ class CotizacionVentasLimitadoAccionesTest extends TestCase
         $this->assertSame('facturar', CotizacionConstants::accionVentasLimitado('Pendiente'));
         $this->assertSame('imprimir', CotizacionConstants::accionVentasLimitado('Facturada'));
         $this->assertNull(CotizacionConstants::accionVentasLimitado('Anulada'));
-        $this->assertNull(CotizacionConstants::accionVentasLimitado('Enviada'));
+        $this->assertSame('facturar', CotizacionConstants::accionVentasLimitado('Enviada'));
+        $this->assertSame('facturar', CotizacionConstants::accionVentasLimitado('pendiente'));
+        $this->assertSame(CotizacionConstants::ESTADO_PENDIENTE, CotizacionConstants::normalizarEstado('aceptada'));
 
         $this->assertTrue(CotizacionConstants::esVentasLimitado((object) ['tipo' => 'Ventas Limitado']));
         $this->assertFalse(CotizacionConstants::esVentasLimitado((object) ['tipo' => 'Ventas']));
