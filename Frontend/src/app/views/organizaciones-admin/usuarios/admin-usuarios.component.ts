@@ -68,9 +68,12 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
 
         this.loadAll();
 
-        this.apiService.getAll('empresas/list').pipe(this.untilDestroyed()).subscribe({
-            next: (empresas) => {
-                this.empresas = empresas;
+        this.apiService.getAll('licencias/empresas/list').pipe(this.untilDestroyed()).subscribe({
+            next: (filas) => {
+                this.empresas = (filas || []).map((f: any) => ({
+                    id: f.id_empresa ?? f.empresa?.id,
+                    nombre: f.nombre_empresa ?? f.empresa?.nombre ?? '',
+                })).filter((e: any) => e.id);
             },
             error: (error) => {
                 this.alertService.error(error);

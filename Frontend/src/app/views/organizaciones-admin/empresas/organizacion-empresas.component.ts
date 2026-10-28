@@ -1,6 +1,7 @@
 import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { RouterModule } from '@angular/router';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { PopoverModule } from 'ngx-bootstrap/popover';
@@ -15,7 +16,7 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
     selector: 'app-organizacion-empresas',
     templateUrl: './organizacion-empresas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, PopoverModule, TooltipModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, PopoverModule, TooltipModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
@@ -27,7 +28,7 @@ export class OrganizacionEmpresasComponent extends BaseCrudComponent<any> implem
     public empresa:any = {};
 
     constructor(
-        apiService: ApiService, 
+        public override apiService: ApiService,
         alertService: AlertService,
         modalManager: ModalManagerService,
         private cdr: ChangeDetectorRef
@@ -37,15 +38,31 @@ export class OrganizacionEmpresasComponent extends BaseCrudComponent<any> implem
             itemsProperty: 'empresas',
             itemProperty: 'empresa',
             reloadAfterSave: true,
-            reloadAfterDelete: false,
+            reloadAfterDelete: true,
+            initNewItem: (item) => {
+                const idLicencia = apiService.auth_user()?.empresa?.licencia?.id;
+                if (idLicencia) {
+                    item.id_licencia = idLicencia;
+                }
+                return item;
+            },
+            beforeSave: (item) => {
+                if (!item.id_licencia) {
+                    const idLicencia = apiService.auth_user()?.empresa?.licencia?.id;
+                    if (idLicencia) {
+                        item.id_licencia = idLicencia;
+                    }
+                }
+                return item;
+            },
             messages: {
                 created: 'La empresa fue añadida exitosamente.',
                 updated: 'La empresa fue guardada exitosamente.',
-                deleted: 'Empresa eliminada exitosamente.',
+                deleted: 'La empresa fue quitada de la licencia.',
                 createTitle: 'Empresa agregada',
                 updateTitle: 'Empresa guardada',
-                deleteTitle: 'Empresa eliminada',
-                deleteConfirm: '¿Desea eliminar el Registro?'
+                deleteTitle: 'Empresa quitada',
+                deleteConfirm: '¿Quitar esta empresa de la licencia?'
             }
         });
     }
@@ -116,43 +133,18 @@ export class OrganizacionEmpresasComponent extends BaseCrudComponent<any> implem
         this.filtrarEmpresas();
     }
 
-    public setEstado(empresa:any){
-        this.apiService.store('empresa', empresa)
-            .pipe(this.untilDestroyed())
-            .subscribe({
-                next: () => {
-                    this.alertService.success('Empresa guardada', 'La empresa fue guardada exitosamente.');
-                    this.cdr.markForCheck();
-                },
-                error: (error) => {
-                    this.alertService.error(error);
-                    this.cdr.markForCheck();
-                }
-            });
+    /** No quitar la empresa titular de la licencia desde este listado. */
+    esEmpresaTitularLicencia(fila: { id_empresa?: number }): boolean {
+        const idTitular = this.apiService.auth_user()?.empresa?.licencia?.id_empresa;
+        return idTitular != null && fila.id_empresa === idTitular;
     }
 
-    public override delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('empresa/', id)
-                .pipe(this.untilDestroyed())
-                .subscribe({
-                    next: (data) => {
-                        for (let i = 0; i < this.empresas['data'].length; i++) { 
-                            if (this.empresas['data'][i].id == data.id )
-                                this.empresas['data'].splice(i, 1);
-                        }
-                    },
-                    error: (error) => {
-                        this.alertService.error(error);
-                    }
-                });
-        }
+    public quitarDeLicencia(fila: { id: number }): void {
+        super.delete(fila);
     }
 
     override openModal(template: TemplateRef<any>, empresa?: any) {
-        this.empresa = empresa || {};
-
-        this.apiService.getAll('empresas/list')
+        this.apiService.getAll('licencias/empresas/select')
             .pipe(this.untilDestroyed())
             .subscribe({
                 next: (empresasList) => {
@@ -164,10 +156,8 @@ export class OrganizacionEmpresasComponent extends BaseCrudComponent<any> implem
                     this.cdr.markForCheck();
                 }
             });
-        
-        if (!this.empresa.id) {
-            this.empresa.id_licencia = this.apiService.auth_user().empresa.licencia.id;
-        }
-        super.openModal(template, { class: 'modal-md', backdrop: 'static' });
+
+        // BaseCrud: 2º arg = item, 3º = config del modal (antes se pasaba mal y se borraba id_licencia).
+        super.openModal(template, empresa, { class: 'modal-md', backdrop: 'static' });
     }
 }

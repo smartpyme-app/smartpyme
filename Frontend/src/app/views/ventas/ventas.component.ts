@@ -50,6 +50,17 @@ import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electroni
 import { VentaRecurrenciaConfigComponent } from '@shared/modals/venta-recurrencia-config/venta-recurrencia-config.component';
 import { PartidaVentaFlowService } from '@services/contabilidad/partida-venta-flow.service';
 import { ventaEsTicketSinEmisionFe } from '@helpers/empresa.helper';
+import {
+  puedeAnularVenta,
+  puedeCrearVenta,
+  puedeDevolucionVenta,
+  puedeEditarVenta,
+  puedeImprimirVenta,
+  puedeNotaCreditoDebitoVenta,
+  puedePagarVenta,
+  puedeVerDetalleVenta,
+  puedeVerDteVenta,
+} from '@views/ventas/ventas-acciones-menu.util';
 
 export type VentasExportPeriodoTipo = 'detalles' | 'ventas' | 'general';
 
@@ -117,13 +128,46 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   public readonly permisoVentasCrear = 'ventas.crear';
   public readonly permisoVentasEditar = 'ventas.editar';
 
-  // Métodos helper para permisos
+  private perm = (p: string) => this.apiService.hasPermission(p);
+
   public canEditVentas(): boolean {
-    return this.apiService.canEditTest(this.permisoVentasEditar);
+    return puedeEditarVenta(this.perm);
   }
 
   public canCreateVentas(): boolean {
-    return this.apiService.canCreateTest(this.permisoVentasCrear);
+    return puedeCrearVenta(this.perm);
+  }
+
+  public canVerVentas(): boolean {
+    return this.apiService.hasPermission('ventas.ver');
+  }
+
+  public canVerDetalleVenta(): boolean {
+    return puedeVerDetalleVenta(this.perm);
+  }
+
+  public canImprimirVenta(): boolean {
+    return puedeImprimirVenta(this.perm);
+  }
+
+  public canPagarVenta(): boolean {
+    return puedePagarVenta(this.perm);
+  }
+
+  public canDevolucionVenta(): boolean {
+    return puedeDevolucionVenta(this.perm);
+  }
+
+  public canNotaCreditoDebitoVenta(): boolean {
+    return puedeNotaCreditoDebitoVenta(this.perm);
+  }
+
+  public canAnularVenta(): boolean {
+    return puedeAnularVenta(this.perm);
+  }
+
+  public canEmitirFeVenta(): boolean {
+    return puedeVerDteVenta(this.perm);
   }
 
   public esFeCostaRica(): boolean {
@@ -346,6 +390,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
           direccion: params['direccion'] || 'desc',
           paginate: +params['paginate'] || 10,
           page: +params['page'] || 1,
+          listado: 1,
         };
 
         // Aplicar filtro de sucursal para usuarios no administradores si no hay filtro en URL
@@ -541,6 +586,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       direccion: 'desc',
       paginate: 10,
       page: 1,
+      listado: 1,
     };
 
       // Aplicar filtro de sucursal para usuarios no administradores
@@ -1538,6 +1584,10 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   }
 
   emitirDTE() {
+    if (!this.apiService.canEmitirFacturaElectronica()) {
+      this.alertService.error('No tiene permiso para emitir factura electrónica.');
+      return;
+    }
     this.saving = true;
     this.cdr.markForCheck();
     this.facturacionElectronica.emitirDTE(this.venta).then((ventaActualizada) => {

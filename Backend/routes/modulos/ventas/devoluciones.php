@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Ventas\Devoluciones\DevolucionVentasController;
 use App\Http\Controllers\Api\Ventas\Devoluciones\DevolucionDetallesController;
+use App\Support\PermisoAnular;
 use Illuminate\Support\Facades\Route;
 
     // Devoluciones
@@ -13,13 +14,15 @@ use Illuminate\Support\Facades\Route;
     Route::post('/devolucion/venta/facturacion',             [DevolucionVentasController::class, 'facturacion']);
     Route::post('/devolucion/venta/actualizar',             [DevolucionVentasController::class, 'update']);
     Route::get('/devolucion/venta/{id}',               [DevolucionVentasController::class, 'read']);
-    Route::delete('/devolucion/venta/{id}',            [DevolucionVentasController::class, 'delete']);
+    Route::delete('/devolucion/venta/{id}',            [DevolucionVentasController::class, 'delete'])
+        ->middleware('permission:'.PermisoAnular::eliminarOAnular('ventas.devoluciones.eliminar'));
     Route::get('/devoluciones/ventas/exportar',    [DevolucionVentasController::class, 'export']);
     Route::get('/devolucion/facturacion/impresion/{id}',  [DevolucionVentasController::class, 'generarDoc']);
 
     Route::get('/devolucion/venta/detalle/{id}',       [DevolucionDetallesController::class, 'index']);
     Route::post('/devolucion/venta/detalle',           [DevolucionDetallesController::class, 'store']);
-    Route::delete('/devolucion/venta/detalle/{id}',    [DevolucionDetallesController::class, 'delete']);
+    Route::delete('/devolucion/venta/detalle/{id}',    [DevolucionDetallesController::class, 'delete'])
+        ->middleware('permission:'.PermisoAnular::eliminarOAnular('ventas.devoluciones.eliminar'));
 
     Route::get('/devolucion/ventas/buscar/{txt}',      [DevolucionVentasController::class, 'search']);
     Route::get('/devolucion/ventas/{filtro}/{valor}',  [DevolucionVentasController::class, 'filtro']);

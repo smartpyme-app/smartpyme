@@ -3,8 +3,10 @@
 namespace App\Exports;
 
 use App\Models\User as Usuario;
+use App\Support\AdminUsuariosAlcance;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use JWTAuth;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -47,27 +49,23 @@ class AdminUsuariosExport implements FromQuery, WithHeadings, WithMapping, WithC
     {
         $request = $this->request ?? request();
 
-        return Usuario::query()
+        $actor = JWTAuth::parseToken()->authenticate();
+        $query = Usuario::query()
             ->with(['empresa', 'sucursal', 'bodega'])
             ->when($request->filled('estado'), function ($q) use ($request) {
                 $q->where('enable', !!$request->estado);
-            })
-            ->when($request->id_empresa, function ($q) use ($request) {
-                $q->where('id_empresa', $request->id_empresa);
             })
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
             ->when($request->tipo, function ($q) use ($request) {
                 $q->where('tipo', $request->tipo);
-            })
-            ->when($request->buscador, function ($query) use ($request) {
-                $query->where(function ($q) use ($request) {
-                    $q->where('name', 'like', '%' . $request->buscador . '%')
-                        ->orWhere('email', 'like', '%' . $request->buscador . '%');
-                });
-            })
-            ->orderBy($request->input('orden', 'id'), $request->input('direccion', 'asc'));
+            });
+
+        AdminUsuariosAlcance::aplicarAlQuery($query, $actor, $request);
+        AdminUsuariosAlcance::aplicarBuscador($query, $request->buscador);
+
+        return $query->orderBy($request->input('orden', 'id'), $request->input('direccion', 'asc'));
     }
 
     /**

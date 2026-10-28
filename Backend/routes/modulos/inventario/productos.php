@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\Inventario\PresentacionesController;
 use App\Http\Controllers\Api\Webhook\ShopifyController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Webhook\WooCommerceController;
+use App\Support\PermisoAnular;
 
 
     Route::get('/productos/tipo-cambio-precios', [RecalcularPreciosTipoCambioController::class, 'show']);
@@ -50,7 +51,8 @@ use App\Http\Controllers\Api\Webhook\WooCommerceController;
 
     Route::get('/productos-all/buscar/{text}',  [ProductosController::class, 'searchAll']);
     Route::post('/producto',                    [ProductosController::class, 'store']);
-    Route::delete('/producto/{id}',  		    [ProductosController::class, 'delete']);
+    Route::delete('/producto/{id}',  		    [ProductosController::class, 'delete'])
+        ->middleware('permission:'.PermisoAnular::eliminarOAnular('productos.eliminar'));
 
     Route::post('/compra/guardar-producto', [ProductosController::class, 'storeDesdeCompras']);
 

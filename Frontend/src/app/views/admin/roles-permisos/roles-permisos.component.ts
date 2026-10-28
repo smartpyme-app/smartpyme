@@ -10,6 +10,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { filtrarModulosPermisos } from '@shared/utils/permisos-modulos-empresa';
+import {
+  esPermisoHijoDePadre,
+  etiquetaPermisoRoles,
+  permisoEliminarOculto,
+  permisoPadreJerarquia,
+} from '@shared/utils/permisos-roles-ui.util';
 import { map, switchMap } from 'rxjs/operators';
 
 @Component({
@@ -118,9 +124,14 @@ export class RolesPermisosComponent extends BaseModalComponent implements OnInit
   }
 
   filterPermissionsBySearch(permissions: any[], searchText: string) {
-    if (!searchText) return permissions;
-    return permissions.filter(p => 
-      p.permission.name.toLowerCase().includes(searchText.toLowerCase())
+    const visible = (permissions ?? []).filter(
+      (p) => !permisoEliminarOculto(p.permission?.name ?? ''),
+    );
+    if (!searchText) {
+      return visible;
+    }
+    return visible.filter((p) =>
+      p.permission.name.toLowerCase().includes(searchText.toLowerCase()),
     );
   }
 
@@ -136,7 +147,7 @@ export class RolesPermisosComponent extends BaseModalComponent implements OnInit
   }
 
   getSimplePermissionName(fullName: string) {
-    return fullName.split('.').pop();
+    return etiquetaPermisoRoles(fullName);
   }
 
   saveRole() {
@@ -281,17 +292,75 @@ export class RolesPermisosComponent extends BaseModalComponent implements OnInit
   }
 
   onPermissionChange(permission: any) {
-    if (this.selectedRole) {
-      const isChecked = this.selectedRole.permissions.some((p: any) => p.name === permission.name);
-      if (isChecked) {
-        this.selectedRole.permissions = this.selectedRole.permissions.filter(
-          (p: any) => p.name !== permission.name
-        );
-      } else {
-        this.selectedRole.permissions.push(permission);
-      }
-      this.cdr.markForCheck();
+    const name = permission?.name;
+    if (!name || permisoEliminarOculto(name)) {
+      return;
     }
+
+    const isChecked = this.selectedRole
+      ? this.selectedRole.permissions.some((p: any) => p.name === name)
+      : this.role.permissions.includes(name);
+    const checked = !isChecked;
+
+    this.applyPermissionToggle(name, checked);
+
+    if (checked) {
+      const padre = permisoPadreJerarquia(name);
+      if (padre) {
+        this.applyPermissionToggle(padre, true);
+      }
+      for (const hijo of this.listarNombresPermisos()) {
+        if (esPermisoHijoDePadre(hijo, name)) {
+          this.applyPermissionToggle(hijo, true);
+        }
+      }
+    } else {
+      for (const hijo of this.listarNombresPermisos()) {
+        if (esPermisoHijoDePadre(hijo, name)) {
+          this.applyPermissionToggle(hijo, false);
+        }
+      }
+    }
+
+    this.cdr.markForCheck();
+  }
+
+  private listarNombresPermisos(): string[] {
+    const names: string[] = [];
+    for (const module of this.modules) {
+      for (const perm of module.permissions ?? []) {
+        names.push(perm.permission.name);
+      }
+      for (const sub of module.submodules ?? []) {
+        for (const perm of sub.permissions ?? []) {
+          names.push(perm.permission.name);
+        }
+      }
+    }
+
+    return names;
+  }
+
+  private applyPermissionToggle(name: string, checked: boolean): void {
+    if (permisoEliminarOculto(name)) {
+      return;
+    }
+
+    if (this.selectedRole) {
+      if (checked) {
+        if (!this.selectedRole.permissions.some((p: any) => p.name === name)) {
+          this.selectedRole.permissions.push({ name });
+        }
+      } else {
+        this.selectedRole.permissions = this.selectedRole.permissions.filter(
+          (p: any) => p.name !== name,
+        );
+      }
+
+      return;
+    }
+
+    this.updatePermissionSelection(name, checked);
   }
 
   onPermissionSelect(event: any) {
@@ -317,29 +386,55 @@ export class RolesPermisosComponent extends BaseModalComponent implements OnInit
   // Métodos para seleccionar todos los permisos
   selectAllModuleOnlyPermissions(module: any, event: any) {
     const isChecked = event.target.checked;
-    
-    // Solo seleccionar permisos del módulo principal (no submódulos)
+
     module.permissions?.forEach((perm: any) => {
-      this.updatePermissionSelection(perm.permission.name, isChecked);
+      const name = perm.permission.name;
+      if (permisoEliminarOculto(name)) {
+        return;
+      }
+      this.applyPermissionToggle(name, isChecked);
+      if (isChecked) {
+        for (const hijo of this.listarNombresPermisos()) {
+          if (esPermisoHijoDePadre(hijo, name)) {
+            this.applyPermissionToggle(hijo, true);
+          }
+        }
+      }
     });
+    this.cdr.markForCheck();
   }
 
   isModulePermissionsSelected(module: any): boolean {
-    const permissions = (module.permissions || []).map((p: any) => p.permission.name);
-    return permissions.length > 0 && permissions.every((perm: any) => this.role.permissions.includes(perm));
+    const permissions = (module.permissions || [])
+      .map((p: any) => p.permission.name)
+      .filter((name: string) => !permisoEliminarOculto(name));
+    return permissions.length > 0 && permissions.every((perm: string) => this.role.permissions.includes(perm));
   }
 
   selectAllSubmodulePermissions(submodule: any, event: any) {
     const isChecked = event.target.checked;
-    
+
     submodule.permissions?.forEach((perm: any) => {
-      this.updatePermissionSelection(perm.permission.name, isChecked);
+      const name = perm.permission.name;
+      if (permisoEliminarOculto(name)) {
+        return;
+      }
+      this.applyPermissionToggle(name, isChecked);
+      if (isChecked) {
+        const padre = permisoPadreJerarquia(name);
+        if (padre) {
+          this.applyPermissionToggle(padre, true);
+        }
+      }
     });
+    this.cdr.markForCheck();
   }
 
   isSubmoduleFullySelected(submodule: any): boolean {
-    const permissions = (submodule.permissions || []).map((p: any) => p.permission.name);
-    return permissions.length > 0 && permissions.every((perm: any) => this.role.permissions.includes(perm));
+    const permissions = (submodule.permissions || [])
+      .map((p: any) => p.permission.name)
+      .filter((name: string) => !permisoEliminarOculto(name));
+    return permissions.length > 0 && permissions.every((perm: string) => this.role.permissions.includes(perm));
   }
 
   savePermissions() {

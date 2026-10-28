@@ -49,7 +49,7 @@ export class CompraDetallesComponent extends BaseModalComponent implements OnIni
     if (this.isOrdenCompra && this.ocultarMontosOrdenCompra) {
       return false;
     }
-    return !this.apiService.isSupervisorLimitado();
+    return !this.apiService.isSupervisorLimitado() && this.apiService.canVerCostosInventario();
   }
 
   public mostrarColumnaTotalOrdenCompra(): boolean {

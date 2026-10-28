@@ -98,6 +98,7 @@ export class OrdenCompraFormComponent implements OnInit {
         this.documentos = documentos;
         this.proveedores = proveedores;
         this.proyectos = proyectos;
+        this.aplicarDocumentoOrdenCompraPorDefecto();
         this.cdr.markForCheck();
       }
     ).catch(
@@ -128,6 +129,30 @@ export class OrdenCompraFormComponent implements OnInit {
         });
       }
     });
+  }
+
+  /** Si existe documento «Orden de compra», preselecciona tipo y correlativo (referencia). */
+  private aplicarDocumentoOrdenCompraPorDefecto(): void {
+    if (this.activatedRoute.snapshot.params['id']) {
+      return;
+    }
+    const nombre = 'Orden de compra';
+    const doc = (this.documentos || []).find(
+      (d: { nombre?: string; activo?: boolean | number }) =>
+        d?.nombre === nombre && (d.activo === true || d.activo === 1),
+    );
+    const patch: { tipo_documento?: string; referencia?: number | string } = {};
+    if (doc?.nombre) {
+      patch.tipo_documento = doc.nombre;
+      if (doc.correlativo != null && doc.correlativo !== '') {
+        patch.referencia = doc.correlativo;
+      }
+    } else if ((this.documentos || []).length === 1) {
+      patch.tipo_documento = this.documentos[0].nombre;
+    }
+    if (Object.keys(patch).length) {
+      this.ordenCompraForm?.patchValue(patch);
+    }
   }
 
   public sumTotal() {

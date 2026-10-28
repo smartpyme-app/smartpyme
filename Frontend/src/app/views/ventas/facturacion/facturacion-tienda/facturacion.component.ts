@@ -1086,7 +1086,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
           .read('cotizacionVentas/', +this.route.snapshot.queryParamMap.get('id_venta')!)
           .subscribe(
             (venta) => {
-              if (this.apiService.isVentasLimitado() && String(venta?.estado || '').toLowerCase() !== 'pendiente') {
+              if (this.apiService.isVentasLimitado() && venta?.estado !== 'Pendiente') {
                 this.alertService.error('Solo puede facturar cotizaciones pendientes.');
                 this.router.navigate(['/cotizaciones']);
                 return;
@@ -3076,6 +3076,10 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   }
 
   emitirDTE() {
+    if (!this.apiService.canEmitirFacturaElectronica()) {
+      this.alertService.error('No tiene permiso para emitir factura electrónica.');
+      return;
+    }
     this.emiting = true;
     const ventaPreDte = { ...this.venta };
     this.facturacionElectronica

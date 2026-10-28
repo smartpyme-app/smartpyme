@@ -4,19 +4,25 @@ namespace App\Constants;
 
 class CotizacionConstants
 {
-    const ESTADO_PENDIENTE = 'pendiente';
-    const ESTADO_ACEPTADA = 'aceptada';
-    const ESTADO_PERDIDA = 'perdida';
-    const ESTADO_ANULADA = 'anulada';
+    const ESTADO_PENDIENTE = 'Pendiente';
     const ESTADO_FACTURADA = 'Facturada';
-    const ESTADO_ENVIADA = 'enviada';
+    const ESTADO_ANULADA = 'Anulada';
+
+    public static function estadosPermitidos(): array
+    {
+        return [
+            self::ESTADO_PENDIENTE,
+            self::ESTADO_FACTURADA,
+            self::ESTADO_ANULADA,
+        ];
+    }
 
     /** Ventas Limitado: pendiente factura, facturada imprime, el resto no actúa. */
     public static function accionVentasLimitado(?string $estado): ?string
     {
-        return match (mb_strtolower(trim((string) $estado))) {
-            'pendiente' => 'facturar',
-            'facturada' => 'imprimir',
+        return match (trim((string) $estado)) {
+            self::ESTADO_PENDIENTE => 'facturar',
+            self::ESTADO_FACTURADA => 'imprimir',
             default => null,
         };
     }

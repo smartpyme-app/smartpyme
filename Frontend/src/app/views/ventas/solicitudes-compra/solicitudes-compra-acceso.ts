@@ -21,3 +21,15 @@ export function mostrarMenuLicenciasOrganizacion(
         || hasPermission('organizacion.usuarios.ver')
     );
 }
+
+/** Solicitudes cross-empresa: licencia de org. + permiso granular (p. ej. asignado a ventas_limitado). */
+export function mostrarMenuSolicitudesCompra(
+    empresa: { licencia?: unknown; es_empresa_hija?: boolean; es_empresa_padre?: boolean } | null | undefined,
+    hasPermission: (perm: string) => boolean,
+): boolean {
+    if (!perteneceOrganizacionLicencia(empresa)) {
+        return false;
+    }
+
+    return hasPermission('ventas.solicitudes.ver');
+}

@@ -177,6 +177,12 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
     );
   }
 
+  /** Buscar sin resetear el texto (loadAll() limpia buscador). */
+  public buscarUsuarios(): void {
+    this.filtros.page = 1;
+    this.aplicarFiltros();
+  }
+
   protected aplicarFiltros(): void {
     this.loading = true;
     this.cdr.markForCheck();

@@ -49,7 +49,7 @@ export class DevolucionCompraDetallesComponent extends BaseModalComponent implem
     public crearNuevoLote: boolean = false;
 
     constructor(
-        private apiService: ApiService,
+        public apiService: ApiService,
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
         private modalService: BsModalService,

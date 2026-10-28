@@ -15,8 +15,8 @@ import { SLUG_DESCARGA_AUTOMATIZADA_DTES } from '@guards/funcionalidad.guard';
 import { puedeVerMenuCreditos, SLUG_CREDITOS_CLIENTES } from '@views/ventas/creditos/creditos-acceso';
 import { puedeVerMenuPrestamos, SLUG_PRESTAMOS_EMPRESA } from '@views/finanzas/prestamos/prestamos-acceso';
 import {
-    perteneceOrganizacionLicencia,
     mostrarMenuLicenciasOrganizacion as evaluarMenuLicenciasOrganizacion,
+    mostrarMenuSolicitudesCompra as evaluarMenuSolicitudesCompra,
 } from '@views/ventas/solicitudes-compra/solicitudes-compra-acceso';
 
 import { FormControl } from '@angular/forms';
@@ -143,7 +143,24 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
     }
 
     public get mostrarMenuSolicitudesCompra(): boolean {
-        return perteneceOrganizacionLicencia(this.usuario?.empresa);
+        return evaluarMenuSolicitudesCompra(
+            this.usuario?.empresa,
+            (perm) => this.apiService.hasPermission(perm),
+        );
+    }
+
+    /** Compras: mostrar sección si tiene permiso de módulo o de algún submódulo (p. ej. solo OC). */
+    public get mostrarMenuCompras(): boolean {
+        return this.apiService.hasAnyPermission([
+            'compras.ver',
+            'compras.ordenes_compra.ver',
+            'compras.proveedores.ver',
+            'compras.retaceo.ver',
+            'compras.consignas.ver',
+        ]) || (
+            this.apiService.canAccederOperacionesInventario()
+            && this.apiService.hasPermission('compras.consignas.ver')
+        );
     }
 
     public modules: any = [];

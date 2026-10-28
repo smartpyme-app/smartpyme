@@ -68,6 +68,7 @@ class IndexVentaRequest extends FormRequest
             'orden'             => 'nullable|string',
             'direccion'         => 'nullable|string|in:asc,desc',
             'paginate'          => 'nullable|integer|min:1',
+            'listado'           => 'nullable|boolean',
         ];
     }
 }

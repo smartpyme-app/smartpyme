@@ -119,12 +119,14 @@
                                             <i class="fa fa-fw fa-edit"></i> Editar
                                         </a>
                                     }
+                                    @if (apiService.hasPermission('ventas.clientes.ver')) {
                                     <a routerLink="/cliente/detalles/{{cliente.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
                                     <a (click)="generarEstadoCuenta(cliente)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-file-pdf"></i> Estado de cuenta
                                     </a>
+                                    }
                                     @if (!apiService.isVentasLimitado()) {
                                     <a *ngIf="tieneFidelizacionHabilitada" routerLink="/fidelizacion/cliente-detalles/{{cliente.id}}" class="list-group-item list-group-item-action border-0 click">
                                       <i class="fa fa-fw fa-star"></i> Detalles lealtad

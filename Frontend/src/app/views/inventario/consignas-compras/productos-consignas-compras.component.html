@@ -92,7 +92,7 @@
                     <th>Producto</th>
                     <th>Código</th>
                     <th class="text-end">Cantidad</th>
-                    <th class="text-end">Costo</th>
+                    <th class="text-end" *ngIf="apiService.canVerCostosInventario()">Costo</th>
                     <th class="text-end">Total</th>
                 </tr>
             </thead>
@@ -101,7 +101,7 @@
                     <td>{{ detalle.producto }}</td>
                     <td>{{ detalle.codigo }}</td>
                     <td class="text-end">{{ detalle.cantidad }}</td>
-                    <td class="text-end">{{ detalle.costo | currency }}</td>
+                    <td class="text-end" *ngIf="apiService.canVerCostosInventario()">{{ detalle.costo | currency }}</td>
                     <td class="text-end">{{ detalle.total | currency }}</td>
                 </tr>
             </tbody>

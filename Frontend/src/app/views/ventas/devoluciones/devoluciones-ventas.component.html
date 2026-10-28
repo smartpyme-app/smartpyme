@@ -114,12 +114,12 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
-                                    @if (apiService.auth_user().empresa.facturacion_electronica && venta.enable == '1' && !venta.sello_mh) {
+                                    @if (apiService.hasPermission('ventas.facturacion_electronica.emitir') && apiService.auth_user().empresa.facturacion_electronica && venta.enable == '1' && !venta.sello_mh) {
                                         <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" [tooltip]="'country.tax.fe.emit' | translate">
                                             <i class="fa fa-fw fa-file-invoice"></i> {{ 'country.tax.fe.emit' | translate }}
                                         </a>
                                     }
-                                    @if (apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh) {
+                                    @if (apiService.hasPermission('ventas.facturacion_electronica.emitir') && apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh) {
                                         <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" [tooltip]="'country.tax.fe.view' | translate">
                                             <i class="fa fa-fw fa-file-invoice"></i> {{ 'country.tax.fe.view' | translate }}
                                         </a>
@@ -130,20 +130,22 @@
                                          <i class="fa fa-fw fa-edit"></i> Editar devolución
                                      </a>
                                     }
-                                    @if (venta.enable == '1' && apiService.canEdit()) {
+                                    @if (venta.enable == '1' && apiService.canDeleteTest('ventas.devoluciones.eliminar')) {
                                         <a (click)="anularDTE(venta)" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-ban"></i> Anular devolución
                                         </a>
                                     }
+                                    @if (apiService.hasPermission('ventas.devoluciones.ver')) {
                                     <a routerLink="/devolucion/venta/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                                     </a>
+                                    }
                                     @if (venta.enable == '0' && apiService.canEditTest('ventas.devoluciones.editar')) {
                                         <a (click)="setEstado(venta, '1')" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-check"></i> Revertir anulación
                                         </a>
                                     }
-                                    @if (apiService.canEditTest('ventas.devoluciones.editar')) {
+                                    @if (apiService.canEditTest('ventas.devoluciones.editar') || apiService.hasPermission('ventas.devoluciones.ver')) {
                                         <a (click)="imprimir(venta)" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-print"></i> Imprimir
                                         </a>
