@@ -195,6 +195,10 @@
   color: #22c55e;
 }
 
+.cierre-estado-dot--warn {
+  color: #ea580c;
+}
+
 .cierre-umbral-badge {
   font-size: 0.8rem;
   font-weight: 600;

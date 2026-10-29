@@ -24,8 +24,8 @@ export interface CierrePresupuestoFila {
   real: number;
   varMesPct: number | null;
   varMesTono: CierreVarTono;
-  varAcumTexto: string;
-  varAcumTono: CierreVarTono;
+  varAcumMonto: number | null;
+  varAcumPct: number | null;
   estado: CierrePresupuestoEstado;
 }
 
@@ -51,6 +51,7 @@ export interface CierreMesDetalle {
   mesCertificar: string;
   mesEtiquetaCorto: string;
   checklist: CierreChecklistItem[];
+  puedeCertificar: boolean;
   presupuesto: CierrePresupuestoFila[];
   impuestos: {
     vencimiento: string;
@@ -59,11 +60,11 @@ export interface CierreMesDetalle {
   gastosFueraRango: CierreGastosFueraRango;
 }
 
-export interface CierreMesMock {
+export interface CierreMesVista {
   anio: number;
   meses: CierreMesItem[];
-  mesActivoId: number;
+  mesActivoId: number | null;
   mesesCerrados: number;
   totalMeses: number;
-  detallesPorMesId: Record<number, CierreMesDetalle>;
+  detalle: CierreMesDetalle | null;
 }

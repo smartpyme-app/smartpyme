@@ -6,6 +6,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { PlGerencialComponent } from './pl-gerencial/pl-gerencial.component';
 import { PlGerencialQuery } from '../../services/finanzas-pl-data.service';
 import { RentabilidadComponent } from './rentabilidad/rentabilidad.component';
+import { RentabilidadHorizonteId } from './rentabilidad/rentabilidad.model';
 import { FlujoCajaComponent } from './flujo-caja/flujo-caja.component';
 import { CierreMesComponent } from './cierre-mes/cierre-mes.component';
 import { ModeladoComponent } from './modelado/modelado.component';
@@ -78,6 +79,12 @@ export class FinanzasComponent implements OnInit {
   plPeriodo: PlPeriodoId = 'mes';
   plBase: PlBaseId = 'gerencial';
   plSucursalId = 'consolidado';
+  rentHorizonte: RentabilidadHorizonteId = 'mes';
+  readonly rentHorizonteOpciones: { id: RentabilidadHorizonteId; label: string }[] = [
+    { id: 'mes', label: 'Mes' },
+    { id: 'trimestre', label: 'Trimestre' },
+    { id: 'anio', label: 'Año' },
+  ];
   plComparacion: PlComparacionId = 'mes_anterior';
 
   plComparacionOpciones: PlSegmentOption<PlComparacionId>[] = [];
@@ -117,6 +124,14 @@ export class FinanzasComponent implements OnInit {
   seleccionarPlSucursal(event: Event): void {
     this.plSucursalId = (event.target as HTMLSelectElement).value;
     this.refreshPlQuery();
+  }
+
+  seleccionarRentHorizonte(event: Event): void {
+    const id = (event.target as HTMLSelectElement).value as RentabilidadHorizonteId;
+    if (id !== 'mes' && id !== 'trimestre' && id !== 'anio' || id === this.rentHorizonte) {
+      return;
+    }
+    this.rentHorizonte = id;
   }
 
   seleccionarPlComparacion(id: PlComparacionId): void {

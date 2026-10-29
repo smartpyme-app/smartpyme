@@ -75,8 +75,9 @@
       }
     </nav>
 
-    @if (tabActiva === 'pl') {
-      <div class="pl-gerencial-toolbar" aria-label="Filtros P&amp;L Gerencial">
+    @if (tabActiva === 'pl' || tabActiva === 'rentabilidad' || tabActiva === 'flujo') {
+      <div class="pl-gerencial-toolbar" [attr.aria-label]="tabActiva === 'pl' ? 'Filtros P&L Gerencial' : tabActiva === 'rentabilidad' ? 'Filtros de rentabilidad' : 'Filtros de flujo de caja'">
+        @if (tabActiva === 'pl') {
         <div class="pl-segment-group pl-segment-group--navy" role="group" aria-label="Periodo">
           @for (opt of plPeriodoOpciones; track opt.id) {
             <button
@@ -102,6 +103,7 @@
             </button>
           }
         </div>
+        }
 
         <select
           class="pl-sucursal-select"
@@ -113,6 +115,19 @@
           }
         </select>
 
+        @if (tabActiva === 'rentabilidad') {
+          <select
+            class="rent-horizonte-select"
+            [value]="rentHorizonte"
+            (change)="seleccionarRentHorizonte($event)"
+            aria-label="Mes, trimestre o año">
+            @for (opt of rentHorizonteOpciones; track opt.id) {
+              <option [value]="opt.id">{{ opt.label }}</option>
+            }
+          </select>
+        }
+
+        @if (tabActiva === 'pl') {
         <div class="pl-segment-group pl-segment-group--orange" role="group" aria-label="Comparación">
           @for (opt of plComparacionOpciones; track opt.id) {
             <button
@@ -125,6 +140,7 @@
             </button>
           }
         </div>
+        }
       </div>
     }
   </header>
@@ -139,10 +155,16 @@
       </app-pl-gerencial>
     }
     @if (tabActiva === 'rentabilidad') {
-      <app-rentabilidad [periodoTitulo]="plPeriodoTitulo"></app-rentabilidad>
+      <app-rentabilidad
+        [periodoTitulo]="plPeriodoTitulo"
+        [anio]="plQuery.anio"
+        [mes]="plQuery.mes"
+        [sucursalId]="plQuery.sucursalId"
+        [horizonte]="rentHorizonte">
+      </app-rentabilidad>
     }
     @if (tabActiva === 'flujo') {
-      <app-flujo-caja></app-flujo-caja>
+      <app-flujo-caja [sucursalId]="plQuery.sucursalId"></app-flujo-caja>
     }
     @if (tabActiva === 'cierre') {
       <app-cierre-mes></app-cierre-mes>

@@ -28,6 +28,12 @@
   flex: 1 1 160px;
   min-width: 155px;
   max-width: 100%;
+  display: flex;
+}
+
+.metrics-flex-row app-finanzas-kpi-card {
+  flex: 1;
+  width: 100%;
 }
 
 .ventas-card-title {
@@ -37,7 +43,10 @@
 }
 
 .pl-kpi-sublinea {
+  margin-top: 0.35rem;
   line-height: 1.25;
+  font-size: 0.75rem;
+  color: #94a3b8;
 }
 
 .pl-col-concepto {

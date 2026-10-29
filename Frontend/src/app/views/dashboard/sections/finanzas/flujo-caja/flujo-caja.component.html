@@ -1,4 +1,20 @@
 <div class="flujo-caja-dashboard ventas-dashboard">
+  @if (cargando && !contenidoListo) {
+    <div class="text-center py-5" role="status">
+      <div class="spinner-border text-primary" aria-hidden="true"></div>
+      <p class="text-muted mt-2 mb-0">Cargando flujo de caja…</p>
+    </div>
+  } @else if (errorMensaje && !contenidoListo) {
+    <div class="alert alert-warning mb-0" role="alert">{{ errorMensaje }}</div>
+  } @else {
+    @if (errorMensaje) {
+      <div class="alert alert-warning" role="alert">{{ errorMensaje }}</div>
+    }
+    @if (sinProyeccion() && contenidoListo) {
+      <div class="alert alert-info mb-2" role="status">
+        La posición de cuentas está actualizada. Para ver la proyección de 12 semanas, registra el efectivo inicial y el colchón de la empresa.
+      </div>
+    }
   <div class="row mb-2">
     <div class="col-12">
       <div class="card card-performance">
@@ -6,10 +22,11 @@
           <div class="metrics-flex-row mb-3">
             @for (item of kpiChartItems(); track item.metric.title) {
               <div class="metric-flex-col">
-                <app-chart-card [data]="item.metric"></app-chart-card>
-                @if (item.sublinea) {
-                  <p class="text-muted small mb-0 mt-1 ps-1">{{ item.sublinea }}</p>
-                }
+                <app-finanzas-kpi-card [data]="item.metric">
+                  @if (item.sublinea) {
+                    <p class="flujo-kpi-sublinea mb-0">{{ item.sublinea }}</p>
+                  }
+                </app-finanzas-kpi-card>
               </div>
             }
           </div>
@@ -26,7 +43,7 @@
                 Colchón: <strong>{{ formatMonto(data.colchon) }}</strong>
               </span>
               <span class="flujo-context-item">
-                Ciclo de efectivo: <strong>{{ data.cicloEfectivoDias }} días</strong>
+                Ciclo de efectivo: <strong>{{ cicloEfectivoTexto() }}@if (data.cicloEfectivoDias != null) { días}</strong>
               </span>
             </div>
             <div class="flujo-vista-group" role="group" aria-label="Vista">
@@ -145,7 +162,7 @@
     <div class="col-12">
       <div class="card card-performance">
         <div class="card-body p-4">
-          <app-flujo-caja-posicion></app-flujo-caja-posicion>
+          <app-flujo-caja-posicion [posicion]="data.posicion"></app-flujo-caja-posicion>
         </div>
       </div>
     </div>
@@ -155,7 +172,13 @@
     <div class="col-12">
       <div class="card card-performance">
         <div class="card-body p-4">
-          <app-flujo-caja-semanal #flujoSemanal></app-flujo-caja-semanal>
+          <app-flujo-caja-semanal
+            #flujoSemanal
+            [detalle]="data.detalle"
+            [desgloses]="data.desgloses"
+            [pctContado]="data.pctContado"
+            [semanaInicial]="data.kpis.semanaBajo4">
+          </app-flujo-caja-semanal>
         </div>
       </div>
     </div>
@@ -171,5 +194,6 @@
         </div>
       </div>
     </div>
+  }
   }
 </div>

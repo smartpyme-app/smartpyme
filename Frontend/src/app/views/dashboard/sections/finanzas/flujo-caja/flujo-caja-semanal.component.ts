@@ -1,13 +1,19 @@
-import { Component, OnInit, inject } from '@angular/core';
+import {
+  Component,
+  Input,
+  OnChanges,
+  SimpleChanges,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '@services/api.service';
 import { formatEmpresaCurrency } from '@helpers/currency-format.helper';
-import { FlujoSemanaDesglose, FlujoSemanaDetalleFila } from './flujo-caja.model';
 import {
-  FLUJO_SEMANA_DESGLOSE_MOCK,
-  FLUJO_SEMANAL_DETALLE_MOCK,
-} from './flujo-caja.mock';
+  FlujoSemanaDesglose,
+  FlujoSemanaDetalle,
+  FlujoSemanaDetalleFila,
+} from './flujo-caja.model';
 
 @Component({
   selector: 'app-flujo-caja-semanal',
@@ -16,15 +22,32 @@ import {
   standalone: true,
   imports: [CommonModule, FormsModule],
 })
-export class FlujoCajaSemanalComponent implements OnInit {
+export class FlujoCajaSemanalComponent implements OnChanges {
   private readonly api = inject(ApiService);
 
-  readonly meta = FLUJO_SEMANAL_DETALLE_MOCK;
-  filas: FlujoSemanaDetalleFila[] = [];
-  semanaSeleccionada = 'S3';
+  @Input() detalle: FlujoSemanaDetalle | null = null;
+  @Input() desgloses: FlujoSemanaDesglose[] = [];
+  @Input() pctContado = 0;
+  @Input() semanaInicial = '';
 
-  ngOnInit(): void {
-    this.filas = this.meta.filas.map((f) => ({ ...f }));
+  filas: FlujoSemanaDetalleFila[] = [];
+  semanaSeleccionada = '';
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['detalle'] || changes['semanaInicial']) {
+      this.filas = (this.detalle?.filas ?? []).map((f) => ({ ...f }));
+      const pick =
+        this.semanaInicial && this.filas.some((f) => f.id === this.semanaInicial)
+          ? this.semanaInicial
+          : this.filas[0]?.id ?? '';
+      if (!this.filas.some((f) => f.id === this.semanaSeleccionada)) {
+        this.semanaSeleccionada = pick;
+      }
+    }
+  }
+
+  get notaPie(): string {
+    return this.detalle?.notaPie ?? '';
   }
 
   seleccionarSemana(id: string): void {
@@ -36,15 +59,9 @@ export class FlujoCajaSemanalComponent implements OnInit {
     if (!fila) {
       return null;
     }
-    const mock = FLUJO_SEMANA_DESGLOSE_MOCK[fila.id];
-    if (mock) {
-      return {
-        ...mock,
-        neto: fila.neto,
-        entradas: mock.entradas.map((e, i) =>
-          i === 0 ? { ...e, monto: fila.deContado } : e,
-        ),
-      };
+    const api = this.desgloses.find((d) => d.id === fila.id);
+    if (api) {
+      return api;
     }
     return this.desgloseDesdeFila(fila);
   }
@@ -95,7 +112,7 @@ export class FlujoCajaSemanalComponent implements OnInit {
   }
 
   private recalcularDesde(startIndex: number): void {
-    const pct = this.meta.pctContado / 100;
+    const pct = this.pctContado / 100;
     for (let i = startIndex; i < this.filas.length; i++) {
       const fila = this.filas[i];
       if (i > 0) {

@@ -11,7 +11,7 @@ import { CommonModule } from '@angular/common';
 import { ApiService } from '@services/api.service';
 import { formatEmpresaCurrency } from '@helpers/currency-format.helper';
 import { MetricCard } from '../../../models/chart-config.model';
-import { ChartCardComponent } from '../../../components/chart-card/chart-card.component';
+import { FinanzasKpiCardComponent } from '../finanzas-kpi-card.component';
 import { PlEstadoResultadosFila, PlGastosPctVentasMock } from './pl-gerencial.model';
 import { PlGastosPctVentasComponent } from './pl-gastos-pct-ventas.component';
 import {
@@ -32,7 +32,7 @@ const PL_GASTOS_PCT_VACIO: PlGastosPctVentasMock = { filas: [] };
   templateUrl: './pl-gerencial.component.html',
   styleUrls: ['./pl-gerencial.component.css'],
   standalone: true,
-  imports: [CommonModule, ChartCardComponent, PlGastosPctVentasComponent],
+  imports: [CommonModule, FinanzasKpiCardComponent, PlGastosPctVentasComponent],
 })
 export class PlGerencialComponent implements OnInit, OnChanges {
   private readonly api = inject(ApiService);
@@ -71,9 +71,6 @@ export class PlGerencialComponent implements OnInit, OnChanges {
     const seq = ++this.loadSeq;
     this.cargando = true;
     this.errorMensaje = null;
-    this.filas = [];
-    this.kpiItems = [];
-    this.gastosPctVentas = PL_GASTOS_PCT_VACIO;
     this.cdr.markForCheck();
 
     this.plData

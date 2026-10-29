@@ -27,6 +27,12 @@
   flex: 1 1 160px;
   min-width: 155px;
   max-width: 100%;
+  display: flex;
+}
+
+.metrics-flex-row app-finanzas-kpi-card {
+  flex: 1;
+  width: 100%;
 }
 
 .ventas-card-title {
@@ -139,7 +145,7 @@
 }
 
 .rent-kpi-linea {
-  margin-top: 0.2rem;
+  margin-top: 0.35rem;
   font-size: 0.85rem;
   font-weight: 600;
   color: #334155;
@@ -151,45 +157,9 @@
   color: #94a3b8;
 }
 
-.rent-kpi-accion {
-  margin-top: 0.2rem;
-  padding: 0;
-  border: none;
-  background: none;
-  color: #2563eb;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.rent-horizonte-group {
-  display: inline-flex;
-  gap: 0.15rem;
-  padding: 0.2rem;
-  border: 1px solid #e8eaed;
-  border-radius: 999px;
-  background: #fff;
-  align-self: center;
-}
-
-.rent-horizonte-btn {
-  border: none;
-  background: transparent;
-  color: #64748b;
-  font-size: 0.875rem;
-  font-weight: 600;
-  padding: 0.4rem 0.85rem;
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.rent-horizonte-btn--active {
-  background: #1e3a5f;
-  color: #fff;
-}
-
 .rent-dimension-bar {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: 0.25rem;
   padding: 0.4rem;
@@ -305,6 +275,22 @@
   font-size: 0.72rem;
   font-weight: 500;
   color: #94a3b8;
+}
+
+.rent-productos-scroll {
+  /* Cabecera + 9 filas (nombre y categoría). El resto baja con scroll. */
+  max-height: calc(2.85rem + 9 * 4.15rem);
+  overflow: auto;
+}
+
+.rent-detalle-ancla {
+  scroll-margin-top: 0.75rem;
+}
+
+.rent-productos-scroll .rent-dashboard-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .rent-prod-fila {

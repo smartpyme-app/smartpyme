@@ -1,4 +1,15 @@
 <div class="modelado-dashboard ventas-dashboard">
+  @if (cargando && !contenidoListo) {
+    <div class="text-center py-5" role="status">
+      <div class="spinner-border text-primary" aria-hidden="true"></div>
+      <p class="text-muted mt-2 mb-0">Cargando modelado…</p>
+    </div>
+  } @else if (errorMensaje && !contenidoListo) {
+    <div class="alert alert-warning mb-0" role="alert">{{ errorMensaje }}</div>
+  } @else {
+  @if (errorMensaje) {
+    <div class="alert alert-warning" role="alert">{{ errorMensaje }}</div>
+  }
   <div class="row mb-2">
     <div class="col-12">
       <div class="card card-performance">
@@ -19,7 +30,7 @@
                 calendario {{ data.configuradoDetalle.calendarioPct }}% ·
                 presupuesto {{ data.configuradoDetalle.presupuestoPct }}% ·
                 efectivo
-                <span class="modelado-efectivo-ok">{{ data.configuradoDetalle.efectivoDias }} días</span>
+                <span class="modelado-efectivo-ok">{{ efectivoDiasTexto() }}</span>
               </p>
             </div>
 
@@ -55,13 +66,13 @@
               Moneda <strong>{{ data.perfilFiscal.moneda }}</strong>
             </span>
             <span class="modelado-perfil-item">
-              IVA <strong>{{ data.perfilFiscal.ivaPct }}%</strong>
+              IVA <strong>{{ pct(data.perfilFiscal.ivaPct) }}</strong>
             </span>
             <span class="modelado-perfil-item">
-              Pago a cuenta <strong>{{ data.perfilFiscal.pagoCuentaPct }}%</strong>
+              Pago a cuenta <strong>{{ pct(data.perfilFiscal.pagoCuentaPct) }}</strong>
             </span>
             <span class="modelado-perfil-item">
-              Vencimiento <strong>día hábil {{ data.perfilFiscal.vencimientoDiaHabil }}</strong>
+              Vencimiento <strong>{{ data.perfilFiscal.vencimiento || '—' }}</strong>
             </span>
             <span class="modelado-perfil-item">
               Aguinaldo <strong>{{ data.perfilFiscal.aguinaldoRango }}</strong>
@@ -72,6 +83,7 @@
     </div>
   </div>
 
+  @if (data.modulosExternos.modulos.length) {
   <div class="row mb-2">
     <div class="col-12">
       <h2 class="modelado-seccion-titulo">{{ data.modulosExternos.tituloSeccion }}</h2>
@@ -112,6 +124,7 @@
       </div>
     }
   </div>
+  }
 
   <div class="row g-2 mb-2">
     <div class="col-lg-8">
@@ -157,10 +170,9 @@
                   </li>
                 }
               </ul>
-
-              <button type="button" class="btn btn-sm btn-outline-primary modelado-agregar-gasto">
-                + Agregar gasto fijo o variable
-              </button>
+              @if (!gastos.length) {
+                <p class="text-muted mb-0">No hay gastos del mes anterior para clasificar.</p>
+              }
             </div>
           </div>
         </div>
@@ -181,21 +193,23 @@
                 </div>
                 <div class="modelado-equilibrio-item">
                   <dt>Gastos variables</dt>
-                  <dd>{{ data.puntoEquilibrio.gastosVariablesPctVentas }}% de ventas</dd>
+                  <dd>{{ pct(data.puntoEquilibrio.gastosVariablesPctVentas) }} de ventas</dd>
                 </div>
                 <div class="modelado-equilibrio-item">
                   <dt>Costo de ventas</dt>
-                  <dd>{{ data.puntoEquilibrio.costoVentasPctVentas }}% de ventas</dd>
+                  <dd>{{ pct(data.puntoEquilibrio.costoVentasPctVentas) }} de ventas</dd>
                 </div>
                 <div class="modelado-equilibrio-item">
                   <dt>Margen de contribución</dt>
-                  <dd class="modelado-equilibrio-azul">{{ data.puntoEquilibrio.margenContribucionPct }}%</dd>
+                  <dd class="modelado-equilibrio-azul">{{ pct(data.puntoEquilibrio.margenContribucionPct) }}</dd>
                 </div>
               </dl>
 
               <div class="modelado-ventas-min mb-3">
                 <div class="modelado-ventas-min-label">Ventas mínimas / mes</div>
-                <div class="modelado-ventas-min-valor">{{ formatMonto(data.puntoEquilibrio.ventasMinimasMes) }}</div>
+                <div class="modelado-ventas-min-valor">
+                  {{ data.puntoEquilibrio.ventasMinimasMes == null ? '—' : formatMonto(data.puntoEquilibrio.ventasMinimasMes) }}
+                </div>
               </div>
 
               <dl class="modelado-equilibrio-list modelado-equilibrio-list--pie mb-0">
@@ -205,7 +219,7 @@
                 </div>
                 <div class="modelado-equilibrio-item">
                   <dt>Margen de seguridad</dt>
-                  <dd class="modelado-equilibrio-verde">{{ data.puntoEquilibrio.margenSeguridadPct }}%</dd>
+                  <dd class="modelado-equilibrio-verde">{{ pct(data.puntoEquilibrio.margenSeguridadPct) }}</dd>
                 </div>
                 <div class="modelado-equilibrio-item">
                   <dt>Sin clasificar</dt>
@@ -259,6 +273,7 @@
                               type="number"
                               class="form-control form-control-sm modelado-cal-input"
                               [(ngModel)]="fila.monto"
+                              (blur)="guardarCalendario(fila)"
                               [attr.aria-label]="'Monto ' + fila.nombre" />
                           } @else {
                             <span class="modelado-cal-monto-bloqueado">
@@ -269,13 +284,14 @@
                             </span>
                           }
                         </td>
-                        <td>{{ fila.frecuencia }}</td>
+                        <td>{{ frecuenciaTexto(fila.frecuencia) }}</td>
                         <td class="text-center">
                           @if (fila.editableDia) {
                             <input
-                              type="number"
+                              type="text"
                               class="form-control form-control-sm modelado-cal-input modelado-cal-input--dia"
                               [(ngModel)]="fila.dia"
+                              (blur)="guardarCalendario(fila)"
                               [attr.aria-label]="'Día ' + fila.nombre" />
                           } @else {
                             {{ fila.dia }}
@@ -296,7 +312,12 @@
                         </td>
                         <td colspan="3" class="modelado-cal-pendiente-meta">
                           <strong>{{ formatMonto(pendiente.monto) }}</strong>
-                          {{ pendiente.frecuencia }} · día <strong>{{ pendiente.dia }}</strong>
+                          Mensual · día
+                          <input
+                            type="text"
+                            class="form-control form-control-sm modelado-cal-input modelado-cal-input--dia d-inline-block"
+                            [(ngModel)]="pendiente.dia"
+                            [attr.aria-label]="'Día ' + pendiente.nombre" />
                         </td>
                         <td class="text-end">
                           <button type="button" class="btn btn-sm btn-outline-primary" (click)="agregarCalendarioPendiente()">
@@ -308,7 +329,24 @@
                   </tbody>
                 </table>
               </div>
-              <button type="button" class="btn btn-link modelado-agregar-costo ps-0 mt-2">
+              @if (costoNuevo; as nuevo) {
+                <div class="d-flex flex-wrap gap-2 align-items-end mt-2">
+                  <label class="mb-0">
+                    <span class="modelado-p4-sublabel">Nombre</span>
+                    <input type="text" class="form-control form-control-sm" [(ngModel)]="nuevo.nombre" aria-label="Nombre del costo fijo" />
+                  </label>
+                  <label class="mb-0">
+                    <span class="modelado-p4-sublabel">Monto</span>
+                    <input type="number" class="form-control form-control-sm" [(ngModel)]="nuevo.monto" aria-label="Monto del costo fijo" />
+                  </label>
+                  <label class="mb-0">
+                    <span class="modelado-p4-sublabel">Día</span>
+                    <input type="text" class="form-control form-control-sm modelado-cal-input--dia" [(ngModel)]="nuevo.dia" aria-label="Día del costo fijo" />
+                  </label>
+                  <button type="button" class="btn btn-sm btn-outline-primary" (click)="guardarCostoNuevo()">Guardar</button>
+                </div>
+              }
+              <button type="button" class="btn btn-link modelado-agregar-costo ps-0 mt-2" (click)="mostrarCostoNuevo()">
                 + Agregar costo fijo
               </button>
             </div>
@@ -333,6 +371,7 @@
                       class="modelado-vista-btn"
                       [class.modelado-vista-btn--active]="presupuestoVista === vista.id"
                       [attr.aria-pressed]="presupuestoVista === vista.id"
+                      [disabled]="!vista.activo"
                       (click)="presupuestoVista = vista.id">
                       {{ vista.label }}
                     </button>
@@ -347,7 +386,7 @@
                     class="modelado-tipo-btn"
                     [class.modelado-tipo-btn--active]="presupuestoReparto === 'estacionalidad'"
                     [attr.aria-pressed]="presupuestoReparto === 'estacionalidad'"
-                    (click)="presupuestoReparto = 'estacionalidad'">
+                    (click)="elegirReparto('estacionalidad')">
                     Según su estacionalidad
                   </button>
                   <button
@@ -355,7 +394,7 @@
                     class="modelado-tipo-btn"
                     [class.modelado-tipo-btn--active]="presupuestoReparto === 'igual'"
                     [attr.aria-pressed]="presupuestoReparto === 'igual'"
-                    (click)="presupuestoReparto = 'igual'">
+                    (click)="elegirReparto('igual')">
                     Igual cada mes
                   </button>
                 </div>
@@ -379,9 +418,9 @@
                   <thead>
                     <tr>
                       <th scope="col">Categoría</th>
-                      <th scope="col" class="text-end">Anual 2026</th>
+                      <th scope="col" class="text-end">Anual {{ data.anio }}</th>
                       <th scope="col" class="text-end">{{ data.presupuesto.mesColumnaLabel }}</th>
-                      <th scope="col" class="text-end">Ejecutado Ene–Sep</th>
+                      <th scope="col" class="text-end">Ejecutado {{ data.ejecutadoEtiqueta }}</th>
                       <th scope="col" class="text-end">Vs. presupuesto</th>
                     </tr>
                   </thead>
@@ -394,6 +433,8 @@
                             type="number"
                             class="form-control form-control-sm modelado-pres-input"
                             [(ngModel)]="fila.anual"
+                            (ngModelChange)="alEditarAnual(fila)"
+                            (blur)="guardarPresupuesto()"
                             [attr.aria-label]="'Anual ' + fila.categoria" />
                         </td>
                         <td class="text-end modelado-pres-mes">{{ formatMonto(fila.mesProyectado) }}</td>
@@ -402,7 +443,7 @@
                         </td>
                         <td
                           class="text-end modelado-pres-vs"
-                          [class.modelado-pres-vs--neg]="fila.vsPresupuestoPct < 0">
+                          [class.modelado-pres-vs--neg]="fila.vsPresupuestoPct != null && fila.vsPresupuestoPct < 0">
                           {{ vsPresupuestoLabel(fila.vsPresupuestoPct) }}
                         </td>
                       </tr>
@@ -415,7 +456,7 @@
                 <span class="modelado-pres-utilidad-label">Utilidad operativa presupuestada</span>
                 <span class="modelado-pres-utilidad-monto">{{ formatMonto(data.presupuesto.utilidadOperativa.monto) }}</span>
                 <span class="modelado-pres-utilidad-pct">
-                  {{ data.presupuesto.utilidadOperativa.pctVentas }}% de ventas
+                  {{ pct(data.presupuesto.utilidadOperativa.pctVentas) }} de ventas
                 </span>
               </div>
 
@@ -424,15 +465,17 @@
                   <div class="modelado-pres-meta-titulo">Meta de ventas {{ data.presupuesto.metaVentas.anio }}</div>
                   <div class="modelado-pres-meta-sub">
                     vs. {{ data.presupuesto.metaVentas.anio - 1 }}:
-                    <strong>+{{ data.presupuesto.metaVentas.vsAnioAnteriorPct }}%</strong>
-                    · avance <strong>{{ data.presupuesto.metaVentas.avancePct }}%</strong>
-                    (esperado {{ data.presupuesto.metaVentas.avanceEsperadoPct }}%)
+                    <strong>{{ vsPresupuestoLabel(data.presupuesto.metaVentas.vsAnioAnteriorPct) }}</strong>
+                    · avance <strong>{{ pct(data.presupuesto.metaVentas.avancePct) }}</strong>
+                    (esperado {{ pct(data.presupuesto.metaVentas.avanceEsperadoPct) }})
                   </div>
                 </div>
                 <input
                   type="number"
                   class="form-control form-control-sm modelado-pres-input modelado-pres-input--meta"
                   [(ngModel)]="metaVentasAnual"
+                  (ngModelChange)="alEditarMeta()"
+                  (blur)="guardarPresupuesto()"
                   aria-label="Meta de ventas anual" />
               </div>
             </div>
@@ -469,11 +512,13 @@
                       id="modelado-efectivo-hoy"
                       type="number"
                       class="form-control form-control-sm modelado-p4-input"
-                      [(ngModel)]="pronostico.efectivoHoy" />
+                      [(ngModel)]="pronostico.efectivoHoy"
+                      (blur)="guardarPronostico()" />
                     <input
                       type="date"
                       class="form-control form-control-sm modelado-p4-input modelado-p4-input--fecha"
                       [(ngModel)]="pronostico.efectivoFecha"
+                      (blur)="guardarPronostico()"
                       aria-label="Fecha del efectivo hoy" />
                   </div>
                 </div>
@@ -484,7 +529,8 @@
                     id="modelado-colchon"
                     type="number"
                     class="form-control form-control-sm modelado-p4-input"
-                    [(ngModel)]="pronostico.colchonMinimo" />
+                    [(ngModel)]="pronostico.colchonMinimo"
+                    (blur)="guardarPronostico()" />
                 </div>
 
                 <div class="modelado-p4-panel">
@@ -494,7 +540,8 @@
                     type="number"
                     step="0.1"
                     class="form-control form-control-sm modelado-p4-input"
-                    [(ngModel)]="pronostico.costoCapitalPctMes" />
+                    [(ngModel)]="pronostico.costoCapitalPctMes"
+                    (blur)="guardarPronostico()" />
                 </div>
 
                 <div class="modelado-p4-panel">
@@ -506,7 +553,8 @@
                         id="modelado-conservador"
                         type="number"
                         class="form-control form-control-sm modelado-p4-input"
-                        [(ngModel)]="pronostico.escenarioConservadorPct" />
+                        [(ngModel)]="pronostico.escenarioConservadorPct"
+                        (blur)="guardarPronostico()" />
                     </div>
                     <div>
                       <label class="modelado-p4-sublabel" for="modelado-optimista">Optimista %</label>
@@ -514,7 +562,8 @@
                         id="modelado-optimista"
                         type="number"
                         class="form-control form-control-sm modelado-p4-input"
-                        [(ngModel)]="pronostico.escenarioOptimistaPct" />
+                        [(ngModel)]="pronostico.escenarioOptimistaPct"
+                        (blur)="guardarPronostico()" />
                     </div>
                   </div>
                 </div>
@@ -522,15 +571,15 @@
                 <div class="modelado-p4-panel modelado-p4-panel--historial">
                   <span class="modelado-p4-label">Del historial</span>
                   <p class="modelado-p4-historial-line mb-1">
-                    <strong>Ventas de contado:</strong> {{ pronostico.historial.ventasContadoPct }}%
+                    <strong>Ventas de contado:</strong> {{ pct(pronostico.historial.ventasContadoPct) }}
                   </p>
                   <p class="modelado-p4-historial-line mb-1">
-                    <strong>Días reales de cobro:</strong> {{ pronostico.historial.diasCobro }}
-                    · <strong>de pago:</strong> {{ pronostico.historial.diasPago }}
+                    <strong>Días reales de cobro:</strong> {{ pronostico.historial.diasCobro ?? '—' }}
+                    · <strong>de pago:</strong> {{ pronostico.historial.diasPago ?? '—' }}
                   </p>
                   <p class="modelado-p4-historial-line mb-0">
                     <strong>Ritmo vs. presupuesto (3m):</strong>
-                    {{ pronostico.historial.ritmoVsPresupuesto3mPct }}%
+                    {{ pct(pronostico.historial.ritmoVsPresupuesto3mPct) }}
                   </p>
                 </div>
               </div>
@@ -540,4 +589,5 @@
       </div>
     </div>
   </div>
+  }
 </div>

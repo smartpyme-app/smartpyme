@@ -1,6 +1,17 @@
-import { Component, Input, inject } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  Input,
+  OnChanges,
+  OnInit,
+  SimpleChanges,
+  ViewChild,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '@services/api.service';
+import { finalize, take } from 'rxjs/operators';
 import {
   formatEmpresaCurrency,
   formatEmpresaCurrencyInt,
@@ -23,8 +34,11 @@ import {
   RentabilidadProyectoFila,
   RentabilidadProyectoResultadoFila,
   RentabilidadSucursalFila,
+  RentabilidadMock,
 } from './rentabilidad.model';
-import { RENTABILIDAD_MOCK } from './rentabilidad.mock';
+import {
+  FinanzasRentabilidadDataService,
+} from '../../../services/finanzas-rentabilidad-data.service';
 import {
   factorHorizonte,
   kpisDesdeCliente,
@@ -39,37 +53,54 @@ import { detalleProveedorDesdeFila } from './rentabilidad-proveedor-detalle.buil
 import { detalleProyectoDesdeFila } from './rentabilidad-proyecto-detalle.builder';
 import { detalleProductoDesdeFila } from './rentabilidad-producto-detalle.builder';
 import { MetricCard } from '../../../models/chart-config.model';
-import { ChartCardComponent } from '../../../components/chart-card/chart-card.component';
+import { FinanzasKpiCardComponent } from '../finanzas-kpi-card.component';
 
 export interface RentKpiChartItem {
   metric: MetricCard;
   linea?: string;
   sublinea?: string;
-  accion?: string;
 }
+
+const RENTABILIDAD_VACIA: RentabilidadMock = {
+  kpis: [],
+  filasSucursal: [],
+  filasProducto: [],
+  filasCliente: [],
+  filasProveedor: [],
+  filasProyecto: [],
+};
 
 @Component({
   selector: 'app-rentabilidad',
   templateUrl: './rentabilidad.component.html',
   styleUrls: ['./rentabilidad.component.css'],
   standalone: true,
-  imports: [CommonModule, ChartCardComponent],
+  imports: [CommonModule, FinanzasKpiCardComponent],
 })
-export class RentabilidadComponent {
+export class RentabilidadComponent implements OnInit, OnChanges {
   private readonly api = inject(ApiService);
+  private readonly rentabilidadData = inject(FinanzasRentabilidadDataService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  @Input() periodoTitulo = 'septiembre 2026';
+  @ViewChild('detalleProducto') private detalleProducto?: ElementRef<HTMLElement>;
+  @ViewChild('detalleSucursal') private detalleSucursal?: ElementRef<HTMLElement>;
+  @ViewChild('detalleCliente') private detalleCliente?: ElementRef<HTMLElement>;
+  @ViewChild('detalleProveedor') private detalleProveedor?: ElementRef<HTMLElement>;
+  @ViewChild('detalleProyecto') private detalleProyecto?: ElementRef<HTMLElement>;
+
+  @Input() periodoTitulo = '';
+  @Input() anio = new Date().getFullYear();
+  @Input() mes = new Date().getMonth() + 1;
+  @Input() sucursalId = 'consolidado';
+  @Input() horizonte: RentabilidadHorizonteId = 'mes';
   /** En «Alertas y resúmenes» los KPIs superiores son fijos (alertas empresa). */
   @Input() kpiModo: 'dinamico' | 'alertas' = 'dinamico';
 
-  readonly data = RENTABILIDAD_MOCK;
-
-  readonly horizonteOpciones: { id: RentabilidadHorizonteId; label: string }[] =
-    [
-      { id: 'mes', label: 'Mes' },
-      { id: 'trimestre', label: 'Trimestre' },
-      { id: 'anio', label: 'Año' },
-    ];
+  data: RentabilidadMock = RENTABILIDAD_VACIA;
+  cargando = false;
+  contenidoListo = false;
+  errorMensaje: string | null = null;
+  private loadSeq = 0;
 
   readonly dimensionOpciones: {
     id: RentabilidadDimensionId;
@@ -82,29 +113,121 @@ export class RentabilidadComponent {
     { id: 'proyecto', label: 'Proyecto' },
   ];
 
-  horizonte: RentabilidadHorizonteId = 'mes';
   dimension: RentabilidadDimensionId = 'sucursal';
-  sucursalAbierta: RentabilidadSucursalFila | null =
-    RENTABILIDAD_MOCK.filasSucursal.find((fila) => fila.nombre === 'San Miguel') ?? null;
-  productoAbierto: RentabilidadProductoTablaFila | null =
-    RENTABILIDAD_MOCK.filasProducto.find(
-      (fila) => fila.nombre === 'Lámina galvanizada 12 ft',
-    ) ?? null;
-  clienteAbierto: RentabilidadClienteFila | null =
-    RENTABILIDAD_MOCK.filasCliente.find(
-      (fila) => fila.nombre === 'Constructora Meléndez',
-    ) ?? null;
-  proveedorAbierto: RentabilidadProveedorFila | null =
-    RENTABILIDAD_MOCK.filasProveedor.find(
-      (fila) => fila.nombre === 'Aceros de Centroamérica',
-    ) ?? null;
-  proyectoAbierto: RentabilidadProyectoFila | null =
-    RENTABILIDAD_MOCK.filasProyecto.find(
-      (fila) => fila.nombre === 'Residencial Los Almendros',
-    ) ?? null;
+  sucursalAbierta: RentabilidadSucursalFila | null = null;
+  productoAbierto: RentabilidadProductoTablaFila | null = null;
+  clienteAbierto: RentabilidadClienteFila | null = null;
+  proveedorAbierto: RentabilidadProveedorFila | null = null;
+  proyectoAbierto: RentabilidadProyectoFila | null = null;
 
-  seleccionarHorizonte(id: RentabilidadHorizonteId): void {
-    this.horizonte = id;
+  ngOnInit(): void {
+    this.cargar();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (
+      (changes['anio'] || changes['mes'] || changes['sucursalId'] || changes['horizonte']) &&
+      !this.esPrimerCambio(changes)
+    ) {
+      this.cargar();
+    }
+  }
+
+  sinFilas(): boolean {
+    switch (this.dimension) {
+      case 'sucursal':
+        return this.data.filasSucursal.length === 0;
+      case 'producto':
+        return this.data.filasProducto.length === 0;
+      case 'cliente':
+        return this.data.filasCliente.length === 0;
+      case 'proveedor':
+        return this.data.filasProveedor.length === 0;
+      case 'proyecto':
+        return this.data.filasProyecto.length === 0;
+    }
+  }
+
+  private esPrimerCambio(changes: SimpleChanges): boolean {
+    return (
+      !!changes['anio']?.firstChange &&
+      !!changes['mes']?.firstChange &&
+      (changes['sucursalId'] == null || changes['sucursalId'].firstChange) &&
+      (changes['horizonte'] == null || changes['horizonte'].firstChange)
+    );
+  }
+
+  private cargar(): void {
+    if (!this.anio || !this.mes) {
+      return;
+    }
+    const seq = ++this.loadSeq;
+    this.cargando = true;
+    this.errorMensaje = null;
+    this.cdr.markForCheck();
+    this.rentabilidadData
+      .obtener({
+        anio: this.anio,
+        mes: this.mes,
+        horizonte: this.horizonte,
+        sucursalId: this.sucursalId,
+      })
+      .pipe(
+        take(1),
+        finalize(() => {
+          if (seq === this.loadSeq) {
+            this.cargando = false;
+            this.cdr.markForCheck();
+          }
+        }),
+      )
+      .subscribe({
+        next: (data) => {
+          if (seq !== this.loadSeq) {
+            return;
+          }
+          if (!data) {
+            if (!this.contenidoListo) {
+              this.data = RENTABILIDAD_VACIA;
+              this.cerrarFilas();
+            }
+            this.errorMensaje =
+              'No se pudo cargar la rentabilidad. Comprueba que sp-analytics esté en marcha y que hayas corrido el ETL de rentabilidad.';
+            return;
+          }
+          this.data = data;
+          this.contenidoListo = true;
+          this.abrirPrimeras();
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          if (seq !== this.loadSeq) {
+            return;
+          }
+          if (!this.contenidoListo) {
+            this.data = RENTABILIDAD_VACIA;
+            this.cerrarFilas();
+          }
+          this.errorMensaje =
+            'Error al consultar la rentabilidad. Revisa la consola del navegador y los logs de sp-analytics.';
+        },
+      });
+  }
+
+  private cerrarFilas(): void {
+    this.sucursalAbierta = null;
+    this.productoAbierto = null;
+    this.clienteAbierto = null;
+    this.proveedorAbierto = null;
+    this.proyectoAbierto = null;
+  }
+
+  private abrirPrimeras(): void {
+    this.sucursalAbierta = this.data.filasSucursal[0] ?? null;
+    this.productoAbierto = this.data.filasProducto[0] ?? null;
+    this.clienteAbierto = this.data.filasCliente[0] ?? null;
+    this.proveedorAbierto = this.data.filasProveedor[0] ?? null;
+    this.proyectoAbierto = this.data.filasProyecto[0] ?? null;
   }
 
   kpiChartItems(): RentKpiChartItem[] {
@@ -112,7 +235,6 @@ export class RentabilidadComponent {
       metric: { title: kpi.titulo, value: kpi.valor },
       linea: kpi.linea,
       sublinea: kpi.sublinea,
-      accion: kpi.accion,
     }));
   }
 
@@ -178,51 +300,34 @@ export class RentabilidadComponent {
   seleccionarDimension(id: RentabilidadDimensionId): void {
     this.dimension = id;
     if (id === 'sucursal' && !this.sucursalAbierta) {
-      this.sucursalAbierta =
-        this.data.filasSucursal.find((fila) => fila.nombre === 'San Miguel') ??
-        this.data.filasSucursal[0] ??
-        null;
+      this.sucursalAbierta = this.data.filasSucursal[0] ?? null;
     }
     if (id === 'producto' && !this.productoAbierto) {
-      this.productoAbierto =
-        this.data.filasProducto.find(
-          (fila) => fila.nombre === 'Lámina galvanizada 12 ft',
-        ) ??
-        this.data.filasProducto.find((fila) => fila.detalle) ??
-        null;
+      this.productoAbierto = this.data.filasProducto[0] ?? null;
     }
     if (id === 'cliente' && !this.clienteAbierto) {
-      this.clienteAbierto =
-        this.data.filasCliente.find(
-          (fila) => fila.nombre === 'Constructora Meléndez',
-        ) ??
-        this.data.filasCliente.find((fila) => fila.detalle) ??
-        null;
+      this.clienteAbierto = this.data.filasCliente[0] ?? null;
     }
     if (id === 'proveedor' && !this.proveedorAbierto) {
-      this.proveedorAbierto =
-        this.data.filasProveedor.find(
-          (fila) => fila.nombre === 'Aceros de Centroamérica',
-        ) ??
-        this.data.filasProveedor.find((fila) => fila.detalle) ??
-        null;
+      this.proveedorAbierto = this.data.filasProveedor[0] ?? null;
     }
     if (id === 'proyecto' && !this.proyectoAbierto) {
-      this.proyectoAbierto =
-        this.data.filasProyecto.find(
-          (fila) => fila.nombre === 'Residencial Los Almendros',
-        ) ??
-        this.data.filasProyecto[0] ??
-        null;
+      this.proyectoAbierto = this.data.filasProyecto[0] ?? null;
     }
   }
 
   abrirSucursal(fila: RentabilidadSucursalFila): void {
     this.sucursalAbierta = fila;
+    setTimeout(() => {
+      this.detalleSucursal?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   }
 
   abrirProducto(fila: RentabilidadProductoTablaFila): void {
     this.productoAbierto = fila;
+    setTimeout(() => {
+      this.detalleProducto?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   }
 
   montoHorizonte(value: number): number {
@@ -359,14 +464,23 @@ export class RentabilidadComponent {
 
   abrirCliente(fila: RentabilidadClienteFila): void {
     this.clienteAbierto = fila;
+    setTimeout(() => {
+      this.detalleCliente?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   }
 
   abrirProveedor(fila: RentabilidadProveedorFila): void {
     this.proveedorAbierto = fila;
+    setTimeout(() => {
+      this.detalleProveedor?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   }
 
   abrirProyecto(fila: RentabilidadProyectoFila): void {
     this.proyectoAbierto = fila;
+    setTimeout(() => {
+      this.detalleProyecto?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   }
 
   claseBarraProyecto(tono: RentabilidadProyectoBarTono): string {

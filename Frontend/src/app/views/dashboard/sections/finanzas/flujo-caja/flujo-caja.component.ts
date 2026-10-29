@@ -1,20 +1,33 @@
-import { Component, OnInit, inject } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  Input,
+  OnChanges,
+  OnDestroy,
+  OnInit,
+  SimpleChanges,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgxEchartsModule } from 'ngx-echarts';
 import { EChartsOption } from 'echarts';
+import { finalize, take } from 'rxjs/operators';
 import { ApiService } from '@services/api.service';
 import {
   formatEmpresaCurrency,
   getEmpresaCurrencySymbol,
 } from '@helpers/currency-format.helper';
 import { FlujoVistaId } from './flujo-caja.model';
-import { FLUJO_CAJA_MOCK } from './flujo-caja.mock';
 import { FlujoCajaPosicionComponent } from './flujo-caja-posicion.component';
 import { FlujoCajaSemanalComponent } from './flujo-caja-semanal.component';
 import { FlujoCajaSemanaDesgloseComponent } from './flujo-caja-semana-desglose.component';
 import { MetricCard } from '../../../models/chart-config.model';
-import { ChartCardComponent } from '../../../components/chart-card/chart-card.component';
+import { FinanzasKpiCardComponent } from '../finanzas-kpi-card.component';
+import {
+  FLUJO_CAJA_VACIA,
+  FinanzasFlujoCajaDataService,
+} from '../../../services/finanzas-flujo-caja-data.service';
 
 export interface FlujoKpiChartItem {
   metric: MetricCard;
@@ -30,16 +43,25 @@ export interface FlujoKpiChartItem {
     CommonModule,
     FormsModule,
     NgxEchartsModule,
-    ChartCardComponent,
+    FinanzasKpiCardComponent,
     FlujoCajaPosicionComponent,
     FlujoCajaSemanalComponent,
     FlujoCajaSemanaDesgloseComponent,
   ],
 })
-export class FlujoCajaComponent implements OnInit {
+export class FlujoCajaComponent implements OnInit, OnChanges, OnDestroy {
   private readonly api = inject(ApiService);
+  private readonly flujoData = inject(FinanzasFlujoCajaDataService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  readonly data = FLUJO_CAJA_MOCK;
+  @Input() sucursalId = 'consolidado';
+
+  data = FLUJO_CAJA_VACIA;
+  cargando = false;
+  contenidoListo = false;
+  errorMensaje: string | null = null;
+  private loadSeq = 0;
+  private supuestosTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly vistaOpciones: { id: FlujoVistaId; label: string }[] = [
     { id: 'semanal', label: 'Semanal' },
@@ -47,13 +69,25 @@ export class FlujoCajaComponent implements OnInit {
   ];
 
   vista: FlujoVistaId = 'semanal';
-  cobroCxCPct = this.data.cobroCxCHistoricoPct;
-  cumplimientoMetaPct = this.data.metaRitmoPct;
+  cobroCxCPct = 90;
+  cumplimientoMetaPct = 100;
 
   chartOption: EChartsOption = {};
 
   ngOnInit(): void {
-    this.chartOption = this.buildChartOption();
+    this.cargar();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['sucursalId'] && !changes['sucursalId'].firstChange) {
+      this.cargar();
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.supuestosTimer) {
+      clearTimeout(this.supuestosTimer);
+    }
   }
 
   seleccionarVista(id: FlujoVistaId): void {
@@ -61,8 +95,10 @@ export class FlujoCajaComponent implements OnInit {
   }
 
   onSupuestosChange(): void {
-    // ponytail: sliders solo UI; recálculo real cuando exista API de pronóstico
-    this.chartOption = this.buildChartOption();
+    if (this.supuestosTimer) {
+      clearTimeout(this.supuestosTimer);
+    }
+    this.supuestosTimer = setTimeout(() => this.cargar(), 350);
   }
 
   kpiChartItems(): FlujoKpiChartItem[] {
@@ -127,19 +163,74 @@ export class FlujoCajaComponent implements OnInit {
     return formatEmpresaCurrency(value, empresa);
   }
 
-  metasVentasTexto(): string {
-    return this.data.metasVentas
-      .map((m) => `${m.mes} (${this.formatMonto(m.monto)})`)
-      .join(', ');
+  cicloEfectivoTexto(): string {
+    const d = this.data.cicloEfectivoDias;
+    return d == null ? '—' : `${d}`;
+  }
+
+  sinProyeccion(): boolean {
+    return !this.data.semanas.labels.length;
+  }
+
+  private cargar(): void {
+    const seq = ++this.loadSeq;
+    this.cargando = true;
+    this.errorMensaje = null;
+    this.cdr.markForCheck();
+    this.flujoData
+      .obtener({
+        sucursalId: this.sucursalId,
+        cobroPct: this.cobroCxCPct,
+        metaPct: this.cumplimientoMetaPct,
+      })
+      .pipe(
+        take(1),
+        finalize(() => {
+          if (seq === this.loadSeq) {
+            this.cargando = false;
+            this.cdr.markForCheck();
+          }
+        }),
+      )
+      .subscribe((payload) => {
+        if (seq !== this.loadSeq) {
+          return;
+        }
+        if (!payload) {
+          if (!this.contenidoListo) {
+            this.data = FLUJO_CAJA_VACIA;
+          }
+          this.errorMensaje =
+            'No se pudo cargar el flujo de caja. Revisa la conexión con analytics.';
+          this.chartOption = this.buildChartOption();
+          return;
+        }
+        this.data = payload;
+        this.contenidoListo = true;
+        this.errorMensaje = null;
+        this.chartOption = this.buildChartOption();
+      });
   }
 
   private buildChartOption(): EChartsOption {
     const { labels, neto, saldo, saldoBajo, saldoAlto } = this.data.semanas;
     const colchon = this.data.colchon;
     const empresa = this.api.auth_user()?.empresa;
+    const semCritica = this.data.kpis.semanaBajo4;
 
     const netoPos = neto.map((v) => (v >= 0 ? v : 0));
     const netoNeg = neto.map((v) => (v < 0 ? v : 0));
+
+    const vals = [...neto, ...saldo, ...saldoBajo, ...saldoAlto, colchon];
+    let yMin = vals.length ? Math.min(...vals) : 0;
+    let yMax = vals.length ? Math.max(...vals) : 0;
+    const pad = Math.max(500, (yMax - yMin) * 0.12);
+    yMin = Math.floor((yMin - pad) / 1000) * 1000;
+    yMax = Math.ceil((yMax + pad) / 1000) * 1000;
+    if (yMin === yMax) {
+      yMax = yMin + 1000;
+    }
+    const interval = Math.max(1000, Math.ceil((yMax - yMin) / 4 / 1000) * 1000);
 
     return {
       grid: { left: 8, right: 8, top: 36, bottom: 48, containLabel: true },
@@ -161,9 +252,9 @@ export class FlujoCajaComponent implements OnInit {
       },
       yAxis: {
         type: 'value',
-        min: -15000,
-        max: 45000,
-        interval: 15000,
+        min: yMin,
+        max: yMax,
+        interval,
         axisLabel: {
           color: '#94a3b8',
           fontSize: 11,
@@ -208,7 +299,7 @@ export class FlujoCajaComponent implements OnInit {
           barMaxWidth: 18,
           itemStyle: {
             color: (params: { dataIndex: number }) =>
-              labels[params.dataIndex] === 'S3' ? '#ef4444' : '#fb923c',
+              labels[params.dataIndex] === semCritica ? '#ef4444' : '#fb923c',
             borderRadius: [0, 0, 3, 3],
           },
         },
@@ -225,17 +316,19 @@ export class FlujoCajaComponent implements OnInit {
             borderColor: '#3b82f6',
             borderWidth: 2,
           },
-          markLine: {
-            silent: true,
-            symbol: 'none',
-            lineStyle: { type: 'dashed', color: '#f97316', width: 1.5 },
-            label: {
-              formatter: 'colchón',
-              color: '#f97316',
-              fontSize: 11,
-            },
-            data: [{ yAxis: colchon }],
-          },
+          markLine: colchon
+            ? {
+                silent: true,
+                symbol: 'none',
+                lineStyle: { type: 'dashed', color: '#f97316', width: 1.5 },
+                label: {
+                  formatter: 'colchón',
+                  color: '#f97316',
+                  fontSize: 11,
+                },
+                data: [{ yAxis: colchon }],
+              }
+            : undefined,
         },
       ],
     };

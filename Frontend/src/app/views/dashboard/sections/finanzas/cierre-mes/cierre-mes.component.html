@@ -1,4 +1,15 @@
 <div class="cierre-mes-dashboard ventas-dashboard">
+  @if (cargando && !contenidoListo) {
+    <div class="text-center py-5" role="status">
+      <div class="spinner-border text-primary" aria-hidden="true"></div>
+      <p class="text-muted mt-2 mb-0">Cargando cierre de mes…</p>
+    </div>
+  } @else if (errorMensaje && !contenidoListo) {
+    <div class="alert alert-warning mb-0" role="alert">{{ errorMensaje }}</div>
+  } @else {
+    @if (errorMensaje) {
+      <div class="alert alert-warning" role="alert">{{ errorMensaje }}</div>
+    }
   <div class="row mb-2">
     <div class="col-12">
       <div class="card card-performance">
@@ -48,6 +59,12 @@
     </div>
   </div>
 
+  @if (!detalleActivo() && contenidoListo) {
+    <div class="alert alert-info mb-0" role="status">
+      No hay un mes para cerrar en {{ data.anio }}.
+    </div>
+  }
+
   @if (detalleActivo(); as detalle) {
     <div class="row g-2 mb-2">
       <div class="col-lg-5 d-flex flex-column gap-2">
@@ -82,17 +99,19 @@
                       <span class="cierre-checklist-texto">{{ item.texto }}</span>
                       @if (item.accion) {
                         <button type="button" class="btn btn-sm btn-outline-primary cierre-checklist-accion">
-                          {{ item.accion }}
+                          {{ etiquetaAccion(item.accion) }}
                         </button>
                       }
                     </li>
+                  } @empty {
+                    <li class="cierre-text-muted">Todavía no hay una lista de lo que hay que registrar en este mes.</li>
                   }
                 </ul>
 
                 <button
                   type="button"
                   class="btn w-100 cierre-certificar-btn"
-                  disabled>
+                  [disabled]="!puedeCertificar(detalle)">
                   <span class="cierre-certificar-lock" aria-hidden="true">🔒</span>
                   Certificar {{ detalle.mesCertificar }} ({{ pendientesChecklist(detalle) }} pendientes)
                 </button>
@@ -110,7 +129,9 @@
                     <span class="cierre-panel-icon" aria-hidden="true">$</span>
                     <h2 class="ventas-card-title mb-0">Impuestos del mes que cierra</h2>
                   </div>
-                  <span class="cierre-impuestos-vence">{{ detalle.impuestos.vencimiento }}</span>
+                  @if (detalle.impuestos.vencimiento) {
+                    <span class="cierre-impuestos-vence">{{ detalle.impuestos.vencimiento }}</span>
+                  }
                 </header>
                 <ul class="cierre-impuestos-list list-unstyled mb-0">
                   @for (imp of detalle.impuestos.items; track imp.concepto) {
@@ -118,6 +139,8 @@
                       <span>{{ imp.concepto }}</span>
                       <strong>{{ formatMonto(imp.monto) }}</strong>
                     </li>
+                  } @empty {
+                    <li class="cierre-text-muted">Sin cálculo de IVA para este mes.</li>
                   }
                 </ul>
               </div>
@@ -142,8 +165,8 @@
                     <thead>
                       <tr>
                         <th scope="col">Categoría</th>
-                        <th scope="col" class="text-end">Presup. sep</th>
-                        <th scope="col" class="text-end">Real sep</th>
+                        <th scope="col" class="text-end">Presup. {{ etiquetaMes() }}</th>
+                        <th scope="col" class="text-end">Real {{ etiquetaMes() }}</th>
                         <th scope="col" class="text-end">Var. mes</th>
                         <th scope="col" class="text-end">Var. acumulada</th>
                         <th scope="col" class="text-center">Estado</th>
@@ -158,12 +181,14 @@
                           <td class="text-end" [ngClass]="claseVarTono(fila.varMesTono)">
                             {{ formatVarMes(fila.varMesPct) }}
                           </td>
-                          <td class="text-end" [ngClass]="claseVarTono(fila.varAcumTono)">
-                            {{ fila.varAcumTexto }}
+                          <td class="text-end" [ngClass]="claseVarTono(tonoAcum(fila))">
+                            {{ formatVarAcum(fila) }}
                           </td>
                           <td class="text-center">
                             @if (fila.estado === 'ok') {
                               <span class="cierre-estado-dot cierre-estado-dot--ok" aria-label="En rango">●</span>
+                            } @else if (fila.estado === 'warn') {
+                              <span class="cierre-estado-dot cierre-estado-dot--warn" aria-label="Fuera de rango">●</span>
                             } @else {
                               <span class="cierre-text-muted">—</span>
                             }
@@ -212,13 +237,17 @@
                           <td class="fw-semibold">{{ fila.categoria }}</td>
                           <td class="text-end fw-bold">{{ formatMonto(fila.mes) }}</td>
                           <td class="text-end cierre-text-muted">{{ formatMonto(fila.promedio6m) }}</td>
-                          <td class="text-end cierre-text-neg">+{{ fila.variacionPct }}%</td>
+                          <td class="text-end cierre-text-neg">{{ formatVarMes(fila.variacionPct) }}</td>
                           <td class="text-end">
                             <div class="cierre-fuera-rango-acciones">
                               <button type="button" class="btn btn-sm cierre-btn-revisar">Revisar</button>
                               <button type="button" class="btn btn-sm btn-outline-secondary cierre-btn-normal">Es normal</button>
                             </div>
                           </td>
+                        </tr>
+                      } @empty {
+                        <tr>
+                          <td colspan="5" class="cierre-text-muted">Ningún rubro supera el umbral.</td>
                         </tr>
                       }
                     </tbody>
@@ -230,5 +259,6 @@
         </div>
       </div>
     </div>
+  }
   }
 </div>

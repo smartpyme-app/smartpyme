@@ -2,9 +2,11 @@ export type FlujoVistaId = 'semanal' | 'mensual';
 
 export interface FlujoCajaKpiResumen {
   puntoBajo4Semanas: number;
+  semanaBajo4: string;
   puntoBajo4SemanasSub: string;
   vsColchon: number;
   puntoBajo12Semanas: number;
+  semanaBajo12: string;
   puntoBajo12SemanasSub: string;
   cobroNecesarioPct: number;
   metaNecesariaPct: number;
@@ -12,22 +14,15 @@ export interface FlujoCajaKpiResumen {
   totalSemanasProyeccion: number;
 }
 
-export interface FlujoCajaMock {
-  resumenEjecutivo: string;
+export interface FlujoCajaVista {
   kpis: FlujoCajaKpiResumen;
   efectivoInicial: number;
   efectivoInicialFecha: string;
-  efectivoInicialNota: string;
   colchon: number;
-  cicloEfectivoDias: number;
-  cicloCobroDias: number;
-  cicloInventarioDias: number;
-  cicloPagoDias: number;
+  cicloEfectivoDias: number | null;
   cobroCxCHistoricoPct: number;
-  metasVentas: { mes: string; monto: number }[];
   metaRitmoPct: number;
-  notaBandaEscenarios: string;
-  alertaSemanaBajoColchon: string;
+  pctContado: number;
   semanas: {
     labels: string[];
     neto: number[];
@@ -35,7 +30,9 @@ export interface FlujoCajaMock {
     saldoBajo: number[];
     saldoAlto: number[];
   };
-  semanaCritica: { id: string; saldo: number };
+  posicion: FlujoPosicion;
+  detalle: FlujoSemanaDetalle;
+  desgloses: FlujoSemanaDesglose[];
 }
 
 export interface FlujoSegmentoBarra {
@@ -65,7 +62,7 @@ export interface FlujoSalidaFija {
   monto: number;
 }
 
-export interface FlujoPosicionMock {
+export interface FlujoPosicion {
   cuentasCobrar: {
     total: number;
     segmentos: FlujoSegmentoBarra[];
@@ -96,10 +93,9 @@ export interface FlujoSemanaDetalleFila {
   final: number;
 }
 
-export interface FlujoSemanaDetalleMock {
+export interface FlujoSemanaDetalle {
   filas: FlujoSemanaDetalleFila[];
   notaPie: string;
-  pctContado: number;
 }
 
 export interface FlujoSemanaMovimiento {

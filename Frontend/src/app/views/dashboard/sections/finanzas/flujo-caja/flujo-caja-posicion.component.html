@@ -2,21 +2,21 @@
   <section class="flujo-pos-card" aria-labelledby="flujo-cxc-titulo">
     <div class="flujo-pos-header">
       <h2 id="flujo-cxc-titulo" class="flujo-pos-titulo">Cuentas por cobrar</h2>
-      <span class="flujo-pos-total">{{ formatMonto(data.cuentasCobrar.total) }}</span>
+      <span class="flujo-pos-total">{{ formatMonto(posicion.cuentasCobrar.total) }}</span>
     </div>
 
     <div class="flujo-bar-stack" aria-hidden="true">
-      @for (seg of data.cuentasCobrar.segmentos; track seg.etiqueta) {
+      @for (seg of posicion.cuentasCobrar.segmentos; track seg.etiqueta) {
         <span
           class="flujo-bar-seg"
           [ngClass]="claseTono(seg.tono)"
-          [style.width.%]="anchoSegmento(seg, data.cuentasCobrar.total)">
+          [style.width.%]="anchoSegmento(seg, posicion.cuentasCobrar.total)">
         </span>
       }
     </div>
 
     <ul class="flujo-leyenda list-unstyled mb-0">
-      @for (seg of data.cuentasCobrar.segmentos; track seg.etiqueta) {
+      @for (seg of posicion.cuentasCobrar.segmentos; track seg.etiqueta) {
         <li class="flujo-leyenda-item">
           <span class="flujo-leyenda-dot" [ngClass]="claseTono(seg.tono)"></span>
           <span class="flujo-leyenda-texto">{{ seg.etiqueta }}</span>
@@ -27,7 +27,7 @@
 
     <h3 class="flujo-subtitulo">A quién llamar primero</h3>
     <ul class="flujo-lista list-unstyled mb-0">
-      @for (item of data.cuentasCobrar.llamarPrimero; track item.factura) {
+      @for (item of posicion.cuentasCobrar.llamarPrimero; track item.factura) {
         <li class="flujo-lista-item">
           <div class="flujo-lista-main">
             <span class="flujo-lista-nombre">{{ item.nombre }}</span>
@@ -47,21 +47,21 @@
   <section class="flujo-pos-card" aria-labelledby="flujo-cxp-titulo">
     <div class="flujo-pos-header">
       <h2 id="flujo-cxp-titulo" class="flujo-pos-titulo">Cuentas por pagar</h2>
-      <span class="flujo-pos-total">{{ formatMonto(data.cuentasPagar.total) }}</span>
+      <span class="flujo-pos-total">{{ formatMonto(posicion.cuentasPagar.total) }}</span>
     </div>
 
     <div class="flujo-bar-stack" aria-hidden="true">
-      @for (seg of data.cuentasPagar.segmentos; track seg.etiqueta) {
+      @for (seg of posicion.cuentasPagar.segmentos; track seg.etiqueta) {
         <span
           class="flujo-bar-seg"
           [ngClass]="claseTono(seg.tono)"
-          [style.width.%]="anchoSegmento(seg, data.cuentasPagar.total)">
+          [style.width.%]="anchoSegmento(seg, posicion.cuentasPagar.total)">
         </span>
       }
     </div>
 
     <ul class="flujo-leyenda list-unstyled mb-0">
-      @for (seg of data.cuentasPagar.segmentos; track seg.etiqueta) {
+      @for (seg of posicion.cuentasPagar.segmentos; track seg.etiqueta) {
         <li class="flujo-leyenda-item">
           <span class="flujo-leyenda-dot" [ngClass]="claseTono(seg.tono)"></span>
           <span class="flujo-leyenda-texto">{{ seg.etiqueta }}</span>
@@ -72,7 +72,7 @@
 
     <h3 class="flujo-subtitulo">Pagos grandes que vienen</h3>
     <ul class="flujo-lista list-unstyled mb-0">
-      @for (pago of data.cuentasPagar.pagosGrandes; track pago.descripcion + pago.vence) {
+      @for (pago of posicion.cuentasPagar.pagosGrandes; track pago.descripcion + pago.vence) {
         <li class="flujo-lista-item">
           <div class="flujo-lista-main">
             <span class="flujo-lista-nombre">{{ pago.descripcion }}</span>
@@ -96,7 +96,7 @@
     </div>
 
     <ol class="flujo-salidas-list list-unstyled mb-0">
-      @for (item of data.salidasFijas.items; track item.descripcion + item.fecha; let i = $index) {
+      @for (item of posicion.salidasFijas.items; track item.descripcion + item.fecha; let i = $index) {
         <li class="flujo-salida-item">
           <span class="flujo-salida-idx">{{ i + 1 }}</span>
           <div class="flujo-salida-body">

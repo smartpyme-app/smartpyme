@@ -2,7 +2,7 @@ export interface ModeladoConfiguradoDetalle {
   clasificacionPct: number;
   calendarioPct: number;
   presupuestoPct: number;
-  efectivoDias: number;
+  efectivoDias: number | null;
 }
 
 export interface ModeladoModuloLinea {
@@ -23,6 +23,7 @@ export type ModeladoGastoTipo = 'fijo' | 'variable';
 export interface ModeladoGastoFila {
   id: string;
   nombre: string;
+  rubro: string;
   categoria: string;
   montoMensual: number;
   tipo: ModeladoGastoTipo | null;
@@ -31,25 +32,27 @@ export interface ModeladoGastoFila {
 
 export interface ModeladoPuntoEquilibrio {
   costosFijosMes: number;
-  gastosVariablesPctVentas: number;
-  costoVentasPctVentas: number;
-  margenContribucionPct: number;
-  ventasMinimasMes: number;
+  gastosVariablesPctVentas: number | null;
+  costoVentasPctVentas: number | null;
+  margenContribucionPct: number | null;
+  ventasMinimasMes: number | null;
   ventasPromedio3Meses: number;
-  margenSeguridadPct: number;
+  margenSeguridadPct: number | null;
   sinClasificarMonto: number;
 }
 
-export interface ModeladoMock {
+export interface ModeladoVista {
+  anio: number;
+  ejecutadoEtiqueta: string;
   configuradoPct: number;
   configuradoDetalle: ModeladoConfiguradoDetalle;
   gastoSinCalendarioMensual: number;
   perfilFiscal: {
     pais: string;
     moneda: string;
-    ivaPct: number;
-    pagoCuentaPct: number;
-    vencimientoDiaHabil: number;
+    ivaPct: number | null;
+    pagoCuentaPct: number | null;
+    vencimiento: string;
     aguinaldoRango: string;
   };
   modulosExternos: {
@@ -69,17 +72,17 @@ export interface ModeladoMock {
 }
 
 export interface ModeladoParametrosPronostico {
-  efectivoHoy: number;
+  efectivoHoy: number | null;
   efectivoFecha: string;
-  colchonMinimo: number;
-  costoCapitalPctMes: number;
+  colchonMinimo: number | null;
+  costoCapitalPctMes: number | null;
   escenarioConservadorPct: number;
   escenarioOptimistaPct: number;
   historial: {
-    ventasContadoPct: number;
-    diasCobro: number;
-    diasPago: number;
-    ritmoVsPresupuesto3mPct: number;
+    ventasContadoPct: number | null;
+    diasCobro: number | null;
+    diasPago: number | null;
+    ritmoVsPresupuesto3mPct: number | null;
   };
 }
 
@@ -88,17 +91,19 @@ export type ModeladoPresupuestoReparto = 'estacionalidad' | 'igual';
 
 export interface ModeladoPresupuestoBloque {
   mesColumnaLabel: string;
+  reparto: ModeladoPresupuestoReparto;
+  estacionalidadPesos: number[];
   estacionalidadMeses: ModeladoEstacionalidadMes[];
   filas: ModeladoPresupuestoFila[];
   utilidadOperativa: {
     monto: number;
-    pctVentas: number;
+    pctVentas: number | null;
   };
   metaVentas: {
     anio: number;
-    vsAnioAnteriorPct: number;
-    avancePct: number;
-    avanceEsperadoPct: number;
+    vsAnioAnteriorPct: number | null;
+    avancePct: number | null;
+    avanceEsperadoPct: number | null;
     montoAnual: number;
   };
 }
@@ -116,13 +121,14 @@ export interface ModeladoPresupuestoFila {
   mesProyectado: number;
   ejecutadoMonto: number;
   ejecutadoPresupuesto: number;
-  vsPresupuestoPct: number;
+  vsPresupuestoPct: number | null;
 }
 
 export type ModeladoCalendarioOrigen = 'Planillas' | 'Préstamos';
 
 export interface ModeladoCalendarioCostoFila {
-  id: string;
+  id: number;
+  clave: string;
   nombre: string;
   detalle?: string;
   monto: number;
@@ -136,10 +142,15 @@ export interface ModeladoCalendarioCostoFila {
 }
 
 export interface ModeladoCalendarioPendiente {
+  clave: string;
   nombre: string;
-  detalle?: string;
   monto: number;
-  frecuencia: string;
-  dia: number;
+  dia: string;
   nuevo?: boolean;
+}
+
+export interface ModeladoCostoNuevo {
+  nombre: string;
+  monto: number | null;
+  dia: string;
 }

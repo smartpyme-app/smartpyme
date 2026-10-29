@@ -18,13 +18,8 @@ export interface RentabilidadKpiContexto {
   textoInventario: (fila: RentabilidadProductoTablaFila) => string;
 }
 
-export function factorHorizonte(horizonte: RentabilidadHorizonteId): number {
-  if (horizonte === 'trimestre') {
-    return 3;
-  }
-  if (horizonte === 'anio') {
-    return 9;
-  }
+/** El API ya agrega mes, trimestre o año. No multiplicar otra vez. */
+export function factorHorizonte(_horizonte: RentabilidadHorizonteId): number {
   return 1;
 }
 

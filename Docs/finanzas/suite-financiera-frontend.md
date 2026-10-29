@@ -13,10 +13,10 @@ Cuando una pestaña tenga **API de analytics (sp-analytics) estable y cableada e
 | Pestaña | Backend | Mocks en UI |
 |---------|---------|-------------|
 | P&L Gerencial | `GET /api/finanzas/pl-gerencial` | Eliminados |
-| Rentabilidad | Pendiente | `rentabilidad.mock.ts` |
-| Flujo de caja | Pendiente | `flujo-caja.mock.ts` |
-| Cierre de mes | Pendiente | `cierre-mes.mock.ts` |
-| Modelado | Pendiente | `modelado.mock.ts` |
+| Rentabilidad | `GET /api/finanzas/rentabilidad` | Eliminados |
+| Flujo de caja | `GET /api/finanzas/flujo-caja` (sucursal compartida con P&L) | `finanzas-flujo-caja-data.service.ts` |
+| Cierre de mes | `GET /api/finanzas/cierre-mes` | `finanzas-cierre-mes-data.service.ts` |
+| Modelado | `GET /api/finanzas/modelado`. La pestaña guarda en Laravel | `finanzas-modelado-data.service.ts` |
 | Alertas y resúmenes | Pendiente | `alertas-*.mock.ts` |
 
 Al cerrar cada backend: borrar mocks, conectar servicio `*-data.service.ts` y actualizar esta tabla.

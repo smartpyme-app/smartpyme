@@ -1,9 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '@services/api.service';
 import { formatEmpresaCurrency } from '@helpers/currency-format.helper';
-import { FlujoSegmentoBarra } from './flujo-caja.model';
-import { FLUJO_POSICION_MOCK } from './flujo-caja.mock';
+import { FlujoPosicion, FlujoSegmentoBarra } from './flujo-caja.model';
 
 @Component({
   selector: 'app-flujo-caja-posicion',
@@ -15,7 +14,11 @@ import { FLUJO_POSICION_MOCK } from './flujo-caja.mock';
 export class FlujoCajaPosicionComponent {
   private readonly api = inject(ApiService);
 
-  readonly data = FLUJO_POSICION_MOCK;
+  @Input() posicion: FlujoPosicion = {
+    cuentasCobrar: { total: 0, segmentos: [], llamarPrimero: [] },
+    cuentasPagar: { total: 0, segmentos: [], pagosGrandes: [] },
+    salidasFijas: { items: [] },
+  };
 
   formatMonto(value: number): string {
     return formatEmpresaCurrency(value, this.api.auth_user()?.empresa);
