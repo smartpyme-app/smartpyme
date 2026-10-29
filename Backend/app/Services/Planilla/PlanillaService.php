@@ -195,6 +195,20 @@ class PlanillaService
         try {
             $planilla = Planilla::findOrFail($id);
 
+            if ($planilla->estado == PlanillaConstants::PLANILLA_APROBADA) {
+                $update = array_filter([
+                    'id_cuenta_banco' => $datos['id_cuenta_banco'] ?? null,
+                ], fn ($key) => array_key_exists($key, $datos), ARRAY_FILTER_USE_KEY);
+
+                if ($update !== []) {
+                    $planilla->update($update);
+                }
+
+                DB::commit();
+
+                return $planilla->fresh();
+            }
+
             if ($planilla->estado != PlanillaConstants::PLANILLA_BORRADOR) {
                 throw new \Exception('Solo se pueden modificar planillas en estado borrador');
             }

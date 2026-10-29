@@ -354,9 +354,10 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
             this.cdr.markForCheck();
           },
           error: (error) => {
+            const mensaje = error?.error?.error || error?.message || 'Ocurrió un error al procesar el pago';
             Swal.fire({
               title: 'Error',
-              text: 'Ocurrió un error al procesar el pago',
+              text: mensaje,
               icon: 'error',
             });
             this.alertService.error(error);

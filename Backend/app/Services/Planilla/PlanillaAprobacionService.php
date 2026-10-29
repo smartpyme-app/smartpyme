@@ -131,6 +131,9 @@ class PlanillaAprobacionService
             // Verificar configuración de correo
             $this->verificarConfiguracionCorreo();
 
+            $this->partidaPlanillaService->validarCuentaBancoParaPago($planilla);
+            $this->partidaPlanillaService->generarPartidaPagoPlanilla($planilla);
+
             // Registrar gastos en contabilidad
             $this->registrarGastosPlanilla($planilla);
 
