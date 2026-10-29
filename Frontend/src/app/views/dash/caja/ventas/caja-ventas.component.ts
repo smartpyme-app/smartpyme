@@ -534,7 +534,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
             if (confirm(this.countryI18n.fe('annulSaleConfirm'))) {
                 this.venta = venta;
                 this.saving = true;
-                this.apiService.store('generarDTEAnulado', this.venta)
+                this.apiService.store('generarDTEAnulado', this.facturacionElectronica.payloadGenerarDteAnulado(this.venta))
                   .pipe(this.untilDestroyed())
                   .subscribe(dte => {
                     // this.alertService.success('DTE generado.');

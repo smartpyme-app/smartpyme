@@ -1798,7 +1798,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
 
     this.saving = true;
 
-    this.apiService.store('generarDTEAnulado', this.venta)
+    this.apiService.store('generarDTEAnulado', this.facturacionElectronica.payloadGenerarDteAnulado(this.venta))
       .pipe(this.untilDestroyed())
       .subscribe(dte => {
       this.venta.dte_invalidacion = dte;
