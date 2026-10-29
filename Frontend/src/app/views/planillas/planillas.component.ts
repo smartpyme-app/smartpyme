@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import {BsModalRef} from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { NgSelectModule } from '@ng-select/ng-select';
 import {AlertService} from '@services/alert.service';
 import {ApiService} from '@services/api.service';
 import {PlanillaConstants} from '../../constants/planilla.constants';
@@ -20,7 +21,7 @@ import Swal from 'sweetalert2';
     selector: 'app-planillas',
     templateUrl: './planillas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent, CurrencyPipe, PlanillaNavComponent],
+    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, NgSelectModule, PaginationComponent, CurrencyPipe, PlanillaNavComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PlanillasComponent extends BasePaginatedModalComponent implements OnInit {
@@ -62,6 +63,7 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
 
   public usuario: any = {};
   public periodos: any[] = [];
+  public cuentasBanco: any[] = [];
 
   @ViewChild('mNuevaPlanilla') mNuevaPlanilla!: TemplateRef<any>;
 
@@ -87,6 +89,25 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
     this.loadPlanillas();
+    if (this.puedeElegirCuentaBanco) {
+      this.cargarCuentasBanco();
+    }
+  }
+
+  get puedeElegirCuentaBanco(): boolean {
+    return this.apiService.hasPermission('contabilidad.catalogo_cuentas.ver');
+  }
+
+  private cargarCuentasBanco(): void {
+    this.apiService.getAll('banco/cuentas/list')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (cuentas) => {
+          this.cuentasBanco = cuentas ?? [];
+          this.cdr.markForCheck();
+        },
+        error: (error) => this.alertService.error(error),
+      });
   }
 
   private generarPeriodos() {
@@ -179,6 +200,7 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
       fecha_fin: '',
       tipo_planilla: 'quincenal',
       planillaTemplate: planillaParaDuplicar ? planillaParaDuplicar.id : null,
+      id_cuenta_banco: planillaParaDuplicar?.id_cuenta_banco ?? null,
     };
 
     super.openModal(template);

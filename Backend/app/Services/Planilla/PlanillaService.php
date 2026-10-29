@@ -93,7 +93,7 @@ class PlanillaService
             $versionDecreto = ($codPais === 'CR') ? 'Decreto 45333-H (2026)' : 'Decreto No. 10 (2025)';
             $fechaVigenciaTabla = ($codPais === 'CR') ? '2026-01-01' : '2025-01-01';
 
-            [$idCuentaBanco, $idCuentaContable] = $this->resolverCuentasPlanilla($datos);
+            [$idCuentaBanco] = $this->resolverCuentaBancoPlanilla($datos);
 
             // Crear nueva planilla
             $planilla = Planilla::create([
@@ -108,7 +108,6 @@ class PlanillaService
                 'id_empresa' => auth()->user()->id_empresa,
                 'id_sucursal' => auth()->user()->id_sucursal,
                 'id_cuenta_banco' => $idCuentaBanco,
-                'id_cuenta_contable' => $idCuentaContable,
                 'anio' => $fechaInicio->year,
                 'mes' => $fechaInicio->month,
                 'total_salarios' => 0,
@@ -222,7 +221,6 @@ class PlanillaService
                 'mes' => Carbon::parse($datos['fecha_inicio'])->month,
             ] + array_filter([
                 'id_cuenta_banco' => $datos['id_cuenta_banco'] ?? null,
-                'id_cuenta_contable' => $datos['id_cuenta_contable'] ?? null,
             ], fn ($key) => array_key_exists($key, $datos), ARRAY_FILTER_USE_KEY));
 
             $this->actualizarTotales($planilla->id);
@@ -515,24 +513,20 @@ class PlanillaService
     }
 
     /**
-     * Cuentas explícitas en el payload o heredadas de la planilla plantilla.
-     *
-     * @return array{0: ?int, 1: ?int}
+     * Cuenta bancaria explícita en el payload o heredada de la planilla plantilla.
      */
-    private function resolverCuentasPlanilla(array $datos): array
+    private function resolverCuentaBancoPlanilla(array $datos): array
     {
         $idCuentaBanco = $datos['id_cuenta_banco'] ?? null;
-        $idCuentaContable = $datos['id_cuenta_contable'] ?? null;
 
         if (!empty($datos['planillaTemplate'])) {
             $template = Planilla::find($datos['planillaTemplate']);
             if ($template) {
                 $idCuentaBanco = $idCuentaBanco ?? $template->id_cuenta_banco;
-                $idCuentaContable = $idCuentaContable ?? $template->id_cuenta_contable;
             }
         }
 
-        return [$idCuentaBanco, $idCuentaContable];
+        return [$idCuentaBanco];
     }
 }
 

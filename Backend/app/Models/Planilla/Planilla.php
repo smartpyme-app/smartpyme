@@ -30,7 +30,6 @@ class Planilla extends AuditableModel
         'id_empresa',
         'id_sucursal',
         'id_cuenta_banco',
-        'id_cuenta_contable',
         'anio',
         'mes'
     ];
@@ -61,12 +60,7 @@ class Planilla extends AuditableModel
 
     public function cuentaBanco()
     {
-        return $this->belongsTo('App\Models\Contabilidad\Catalogo\Cuenta', 'id_cuenta_banco');
-    }
-
-    public function cuentaContable()
-    {
-        return $this->belongsTo('App\Models\Contabilidad\Catalogo\Cuenta', 'id_cuenta_contable');
+        return $this->belongsTo('App\Models\Bancos\Cuenta', 'id_cuenta_banco');
     }
 
     // Scopes

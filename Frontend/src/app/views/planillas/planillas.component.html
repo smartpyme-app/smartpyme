@@ -387,6 +387,26 @@
             class="form-control"
             required>
         </div>
+
+        @if (puedeElegirCuentaBanco) {
+          <div class="form-group col-12 mb-3">
+            <label for="planilla_id_cuenta_banco">Cuenta caja/banco</label>
+            <ng-select
+              [(ngModel)]="planilla.id_cuenta_banco"
+              class="form-select p-0"
+              name="planilla_id_cuenta_banco"
+              [clearable]="true"
+              [searchable]="true">
+              <ng-option [value]="null">Seleccione aquí</ng-option>
+              @for (cuenta of cuentasBanco; track cuenta.id) {
+                <ng-option [value]="cuenta.id">
+                  {{ cuenta.nombre_banco || cuenta.nombre }}{{ cuenta.numero ? ' — ' + cuenta.numero : '' }}
+                </ng-option>
+              }
+            </ng-select>
+            <small class="text-muted">Opcional al generar; obligatoria al pagar. La cuenta contable se toma del enlace en Bancos.</small>
+          </div>
+        }
       </div>
 
       <div class="d-grid mt-3">
@@ -472,6 +492,26 @@
             [disabled]="planillaEdit.estado !== 2"
           />
         </div>
+
+        @if (puedeElegirCuentaBanco && planillaEdit.estado === 1) {
+          <div class="col-12 mb-3">
+            <label class="form-label" for="edit_id_cuenta_banco">Cuenta caja/banco</label>
+            <ng-select
+              [(ngModel)]="planillaEdit.id_cuenta_banco"
+              class="form-select p-0"
+              name="edit_id_cuenta_banco"
+              [clearable]="true"
+              [searchable]="true">
+              <ng-option [value]="null">Seleccione aquí</ng-option>
+              @for (cuenta of cuentasBanco; track cuenta.id) {
+                <ng-option [value]="cuenta.id">
+                  {{ cuenta.nombre_banco || cuenta.nombre }}{{ cuenta.numero ? ' — ' + cuenta.numero : '' }}
+                </ng-option>
+              }
+            </ng-select>
+            <small class="text-muted">Opcional hasta procesar el pago. Contabilidad según el enlace de la cuenta en Bancos.</small>
+          </div>
+        }
 
         <!-- Totales (Solo lectura) -->
         <div class="col-md-4 mb-3">
