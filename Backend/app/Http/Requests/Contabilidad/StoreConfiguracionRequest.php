@@ -28,6 +28,7 @@ class StoreConfiguracionRequest extends FormRequest
             'id_cuenta_iva_retenido_ventas' => ['required', 'integer', 'exists:catalogo_cuentas,id'],
             'id_cuenta_renta_retenida_ventas' => ['required', 'integer', 'exists:catalogo_cuentas,id'],
             'id_cuenta_cxc' => ['required', 'integer', 'exists:catalogo_cuentas,id'],
+            'id_cuenta_cuenta_a_terceros' => ['nullable', 'integer', 'exists:catalogo_cuentas,id'],
             'id_cuenta_costo_venta' => ['required', 'integer', 'exists:catalogo_cuentas,id'],
             'id_cuenta_inventario' => ['required', 'integer', 'exists:catalogo_cuentas,id'],
             'id_cuenta_cxp' => ['required', 'integer', 'exists:catalogo_cuentas,id'],
@@ -46,7 +47,7 @@ class StoreConfiguracionRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $merge = [];
-        foreach (['id_cuenta_iva_ventas_cf', 'id_cuenta_iva_compras_cf'] as $campo) {
+        foreach (['id_cuenta_iva_ventas_cf', 'id_cuenta_iva_compras_cf', 'id_cuenta_cuenta_a_terceros'] as $campo) {
             if ($this->input($campo) === '' || $this->input($campo) === 'null') {
                 $merge[$campo] = null;
             }
