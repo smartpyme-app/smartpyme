@@ -93,6 +93,8 @@ class PlanillaService
             $versionDecreto = ($codPais === 'CR') ? 'Decreto 45333-H (2026)' : 'Decreto No. 10 (2025)';
             $fechaVigenciaTabla = ($codPais === 'CR') ? '2026-01-01' : '2025-01-01';
 
+            [$idCuentaBanco] = $this->resolverCuentaBancoPlanilla($datos);
+
             // Crear nueva planilla
             $planilla = Planilla::create([
                 'codigo' => $codigo,
@@ -105,6 +107,7 @@ class PlanillaService
                 'estado' => PlanillaConstants::PLANILLA_BORRADOR,
                 'id_empresa' => auth()->user()->id_empresa,
                 'id_sucursal' => auth()->user()->id_sucursal,
+                'id_cuenta_banco' => $idCuentaBanco,
                 'anio' => $fechaInicio->year,
                 'mes' => $fechaInicio->month,
                 'total_salarios' => 0,
@@ -192,6 +195,20 @@ class PlanillaService
         try {
             $planilla = Planilla::findOrFail($id);
 
+            if ($planilla->estado == PlanillaConstants::PLANILLA_APROBADA) {
+                $update = array_filter([
+                    'id_cuenta_banco' => $datos['id_cuenta_banco'] ?? null,
+                ], fn ($key) => array_key_exists($key, $datos), ARRAY_FILTER_USE_KEY);
+
+                if ($update !== []) {
+                    $planilla->update($update);
+                }
+
+                DB::commit();
+
+                return $planilla->fresh();
+            }
+
             if ($planilla->estado != PlanillaConstants::PLANILLA_BORRADOR) {
                 throw new \Exception('Solo se pueden modificar planillas en estado borrador');
             }
@@ -215,8 +232,10 @@ class PlanillaService
                 'fecha_fin' => $datos['fecha_fin'],
                 'tipo_planilla' => $datos['tipo_planilla'],
                 'anio' => Carbon::parse($datos['fecha_inicio'])->year,
-                'mes' => Carbon::parse($datos['fecha_inicio'])->month
-            ]);
+                'mes' => Carbon::parse($datos['fecha_inicio'])->month,
+            ] + array_filter([
+                'id_cuenta_banco' => $datos['id_cuenta_banco'] ?? null,
+            ], fn ($key) => array_key_exists($key, $datos), ARRAY_FILTER_USE_KEY));
 
             $this->actualizarTotales($planilla->id);
 
@@ -505,6 +524,23 @@ class PlanillaService
             Log::error('Error actualizando totales de planilla: ' . $e->getMessage());
             throw $e;
         }
+    }
+
+    /**
+     * Cuenta bancaria explícita en el payload o heredada de la planilla plantilla.
+     */
+    private function resolverCuentaBancoPlanilla(array $datos): array
+    {
+        $idCuentaBanco = $datos['id_cuenta_banco'] ?? null;
+
+        if (!empty($datos['planillaTemplate'])) {
+            $template = Planilla::find($datos['planillaTemplate']);
+            if ($template) {
+                $idCuentaBanco = $idCuentaBanco ?? $template->id_cuenta_banco;
+            }
+        }
+
+        return [$idCuentaBanco];
     }
 }
 
