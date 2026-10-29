@@ -2,7 +2,11 @@
 
 namespace App\Http\Requests\Contabilidad;
 
+use App\Models\Admin\Empresa;
+use App\Models\EmpresaConfiguracion;
+use App\Models\EmpresaConfiguracionPlanilla;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StoreConfiguracionRequest extends FormRequest
 {
@@ -40,13 +44,37 @@ class StoreConfiguracionRequest extends FormRequest
             'separar_cuentas_iva' => ['sometimes', 'boolean'],
             'abonos_en_cartera' => ['sometimes', 'boolean'],
             'id_empresa' => ['required', 'integer', 'exists:empresas,id'],
+            'id_cuenta_gasto_salarios' => ['nullable', 'integer', 'exists:catalogo_cuentas,id'],
+            'id_cuenta_gasto_cargas_patronales' => ['nullable', 'integer', 'exists:catalogo_cuentas,id'],
+            'id_cuenta_gasto_aguinaldo' => ['nullable', 'integer', 'exists:catalogo_cuentas,id'],
+            'id_cuenta_gasto_vacaciones' => ['nullable', 'integer', 'exists:catalogo_cuentas,id'],
+            'id_cuenta_pasivo_cargas_sociales' => ['nullable', 'integer', 'exists:catalogo_cuentas,id'],
+            'id_cuenta_pasivo_ins' => ['nullable', 'integer', 'exists:catalogo_cuentas,id'],
+            'id_cuenta_pasivo_retencion_renta' => ['nullable', 'integer', 'exists:catalogo_cuentas,id'],
+            'id_cuenta_pasivo_salarios_por_pagar' => ['nullable', 'integer', 'exists:catalogo_cuentas,id'],
+            'id_cuenta_pasivo_provision_aguinaldo' => ['nullable', 'integer', 'exists:catalogo_cuentas,id'],
+            'id_cuenta_pasivo_provision_vacaciones' => ['nullable', 'integer', 'exists:catalogo_cuentas,id'],
         ];
     }
 
     protected function prepareForValidation(): void
     {
         $merge = [];
-        foreach (['id_cuenta_iva_ventas_cf', 'id_cuenta_iva_compras_cf'] as $campo) {
+        $nullableCuentas = [
+            'id_cuenta_iva_ventas_cf',
+            'id_cuenta_iva_compras_cf',
+            'id_cuenta_gasto_salarios',
+            'id_cuenta_gasto_cargas_patronales',
+            'id_cuenta_gasto_aguinaldo',
+            'id_cuenta_gasto_vacaciones',
+            'id_cuenta_pasivo_cargas_sociales',
+            'id_cuenta_pasivo_ins',
+            'id_cuenta_pasivo_retencion_renta',
+            'id_cuenta_pasivo_salarios_por_pagar',
+            'id_cuenta_pasivo_provision_aguinaldo',
+            'id_cuenta_pasivo_provision_vacaciones',
+        ];
+        foreach ($nullableCuentas as $campo) {
             if ($this->input($campo) === '' || $this->input($campo) === 'null') {
                 $merge[$campo] = null;
             }
@@ -54,6 +82,60 @@ class StoreConfiguracionRequest extends FormRequest
         if ($merge !== []) {
             $this->merge($merge);
         }
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v) {
+            if (!$this->planillasModuloActivo()) {
+                return;
+            }
+
+            $requeridas = [
+                'id_cuenta_gasto_salarios' => 'Gasto de salarios',
+                'id_cuenta_gasto_cargas_patronales' => 'Gasto de cargas patronales',
+                'id_cuenta_gasto_aguinaldo' => 'Gasto de provisión de aguinaldo',
+                'id_cuenta_gasto_vacaciones' => 'Gasto de provisión de vacaciones',
+                'id_cuenta_pasivo_cargas_sociales' => 'Pasivo de cargas sociales',
+                'id_cuenta_pasivo_retencion_renta' => 'Pasivo de retención de renta',
+                'id_cuenta_pasivo_salarios_por_pagar' => 'Salarios por pagar',
+                'id_cuenta_pasivo_provision_aguinaldo' => 'Provisión de aguinaldo por pagar',
+                'id_cuenta_pasivo_provision_vacaciones' => 'Provisión de vacaciones por pagar',
+            ];
+
+            if ($this->codPaisEmpresa() === 'CR') {
+                $requeridas['id_cuenta_pasivo_ins'] = 'INS riesgos del trabajo por pagar';
+            }
+
+            foreach ($requeridas as $campo => $etiqueta) {
+                if ($this->input($campo) === null || $this->input($campo) === '') {
+                    $v->errors()->add($campo, "La cuenta de planilla «{$etiqueta}» es requerida mientras el módulo de planillas está activo.");
+                }
+            }
+        });
+    }
+
+    private function planillasModuloActivo(): bool
+    {
+        $empresaId = (int) $this->input('id_empresa');
+        if (EmpresaConfiguracion::porEmpresa($empresaId)
+            ->modulo(EmpresaConfiguracion::MODULO_PLANILLAS)
+            ->exists()) {
+            return true;
+        }
+
+        return EmpresaConfiguracionPlanilla::where('empresa_id', $empresaId)
+            ->where('activo', true)
+            ->exists();
+    }
+
+    private function codPaisEmpresa(): ?string
+    {
+        $empresa = Empresa::find((int) $this->input('id_empresa'));
+
+        return $empresa
+            ? EmpresaConfiguracionPlanilla::resolverCodigoPaisEmpresa($empresa)
+            : null;
     }
 
     /**

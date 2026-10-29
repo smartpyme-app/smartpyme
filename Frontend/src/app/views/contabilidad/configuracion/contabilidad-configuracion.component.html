@@ -403,6 +403,67 @@
     </div>
 </div>
 
+@if (planillasModuloActivo) {
+<div class="bg-white rounded p-3 my-3">
+    <div class="row">
+        <h6>Planilla / nómina</h6>
+        <p class="text-muted small col-12">
+            Cuentas del catálogo para la partida automática al aprobar una planilla. Obligatorias mientras el módulo de planillas está activo en la empresa.
+        </p>
+        <h6 class="col-12 mt-2 text-secondary fs-6">Gastos y provisiones (debe)</h6>
+        @for (item of cuentasPlanillaGasto; track item.key) {
+        <div class="form-group col-md-12 col-lg-6">
+            <label [attr.for]="item.key">{{ item.label }}@if (planillasModuloActivo) { <span class="text-danger">*</span> }</label>
+            <ng-select [(ngModel)]="configuracion[item.key]" class="form-select p-0" [name]="item.key" [loading]="loadingCatalogo" [clearable]="true" [searchable]="true">
+                <ng-option value="">Seleccione aquí</ng-option>
+                @for (cuenta of catalogo; track cuenta.id || $index) {
+                  <ng-option [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                  </ng-option>
+                }
+            </ng-select>
+        </div>
+        }
+        <h6 class="col-12 mt-2 text-secondary fs-6">Pasivos y retenciones (haber)</h6>
+        @for (item of cuentasPlanillaPasivo; track item.key) {
+        <div class="form-group col-md-12 col-lg-6">
+            <label [attr.for]="item.key">{{ item.label }}@if (planillasModuloActivo) { <span class="text-danger">*</span> }</label>
+            <ng-select [(ngModel)]="configuracion[item.key]" class="form-select p-0" [name]="item.key" [loading]="loadingCatalogo" [clearable]="true" [searchable]="true">
+                <ng-option value="">Seleccione aquí</ng-option>
+                @for (cuenta of catalogo; track cuenta.id || $index) {
+                  <ng-option [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                  </ng-option>
+                }
+            </ng-select>
+        </div>
+        }
+        @if (esCostaRica) {
+        <div class="form-group col-md-12 col-lg-6">
+            <label [attr.for]="cuentaPlanillaInsCr.key">{{ cuentaPlanillaInsCr.label }} <span class="text-danger">*</span></label>
+            <ng-select [(ngModel)]="configuracion[cuentaPlanillaInsCr.key]" class="form-select p-0" [name]="cuentaPlanillaInsCr.key" [loading]="loadingCatalogo" [clearable]="true" [searchable]="true">
+                <ng-option value="">Seleccione aquí</ng-option>
+                @for (cuenta of catalogo; track cuenta.id || $index) {
+                  <ng-option [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                  </ng-option>
+                }
+            </ng-select>
+        </div>
+        }
+    </div>
+</div>
+}
+
 <div class="bg-white rounded p-3 mb-3">
     <div class="form-group col-sm-12 pt-2 pb-4">
         <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
