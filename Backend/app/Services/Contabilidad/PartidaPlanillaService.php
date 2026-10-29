@@ -234,6 +234,47 @@ class PartidaPlanillaService
     }
 
     /**
+     * Con partidas en Auto, exige cuentas de planilla en configuración contable antes de aprobar.
+     */
+    public function validarCuentasDevengoSiAuto(Planilla $planilla): void
+    {
+        if (!$this->esGeneracionAutomatica((int) $planilla->id_empresa)) {
+            return;
+        }
+
+        $configContable = Configuracion::where('id_empresa', $planilla->id_empresa)->first();
+        if (!$configContable) {
+            throw new \Exception('Configure la contabilidad de la empresa antes de aprobar planillas.');
+        }
+
+        $codPais = EmpresaConfiguracionPlanilla::resolverCodigoPaisEmpresa($planilla->empresa);
+
+        $requeridas = [
+            'id_cuenta_gasto_salarios' => 'Gasto de salarios',
+            'id_cuenta_gasto_cargas_patronales' => 'Gasto de cargas patronales',
+            'id_cuenta_gasto_aguinaldo' => 'Gasto de provisión de aguinaldo',
+            'id_cuenta_gasto_vacaciones' => 'Gasto de provisión de vacaciones',
+            'id_cuenta_pasivo_cargas_sociales' => 'Cargas sociales por pagar',
+            'id_cuenta_pasivo_retencion_renta' => 'Retención de renta por pagar',
+            'id_cuenta_pasivo_salarios_por_pagar' => 'Salarios netos por pagar',
+            'id_cuenta_pasivo_provision_aguinaldo' => 'Provisión de aguinaldo por pagar',
+            'id_cuenta_pasivo_provision_vacaciones' => 'Provisión de vacaciones por pagar',
+        ];
+
+        if ($codPais === 'CR') {
+            $requeridas['id_cuenta_pasivo_ins'] = 'INS riesgos del trabajo por pagar';
+        }
+
+        foreach ($requeridas as $campo => $etiqueta) {
+            if (empty($configContable->{$campo})) {
+                throw new \Exception(
+                    "Configure la cuenta de planilla «{$etiqueta}» en Contabilidad → Configuración."
+                );
+            }
+        }
+    }
+
+    /**
      * Validar cuenta bancaria de la planilla cuando hay sueldo neto a pagar.
      */
     public function validarCuentaBancoParaPago(Planilla $planilla): void

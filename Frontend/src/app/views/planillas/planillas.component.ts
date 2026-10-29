@@ -65,6 +65,12 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
   public periodos: any[] = [];
   public cuentasBanco: any[] = [];
 
+  /** Valores alineados con Backend\\PlanillaConstants */
+  readonly PLANILLA_BORRADOR = 2;
+  readonly PLANILLA_APROBADA = 4;
+  readonly PLANILLA_PAGADA = 5;
+  readonly PLANILLA_ANULADA = 6;
+
   @ViewChild('mNuevaPlanilla') mNuevaPlanilla!: TemplateRef<any>;
 
   constructor(
@@ -245,7 +251,7 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
   public aprobarPlanilla(planilla: any) {
     Swal.fire({
       title: '¿Está seguro?',
-      text: 'Una vez aprobada la planilla no podrá modificarla',
+      text: 'Se generará la partida de devengo si contabilidad está en modo Automático. Luego solo podrá cambiar la cuenta banco hasta pagar.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
@@ -277,7 +283,8 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
               this.cdr.markForCheck();
             },
             error: (error) => {
-              this.alertService.error(error);
+              const mensaje = error?.error?.error || error?.message || 'No se pudo aprobar la planilla';
+              this.alertService.error(mensaje);
               this.procesando = false;
               this.cdr.markForCheck();
             },
@@ -346,7 +353,7 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
           next: (response) => {
             Swal.fire({
               title: '¡Éxito!',
-              text: 'Pago procesado y registros contables generados correctamente',
+              text: response?.message || 'Pago procesado. Boletas enviadas según correo configurado; con contabilidad en Auto se generó la partida de egreso.',
               icon: 'success',
             });
             this.loadPlanillas();

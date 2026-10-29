@@ -30,11 +30,13 @@ class PlanillaAprobacionService
     {
         DB::beginTransaction();
         try {
-            $planilla = Planilla::with('detalles')->findOrFail($id);
+            $planilla = Planilla::with(['detalles', 'empresa'])->findOrFail($id);
 
             if ($planilla->estado != PlanillaConstants::PLANILLA_BORRADOR) {
                 throw new \Exception('Solo se pueden aprobar planillas en estado borrador');
             }
+
+            $this->partidaPlanillaService->validarCuentasDevengoSiAuto($planilla);
 
             // Actualizar el estado de la planilla principal
             $planilla->estado = PlanillaConstants::PLANILLA_APROBADA;
@@ -51,12 +53,8 @@ class PlanillaAprobacionService
                 }
             }
 
-            // 🧾 Generar la partida contable automática de planilla (Estado: 'Pendiente')
-            try {
-                $this->partidaPlanillaService->generarPartidaPlanilla($planilla);
-            } catch (\Exception $ePartida) {
-                Log::warning('No se pudo generar automáticamente la partida contable de la planilla: ' . $ePartida->getMessage());
-            }
+            // Partida contable de devengo (falla la aprobación si falta configuración en modo Auto)
+            $this->partidaPlanillaService->generarPartidaPlanilla($planilla->fresh(['detalles', 'empresa']));
 
             DB::commit();
 

@@ -149,7 +149,7 @@
               </span>
               <ng-template #accionesTemplate>
                 <div class="list-group border-0">
-                  @if (planilla.estado != 6 || planilla.estado != 0) {
+                  @if (planilla.estado != PLANILLA_ANULADA) {
                     <a
                       [routerLink]="['/planilla/detalle', planilla.id]"
                       class="list-group-item list-group-item-action border-0 click"
@@ -157,7 +157,7 @@
                       <i class="fa fa-fw fa-eye"></i> Ver detalles
                     </a>
                   }
-                  @if (planilla.estado == 2 || planilla.estado == 3) {
+                  @if (planilla.estado == PLANILLA_BORRADOR || planilla.estado == PLANILLA_APROBADA) {
                     <a
                       (click)="openEditarPlanilla(planilla, mEditarPlanilla)"
                       class="list-group-item list-group-item-action border-0 click"
@@ -165,7 +165,7 @@
                       <i class="fa fa-fw fa-edit"></i> Editar
                     </a>
                   }
-                  @if (planilla.estado == 2 || planilla.estado == 3) {
+                  @if (planilla.estado == PLANILLA_BORRADOR) {
                     <a
                       (click)="aprobarPlanilla(planilla)"
                       class="list-group-item list-group-item-action border-0 click"
@@ -173,7 +173,7 @@
                       <i class="fa fa-fw fa-check"></i> Aprobar
                     </a>
                   }
-                  @if (planilla.estado == 4) {
+                  @if (planilla.estado == PLANILLA_APROBADA) {
                     <a
                       (click)="revertirPlanilla(planilla)"
                       class="list-group-item list-group-item-action border-0 click"
@@ -181,7 +181,7 @@
                       <i class="fa fa-fw fa-undo"></i> Revertir
                     </a>
                   }
-                  @if (planilla.estado == 2 || planilla.estado == 4) {
+                  @if (planilla.estado == PLANILLA_APROBADA) {
                     <a
                       (click)="procesarPago(planilla)"
                       class="list-group-item list-group-item-action border-0 click"
@@ -189,7 +189,7 @@
                       <i class="fa fa-fw fa-money-bill"></i> Procesar Pago
                     </a>
                   }
-                  @if (planilla.estado == 5) {
+                  @if (planilla.estado == PLANILLA_PAGADA) {
                     <a
                       (click)="generarBoletas(planilla)"
                       class="list-group-item list-group-item-action border-0 click"
@@ -197,7 +197,7 @@
                       <i class="fa fa-fw fa-file-pdf"></i> Generar Boletas
                     </a>
                   }
-                  @if (planilla.estado == 5) {
+                  @if (planilla.estado == PLANILLA_PAGADA) {
                     <a
                       routerLink="/planilla/boletas/{{ planilla.id }}"
                       class="list-group-item list-group-item-action border-0 click"
@@ -493,7 +493,7 @@
           />
         </div>
 
-        @if (puedeElegirCuentaBanco && (planillaEdit.estado === 2 || planillaEdit.estado === 4)) {
+        @if (puedeElegirCuentaBanco && (planillaEdit.estado === PLANILLA_BORRADOR || planillaEdit.estado === PLANILLA_APROBADA)) {
           <div class="col-12 mb-3">
             <label class="form-label" for="edit_id_cuenta_banco">Cuenta caja/banco</label>
             <ng-select
