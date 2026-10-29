@@ -29,6 +29,8 @@ class Planilla extends AuditableModel
         'total_viaticos',
         'id_empresa',
         'id_sucursal',
+        'id_cuenta_banco',
+        'id_cuenta_contable',
         'anio',
         'mes'
     ];
@@ -55,6 +57,16 @@ class Planilla extends AuditableModel
     public function sucursal()
     {
         return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal');
+    }
+
+    public function cuentaBanco()
+    {
+        return $this->belongsTo('App\Models\Contabilidad\Catalogo\Cuenta', 'id_cuenta_banco');
+    }
+
+    public function cuentaContable()
+    {
+        return $this->belongsTo('App\Models\Contabilidad\Catalogo\Cuenta', 'id_cuenta_contable');
     }
 
     // Scopes

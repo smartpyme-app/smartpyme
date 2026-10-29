@@ -24,7 +24,22 @@ class StorePlanillaRequest extends FormRequest
             'fecha_fin' => ['required', 'date'],
             'tipo_planilla' => ['required', 'string', 'in:quincenal,mensual,semanal'],
             'planillaTemplate' => ['nullable', 'integer', 'exists:planillas,id'],
+            'id_cuenta_banco' => ['nullable', 'integer', 'exists:catalogo_cuentas,id'],
+            'id_cuenta_contable' => ['nullable', 'integer', 'exists:catalogo_cuentas,id'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $merge = [];
+        foreach (['id_cuenta_banco', 'id_cuenta_contable'] as $campo) {
+            if ($this->input($campo) === '' || $this->input($campo) === 'null') {
+                $merge[$campo] = null;
+            }
+        }
+        if ($merge !== []) {
+            $this->merge($merge);
+        }
     }
 
     /**

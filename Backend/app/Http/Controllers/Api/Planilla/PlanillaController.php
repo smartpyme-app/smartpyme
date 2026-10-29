@@ -88,6 +88,8 @@ class PlanillaController extends Controller
                 'total_deducciones' => $resultado['planilla']->total_deducciones,
                 'total_neto' => $resultado['planilla']->total_neto,
                 'estado' => $resultado['planilla']->estado,
+                'id_cuenta_banco' => $resultado['planilla']->id_cuenta_banco,
+                'id_cuenta_contable' => $resultado['planilla']->id_cuenta_contable,
                 'totales' => $resultado['totales'],
                 'tipo_planilla' => $resultado['planilla']->tipo_planilla
             ];

@@ -29,6 +29,18 @@ class PlanillaResource extends JsonResource
             'mes' => $this->mes,
             'id_empresa' => $this->id_empresa,
             'id_sucursal' => $this->id_sucursal,
+            'id_cuenta_banco' => $this->id_cuenta_banco,
+            'id_cuenta_contable' => $this->id_cuenta_contable,
+            'cuenta_banco' => $this->whenLoaded('cuentaBanco', fn () => [
+                'id' => $this->cuentaBanco->id,
+                'codigo' => $this->cuentaBanco->codigo,
+                'nombre' => $this->cuentaBanco->nombre,
+            ]),
+            'cuenta_contable' => $this->whenLoaded('cuentaContable', fn () => [
+                'id' => $this->cuentaContable->id,
+                'codigo' => $this->cuentaContable->codigo,
+                'nombre' => $this->cuentaContable->nombre,
+            ]),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'detalles' => PlanillaDetalleResource::collection($this->whenLoaded('detalles')),
