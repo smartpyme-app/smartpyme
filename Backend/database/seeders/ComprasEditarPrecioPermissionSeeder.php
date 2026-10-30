@@ -38,7 +38,7 @@ class ComprasEditarPrecioPermissionSeeder extends Seeder
                 'submodule_id' => null,
                 'permission_id' => $permission->id,
             ],
-            ['permission_type' => 'editar_precio']
+            ['permission_type' => 'base']
         );
 
         $permiso = Permission::findByName(self::EDITAR_PRECIO, 'web');
