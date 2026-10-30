@@ -25,6 +25,8 @@ export class GastoJsonBulkService {
     const user = this.apiService.auth_user();
     return {
       forma_pago: 'Efectivo',
+      detalle_banco: '',
+      referencia_pago: '',
       estado: 'Confirmado',
       tipo_documento: 'Factura',
       tipo: 'Gastos varios',
