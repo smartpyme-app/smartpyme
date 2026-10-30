@@ -9,7 +9,6 @@ import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/n
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { BaseComponent } from '@shared/base/base.component';
-import { loadBancosParaAbono } from '@shared/utils/abono-bancos.util';
 
 @Component({
     selector: 'app-crear-abono-venta',
@@ -24,6 +23,7 @@ export class CrearAbonoVentaComponent extends BaseComponent implements OnInit, O
 	@Output() update = new EventEmitter();
 	public formaPagos: any = [];
 	public bancos: any = [];
+    public usarCuentasEnSelect = false;
     public abono: any = {};
  	public loading = false;
     public saving = false;
@@ -77,10 +77,11 @@ export class CrearAbonoVentaComponent extends BaseComponent implements OnInit, O
     }
 
     private cargarBancos(): void {
-        loadBancosParaAbono(this.apiService)
+        this.apiService.loadBancosParaAbono()
             .pipe(this.untilDestroyed())
-            .subscribe(bancos => {
+            .subscribe(({ bancos, usarCuentas }) => {
                 this.bancos = bancos;
+                this.usarCuentasEnSelect = usarCuentas;
             }, error => { this.alertService.error(error); });
     }
 
@@ -94,7 +95,7 @@ export class CrearAbonoVentaComponent extends BaseComponent implements OnInit, O
             this.abono.detalle_banco = '';
             return;
         }
-        if (this.apiService.isModuloBancos()) {
+        if (this.usarCuentasEnSelect || this.apiService.usarCuentasBancariasEnPagos()) {
             const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.abono.forma_pago);
             if (formaPagoSeleccionada?.banco?.nombre_banco) {
                 this.abono.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;

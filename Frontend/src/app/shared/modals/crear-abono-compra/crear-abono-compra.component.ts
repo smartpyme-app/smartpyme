@@ -9,7 +9,6 @@ import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/n
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { BaseComponent } from '@shared/base/base.component';
-import { loadBancosParaAbono } from '@shared/utils/abono-bancos.util';
 
 @Component({
     selector: 'app-crear-abono-compra',
@@ -24,6 +23,7 @@ export class CrearAbonoCompraComponent extends BaseComponent implements OnInit, 
 	@Output() update = new EventEmitter();
 	public formaPagos: any = [];
     public bancos: any = [];
+    public usarCuentasEnSelect = false;
     public abono: any = {};
  	public loading = false;
     public saving = false;
@@ -47,7 +47,7 @@ export class CrearAbonoCompraComponent extends BaseComponent implements OnInit, 
             .pipe(this.untilDestroyed())
             .subscribe(formaPagos => {
             this.formaPagos = formaPagos;
-            if (this.apiService.isModuloBancos() && this.abono.forma_pago && this.abono.forma_pago !== 'Efectivo') {
+            if (this.usarCuentasEnSelect && this.abono.forma_pago && this.abono.forma_pago !== 'Efectivo') {
                 const formaPagoSeleccionada = formaPagos.find((fp: any) => fp.nombre === this.abono.forma_pago);
                 if (formaPagoSeleccionada?.banco?.nombre_banco && !this.abono.detalle_banco) {
                     this.abono.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
@@ -55,10 +55,11 @@ export class CrearAbonoCompraComponent extends BaseComponent implements OnInit, 
             }
         }, error => {this.alertService.error(error); });
 
-        loadBancosParaAbono(this.apiService)
+        this.apiService.loadBancosParaAbono()
             .pipe(this.untilDestroyed())
-            .subscribe(bancos => {
+            .subscribe(({ bancos, usarCuentas }) => {
                 this.bancos = bancos;
+                this.usarCuentasEnSelect = usarCuentas;
             }, error => {this.alertService.error(error);});
 	}
 
@@ -82,7 +83,7 @@ export class CrearAbonoCompraComponent extends BaseComponent implements OnInit, 
     }
 
     public cambioMetodoDePago() {
-        if (this.apiService.isModuloBancos() && this.abono.forma_pago && this.abono.forma_pago !== 'Efectivo') {
+        if ((this.usarCuentasEnSelect || this.apiService.usarCuentasBancariasEnPagos()) && this.abono.forma_pago && this.abono.forma_pago !== 'Efectivo') {
             const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.abono.forma_pago);
             if (formaPagoSeleccionada?.banco?.nombre_banco) {
                 this.abono.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;

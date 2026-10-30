@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
-import { loadBancosParaAbono } from '@shared/utils/abono-bancos.util';
 
 @Component({
   selector: 'app-editar-abono',
@@ -20,6 +19,7 @@ export class EditarAbonoComponent implements OnInit {
 
   public formaPagos: any[] = [];
   public bancos: any[] = [];
+  public usarCuentasEnSelect = false;
   public saving = false;
 
   constructor(
@@ -32,8 +32,9 @@ export class EditarAbonoComponent implements OnInit {
       this.formaPagos = formaPagos;
     }, error => { this.alertService.error(error); });
 
-    loadBancosParaAbono(this.apiService).subscribe(bancos => {
+    this.apiService.loadBancosParaAbono().subscribe(({ bancos, usarCuentas }) => {
       this.bancos = bancos;
+      this.usarCuentasEnSelect = usarCuentas;
     }, error => { this.alertService.error(error); });
   }
 
@@ -53,7 +54,7 @@ export class EditarAbonoComponent implements OnInit {
       this.abono.detalle_banco = '';
       return;
     }
-    if (this.apiService.isModuloBancos()) {
+    if (this.usarCuentasEnSelect || this.apiService.usarCuentasBancariasEnPagos()) {
       const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.abono.forma_pago);
       this.abono.detalle_banco = formaPagoSeleccionada?.banco?.nombre_banco || '';
     }

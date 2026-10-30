@@ -15,6 +15,7 @@ import { PermissionService } from '@services/permission.service';
 import { UtilityService } from '@services/utility.service';
 import { HttpClient, HttpHeaders, HttpResponse, HttpErrorResponse } from '@angular/common/http';
 import { map, catchError, retry, timeout, switchMap } from 'rxjs/operators';
+import { normalizeBancosListResponse } from '@shared/utils/abono-bancos.util';
 import { Observable, throwError, from, of, Subject } from 'rxjs';
 import { AlertService } from '@services/alert.service';
 import { environment } from './../../environments/environment';
@@ -525,6 +526,31 @@ export class ApiService {
     /** Formas de pago y selects de banco usan cuentas bancarias si hay contabilidad o el módulo de bancos. */
     usarCuentasBancarias(contabilidadHabilitada: boolean): boolean {
         return contabilidadHabilitada || this.isModuloBancos();
+    }
+
+    tieneContabilidadActivaEnSesion(): boolean {
+        return this.funcionalidadesService.tieneAccesoCacheado('contabilidad');
+    }
+
+    /** Igual criterio que ventas/gastos: contabilidad en plan o módulo bancos en empresa. */
+    usarCuentasBancariasEnPagos(): boolean {
+        return this.usarCuentasBancarias(this.tieneContabilidadActivaEnSesion());
+    }
+
+    /** Cuentas de la empresa (contabilidad/módulo bancos) o bancos activados en Ventas → Bancos. */
+    loadBancosParaAbono(): Observable<{ bancos: any[]; usarCuentas: boolean }> {
+        return this.funcionalidadesService.verificarAcceso('contabilidad').pipe(
+            switchMap((contabilidad) => {
+                const usarCuentas = this.usarCuentasBancarias(!!contabilidad);
+                const url = usarCuentas ? 'banco/cuentas/list' : 'bancos/list';
+                return this.getAll(url).pipe(
+                    map((raw) => ({
+                        bancos: normalizeBancosListResponse(raw),
+                        usarCuentas,
+                    })),
+                );
+            }),
+        );
     }
 
     /** Bancos en el menú Finanzas cuando no hay contabilidad pero el módulo está activo. */

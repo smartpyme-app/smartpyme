@@ -17,15 +17,9 @@ class BancosController extends Controller
 
     public function list()
     {
-        $persisted = Banco::orderBy('nombre')->get();
-        if ($persisted->isNotEmpty()) {
-            return response()->json($persisted, 200);
-        }
+        $bancos = Banco::orderBy('nombre')->get();
 
-        // ponytail: sin bancos activados en BD, exponer catálogo del país para selects (abonos, ventas).
-        $fallback = $this->catalogWithActivoFlag()->map(fn (array $b) => ['nombre' => $b['nombre']])->values();
-
-        return response()->json($fallback, 200);
+        return response()->json($bancos, 200);
     }
 
     public function storeOrDelete(StoreOrDeleteBancoRequest $request)

@@ -1,15 +1,7 @@
 import { ApiService } from '@services/api.service';
-import { Observable, map } from 'rxjs';
+import { Observable } from 'rxjs';
 
-/** Cuentas bancarias (módulo bancos) o catálogo / bancos activos de la empresa. */
-export function loadBancosParaAbono(api: ApiService): Observable<any[]> {
-  if (api.isModuloBancos()) {
-    return api.getAll('banco/cuentas/list').pipe(map(normalizeList));
-  }
-  return api.getAll('bancos/list').pipe(map(normalizeList));
-}
-
-function normalizeList(raw: unknown): any[] {
+export function normalizeBancosListResponse(raw: unknown): any[] {
   if (Array.isArray(raw)) {
     return raw;
   }
@@ -17,4 +9,17 @@ function normalizeList(raw: unknown): any[] {
     return (raw as { data: any[] }).data;
   }
   return [];
+}
+
+/** @deprecated Usar api.loadBancosParaAbono() */
+export function loadBancosParaAbono(api: ApiService): Observable<any[]> {
+  return new Observable((subscriber) => {
+    api.loadBancosParaAbono().subscribe({
+      next: ({ bancos }) => {
+        subscriber.next(bancos);
+        subscriber.complete();
+      },
+      error: (err) => subscriber.error(err),
+    });
+  });
 }
