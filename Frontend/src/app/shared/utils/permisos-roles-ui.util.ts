@@ -15,6 +15,12 @@ export function etiquetaPermisoRoles(name: string): string {
   if (segmento === 'ver_costos') {
     return 'Ver costos';
   }
+  if (segmento === 'editar_precio') {
+    return 'Editar precio en compras';
+  }
+  if (segmento === 'ver_total') {
+    return 'Ver total en órdenes de compra';
+  }
   if (segmento === 'emitir') {
     return 'Emitir';
   }

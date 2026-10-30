@@ -541,7 +541,7 @@
               <th style="width: 120px;">{{ 'country.tax.fe.importCodeColumn' | translate }}</th>
               <th style="width: 200px;">{{ 'country.tax.fe.importDescriptionColumn' | translate }}</th>
               <th style="width: 80px;">Cant.</th>
-              <th *ngIf="apiService.canVerCostosInventario()" style="width: 100px;">Precio Unit.</th>
+              <th *ngIf="apiService.canEditarPrecioCompra()" style="width: 100px;">Precio Unit.</th>
               <th>Producto a Asignar</th>
             </tr>
           </thead>
@@ -559,7 +559,7 @@
               <td class="text-center">
                 {{ item.cantidad }}
               </td>
-              <td *ngIf="apiService.canVerCostosInventario()" class="text-end">
+              <td *ngIf="apiService.canEditarPrecioCompra()" class="text-end">
                 {{ item.precioUni | currency:'USD':'symbol':'1.2' }}
               </td>
               <td>
@@ -836,7 +836,7 @@
         </div>
 
         <div class="row">
-          <div class="col-md-6" *ngIf="apiService.canVerCostosInventario()">
+          <div class="col-md-6" *ngIf="apiService.canEditarPrecioCompra()">
             <div class="form-group mb-3">
               <label for="costo">Costo *</label>
               <input
@@ -850,7 +850,7 @@
                 placeholder="0.00">
             </div>
           </div>
-          <div [class.col-md-6]="apiService.canVerCostosInventario()" [class.col-md-12]="!apiService.canVerCostosInventario()">
+          <div [class.col-md-6]="apiService.canEditarPrecioCompra()" [class.col-md-12]="!apiService.canEditarPrecioCompra()">
             <div class="form-group mb-3">
               <label for="precio">Precio de Venta</label>
               <input

@@ -3,68 +3,99 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-
-use JWTAuth;
-use App\Models\Admin\Banco;
 use App\Http\Requests\Admin\Bancos\StoreOrDeleteBancoRequest;
+use App\Models\Admin\Banco;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
 class BancosController extends Controller
 {
-
-
-    public function index() {
-
-        $listaDeBancos = Banco::get();
-
-        $bancos = collect();
-
-        $bancos->push(['nombre' => 'Banco Agrícola', 'activo' => $listaDeBancos->where('nombre', 'Banco Agrícola')->first() ? true : false ]);
-        $bancos->push(['nombre' => 'Banco Azul', 'activo' => $listaDeBancos->where('nombre', 'Banco Azul')->first() ? true : false ]);
-        $bancos->push(['nombre' => 'BAC Credomatic', 'activo' => $listaDeBancos->where('nombre', 'BAC Credomatic')->first() ? true : false ]);
-        $bancos->push(['nombre' => 'Banco Cuscatlán', 'activo' => $listaDeBancos->where('nombre', 'Banco Cuscatlán')->first() ? true : false ]);
-        $bancos->push(['nombre' => 'Banco Promerica', 'activo' => $listaDeBancos->where('nombre', 'Banco Promerica')->first() ? true : false ]);
-        $bancos->push(['nombre' => 'Banco Davivienda', 'activo' => $listaDeBancos->where('nombre', 'Banco Davivienda')->first() ? true : false ]);
-        $bancos->push(['nombre' => 'Banco Fedecrédito', 'activo' => $listaDeBancos->where('nombre', 'Banco Fedecrédito')->first() ? true : false ]);
-        $bancos->push(['nombre' => 'Banco Atlántida', 'activo' => $listaDeBancos->where('nombre', 'Banco Atlántida')->first() ? true : false ]);
-        $bancos->push(['nombre' => 'Banco Industrial', 'activo' => $listaDeBancos->where('nombre', 'Banco Industrial')->first() ? true : false ]);
-        $bancos->push(['nombre' => 'Banrural', 'activo' => $listaDeBancos->where('nombre', 'Banrural')->first() ? true : false ]);
-        $bancos->push(['nombre' => 'Banco Hipotecario', 'activo' => $listaDeBancos->where('nombre', 'Banco Hipotecario')->first() ? true : false ]);
-
-        if (Auth::user()->empresa()->pluck('pais')->first() == 'Honduras') {
-            $bancos->push(['nombre' => 'Ficohsa', 'activo' => $listaDeBancos->where('nombre', 'Ficohsa')->first() ? true : false ]);
-        }
-
-        return Response()->json($bancos, 200);
-
+    public function index()
+    {
+        return response()->json($this->catalogWithActivoFlag(), 200);
     }
 
-    public function list() {
+    public function list()
+    {
+        $persisted = Banco::orderBy('nombre')->get();
+        if ($persisted->isNotEmpty()) {
+            return response()->json($persisted, 200);
+        }
 
-        $bancos = Banco::get();
+        // ponytail: sin bancos activados en BD, exponer catálogo del país para selects (abonos, ventas).
+        $fallback = $this->catalogWithActivoFlag()->map(fn (array $b) => ['nombre' => $b['nombre']])->values();
 
-        return Response()->json($bancos, 200);
-
+        return response()->json($fallback, 200);
     }
 
     public function storeOrDelete(StoreOrDeleteBancoRequest $request)
     {
-
         if (Banco::where('nombre', $request->nombre)->first()) {
             $banco = Banco::where('nombre', $request->nombre)->first();
             $banco->delete();
-            return Response()->json($banco, 201);
+
+            return response()->json($banco, 201);
         }
 
-
-        $banco = new Banco();
-
+        $banco = new Banco;
         $banco->fill($request->all());
         $banco->save();
 
-        return Response()->json($banco, 200);
-
+        return response()->json($banco, 200);
     }
 
+    /** @return Collection<int, array{nombre: string, activo: bool}> */
+    private function catalogWithActivoFlag(): Collection
+    {
+        $listaDeBancos = Banco::get();
+        $nombres = $this->catalogNamesForEmpresa();
+
+        return collect($nombres)->map(function (string $nombre) use ($listaDeBancos) {
+            return [
+                'nombre' => $nombre,
+                'activo' => $listaDeBancos->where('nombre', $nombre)->isNotEmpty(),
+            ];
+        });
+    }
+
+    /** @return list<string> */
+    private function catalogNamesForEmpresa(): array
+    {
+        $pais = Auth::user()?->empresa()?->pluck('pais')->first() ?? '';
+
+        if ($pais === 'Costa Rica') {
+            return [
+                'Banco Nacional de Costa Rica',
+                'Banco de Costa Rica',
+                'BAC Credomatic',
+                'Banco Popular',
+                'Scotiabank',
+                'Banco Promerica',
+                'Banco Davivienda',
+                'Banco Lafise',
+                'Banco Cathay',
+                'Coopenae',
+            ];
+        }
+
+        $bancos = [
+            'Banco Agrícola',
+            'Banco Azul',
+            'BAC Credomatic',
+            'Banco Cuscatlán',
+            'Banco Promerica',
+            'Banco Davivienda',
+            'Banco Fedecrédito',
+            'Banco Atlántida',
+            'Banco Industrial',
+            'Banrural',
+            'Banco Hipotecario',
+        ];
+
+        if ($pais === 'Honduras') {
+            $bancos[] = 'Ficohsa';
+        }
+
+        return $bancos;
+    }
 }

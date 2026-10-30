@@ -18,6 +18,25 @@ trait AuthorizesVerCostosInventario
         return $perm && $user->can($perm);
     }
 
+    /** Costo/precio en flujo de compras (incluye compras.editar_precio para supervisor limitado). */
+    protected function userCanEditarPrecioCompra(?Authenticatable $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        $editarPrecio = config('permissions.PERMISSION_COMPRAS.editar_precio');
+        if ($editarPrecio && $user->can($editarPrecio)) {
+            return true;
+        }
+
+        if ($user->hasRole(config('constants.ROL_SUPERVISOR_LIMITADO', 'supervisor_limitado'))) {
+            return false;
+        }
+
+        return $this->userCanVerCostosInventario($user);
+    }
+
     protected function authorizeVerCostosInventario(?Authenticatable $user): void
     {
         if (! $this->userCanVerCostosInventario($user)) {

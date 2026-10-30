@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -9,6 +9,7 @@ import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/n
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { BaseComponent } from '@shared/base/base.component';
+import { loadBancosParaAbono } from '@shared/utils/abono-bancos.util';
 
 @Component({
     selector: 'app-crear-abono-venta',
@@ -17,7 +18,7 @@ import { BaseComponent } from '@shared/base/base.component';
     imports: [CommonModule, RouterModule, FormsModule, NotificacionesContainerComponent],
 
 })
-export class CrearAbonoVentaComponent extends BaseComponent implements OnInit {
+export class CrearAbonoVentaComponent extends BaseComponent implements OnInit, OnChanges {
 
 	@Input() venta: any = {};
 	@Output() update = new EventEmitter();
@@ -40,49 +41,67 @@ export class CrearAbonoVentaComponent extends BaseComponent implements OnInit {
     }
 
 	ngOnInit() {
-        this.abono.total = this.venta.saldo;
+        this.inicializarAbono();
+        this.cargarFormasDePago();
+        this.cargarBancos();
+	}
+
+    ngOnChanges(changes: SimpleChanges): void {
+        if (changes['venta'] && !changes['venta'].firstChange) {
+            this.inicializarAbono();
+        }
+    }
+
+    private inicializarAbono(): void {
+        const saldo = (this.venta?.total ?? 0) - (this.venta?.abonos_sum_total ?? 0) - (this.venta?.devoluciones_sum_total ?? 0);
+        this.abono.total = this.venta?.saldo ?? saldo;
         this.abono.fecha = this.apiService.date();
         this.abono.id_venta = this.venta.id;
         this.abono.nombre_de = this.venta.nombre_cliente;
         this.abono.estado = 'Confirmado';
         this.abono.forma_pago = 'Efectivo';
         this.abono.detalle_banco = '';
+        this.abono.referencia = '';
         this.abono.id_sucursal = this.apiService.auth_user().id_sucursal;
         this.abono.id_empresa = this.apiService.auth_user().id_empresa;
         this.abono.id_usuario = this.apiService.auth_user().id;
+    }
 
+    private cargarFormasDePago(): void {
         this.apiService.getAll('formas-de-pago/list')
             .pipe(this.untilDestroyed())
             .subscribe(formaPagos => {
             this.formaPagos = formaPagos;
-            if (this.apiService.isModuloBancos() && this.abono.forma_pago && this.abono.forma_pago !== 'Efectivo' && this.abono.forma_pago !== 'Wompi') {
-                const formaPagoSeleccionada = formaPagos.find((fp: any) => fp.nombre === this.abono.forma_pago);
-                if (formaPagoSeleccionada?.banco?.nombre_banco && !this.abono.detalle_banco) {
-                    this.abono.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
-                }
-            }
+            this.cambioMetodoDePago();
         }, error => {this.alertService.error(error); });
+    }
 
-        if (this.apiService.isModuloBancos()) {
-            this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
+    private cargarBancos(): void {
+        loadBancosParaAbono(this.apiService)
+            .pipe(this.untilDestroyed())
+            .subscribe(bancos => {
                 this.bancos = bancos;
-            }, error => {this.alertService.error(error);});
-        } else {
-            this.apiService.getAll('bancos/list').subscribe(bancos => {
-                this.bancos = bancos;
-            }, error => {this.alertService.error(error);});
-        }
-	}
+            }, error => { this.alertService.error(error); });
+    }
+
+    public requiereBanco(): boolean {
+        const fp = this.abono?.forma_pago;
+        return !!fp && fp !== 'Efectivo' && fp !== 'Wompi';
+    }
 
     public cambioMetodoDePago() {
-        if (this.apiService.isModuloBancos() && this.abono.forma_pago && this.abono.forma_pago !== 'Efectivo' && this.abono.forma_pago !== 'Wompi') {
+        if (!this.requiereBanco()) {
+            this.abono.detalle_banco = '';
+            return;
+        }
+        if (this.apiService.isModuloBancos()) {
             const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.abono.forma_pago);
             if (formaPagoSeleccionada?.banco?.nombre_banco) {
                 this.abono.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
-            } else {
+            } else if (!this.bancos.some((b: any) => b.nombre_banco === this.abono.detalle_banco || b.nombre === this.abono.detalle_banco)) {
                 this.abono.detalle_banco = '';
             }
-        } else if (this.abono.forma_pago === 'Efectivo' || this.abono.forma_pago === 'Wompi') {
+        } else {
             this.abono.detalle_banco = '';
         }
     }
@@ -110,7 +129,6 @@ export class CrearAbonoVentaComponent extends BaseComponent implements OnInit {
             this.alertService.modal = false;
             this.saving = false;
 
-            //Generar partida contable
             if(this.apiService.auth_user().empresa.generar_partidas == 'Auto'){
                 this.apiService.store('contabilidad/partida/cxc', abono)
                     .pipe(this.untilDestroyed())

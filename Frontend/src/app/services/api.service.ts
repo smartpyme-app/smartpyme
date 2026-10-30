@@ -369,6 +369,23 @@ export class ApiService {
     return this.hasPermission('productos.inventario.ver_costos');
   }
 
+  /**
+   * Editar costo/precio unitario en compras y órdenes de compra.
+   * Supervisor limitado solo con compras.editar_precio; demás roles conservan ver costos de inventario.
+   */
+  canEditarPrecioCompra(): boolean {
+    if (this.supervisorLimitadoRestringidoEnCompras()) {
+      return false;
+    }
+    if (this.hasPermission('compras.editar_precio')) {
+      return true;
+    }
+    if (this.isSupervisorLimitado()) {
+      return false;
+    }
+    return this.hasPermission('productos.inventario.ver_costos');
+  }
+
   verifyRoleAdmin(): boolean {
     return this.permissionService.verifyRoleAdmin();
   }

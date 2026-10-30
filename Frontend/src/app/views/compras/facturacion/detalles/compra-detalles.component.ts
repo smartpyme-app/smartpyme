@@ -49,7 +49,7 @@ export class CompraDetallesComponent extends BaseModalComponent implements OnIni
     if (this.isOrdenCompra && this.ocultarMontosOrdenCompra) {
       return false;
     }
-    return !this.apiService.isSupervisorLimitado() && this.apiService.canVerCostosInventario();
+    return this.apiService.canEditarPrecioCompra();
   }
 
   public mostrarColumnaTotalOrdenCompra(): boolean {
@@ -79,7 +79,7 @@ export class CompraDetallesComponent extends BaseModalComponent implements OnIni
   }
 
   colspanDetalles(): number {
-    let cols = this.apiService.isSupervisorLimitado() ? 4 : 6;
+    let cols = this.apiService.canEditarPrecioCompra() ? 6 : 4;
     if (this.contabilidadHabilitada && this.apiService.canCreateTest('contabilidad.activos.capitalizar')) {
       cols += 1;
     }
