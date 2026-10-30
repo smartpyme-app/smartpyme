@@ -463,15 +463,40 @@
             </div>
             <div class="col-md-3">
               <label class="form-label small">Forma de pago</label>
-              <select class="form-select form-select-sm" [(ngModel)]="item.gasto.forma_pago" [name]="'bg-' + item.uid + '-fp'">
-                <option value="Efectivo">Efectivo</option>
-                <option value="Transferencia">Transferencia</option>
-                <option value="Cheque">Cheque</option>
-                <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
-                <option value="Tarjeta de Débito">Tarjeta de Débito</option>
-                <option value="Crédito">Crédito</option>
-                <option value="Otros">Otros</option>
+              <select
+                class="form-select form-select-sm"
+                [(ngModel)]="item.gasto.forma_pago"
+                (change)="onBulkFormaPagoChange(item)"
+                [name]="'bg-' + item.uid + '-fp'">
+                <option *ngFor="let forma of formaspagoBulk" [value]="forma.nombre">{{ forma.nombre }}</option>
               </select>
+            </div>
+            <div class="col-md-3" *ngIf="bulkRequiereBanco(item)">
+              <label class="form-label small">Banco</label>
+              <select
+                class="form-select form-select-sm"
+                [(ngModel)]="item.gasto.detalle_banco"
+                [name]="'bg-' + item.uid + '-banco'">
+                <option value="">Seleccione aquí</option>
+                @if (contabilidadHabilitada) {
+                  @for (banco of bancosBulk; track banco.id) {
+                    <option [value]="banco.nombre_banco">{{ banco.nombre_banco }}</option>
+                  }
+                } @else {
+                  @for (banco of bancosBulk; track banco.nombre) {
+                    <option [value]="banco.nombre">{{ banco.nombre }}</option>
+                  }
+                }
+              </select>
+            </div>
+            <div class="col-md-3" *ngIf="bulkRequiereBanco(item)">
+              <label class="form-label small">Referencia de pago</label>
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                [(ngModel)]="item.gasto.referencia_pago"
+                [name]="'bg-' + item.uid + '-ref-pago'"
+                placeholder="N.º de cheque o transferencia">
             </div>
             <div class="col-md-6">
               <label class="form-label small">Proveedor *</label>
