@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
+import { loadBancosParaAbono } from '@shared/utils/abono-bancos.util';
 
 @Component({
   selector: 'app-editar-abono',
@@ -31,15 +32,9 @@ export class EditarAbonoComponent implements OnInit {
       this.formaPagos = formaPagos;
     }, error => { this.alertService.error(error); });
 
-    if (this.apiService.isModuloBancos()) {
-      this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
-        this.bancos = bancos;
-      }, error => { this.alertService.error(error); });
-    } else {
-      this.apiService.getAll('bancos/list').subscribe(bancos => {
-        this.bancos = bancos;
-      }, error => { this.alertService.error(error); });
-    }
+    loadBancosParaAbono(this.apiService).subscribe(bancos => {
+      this.bancos = bancos;
+    }, error => { this.alertService.error(error); });
   }
 
   public requiereBanco(): boolean {

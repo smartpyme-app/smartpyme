@@ -9,6 +9,7 @@ import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/n
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { BaseComponent } from '@shared/base/base.component';
+import { loadBancosParaAbono } from '@shared/utils/abono-bancos.util';
 
 @Component({
     selector: 'app-crear-abono-compra',
@@ -54,15 +55,11 @@ export class CrearAbonoCompraComponent extends BaseComponent implements OnInit, 
             }
         }, error => {this.alertService.error(error); });
 
-        if (this.apiService.isModuloBancos()) {
-            this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
+        loadBancosParaAbono(this.apiService)
+            .pipe(this.untilDestroyed())
+            .subscribe(bancos => {
                 this.bancos = bancos;
             }, error => {this.alertService.error(error);});
-        } else {
-            this.apiService.getAll('bancos/list').subscribe(bancos => {
-                this.bancos = bancos;
-            }, error => {this.alertService.error(error);});
-        }
 	}
 
     ngOnChanges(changes: SimpleChanges) {

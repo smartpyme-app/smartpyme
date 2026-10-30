@@ -330,6 +330,7 @@ return [
         'crear' => 'compras.crear',
         'editar' => 'compras.editar',
         'eliminar' => 'compras.eliminar',
+        'editar_precio' => 'compras.editar_precio',
 
         'registros' => [
             'ver' => 'compras.registros.ver',

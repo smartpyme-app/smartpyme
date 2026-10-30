@@ -9,13 +9,13 @@
 
         <div class="form-group col-md-6">
             <label for="forma_pago">Forma de pago</label>
-            <select name="forma_pago" [(ngModel)]="abono.forma_pago" class="form-select">
+            <select name="forma_pago" (change)="cambioMetodoDePago()" [(ngModel)]="abono.forma_pago" class="form-select">
                 @for (forma of formaPagos; track forma.id) {
                     <option [value]="forma.nombre">{{ forma.nombre }}</option>
                 }
             </select>
         </div>
-        <div class="form-group col-md-12" *ngIf="abono.forma_pago != 'Efectivo' && abono.forma_pago != 'Wompi'">
+        <div class="form-group col-md-12" *ngIf="requiereBanco()">
             <label for="detalle_banco">Banco</label>
             <select name="detalle_banco" [(ngModel)]="abono.detalle_banco" class="form-select">
                 <option value="">Seleccione aquí</option>
@@ -27,7 +27,7 @@
                 </ng-container>
             </select>
         </div>
-        <div class="form-group col-md-12" *ngIf="abono.forma_pago != 'Efectivo' && abono.forma_pago != 'Wompi'">
+        <div class="form-group col-md-12" *ngIf="requiereBanco()">
             <label for="referencia">Referencia:</label>
             <input type="text" class="form-control" [(ngModel)]="abono.referencia" name="referencia">
         </div>
