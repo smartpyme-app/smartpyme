@@ -21,6 +21,13 @@ import { TratamientoFichaComponent } from './tratamientos/tratamiento-ficha.comp
 import { DiagnosticosPacienteComponent } from './diagnosticos/diagnosticos-paciente.component';
 import { DiagnosticoFormComponent } from './diagnosticos/diagnostico-form.component';
 import { DiagnosticoFichaComponent } from './diagnosticos/diagnostico-ficha.component';
+import { RecetasPacienteComponent } from './recetas/recetas-paciente.component';
+import { RecetaFormComponent } from './recetas/receta-form.component';
+import { RecetaFichaComponent } from './recetas/receta-ficha.component';
+import { VacunasPacienteComponent } from './vacunas/vacunas-paciente.component';
+import { VacunaFormComponent } from './vacunas/vacuna-form.component';
+import { VacunaFichaComponent } from './vacunas/vacuna-ficha.component';
+import { VacunasCatalogoComponent } from './vacunas/vacunas-catalogo.component';
 
 @NgModule({
   declarations: [
@@ -37,6 +44,13 @@ import { DiagnosticoFichaComponent } from './diagnosticos/diagnostico-ficha.comp
     DiagnosticosPacienteComponent,
     DiagnosticoFormComponent,
     DiagnosticoFichaComponent,
+    RecetasPacienteComponent,
+    RecetaFormComponent,
+    RecetaFichaComponent,
+    VacunasPacienteComponent,
+    VacunaFormComponent,
+    VacunaFichaComponent,
+    VacunasCatalogoComponent,
   ],
   imports: [
     CommonModule,
