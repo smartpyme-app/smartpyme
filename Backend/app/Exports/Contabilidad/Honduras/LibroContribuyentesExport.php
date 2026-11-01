@@ -4,6 +4,7 @@ namespace App\Exports\Contabilidad\Honduras;
 
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
+use App\Services\Contabilidad\LibroContribuyentesFilas;
 use App\Services\Contabilidad\LibroIvaMontosHelper;
 use App\Support\Honduras\FormatoCorrelativoHn;
 use Maatwebsite\Excel\Concerns\FromCollection;
@@ -258,30 +259,7 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
 
     private function registros(): Collection
     {
-        $request = $this->request;
-
-        $ventas = Venta::with(['cliente', 'documento'])
-            ->where('estado', '!=', 'Anulada')
-            ->where('cotizacion', 0)
-            ->whereHas('documento', fn ($q) => $q->whereIn('nombre', self::TIPOS_CONTRIBUYENTE))
-            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
-            ->whereBetween('fecha', [$request->inicio, $request->fin])
-            ->get()
-            ->map(fn ($v) => (object) ['registro' => $v, 'mult' => 1]);
-
-        $devoluciones = DevolucionVenta::with(['cliente', 'documento', 'venta.documento'])
-            ->where('enable', true)
-            ->whereHas('venta.documento', fn ($q) => $q->whereIn('nombre', self::TIPOS_CONTRIBUYENTE))
-            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
-            ->whereBetween('fecha', [$request->inicio, $request->fin])
-            ->get()
-            ->map(fn ($d) => (object) ['registro' => $d, 'mult' => -1]);
-
-        return collect()
-            ->concat($ventas)
-            ->concat($devoluciones)
-            ->sortBy(fn ($x) => [(string) $x->registro->fecha, (string) ($x->registro->correlativo ?? '')])
-            ->values();
+        return LibroContribuyentesFilas::registrosHonduras($this->request);
     }
 
     private function mapVenta(object $venta, int $no, int $mult = 1): array

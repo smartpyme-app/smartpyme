@@ -41,6 +41,7 @@ use App\Services\Contabilidad\LibroIvaResumenFiscalService;
 use App\Services\Contabilidad\CostaRica\ReporteDetalleIvaCrService;
 use App\Services\Contabilidad\LibrosIva\LibroIvaPaisResolver;
 use App\Services\Contabilidad\LibroConsumidoresFilas;
+use App\Services\Contabilidad\LibroContribuyentesFilas;
 use App\Services\Contabilidad\LibroIvaMontosHelper;
 
 class LibrosIvaSvController extends Controller
@@ -137,96 +138,12 @@ class LibrosIvaSvController extends Controller
     {
         $this->assertElSalvador();
 
-        $ventas = Venta::with(['cliente', 'documento'])
-            ->where('estado', '!=', 'Anulada')
-            ->whereHas('documento', function ($q) {
-                $q->where('nombre', 'Crédito fiscal');
-            })
-            ->when($request->id_sucursal, function ($query) use ($request) {
-                return $query->where('id_sucursal', $request->id_sucursal);
-            })
-            ->whereBetween('fecha', [$request->inicio, $request->fin])
-            ->where('cotizacion', 0)
-            ->get();
-
-        // Filtrar ventas según facturación electrónica
-        $ventasFiltradas = $this->facturacionElectronicaHelper->filtrarVentasPorFacturacionElectronica($ventas);
-
-        $ventasData = $ventasFiltradas->map(function ($venta) {
-            $cliente = optional($venta->cliente);
-
-            $codigoGeneracion = $this->facturacionElectronicaHelper->obtenerCodigoGeneracion($venta);
-            $numeroControl = $this->facturacionElectronicaHelper->obtenerNumeroControl($venta);
-            $sello = $this->facturacionElectronicaHelper->obtenerSello($venta);
-
-            return [
-                'fecha' => $venta->fecha,
-                'codigo_generacion' => $codigoGeneracion,
-                'numero_control' => $numeroControl,
-                'sello' => $sello,
-                'correlativo' => trim((string) $venta->correlativo),
-                'nombre_cliente' => $venta->nombre_cliente,
-                'nrc_cliente' => $cliente->ncr ?? $cliente->nit,
-                'ventas_exentas' => LibroIvaMontosHelper::ventasExentas($venta),
-                'ventas_internas_gravadas' => LibroIvaMontosHelper::ventasGravadas($venta),
-                'debito_fiscal' => (float) $venta->iva,
-                'ventas_exentas_a_cuenta_de_terceros' => 0.0,
-                'ventas_internas_gravadas_a_cuenta_de_terceros' => (float) $venta->cuenta_a_terceros,
-                'debito_fiscal_por_cuenta_de_terceros' => 0.0,
-                'iva_retenido' => (float) $venta->iva_retenido,
-                'iva_percibido' => (float) $venta->iva_percibido,
-                'total' => (float) $venta->total,
-            ];
-        });
-
-        $devoluciones = DevolucionVenta::with(['cliente', 'venta'])
-            ->where('enable', true)
-            ->whereHas('venta', function ($query) {
-                $query->where('estado', '!=', 'Anulada');
-            })
-            ->when($request->id_sucursal, function ($query) use ($request) {
-                return $query->where('id_sucursal', $request->id_sucursal);
-            })
-            ->whereBetween('fecha', [$request->inicio, $request->fin])
-            ->get();
-
-
-        // Transformar devoluciones
-        $devolucionesData = $devoluciones->map(function ($devolucion) {
-            $cliente = optional($devolucion->cliente);
-
-            $codigoGeneracion = $this->facturacionElectronicaHelper->obtenerCodigoGeneracionDevolucion($devolucion);
-            $numeroControl = $this->facturacionElectronicaHelper->obtenerNumeroControlDevolucion($devolucion);
-            $sello = $this->facturacionElectronicaHelper->obtenerSelloDevolucion($devolucion);
-
-            return [
-                'fecha' => $devolucion->fecha,
-                'codigo_generacion' => $codigoGeneracion,
-                'numero_control' => $numeroControl,
-                'sello' => $sello,
-                'correlativo' => trim((string) $devolucion->correlativo),
-                'nombre_cliente' => $devolucion->nombre_cliente,
-                'nrc_cliente' => $cliente->ncr ?? $cliente->nit,
-                'ventas_exentas' => LibroIvaMontosHelper::ventasExentas($devolucion) * -1,
-                'ventas_internas_gravadas' => LibroIvaMontosHelper::ventasGravadas($devolucion) * -1,
-                'debito_fiscal' => (float) $devolucion->iva * -1,
-                'ventas_exentas_a_cuenta_de_terceros' => 0.0,
-                'ventas_internas_gravadas_a_cuenta_de_terceros' => $devolucion->cuenta_a_terceros > 0 ? $devolucion->cuenta_a_terceros * -1 : $devolucion->cuenta_a_terceros,
-                'debito_fiscal_por_cuenta_de_terceros' => 0.0,
-                'iva_retenido' => $devolucion->iva_retenido > 0 ? $devolucion->iva_retenido * -1 : $devolucion->iva_retenido,
-                'iva_percibido' => $devolucion->iva_percibido > 0 ? $devolucion->iva_percibido * -1 : $devolucion->iva_percibido,
-                'total' => $devolucion->total > 0 ? $devolucion->total * -1 : $devolucion->total,
-            ];
-        });
-
-        // Unir y ordenar ambas colecciones por fecha
-        $librocontribuyentes = collect($ventasData)
-            ->merge($devolucionesData)
-            ->sortBy(function ($item) {
-                return [$item['fecha'], $item['correlativo']];
-            })
-            ->values()
-            ->all();
+        $facturacionElectronica = $this->facturacionElectronicaHelper->tieneFacturacionElectronica();
+        $librocontribuyentes = LibroContribuyentesFilas::filasElSalvador(
+            $request,
+            $facturacionElectronica,
+            $this->facturacionElectronicaHelper
+        );
 
         $totalesContribuyentes = collect($librocontribuyentes)->reduce(function ($carry, $item) {
             $carry['ventas_exentas'] += $item['ventas_exentas'];

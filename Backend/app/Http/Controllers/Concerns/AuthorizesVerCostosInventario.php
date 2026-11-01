@@ -18,6 +18,36 @@ trait AuthorizesVerCostosInventario
         return $perm && $user->can($perm);
     }
 
+    /** Ver costos en ficha de producto: permiso explícito o quien puede editar productos. */
+    protected function userCanVerCostosEnFichaProducto(?Authenticatable $user): bool
+    {
+        if ($this->userCanVerCostosInventario($user)) {
+            return true;
+        }
+
+        if (! $user) {
+            return false;
+        }
+
+        $editar = config('permissions.PERMISSION_PRODUCTOS.editar');
+        if ($editar && $user->can($editar)) {
+            return true;
+        }
+
+        $tipo = $user->tipo ?? null;
+        if (in_array($tipo, ['Administrador', 'Super Administrador'], true)) {
+            return true;
+        }
+
+        foreach ([config('constants.ROL_ADMIN'), config('constants.ROL_SUPER_ADMIN')] as $rol) {
+            if ($rol && method_exists($user, 'hasRole') && $user->hasRole($rol)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /** Costo/precio en flujo de compras (incluye compras.editar_precio para supervisor limitado). */
     protected function userCanEditarPrecioCompra(?Authenticatable $user): bool
     {
@@ -47,7 +77,7 @@ trait AuthorizesVerCostosInventario
     /** @param object $producto Modelo Eloquent Producto */
     protected function ocultarCostosProductoSiAplica(object $producto): void
     {
-        if ($this->userCanVerCostosInventario(auth()->user())) {
+        if ($this->userCanVerCostosEnFichaProducto(auth()->user())) {
             return;
         }
 

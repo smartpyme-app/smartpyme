@@ -106,7 +106,7 @@
                             <td>{{iva.codigo_generacion}}</td>
                             <td>{{iva.numero_control}}</td>
                             <td>{{iva.sello}}</td>
-                            <td class="text-nowrap"><span tooltip="{{ iva.nombre_cliente }}">{{iva.nombre_cliente | truncate:50}}</span></td>
+                            <td class="text-nowrap"><span [title]="iva.nombre_cliente">{{ iva.nombre_cliente | truncate:50 }}</span></td>
                             <td>{{iva.nrc_cliente}}</td>
                             <td class="text-end">{{iva.ventas_exentas | currency }}</td>
                             <td class="text-end">{{iva.ventas_internas_gravadas | currency}}</td>
@@ -122,15 +122,15 @@
                         }
                         <tr>
                             <td colspan="7" class="text-center"><b>Totales</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'ventas_exentas' | currency }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'ventas_internas_gravadas' | currency }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'debito_fiscal' | currency }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'ventas_exentas_a_cuenta_de_terceros' | currency }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'ventas_internas_gravadas_a_cuenta_de_terceros' | currency }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'debito_fiscal_por_cuenta_de_terceros' | currency }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'iva_retenido' | currency }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'iva_percibido' | currency }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'total' | currency }}</b></td>
+                            <td class="text-end"><b>{{ totales.ventas_exentas | currency }}</b></td>
+                            <td class="text-end"><b>{{ totales.ventas_internas_gravadas | currency }}</b></td>
+                            <td class="text-end"><b>{{ totales.debito_fiscal | currency }}</b></td>
+                            <td class="text-end"><b>{{ totales.ventas_exentas_a_cuenta_de_terceros | currency }}</b></td>
+                            <td class="text-end"><b>{{ totales.ventas_internas_gravadas_a_cuenta_de_terceros | currency }}</b></td>
+                            <td class="text-end"><b>{{ totales.debito_fiscal_por_cuenta_de_terceros | currency }}</b></td>
+                            <td class="text-end"><b>{{ totales.iva_retenido | currency }}</b></td>
+                            <td class="text-end"><b>{{ totales.iva_percibido | currency }}</b></td>
+                            <td class="text-end"><b>{{ totales.total | currency }}</b></td>
                         </tr>
                     </tbody>
                 </table>

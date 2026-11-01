@@ -10,7 +10,6 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService, ModalConfig } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
-import { SumPipe } from '@pipes/sum.pipe';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { empresaTieneImpuestoTurismo } from '@utils/impuestos-turismo.util';
 
@@ -22,13 +21,24 @@ import { TranslatePipe } from '@ngx-translate/core';
     selector: 'app-contribuyentes',
     templateUrl: './contribuyentes.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, SumPipe, TruncatePipe, LazyImageDirective, TranslatePipe, CurrencyPipe],
+    imports: [CommonModule, RouterModule, FormsModule, TruncatePipe, LazyImageDirective, TranslatePipe, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class ContribuyentesComponent extends BaseModalComponent implements OnInit {
 
     public ivas:any[] = [];
+    public totales = {
+        ventas_exentas: 0,
+        ventas_internas_gravadas: 0,
+        debito_fiscal: 0,
+        ventas_exentas_a_cuenta_de_terceros: 0,
+        ventas_internas_gravadas_a_cuenta_de_terceros: 0,
+        debito_fiscal_por_cuenta_de_terceros: 0,
+        iva_retenido: 0,
+        iva_percibido: 0,
+        total: 0,
+    };
     public years:any[] = [];
     public sucursales:any[] = [];
     public override loading:boolean = false;
@@ -97,9 +107,36 @@ export class ContribuyentesComponent extends BaseModalComponent implements OnIni
           .pipe(this.untilDestroyed())
           .subscribe(ivas => {
             this.ivas = ivas;
+            this.totales = this.calcularTotales(ivas);
             this.loading = false;
             this.cdr.markForCheck();
         }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
+    }
+
+    private calcularTotales(ivas: any[]): typeof this.totales {
+        const totales = {
+            ventas_exentas: 0,
+            ventas_internas_gravadas: 0,
+            debito_fiscal: 0,
+            ventas_exentas_a_cuenta_de_terceros: 0,
+            ventas_internas_gravadas_a_cuenta_de_terceros: 0,
+            debito_fiscal_por_cuenta_de_terceros: 0,
+            iva_retenido: 0,
+            iva_percibido: 0,
+            total: 0,
+        };
+        for (const iva of ivas ?? []) {
+            totales.ventas_exentas += Number(iva.ventas_exentas) || 0;
+            totales.ventas_internas_gravadas += Number(iva.ventas_internas_gravadas) || 0;
+            totales.debito_fiscal += Number(iva.debito_fiscal) || 0;
+            totales.ventas_exentas_a_cuenta_de_terceros += Number(iva.ventas_exentas_a_cuenta_de_terceros) || 0;
+            totales.ventas_internas_gravadas_a_cuenta_de_terceros += Number(iva.ventas_internas_gravadas_a_cuenta_de_terceros) || 0;
+            totales.debito_fiscal_por_cuenta_de_terceros += Number(iva.debito_fiscal_por_cuenta_de_terceros) || 0;
+            totales.iva_retenido += Number(iva.iva_retenido) || 0;
+            totales.iva_percibido += Number(iva.iva_percibido) || 0;
+            totales.total += Number(iva.total) || 0;
+        }
+        return totales;
     }
 
     public setTime() {
