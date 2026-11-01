@@ -8,6 +8,7 @@ use App\Models\Ventas\Venta;
 use App\Support\NombreComercial;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Filas del libro de ventas a contribuyentes (SV y consulta base HN).
@@ -35,25 +36,53 @@ class LibroContribuyentesFilas
         'ventas.id_cliente',
     ];
 
-    /** @var list<string> */
-    private const DEVOLUCION_SELECT = [
-        'devoluciones_venta.id',
-        'devoluciones_venta.fecha',
-        'devoluciones_venta.correlativo',
-        'devoluciones_venta.codigo_generacion',
-        'devoluciones_venta.numero_control',
-        'devoluciones_venta.sello_mh',
-        'devoluciones_venta.exenta',
-        'devoluciones_venta.gravada',
-        'devoluciones_venta.sub_total',
-        'devoluciones_venta.no_sujeta',
-        'devoluciones_venta.iva',
-        'devoluciones_venta.cuenta_a_terceros',
-        'devoluciones_venta.iva_retenido',
-        'devoluciones_venta.iva_percibido',
-        'devoluciones_venta.total',
-        'devoluciones_venta.id_cliente',
-    ];
+    /** @return list<string> */
+    private static function devolucionSelect(): array
+    {
+        // ponytail: gravada/iva_percibido no existen en todas las BD; montos salen de sub_total/iva vía LibroIvaMontosHelper.
+        $cols = [
+            'devoluciones_venta.id',
+            'devoluciones_venta.fecha',
+            'devoluciones_venta.correlativo',
+            'devoluciones_venta.codigo_generacion',
+            'devoluciones_venta.numero_control',
+            'devoluciones_venta.sello_mh',
+            'devoluciones_venta.exenta',
+            'devoluciones_venta.sub_total',
+            'devoluciones_venta.no_sujeta',
+            'devoluciones_venta.iva',
+            'devoluciones_venta.cuenta_a_terceros',
+            'devoluciones_venta.iva_retenido',
+            'devoluciones_venta.total',
+            'devoluciones_venta.id_cliente',
+        ];
+        if (Schema::hasColumn('devoluciones_venta', 'gravada')) {
+            $cols[] = 'devoluciones_venta.gravada';
+        }
+        if (Schema::hasColumn('devoluciones_venta', 'iva_percibido')) {
+            $cols[] = 'devoluciones_venta.iva_percibido';
+        }
+
+        return $cols;
+    }
+
+    /** @return list<string> */
+    private static function clienteJoinSelect(): array
+    {
+        $cols = [
+            'clientes.ncr as cliente_ncr',
+            'clientes.nit as cliente_nit',
+            'clientes.nombre as cliente_nombre',
+            'clientes.apellido as cliente_apellido',
+            'clientes.nombre_empresa as cliente_nombre_empresa',
+            'clientes.tipo as cliente_tipo',
+        ];
+        if (Schema::hasColumn('clientes', 'nombre_comercial')) {
+            $cols[] = 'clientes.nombre_comercial as cliente_nombre_comercial';
+        }
+
+        return $cols;
+    }
 
     /**
      * @return list<array<string, mixed>>
@@ -80,18 +109,22 @@ class LibroContribuyentesFilas
     {
         $tipos = LibroContribuyentesExport::TIPOS_CONTRIBUYENTE;
 
-        $ventas = self::queryVentasSv($request, false, $tipos)
-            ->addSelect('documentos.numero_emision as documento_numero_emision')
-            ->get()
+        $ventasQuery = self::queryVentasSv($request, false, $tipos);
+        if (Schema::hasColumn('documentos', 'numero_emision')) {
+            $ventasQuery->addSelect('documentos.numero_emision as documento_numero_emision');
+        }
+        $ventas = $ventasQuery->get()
             ->map(function ($v) {
                 $v->numero_emision = $v->documento_numero_emision ?? null;
 
                 return (object) ['registro' => self::ventaDesdeFila($v), 'mult' => 1];
             });
 
-        $devoluciones = self::queryDevolucionesSv($request, $tipos)
-            ->addSelect('documentos.numero_emision as documento_numero_emision')
-            ->get()
+        $devolucionesQuery = self::queryDevolucionesSv($request, $tipos);
+        if (Schema::hasColumn('documentos', 'numero_emision')) {
+            $devolucionesQuery->addSelect('documentos.numero_emision as documento_numero_emision');
+        }
+        $devoluciones = $devolucionesQuery->get()
             ->map(function ($d) {
                 $d->numero_emision = $d->documento_numero_emision ?? null;
 
@@ -122,15 +155,7 @@ class LibroContribuyentesFilas
                 $query->whereNotNull('ventas.sello_mh')
                     ->where('ventas.sello_mh', '!=', '');
             })
-            ->select(array_merge(self::VENTA_SELECT, [
-                'clientes.ncr as cliente_ncr',
-                'clientes.nit as cliente_nit',
-                'clientes.nombre as cliente_nombre',
-                'clientes.apellido as cliente_apellido',
-                'clientes.nombre_empresa as cliente_nombre_empresa',
-                'clientes.nombre_comercial as cliente_nombre_comercial',
-                'clientes.tipo as cliente_tipo',
-            ]))
+            ->select(array_merge(self::VENTA_SELECT, self::clienteJoinSelect()))
             ->orderBy('ventas.fecha')
             ->orderBy('ventas.correlativo');
     }
@@ -149,15 +174,7 @@ class LibroContribuyentesFilas
             ->whereIn('documentos.nombre', $tiposDocumento)
             ->when($request->id_sucursal, fn ($q) => $q->where('devoluciones_venta.id_sucursal', $request->id_sucursal))
             ->whereBetween('devoluciones_venta.fecha', [$request->inicio, $request->fin])
-            ->select(array_merge(self::DEVOLUCION_SELECT, [
-                'clientes.ncr as cliente_ncr',
-                'clientes.nit as cliente_nit',
-                'clientes.nombre as cliente_nombre',
-                'clientes.apellido as cliente_apellido',
-                'clientes.nombre_empresa as cliente_nombre_empresa',
-                'clientes.nombre_comercial as cliente_nombre_comercial',
-                'clientes.tipo as cliente_tipo',
-            ]))
+            ->select(array_merge(self::devolucionSelect(), self::clienteJoinSelect()))
             ->orderBy('devoluciones_venta.fecha')
             ->orderBy('devoluciones_venta.correlativo');
     }

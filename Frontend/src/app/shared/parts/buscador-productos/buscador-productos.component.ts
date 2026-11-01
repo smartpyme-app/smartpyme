@@ -22,6 +22,8 @@ export class BuscadorProductosComponent implements OnInit {
 
     @Output() selectProducto = new EventEmitter();
     @Input() id_bodega?: number; // Parámetro opcional para filtrar por bodega
+    /** Composiciones / modales: evita productos/list y buscar-by-query con relaciones pesadas. */
+    @Input() busquedaLigera = false;
     searchControl = new FormControl();
 
     public productos:any = [];
@@ -43,15 +45,35 @@ export class BuscadorProductosComponent implements OnInit {
             debounceTime(500),
             filter((query: string) => query?.trim().length > 0), // Validación para evitar errores con `null` o `undefined`.
             switchMap((query: any) => {
-              // Decidir qué endpoint usar basado en si se proporciona id_bodega
+              const term = String(query ?? '').trim();
+              if (term.length < 2) {
+                return of([]);
+              }
+
+              if (this.busquedaLigera) {
+                return this.apiService.getAll('productos/search', {
+                  q: term,
+                  limit: 25,
+                  tipos: ['Producto', 'Compuesto', 'Servicio', 'Materia Prima'],
+                  fields: ['medida', 'nombre_variante', 'precio'],
+                }).pipe(
+                  catchError(error => {
+                    console.error('Error en la búsqueda:', error);
+                    this.productos = [];
+                    this.loading = false;
+                    return of([]);
+                  }),
+                );
+              }
+
               let endpoint = 'productos/buscar-by-query';
-              let params = `query=${encodeURIComponent(query)}`;
-              
+              let params = `query=${encodeURIComponent(term)}`;
+
               if (this.id_bodega) {
                 endpoint = 'productos/buscar-by-query-bodega';
                 params += `&id_bodega=${this.id_bodega}`;
               }
-              
+
               return this.apiService.getAll(`${endpoint}?${params}`).pipe(
                 catchError(error => {
                   console.error('Error en la búsqueda:', error);
