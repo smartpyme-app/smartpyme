@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 import { AlertService } from '@services/alert.service';
@@ -15,7 +17,7 @@ import Swal from 'sweetalert2';
     selector: 'app-paquetes',
     templateUrl: './paquetes.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, ImportarExcelComponent],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PopoverModule, TooltipModule, PaginationComponent, ImportarExcelComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 
@@ -60,15 +62,18 @@ export class PaquetesComponent extends BaseCrudComponent<any> implements OnInit 
     }
 
     ngOnInit() {
-        this.apiService.getAll('clientes/list')
-            .pipe(this.untilDestroyed())
-            .subscribe(clientes => { 
-                this.clientes = clientes;
-                this.cdr.markForCheck();
-            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
-
         this.getGuias();
         this.loadAll();
+        this.loadClientes();
+    }
+
+    private loadClientes(): void {
+        this.apiService.getAll('clientes/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(clientes => {
+                this.clientes = clientes;
+                this.cdr.markForCheck();
+            }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     private getGuias() {   

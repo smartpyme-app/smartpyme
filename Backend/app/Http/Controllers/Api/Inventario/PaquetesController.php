@@ -26,7 +26,7 @@ class PaquetesController extends Controller
             ? ($request->filled('id_sucursal') ? $request->id_sucursal : null)
             : $user->id_sucursal;
 
-        $paquetes = Paquete::with('cliente', 'proveedor')
+        $paquetes = Paquete::with('cliente', 'usuario', 'asesor')
                                 ->when($sucursalFiltro, function ($q) use ($sucursalFiltro) {
                                     return $q->where('id_sucursal', $sucursalFiltro);
                                 })

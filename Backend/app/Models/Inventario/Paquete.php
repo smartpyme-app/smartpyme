@@ -66,22 +66,24 @@ class Paquete extends AuditableModel {
         });
     }
 
-     public function getNombreClienteAttribute()
-    {   $cliente = $this->cliente()->first();
+    public function getNombreClienteAttribute()
+    {
+        $cliente = $this->cliente;
         if ($cliente) {
             return $cliente->nombreParaDocumento();
         }
+
         return 'Consumidor Final';
     }
 
     public function getNombreUsuarioAttribute()
     {
-        return $this->usuario()->pluck('name')->first();
+        return $this->usuario?->name;
     }
 
     public function getNombreAsesorAttribute()
     {
-        return $this->asesor()->pluck('name')->first();
+        return $this->asesor?->name;
     }
 
     public function empresa(){
