@@ -122,7 +122,10 @@ class LibroContribuyentesFilas
 
         $devolucionesQuery = self::queryDevolucionesSv($request, $tipos);
         if (Schema::hasColumn('documentos', 'numero_emision')) {
-            $devolucionesQuery->addSelect('documentos.numero_emision as documento_numero_emision');
+            $devolucionesQuery
+                ->leftJoin('ventas as ventas_libro_hn', 'ventas_libro_hn.id', '=', 'devoluciones_venta.id_venta')
+                ->leftJoin('documentos as documentos_libro_hn', 'documentos_libro_hn.id', '=', 'ventas_libro_hn.id_documento')
+                ->addSelect('documentos_libro_hn.numero_emision as documento_numero_emision');
         }
         $devoluciones = $devolucionesQuery->get()
             ->map(function ($d) {
@@ -165,13 +168,14 @@ class LibroContribuyentesFilas
      */
     private static function queryDevolucionesSv(object $request, array $tiposDocumento): EloquentBuilder
     {
+        // ponytail: whereHas evita join ventas/documentos (id_empresa ambiguo + duplicados); mismo criterio que el libro legacy.
         return DevolucionVenta::query()
-            ->join('ventas', 'ventas.id', '=', 'devoluciones_venta.id_venta')
-            ->join('documentos', 'documentos.id', '=', 'ventas.id_documento')
             ->leftJoin('clientes', 'clientes.id', '=', 'devoluciones_venta.id_cliente')
             ->where('devoluciones_venta.enable', true)
-            ->where('ventas.estado', '!=', 'Anulada')
-            ->whereIn('documentos.nombre', $tiposDocumento)
+            ->whereHas('venta', function ($q) use ($tiposDocumento) {
+                $q->where('estado', '!=', 'Anulada')
+                    ->whereHas('documento', fn ($dq) => $dq->whereIn('nombre', $tiposDocumento));
+            })
             ->when($request->id_sucursal, fn ($q) => $q->where('devoluciones_venta.id_sucursal', $request->id_sucursal))
             ->whereBetween('devoluciones_venta.fecha', [$request->inicio, $request->fin])
             ->select(array_merge(self::devolucionSelect(), self::clienteJoinSelect()))
