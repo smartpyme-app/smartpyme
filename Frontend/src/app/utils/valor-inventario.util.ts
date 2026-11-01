@@ -46,8 +46,14 @@ function parseCostoProducto(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+export type ProductoCamposCosto = {
+  costo?: unknown;
+  costo_promedio?: unknown;
+  costo_anterior?: unknown;
+};
+
 export function costoProductoParaMargen(
-  producto: { costo?: number; costo_promedio?: number; costo_anterior?: number } | null | undefined,
+  producto: ProductoCamposCosto | null | undefined,
   modo: ValorInventarioModo,
 ): number {
   const p = producto ?? {};
@@ -66,7 +72,7 @@ export function costoProductoParaMargen(
 
 /** Si el campo activo está vacío pero hay costo en otro campo, copia para edición/visualización. */
 export function rellenarCampoCostoActivoSiVacio(
-  producto: { costo?: unknown; costo_promedio?: unknown; costo_anterior?: unknown } | null | undefined,
+  producto: ProductoCamposCosto | null | undefined,
   modo: ValorInventarioModo,
 ): void {
   if (!producto) {
