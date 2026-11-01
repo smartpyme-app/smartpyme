@@ -26,7 +26,11 @@ class PaquetesController extends Controller
             ? ($request->filled('id_sucursal') ? $request->id_sucursal : null)
             : $user->id_sucursal;
 
-        $paquetes = Paquete::with('cliente', 'usuario', 'asesor')
+        $paquetes = Paquete::with([
+                                'cliente:id,nombre,apellido,nombre_empresa,nombre_comercial,tipo',
+                                'usuario:id,name',
+                                'asesor:id,name',
+                            ])
                                 ->when($sucursalFiltro, function ($q) use ($sucursalFiltro) {
                                     return $q->where('id_sucursal', $sucursalFiltro);
                                 })
@@ -70,8 +74,14 @@ class PaquetesController extends Controller
                                             ->orWhere('num_seguimiento', 'like', '%' . $term . '%');
                                     });
                                 })
-                                ->orderBy($request->orden ? $request->orden : 'nombre', $request->direccion ? $request->direccion : 'desc')
+                                ->orderBy($request->orden ?: 'id', $request->direccion ?: 'desc')
                                 ->paginate($request->paginate);
+
+        $paquetes->getCollection()->transform(function (Paquete $paquete) {
+            $paquete->makeHidden(['cliente', 'usuario', 'asesor']);
+
+            return $paquete;
+        });
 
         return Response()->json($paquetes, 200);
 
@@ -106,7 +116,9 @@ class PaquetesController extends Controller
     public function read($id) {
 
         $paquete = Paquete::where('id', $id)
-                                ->with('cliente', 'proveedor', 'boxfulShipment.parcels')
+                                ->with([
+                                    'cliente:id,nombre,apellido,nombre_empresa,nombre_comercial,tipo',
+                                ])
                                 ->firstOrFail();
 
         return Response()->json($paquete, 200);

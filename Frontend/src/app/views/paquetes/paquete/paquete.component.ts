@@ -3,33 +3,32 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { NgSelectModule } from '@ng-select/ng-select';
 import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
+import { SelectSearchComponent } from '@shared/parts/select-search/select-search.component';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
-
-import * as moment from 'moment';
+import { Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 
 @Component({
     selector: 'app-paquete',
     templateUrl: './paquete.component.html',
     styleUrls: ['./paquete.component.css'],
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearClienteComponent],
+    imports: [CommonModule, RouterModule, FormsModule, CrearClienteComponent, SelectSearchComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PaqueteComponent implements OnInit {
 
     public paquete:any = {};
-    public categorias:any = [];
-    public proveedores:any = [];
     public usuarios:any = [];
     public sucursales:any = [];
-    public clientes:any = [];
+    /** Solo el cliente ya elegido (edición); la búsqueda va por API. */
+    public clienteLookup: any[] = [];
     public loading = false;
     public saving = false;
     modalRef?: BsModalRef;
@@ -45,29 +44,39 @@ export class PaqueteComponent implements OnInit {
 
 	ngOnInit() {
         this.loadAll();
+        this.loadCatalogos();
+    }
 
+    private loadCatalogos(): void {
         this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe(sucursales => {
             this.sucursales = sucursales;
             this.cdr.markForCheck();
-        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
+        }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
 
         this.apiService.getAll('usuarios/list').pipe(this.untilDestroyed()).subscribe(usuarios => {
             this.usuarios = usuarios;
             this.cdr.markForCheck();
-        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
-
-        this.apiService.getAll('proveedores/list').pipe(this.untilDestroyed()).subscribe(proveedores => {
-            this.proveedores = proveedores;
-            this.loading = false;
-            this.cdr.markForCheck();
-        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
-
-        this.apiService.getAll('clientes/list').pipe(this.untilDestroyed()).subscribe(clientes => {
-            this.clientes = clientes;
-            this.loading = false;
-            this.cdr.markForCheck();
-        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
+        }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
     }
+
+    searchClientes = (term: string): Observable<any[]> => {
+        if (!term || term.length < 2) {
+            return of([]);
+        }
+        return this.apiService.getAll(`clientes/search?q=${encodeURIComponent(term)}`).pipe(
+            map((response: any) => (Array.isArray(response) ? response : response?.data ?? [])),
+            catchError(() => of([])),
+        );
+    };
+
+    getClienteDisplay = (cliente: any): string => {
+        const legal = cliente?.tipo === 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
+        const comercial = String(cliente?.nombre_comercial ?? '').trim();
+        if (!comercial || comercial.toLowerCase() === String(legal ?? '').trim().toLowerCase()) {
+            return legal;
+        }
+        return `${legal} (${comercial})`;
+    };
 
     public loadAll(){
         const id = +this.route.snapshot.paramMap.get('id')!;
@@ -75,6 +84,7 @@ export class PaqueteComponent implements OnInit {
             this.loading = true;
             this.apiService.read('paquete/', id).pipe(this.untilDestroyed()).subscribe(paquete => {
                 this.paquete = paquete;
+                this.clienteLookup = paquete?.cliente ? [paquete.cliente] : [];
                 this.loading = false;
                 this.cdr.markForCheck();
             }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
@@ -94,9 +104,9 @@ export class PaqueteComponent implements OnInit {
 
     }
 
-    public setProveedor(proveedor:any){
-        this.proveedores.push(proveedor);
-        this.paquete.id_proveedor = proveedor.id;
+    public setCliente(cliente: any): void {
+        this.clienteLookup = [cliente];
+        this.paquete.id_cliente = cliente.id;
         this.cdr.markForCheck();
     }
 

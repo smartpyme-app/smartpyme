@@ -51,15 +51,17 @@
             <div class="form-group col-md-6 col-lg-4">
                 <label for="id_cliente" class="w-100">Cliente:</label>
                 <div class="input-group flex-nowrap">
-                    <ng-select name="id_cliente" [(ngModel)]="paquete.id_cliente" class="form-select p-0">
-                        <ng-option value="">Seleccione aquí</ng-option>
-                        @for (cliente of clientes; track cliente.id) {
-                            <ng-option [value]="cliente.id">
-                                {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}@if (cliente.nombre_comercial) { ({{ cliente.nombre_comercial }}) }
-                            </ng-option>
-                        }
-                    </ng-select>
-                    <app-crear-cliente (update)="setProveedor($event)"></app-crear-cliente>
+                    <app-select-search
+                        name="id_cliente"
+                        [(ngModel)]="paquete.id_cliente"
+                        [items]="clienteLookup"
+                        [searchFunction]="searchClientes"
+                        [customDisplayFunction]="getClienteDisplay"
+                        valueProperty="id"
+                        placeholder="Buscar cliente..."
+                        cssClass="form-select p-0"
+                    ></app-select-search>
+                    <app-crear-cliente (update)="setCliente($event)"></app-crear-cliente>
                 </div>
             </div>
             <div class="form-group col-md-8">
