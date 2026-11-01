@@ -286,10 +286,11 @@ class ProductosController extends Controller
 
     public function searchProductos(Request $request)
     {
-        $term = $request->get('q', '');
-        $limit = $request->get('limit', 15);
-        $tipos = $request->get('tipos', ['Producto']);
-        $extraFields = $request->get('fields', []);
+        $term = trim((string) $request->get('q', ''));
+        $limit = (int) $request->get('limit', 15);
+        $limit = max(1, min($limit, 50));
+        $tipos = $this->normalizarTiposBusquedaProducto($request->get('tipos', ['Producto']));
+        $extraFields = $request->input('fields', []);
 
         if (strlen($term) < 2) {
             return response()->json([], 200);
@@ -305,6 +306,8 @@ class ProductosController extends Controller
             ->where(function ($q) use ($term, $incluirComponenteQuimico, $incluirNombreComercial) {
                 $q->where('nombre', 'LIKE', "%{$term}%")
                     ->orWhere('nombre_variante', 'LIKE', "%{$term}%")
+                    ->orWhere('codigo', 'LIKE', "%{$term}%")
+                    ->orWhere('barcode', 'LIKE', "%{$term}%")
                     ->orWhereRaw("CONCAT(nombre, ' (', COALESCE(nombre_variante, ''), ')') LIKE ?", ["%{$term}%"]);
                 if ($incluirComponenteQuimico) {
                     $q->orWhere('componente_quimico', 'LIKE', "%{$term}%");
@@ -322,14 +325,33 @@ class ProductosController extends Controller
             ->orderBy('nombre', 'asc')
             ->limit($limit);
 
-        if (!empty($extraFields) && is_array($extraFields)) {
-            $fields = array_merge(['id', 'nombre', 'codigo', 'precio', 'tipo'], $extraFields);
+        if (! empty($extraFields) && is_array($extraFields)) {
+            $fields = array_values(array_unique(array_merge(
+                ['id', 'nombre', 'codigo', 'barcode', 'precio', 'tipo'],
+                $extraFields
+            )));
             $productos = $query->get($fields);
         } else {
             $productos = $query->get();
         }
 
+        // ponytail: sin appends (img/nombre_categoria) en modales — evita N+1 y timeouts.
+        $productos->each(fn (Producto $p) => $p->setAppends([]));
+
         return response()->json($productos, 200);
+    }
+
+    /** @return list<string> */
+    private function normalizarTiposBusquedaProducto(mixed $tipos): array
+    {
+        if (is_string($tipos)) {
+            $tipos = array_filter(array_map('trim', explode(',', $tipos)));
+        }
+        if (! is_array($tipos) || $tipos === []) {
+            return ['Producto'];
+        }
+
+        return array_values($tipos);
     }
 
     public function search($txt)

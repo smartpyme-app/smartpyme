@@ -27,13 +27,13 @@
           class="text-muted d-block">Nombre comercial: {{ producto.nombre_comercial }}</small>
         <small *ngIf="isComponenteQuimicoHabilitado() && producto.componente_quimico"
           class="text-muted d-block">Comp. químico: {{ producto.componente_quimico }}</small>
-        <small><span class="badge bg-light text-muted">{{ producto.nombre_categoria }}</span> <span
+        <small><span *ngIf="producto.nombre_categoria" class="badge bg-light text-muted">{{ producto.nombre_categoria }}</span> <span
             class="ms-3 badge bg-light text-muted">{{ producto.tipo }}</span></small>
       </span>
-      <span class="col-2 text-center" id="stock">
+      <span class="col-2 text-center" id="stock" *ngIf="!busquedaLigera">
         <span *ngIf="producto.tipo != 'Servicio'">{{ producto.inventarios | sum:'stock' }} <small>en stock</small></span>
       </span>
-      <span class="col-2 text-end">
+      <span [class]="busquedaLigera ? 'col-4 text-end' : 'col-2 text-end'">
         <span class="badge bg-info p-1">{{ producto.precio | currency}}</span>
       </span>
     </a>

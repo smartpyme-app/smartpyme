@@ -49,18 +49,25 @@ export class BuscadorProductosComponent implements OnInit {
               if (term.length < 2) {
                 return of([]);
               }
+              this.loading = true;
+              this.cdr.markForCheck();
 
               if (this.busquedaLigera) {
-                return this.apiService.getAll('productos/search', {
-                  q: term,
-                  limit: 25,
-                  tipos: ['Producto', 'Compuesto', 'Servicio', 'Materia Prima'],
-                  fields: ['medida', 'nombre_variante', 'precio'],
-                }).pipe(
-                  catchError(error => {
+                const tipos = ['Producto', 'Compuesto', 'Servicio', 'Materia Prima'];
+                const tiposQs = tipos.map((t) => `tipos[]=${encodeURIComponent(t)}`).join('&');
+                const fieldsQs = ['medida', 'nombre_variante', 'barcode']
+                  .map((f) => `fields[]=${encodeURIComponent(f)}`)
+                  .join('&');
+                const url =
+                  `productos/search?q=${encodeURIComponent(term)}&limit=25&${tiposQs}&${fieldsQs}`;
+
+                return this.apiService.getAll(url).pipe(
+                  catchError((error) => {
                     console.error('Error en la búsqueda:', error);
+                    this.alertService.error(error);
                     this.productos = [];
                     this.loading = false;
+                    this.cdr.markForCheck();
                     return of([]);
                   }),
                 );
