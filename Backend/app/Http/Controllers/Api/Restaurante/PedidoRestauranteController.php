@@ -616,6 +616,10 @@ class PedidoRestauranteController extends Controller
             'detalles.*.descuento' => 'nullable|numeric|min:0',
             'detalles.*.descuento_porcentaje' => 'nullable|numeric|min:0',
             'detalles.*.notas' => 'nullable|string|max:2000',
+            'detalles.*.lote_id' => 'nullable|integer',
+            'detalles.*.lotes_asignados' => 'nullable|array',
+            'detalles.*.lotes_asignados.*.lote_id' => 'required|integer',
+            'detalles.*.lotes_asignados.*.cantidad' => 'required|numeric|min:0.0001',
         ]);
 
         foreach ($validated['detalles'] as $row) {
@@ -711,6 +715,10 @@ class PedidoRestauranteController extends Controller
             'detalles.*.descuento' => 'nullable|numeric|min:0',
             'detalles.*.descuento_porcentaje' => 'nullable|numeric|min:0',
             'detalles.*.notas' => 'nullable|string|max:2000',
+            'detalles.*.lote_id' => 'nullable|integer',
+            'detalles.*.lotes_asignados' => 'nullable|array',
+            'detalles.*.lotes_asignados.*.lote_id' => 'required|integer',
+            'detalles.*.lotes_asignados.*.cantidad' => 'required|numeric|min:0.0001',
         ]);
 
         if (isset($validated['detalles'])) {
