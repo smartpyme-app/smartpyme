@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Compras\Gastos;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreAbonoGastoRequest extends FormRequest
 {
@@ -26,6 +27,13 @@ class StoreAbonoGastoRequest extends FormRequest
             'estado' => ['required', 'string', 'max:255'],
             'forma_pago' => ['required', 'string', 'max:255'],
             'detalle_banco' => ['required_unless:forma_pago,Efectivo', 'string'],
+            'referencia' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::requiredIf(fn () => $this->input('forma_pago') === 'Cheque'),
+                Rule::when($this->input('forma_pago') === 'Cheque', ['regex:/^\d+$/']),
+            ],
             'total' => ['required', 'numeric', 'min:0'],
             'id_gasto' => ['required', 'integer', 'exists:egresos,id'],
             'id_usuario' => ['required', 'integer', 'exists:users,id'],
@@ -52,6 +60,9 @@ class StoreAbonoGastoRequest extends FormRequest
             'forma_pago.required' => 'La forma de pago es requerida.',
             'forma_pago.max' => 'La forma de pago no puede exceder 255 caracteres.',
             'detalle_banco.required_unless' => 'El detalle del banco es requerido cuando la forma de pago no es Efectivo.',
+            'referencia.required' => 'La referencia (número de cheque) es obligatoria cuando la forma de pago es Cheque.',
+            'referencia.regex' => 'La referencia debe ser el número de cheque (solo dígitos).',
+            'referencia.max' => 'La referencia no puede exceder 255 caracteres.',
             'total.required' => 'El total es requerido.',
             'total.numeric' => 'El total debe ser un número.',
             'total.min' => 'El total no puede ser negativo.',
