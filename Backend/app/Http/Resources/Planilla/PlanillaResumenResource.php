@@ -27,6 +27,7 @@ class PlanillaResumenResource extends JsonResource
             'total_aportes_patronales' => $this->total_aportes_patronales,
             'anio' => $this->anio,
             'mes' => $this->mes,
+            'id_cuenta_banco' => $this->id_cuenta_banco,
             'cantidad_empleados' => $this->when(isset($this->detalles_count), $this->detalles_count),
             'empresa' => $this->whenLoaded('empresa', function () {
                 return [

@@ -46,7 +46,7 @@ class CotizacionService
         }
 
         if (isset($cotizacionData['estado']) && is_string($cotizacionData['estado'])) {
-            $cotizacionData['estado'] = strtolower($cotizacionData['estado']);
+            $cotizacionData['estado'] = CotizacionConstants::normalizarEstado($cotizacionData['estado']);
         }
 
         // Excluir campos que no aplican a cotizaciones

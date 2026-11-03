@@ -10,7 +10,7 @@
                     </th>
                     <th>Producto</th>
                     <th style="width: 150px;">Cantidad</th>
-                    <th style="width: 150px;">Costo</th>
+                    <th style="width: 150px;" *ngIf="apiService.canVerCostosInventario()">Costo</th>
                     <th style="width: 150px;">Descuento</th>
                     <th style="width: 100px;" class="text-right">Total</th>
                     <th style="width: 50px;" class="text-center"><i class="fa fa-cog"></i></th>
@@ -54,7 +54,7 @@
                      <td style="width: 150px;">
                         <input type="number" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control"  name="cantidad">
                     </td>
-                    <td style="width: 150px;">
+                    <td style="width: 150px;" *ngIf="apiService.canVerCostosInventario()">
                         <input type="number" [(ngModel)]="detalle.costo" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control"  name="costo">
                     </td>
                     <td style="width: 150px;">

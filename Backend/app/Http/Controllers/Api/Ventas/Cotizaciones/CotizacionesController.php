@@ -412,7 +412,11 @@ class CotizacionesController extends Controller
         }
 
         $cotizacion = CotizacionVenta::findOrFail($request->id);
-        $cotizacion->estado = $request->estado;
+        $estado = (string) $request->estado;
+        if (! in_array($estado, CotizacionConstants::estadosPermitidos(), true)) {
+            abort(422, 'Estado de cotización no válido.');
+        }
+        $cotizacion->estado = $estado;
         $cotizacion->save();
         return Response()->json($cotizacion, 200);
     }
@@ -425,7 +429,7 @@ class CotizacionesController extends Controller
 
         $cotizacion = CotizacionVenta::with('detalles')->findOrFail($request->id);
         $nuevaCotizacion = $cotizacion->replicate();
-        $nuevaCotizacion->estado = 'pendiente';
+        $nuevaCotizacion->estado = CotizacionConstants::ESTADO_PENDIENTE;
         $nuevaCotizacion->correlativo = null;
         $nuevaCotizacion->save();
 

@@ -58,7 +58,7 @@ export class CotizacionFormComponent extends BaseComponent implements OnInit {
       fecha_pago: this.apiService.date(),
       forma_pago: 'Efectivo',
       tipo: 'Interna',
-      estado: 'pendiente',
+      estado: 'Pendiente',
       detalle_banco: '',
       id_cliente: '',
       detalles: [],

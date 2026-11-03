@@ -4,6 +4,7 @@ import { AuthService } from '@services/auth.service';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Router, ActivatedRoute } from '@angular/router';
 import { pareceErrorHaciendaCr } from './facturacion-electronica/hacienda-cr-error.parser';
+import { sanitizeApiErrorMessage } from '@shared/utils/api-error-message.util';
 
 @Injectable({
   providedIn: 'root',
@@ -155,15 +156,16 @@ export class AlertService {
             const messageRaw = body['message'];
             const errorRaw = body['error'];
             const tituloRaw = body['titulo'];
-            const mensaje =
+            const mensaje = sanitizeApiErrorMessage(
                 (typeof messageRaw === 'string' ? messageRaw : undefined)
                 ?? (typeof errorRaw === 'string' ? errorRaw : undefined)
-                ?? this.normalizeUnknownError(message);
+                ?? this.normalizeUnknownError(message)
+            );
             const titulo = (typeof tituloRaw === 'string' && tituloRaw.trim()) ? tituloRaw : 'Lo sentimos';
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': titulo, 'mensaje' : mensaje});
         }
         else {
-            const mensaje = this.normalizeUnknownError(message);
+            const mensaje = sanitizeApiErrorMessage(this.normalizeUnknownError(message));
             this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Lo sentimos', 'mensaje' : mensaje});
         }
     }
@@ -201,7 +203,7 @@ export class AlertService {
             return 'Ocurrió un error inesperado.';
         }
         if (typeof message === 'string') {
-            return message;
+            return sanitizeApiErrorMessage(message);
         }
         if (typeof message === 'number' || typeof message === 'boolean') {
             return String(message);
@@ -245,7 +247,7 @@ export class AlertService {
                 }
                 if (body.error) {
                     if (typeof body.error === 'string') {
-                        return body.error;
+                        return sanitizeApiErrorMessage(body.error);
                     }
                     if (Array.isArray(body.error)) {
                         return body.error.map((e: string) => `- ${e}`).join('<br>');

@@ -2,6 +2,10 @@
 
 namespace App\Http\Requests\MH;
 
+use App\Models\Compras\Compra;
+use App\Models\Compras\Gastos\Gasto;
+use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
+use App\Models\Ventas\Venta;
 use Illuminate\Foundation\Http\FormRequest;
 
 class EnviarDTERequest extends FormRequest
@@ -12,6 +16,79 @@ class EnviarDTERequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->filled('tipo_dte')) {
+            return;
+        }
+
+        $fromPayload = GenerarDTEAnuladoRequest::tipoDteFromDte($this->input('dte'));
+        if ($fromPayload !== null) {
+            $this->merge(['tipo_dte' => $fromPayload]);
+
+            return;
+        }
+
+        $id = $this->input('id');
+        if (! is_numeric($id)) {
+            return;
+        }
+
+        $tipo = self::tipoDteFromRegistroId((int) $id, $this->input('tipo'));
+        if ($tipo !== null) {
+            $this->merge(['tipo_dte' => $tipo]);
+        }
+    }
+
+    /**
+     * Resuelve tipo_dte cuando el cliente envía solo id (p. ej. fila de ventas sin columna tipo_dte).
+     */
+    public static function tipoDteFromRegistroId(int $id, mixed $tipoRegistro = null): ?string
+    {
+        if ($tipoRegistro === 'compra') {
+            $registro = Compra::query()->find($id);
+
+            return $registro ? GenerarDTEAnuladoRequest::tipoDteFromRegistro($registro) : null;
+        }
+
+        if ($tipoRegistro === 'gasto') {
+            $registro = Gasto::query()->find($id);
+
+            return $registro ? GenerarDTEAnuladoRequest::tipoDteFromRegistro($registro) : null;
+        }
+
+        $venta = Venta::query()->find($id);
+        if ($venta) {
+            $tipo = GenerarDTEAnuladoRequest::tipoDteFromRegistro($venta);
+            if ($tipo !== null) {
+                return $tipo;
+            }
+        }
+
+        $devolucion = DevolucionVenta::query()->find($id);
+        if ($devolucion) {
+            $tipo = GenerarDTEAnuladoRequest::tipoDteFromRegistro($devolucion);
+            if ($tipo !== null) {
+                return $tipo;
+            }
+        }
+
+        $compra = Compra::query()->find($id);
+        if ($compra) {
+            $tipo = GenerarDTEAnuladoRequest::tipoDteFromRegistro($compra);
+            if ($tipo !== null) {
+                return $tipo;
+            }
+        }
+
+        $gasto = Gasto::query()->find($id);
+        if ($gasto) {
+            return GenerarDTEAnuladoRequest::tipoDteFromRegistro($gasto);
+        }
+
+        return null;
     }
 
     /**

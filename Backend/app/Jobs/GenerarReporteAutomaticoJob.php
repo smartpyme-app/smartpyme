@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Mail\ReporteVentasPorVendedor;
 use App\Models\Admin\ReporteExportacion;
+use App\Services\Contabilidad\ContabilidadReporteStorageService;
 use App\Services\Reportes\ReporteAutomaticoGenerator;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -43,21 +44,25 @@ class GenerarReporteAutomaticoJob implements ShouldQueue
         $exportacion->save();
 
         try {
-            $configuracion = $exportacion->configuracion;
-            if (!$configuracion) {
-                throw new \RuntimeException('Configuración de reporte no encontrada');
+            if ($exportacion->tipo_reporte && ! $exportacion->id_configuracion) {
+                $resultado = app(ContabilidadReporteStorageService::class)->generate($exportacion);
+            } else {
+                $configuracion = $exportacion->configuracion;
+                if (! $configuracion) {
+                    throw new \RuntimeException('Configuración de reporte no encontrada');
+                }
+
+                $fechaInicio = $exportacion->fecha_inicio->format('Y-m-d');
+                $fechaFin = $exportacion->fecha_fin->format('Y-m-d');
+
+                $resultado = $generator->generate(
+                    $configuracion,
+                    $fechaInicio,
+                    $fechaFin,
+                    $exportacion->sucursales,
+                    $exportacion->formato
+                );
             }
-
-            $fechaInicio = $exportacion->fecha_inicio->format('Y-m-d');
-            $fechaFin = $exportacion->fecha_fin->format('Y-m-d');
-
-            $resultado = $generator->generate(
-                $configuracion,
-                $fechaInicio,
-                $fechaFin,
-                $exportacion->sucursales,
-                $exportacion->formato
-            );
 
             $absolute = storage_path('app/' . $resultado['ruta']);
 

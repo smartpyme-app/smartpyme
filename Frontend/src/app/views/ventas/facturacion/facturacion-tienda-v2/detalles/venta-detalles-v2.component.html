@@ -88,7 +88,8 @@
             (alMenosUnPaqueteConCuentaTerceros)="onAlMenosUnPaqueteCuentaTercerosEnListado()"
             (selectCliente)="selectCliente.emit($event)"></app-tienda-venta-paquetes-v2>
         <app-tienda-venta-citas *ngIf="usuario.empresa.modulo_citas && venta.cotizacion != 1" [venta]="venta"
-            (productoSelect)="productoSelect($event)"></app-tienda-venta-citas>
+            (productoSelect)="productoSelect($event)"
+            (selectCliente)="selectCliente.emit($event)"></app-tienda-venta-citas>
     </div>
 </div>
 <div class="row">

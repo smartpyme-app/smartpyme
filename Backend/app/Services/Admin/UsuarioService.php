@@ -98,10 +98,16 @@ class UsuarioService
     {
         $user = JWTAuth::parseToken()->authenticate();
 
-        return User::where('id_empresa', $user->id_empresa)
-            ->where('id_sucursal', $user->id_sucursal)
-            ->where('name', 'like', '%' . $texto . '%')
-            ->paginate(15);
+        $query = User::where('id_empresa', $user->id_empresa);
+
+        if ($user->tipo !== 'Administrador') {
+            $query->where('id_sucursal', $user->id_sucursal);
+        }
+
+        return $query->where(function ($q) use ($texto) {
+            $q->where('name', 'like', '%' . $texto . '%')
+                ->orWhere('email', 'like', '%' . $texto . '%');
+        })->paginate(15);
     }
 
     /**

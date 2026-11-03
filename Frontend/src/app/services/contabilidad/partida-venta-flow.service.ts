@@ -20,6 +20,9 @@ export class PartidaVentaFlowService {
   constructor(private apiService: ApiService) {}
 
   generarPartida(venta: { id: number }): Observable<unknown> {
+    if (!this.apiService.canGenerarPartidaContable('venta', true)) {
+      return throwError(() => ({ error: { message: 'Sin permiso para generar partida de venta.' } }));
+    }
     return this.runWithDetalleSinProductoRetry(() =>
       this.apiService.store('contabilidad/partida/venta', venta)
     );

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { Router } from '@angular/router';
@@ -66,9 +66,21 @@ const BLOQUE_VACIO: ResumenOperacionBloque = {
   standalone: true,
   imports: [CommonModule, LibroIvaHdNavComponent, LibroIvaPeriodoFiltrosComponent, TranslatePipe, CurrencyPipe],
   templateUrl: './libro-iva-hd-contribuyentes.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LibroIvaHdContribuyentesComponent implements OnInit {
   filas: LibroContribuyentesHnFila[] = [];
+  totalesFilas = {
+    exentas: 0,
+    no_sujetas: 0,
+    gravadas_locales: 0,
+    debito_fiscal: 0,
+    cta_terceros: 0,
+    debito_cta_terceros: 0,
+    iva_percibido: 0,
+    iva_retenido: 0,
+    total: 0,
+  };
   resumenOperaciones: LibroContribuyentesHnResumenOperaciones = {
     totales_detalle: { ...BLOQUE_VACIO },
     consumidor_final: { ...BLOQUE_VACIO },
@@ -85,7 +97,8 @@ export class LibroIvaHdContribuyentesComponent implements OnInit {
     public apiService: ApiService,
     private alertService: AlertService,
     private router: Router,
-    private libroIvaPais: LibroIvaPaisService
+    private libroIvaPais: LibroIvaPaisService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -107,40 +120,30 @@ export class LibroIvaHdContribuyentesComponent implements OnInit {
     );
   }
 
-  get totalExentas(): number {
-    return this.filas.reduce((s, r) => s + (r.exentas || 0), 0);
-  }
-
-  get totalNoSujetas(): number {
-    return this.filas.reduce((s, r) => s + (r.no_sujetas || 0), 0);
-  }
-
-  get totalGravadasLocales(): number {
-    return this.filas.reduce((s, r) => s + (r.gravadas_locales || 0), 0);
-  }
-
-  get totalDebitoFiscal(): number {
-    return this.filas.reduce((s, r) => s + (r.debito_fiscal || 0), 0);
-  }
-
-  get totalCtaTerceros(): number {
-    return this.filas.reduce((s, r) => s + (r.cta_terceros || 0), 0);
-  }
-
-  get totalDebitoCtaTerceros(): number {
-    return this.filas.reduce((s, r) => s + (r.debito_cta_terceros || 0), 0);
-  }
-
-  get totalIvaPercibido(): number {
-    return this.filas.reduce((s, r) => s + (r.iva_percibido || 0), 0);
-  }
-
-  get totalIvaRetenido(): number {
-    return this.filas.reduce((s, r) => s + (r.iva_retenido || 0), 0);
-  }
-
-  get totalGeneral(): number {
-    return this.filas.reduce((s, r) => s + (r.total || 0), 0);
+  private recalcularTotalesFilas(): void {
+    const t = {
+      exentas: 0,
+      no_sujetas: 0,
+      gravadas_locales: 0,
+      debito_fiscal: 0,
+      cta_terceros: 0,
+      debito_cta_terceros: 0,
+      iva_percibido: 0,
+      iva_retenido: 0,
+      total: 0,
+    };
+    for (const r of this.filas) {
+      t.exentas += r.exentas || 0;
+      t.no_sujetas += r.no_sujetas || 0;
+      t.gravadas_locales += r.gravadas_locales || 0;
+      t.debito_fiscal += r.debito_fiscal || 0;
+      t.cta_terceros += r.cta_terceros || 0;
+      t.debito_cta_terceros += r.debito_cta_terceros || 0;
+      t.iva_percibido += r.iva_percibido || 0;
+      t.iva_retenido += r.iva_retenido || 0;
+      t.total += r.total || 0;
+    }
+    this.totalesFilas = t;
   }
 
   loadData(): void {
@@ -149,11 +152,14 @@ export class LibroIvaHdContribuyentesComponent implements OnInit {
     this.apiService.getAll('libro-iva-hd/contribuyentes', this.filtros).subscribe(
       (data: LibroContribuyentesHnResponse) => {
         this.filas = data?.filas ?? [];
+        this.recalcularTotalesFilas();
         this.resumenOperaciones = this.normalizarResumen(data?.resumen_operaciones);
         this.loading = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.filas = [];
+        this.recalcularTotalesFilas();
         this.resumenOperaciones = {
           totales_detalle: { ...BLOQUE_VACIO },
           consumidor_final: { ...BLOQUE_VACIO },
@@ -162,6 +168,7 @@ export class LibroIvaHdContribuyentesComponent implements OnInit {
         };
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
   }

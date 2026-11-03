@@ -44,6 +44,12 @@ import {
     debeUsarIvaEmpresaProducto,
     resolverPorcentajeImpuestoCompra,
 } from '@utils/impuestos-compra.util';
+import {
+  costoProductoParaMargen,
+  etiquetaCostoInventario,
+  rellenarCampoCostoActivoSiVacio,
+  valorInventarioModo,
+} from '@utils/valor-inventario.util';
 
 @Component({
     selector: 'app-producto-informacion',
@@ -95,6 +101,30 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
 
   get currencySymbol(): string {
     return getEmpresaCurrencySymbol(this.apiService.auth_user()?.empresa);
+  }
+
+  valorInventarioModo() {
+    return valorInventarioModo(this.apiService.auth_user()?.empresa?.valor_inventario);
+  }
+
+  costoVisibleParaMargen(): number {
+    return costoProductoParaMargen(this.producto, this.valorInventarioModo());
+  }
+
+  /** Mismo criterio que el API en read de producto (ver_costos o editar producto). */
+  puedeVerCostoProducto(): boolean {
+    if (this.apiService.isVentasLimitado()) {
+      return false;
+    }
+    return (
+      this.apiService.canVerCostosInventario() ||
+      this.apiService.canEditTest('productos.editar') ||
+      this.apiService.isAdminCreate()
+    );
+  }
+
+  etiquetaCostoInventario(): string {
+    return etiquetaCostoInventario(this.valorInventarioModo());
   }
 
   constructor(
@@ -213,6 +243,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['producto']) {
+      rellenarCampoCostoActivoSiVacio(this.producto, this.valorInventarioModo());
       this.aplicarPantallasProducto();
       this.normalizarCategoriaProducto();
       this.inicializarImpuestosProducto();

@@ -32,7 +32,7 @@ export class DevolucionCompraComponent extends BaseComponent implements OnInit {
     modalRef!: BsModalRef;
     
 	constructor( 
-	    private apiService: ApiService, private alertService: AlertService,
+	    public apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router,
 	    private modalService: BsModalService,
 	    private cdr: ChangeDetectorRef

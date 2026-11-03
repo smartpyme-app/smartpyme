@@ -131,36 +131,38 @@
               <ng-template #accionesTemplate>
                 <div class="d-flex flex-column align-items-start">
                  
-                  @if ((orden.estado == 'aceptada' || orden.estado == 'creada' || orden.estado == 'en_proceso') && apiService.canEdit()) {
+                  @if ((orden.estado == 'aceptada' || orden.estado == 'creada' || orden.estado == 'en_proceso') && apiService.canEditTest('ventas.ordenes_produccion.editar')) {
                       <a routerLink="/orden-produccion/editar/{{orden.id}}" 
                          class="btn">
                         <i class="fa fa-fw fa-edit"></i> Editar
                       </a>
                   }
-                  @if (orden.estado == 'creada' && apiService.canEdit()) {
+                  @if (orden.estado == 'creada' && apiService.canEditTest('ventas.ordenes_produccion.editar')) {
                       <a (click)="changeStateOrden(orden.id, 'aceptada')"
                          class="btn">
                         <i class="fa fa-fw fa-edit"></i> Cambiar a Aceptada
                       </a>
                   }
-                  @if (orden.estado == 'aceptada' && apiService.canEdit()) {
+                  @if (orden.estado == 'aceptada' && apiService.canEditTest('ventas.ordenes_produccion.editar')) {
                       <a (click)="changeStateOrden(orden.id, 'en_proceso')"
                          class="btn">
                         <i class="fa fa-fw fa-edit"></i> Cambiar a En Proceso
                       </a>
                   }
-                  @if (orden.estado == 'en_proceso' && apiService.canEdit()) {
+                  @if (orden.estado == 'en_proceso' && apiService.canEditTest('ventas.ordenes_produccion.editar')) {
                       <a (click)="changeStateOrden(orden.id, 'completada')"
                          class="btn">
                         <i class="fa fa-fw fa-edit"></i> Cambiar a Completada
                       </a>
                   }
+                  @if (apiService.hasPermission('ventas.ordenes_produccion.ver')) {
                   <a routerLink="/orden-produccion/detalles/{{orden.id}}" class="btn">
                     <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                   </a>
                   <a (click)="imprimir(orden)" class="btn">
                     <i class="fa fa-fw fa-print"></i> Imprimir
                   </a>
+                  }
                   <!-- Poder anular la orden -->
                   <!-- <a *ngIf="orden.estado != 'anulada' && apiService.canDeleteTest('ventas.ordenes_produccion.eliminar')"  -->
                   <!-- && apiService.canDelete()"  -->
@@ -170,7 +172,7 @@
                         <i class="fa fa-fw fa-ban"></i> Anular
                       </a>
                   }
-                  @if (orden.estado == 'completada' && !orden.facturada) {
+                  @if (orden.estado == 'completada' && !orden.facturada && apiService.hasPermission('ventas.crear')) {
                       <a routerLink="/venta/crear" [queryParams]="{ facturar_cotizacion: 1, id_venta: orden.id_cotizacion_venta }" class="btn">
                         <i class="fa fa-fw fa-money-bill"></i> Facturar
                     </a>

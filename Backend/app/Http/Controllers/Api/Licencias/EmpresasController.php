@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Licencias;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
+use App\Models\Admin\Empresa as EmpresaAdmin;
 use App\Models\Licencias\Empresa;
 use Auth;
 use App\Http\Requests\Licencias\StoreLicenciaEmpresaRequest;
@@ -34,6 +35,28 @@ class EmpresasController extends Controller
         $empresas = Empresa::where('id_licencia', $licencia->id)->get();
 
         return Response()->json($empresas, 200);
+    }
+
+    /** Empresas del sistema aún no vinculadas a la licencia (modal organización). */
+    public function selectParaLicencia()
+    {
+        $empresaSesion = Auth::user()->empresa()->first();
+        $licencia = $empresaSesion?->licencia()->first()
+            ?? $empresaSesion?->licenciaEmpresa?->licencia;
+        if (! $licencia) {
+            abort(403, 'Licencia no disponible.');
+        }
+
+        $enLicencia = Empresa::where('id_licencia', $licencia->id)->pluck('id_empresa');
+
+        $empresas = EmpresaAdmin::query()
+            ->whereNotIn('id', $enLicencia)
+            ->where('id', '!=', (int) $licencia->id_empresa)
+            ->orderBy('nombre')
+            ->limit(500)
+            ->get(['id', 'nombre']);
+
+        return response()->json($empresas, 200);
     }
 
     public function store(StoreLicenciaEmpresaRequest $request){

@@ -4,19 +4,46 @@ namespace App\Constants;
 
 class CotizacionConstants
 {
-    const ESTADO_PENDIENTE = 'pendiente';
-    const ESTADO_ACEPTADA = 'aceptada';
-    const ESTADO_PERDIDA = 'perdida';
-    const ESTADO_ANULADA = 'anulada';
+    const ESTADO_PENDIENTE = 'Pendiente';
     const ESTADO_FACTURADA = 'Facturada';
-    const ESTADO_ENVIADA = 'enviada';
+    const ESTADO_ANULADA = 'Anulada';
+
+    public static function estadosPermitidos(): array
+    {
+        return [
+            self::ESTADO_PENDIENTE,
+            self::ESTADO_FACTURADA,
+            self::ESTADO_ANULADA,
+        ];
+    }
+
+    /** Canonical PascalCase para UI/API (BD puede tener legacy en minúsculas). */
+    public static function normalizarEstado(?string $estado): ?string
+    {
+        if ($estado === null || trim($estado) === '') {
+            return $estado;
+        }
+
+        if (in_array($estado, self::estadosPermitidos(), true)) {
+            return $estado;
+        }
+
+        $e = mb_strtolower(trim($estado));
+
+        return match ($e) {
+            'pendiente', 'enviada', 'borrador', 'aceptada' => self::ESTADO_PENDIENTE,
+            'facturada' => self::ESTADO_FACTURADA,
+            'anulada', 'vencida', 'cancelada' => self::ESTADO_ANULADA,
+            default => ucfirst($e),
+        };
+    }
 
     /** Ventas Limitado: pendiente factura, facturada imprime, el resto no actúa. */
     public static function accionVentasLimitado(?string $estado): ?string
     {
-        return match (mb_strtolower(trim((string) $estado))) {
-            'pendiente' => 'facturar',
-            'facturada' => 'imprimir',
+        return match (self::normalizarEstado($estado)) {
+            self::ESTADO_PENDIENTE => 'facturar',
+            self::ESTADO_FACTURADA => 'imprimir',
             default => null,
         };
     }

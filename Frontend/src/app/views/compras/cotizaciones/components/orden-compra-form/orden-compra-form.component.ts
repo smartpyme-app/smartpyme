@@ -32,6 +32,8 @@ export class OrdenCompraFormComponent implements OnInit {
   bodegas: any[] = [];
   usuarios: any[] = [];
   documentos: any[] = [];
+  /** Catálogo completo; `documentos` se filtra por sucursal de la bodega. */
+  private documentosTodos: any[] = [];
   proveedores: any[] = [];
   proyectos: any[] = [];
   detalles: any[] = [];
@@ -57,7 +59,7 @@ export class OrdenCompraFormComponent implements OnInit {
       id: [null],
       fecha: [this.apiService.date(), Validators.required],
       id_usuario: [this.apiService.auth_user().id, Validators.required],
-      id_bodega: [null],
+      id_bodega: [null, Validators.required],
       tipo_documento: [null],
       referencia: [null],
       id_proveedor: [null, Validators.required],
@@ -95,9 +97,15 @@ export class OrdenCompraFormComponent implements OnInit {
         this.sucursales = sucursales;
         this.bodegas = bodegas;
         this.usuarios = usuarios;
-        this.documentos = documentos;
+        this.documentosTodos = documentos;
         this.proveedores = proveedores;
         this.proyectos = proyectos;
+        if (!this.activatedRoute.snapshot.params['id']) {
+          const user = this.apiService.auth_user();
+          this.ordenCompraForm?.patchValue({ id_bodega: user.id_bodega ?? null });
+        }
+        this.filtrarDocumentosPorSucursal();
+        this.aplicarDocumentoOrdenCompraPorDefecto();
         this.cdr.markForCheck();
       }
     ).catch(
@@ -115,6 +123,7 @@ export class OrdenCompraFormComponent implements OnInit {
           .pipe(this.untilDestroyed())
           .subscribe(compra => {
           this.ordenCompraForm?.patchValue(compra);
+          this.filtrarDocumentosPorSucursal();
           const detalles = [...(compra.detalles ?? [])];
           this.detalles = detalles;
           // Nueva referencia de compra: CompraDetallesComponent usa OnPush y no detecta solo mutar .detalles
@@ -128,6 +137,76 @@ export class OrdenCompraFormComponent implements OnInit {
         });
       }
     });
+  }
+
+  public onBodegaChange(): void {
+    this.filtrarDocumentosPorSucursal();
+    const tipo = this.ordenCompraForm?.get('tipo_documento')?.value;
+    if (tipo) {
+      this.aplicarCorrelativoDocumento(tipo);
+    } else {
+      this.aplicarDocumentoOrdenCompraPorDefecto();
+    }
+    this.cdr.markForCheck();
+  }
+
+  public onTipoDocumentoChange(): void {
+    const tipo = this.ordenCompraForm?.get('tipo_documento')?.value;
+    if (tipo) {
+      this.aplicarCorrelativoDocumento(tipo);
+    }
+    this.cdr.markForCheck();
+  }
+
+  private idSucursalDesdeBodega(idBodega: number | string | null | undefined): number | null {
+    const bodega = this.bodegas.find((b: { id: number }) => b.id == idBodega);
+    return bodega?.id_sucursal ?? null;
+  }
+
+  private filtrarDocumentosPorSucursal(): void {
+    const pool = this.documentosTodos.length ? this.documentosTodos : this.documentos;
+    const idSucursal = this.idSucursalDesdeBodega(this.ordenCompraForm?.get('id_bodega')?.value);
+    const esOrdenCompraActiva = (d: { nombre?: string; activo?: boolean | number }) =>
+      d.nombre === 'Orden de compra' && (d.activo === true || d.activo === 1);
+    if (idSucursal == null) {
+      this.documentos = pool.filter(esOrdenCompraActiva);
+      return;
+    }
+    this.documentos = pool.filter(
+      (d: { id_sucursal?: number; nombre?: string; activo?: boolean | number }) =>
+        d.id_sucursal == idSucursal && esOrdenCompraActiva(d),
+    );
+  }
+
+  private aplicarCorrelativoDocumento(nombre: string): void {
+    const doc = (this.documentos || []).find((d: { nombre?: string }) => d.nombre === nombre);
+    if (doc?.correlativo != null && doc.correlativo !== '') {
+      this.ordenCompraForm?.patchValue({ referencia: doc.correlativo });
+    }
+  }
+
+  /** Si existe documento «Orden de compra», preselecciona tipo y correlativo (referencia). */
+  private aplicarDocumentoOrdenCompraPorDefecto(): void {
+    if (this.activatedRoute.snapshot.params['id']) {
+      return;
+    }
+    const nombre = 'Orden de compra';
+    const doc = (this.documentos || []).find(
+      (d: { nombre?: string; activo?: boolean | number }) =>
+        d?.nombre === nombre && (d.activo === true || d.activo === 1),
+    );
+    const patch: { tipo_documento?: string; referencia?: number | string } = {};
+    if (doc?.nombre) {
+      patch.tipo_documento = doc.nombre;
+      if (doc.correlativo != null && doc.correlativo !== '') {
+        patch.referencia = doc.correlativo;
+      }
+    } else if ((this.documentos || []).length === 1) {
+      patch.tipo_documento = this.documentos[0].nombre;
+    }
+    if (Object.keys(patch).length) {
+      this.ordenCompraForm?.patchValue(patch);
+    }
   }
 
   public sumTotal() {
@@ -149,8 +228,11 @@ export class OrdenCompraFormComponent implements OnInit {
       - parseFloat(this.impuestos.renta_retenida)).toFixed(2);
   }
   async onSubmit() {
+    const idBodega = this.ordenCompraForm?.get('id_bodega')?.value;
+    const idSucursal = this.idSucursalDesdeBodega(idBodega);
     const postData = {
       ...this.ordenCompraForm?.getRawValue(),
+      ...(idSucursal != null ? { id_sucursal: idSucursal } : {}),
       detalles: this.detalles,
       deletedDetalles: this.deletedDetalles
     };

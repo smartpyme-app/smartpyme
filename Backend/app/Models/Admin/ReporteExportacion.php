@@ -23,6 +23,8 @@ class ReporteExportacion extends Model
         'id_empresa',
         'id_usuario',
         'id_configuracion',
+        'tipo_reporte',
+        'parametros',
         'modo',
         'formato',
         'estado',
@@ -36,6 +38,7 @@ class ReporteExportacion extends Model
     ];
 
     protected $casts = [
+        'parametros' => 'array',
         'sucursales' => 'array',
         'destinatarios' => 'array',
         'fecha_inicio' => 'date:Y-m-d',

@@ -473,7 +473,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
             if (confirm(this.countryI18n.fe('annulReturnConfirm'))) {
                 this.venta = venta;
                 this.saving = true;
-                this.apiService.store('generarDTEAnulado', this.venta)
+                this.apiService.store('generarDTEAnulado', this.facturacionElectronica.payloadGenerarDteAnulado(this.venta))
                     .pipe(this.untilDestroyed())
                     .subscribe({
                         next: (dte) => {

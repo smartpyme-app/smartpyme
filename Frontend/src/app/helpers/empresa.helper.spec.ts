@@ -1,6 +1,8 @@
 import {
   debeEmitirDteAlFacturar,
   debeImprimirTrasFacturar,
+  esVentaTicketSinEmisionFe,
+  ventaEsTicketSinEmisionFe,
   isFacturacionElectronicaActiva,
   isImpresionEnFacturacionActiva,
 } from './empresa.helper';
@@ -71,6 +73,30 @@ describe('debeEmitirDteAlFacturar', () => {
       impresion_en_facturacion: false,
       facturacion_electronica: false,
     })).toBeFalse();
+  });
+
+  it('no emite DTE si el documento es Ticket', () => {
+    expect(debeEmitirDteAlFacturar({
+      impresion_en_facturacion: true,
+      facturacion_electronica: true,
+    }, 'Ticket')).toBeFalse();
+  });
+});
+
+describe('esVentaTicketSinEmisionFe', () => {
+  it('solo coincide con el nombre Ticket', () => {
+    expect(esVentaTicketSinEmisionFe('Ticket')).toBeTrue();
+    expect(esVentaTicketSinEmisionFe('Tiquete Electrónico')).toBeFalse();
+    expect(esVentaTicketSinEmisionFe('Recibo')).toBeFalse();
+    expect(esVentaTicketSinEmisionFe(null)).toBeFalse();
+  });
+});
+
+describe('ventaEsTicketSinEmisionFe', () => {
+  it('revisa nombre_documento y tipo_documento', () => {
+    expect(ventaEsTicketSinEmisionFe({ nombre_documento: 'Factura', tipo_documento: 'Ticket' })).toBeTrue();
+    expect(ventaEsTicketSinEmisionFe({ nombre_documento: 'Ticket' })).toBeTrue();
+    expect(ventaEsTicketSinEmisionFe({ nombre_documento: 'Factura' })).toBeFalse();
   });
 });
 

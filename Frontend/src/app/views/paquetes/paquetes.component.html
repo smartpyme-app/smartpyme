@@ -50,27 +50,32 @@
                 <option value="Pendiente">Pendiente</option>
                 <option value="Facturado">Facturado</option>
             </select>
-            <ng-select name="id_cliente" (change)="filtrarPaquetes()" placeholder=" Cliente " [(ngModel)]="filtros.id_cliente" class="form-select bg-default p-0 w-auto" style="max-width: 300px;">
-                <ng-option value="">Cliente</ng-option>
-                @for (cliente of clientes; track cliente.id) {
-                    <ng-option [value]="cliente.id">
-                        {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}@if (cliente.nombre_comercial) { ({{ cliente.nombre_comercial }}) }
-                    </ng-option>
-                }
-            </ng-select>
-            <ng-select name="num_guia" (change)="filtrarPaquetes()" placeholder=" Guía " [(ngModel)]="filtros.num_guia" class="form-select bg-default p-0 w-auto" style="max-width: 300px;">
-                <ng-option value="">Guía</ng-option>
-                @for (guia of guias; track guia.num_guia) {
-                    <ng-option [value]="guia.num_guia">
-                        {{ guia.num_guia }}
-                    </ng-option>
-                }
-            </ng-select>
+            <div style="max-width: 300px;">
+                <app-select-search
+                    name="id_cliente"
+                    [(ngModel)]="filtros.id_cliente"
+                    [searchFunction]="searchClientes"
+                    [customDisplayFunction]="getClienteDisplay"
+                    valueProperty="id"
+                    placeholder="Cliente"
+                    cssClass="form-select bg-default p-0"
+                    (selectionChange)="filtrarPaquetes()"
+                ></app-select-search>
+            </div>
+            <input
+                type="text"
+                name="num_guia"
+                class="form-control bg-default w-auto"
+                style="max-width: 300px;"
+                placeholder="Guía"
+                [(ngModel)]="filtros.num_guia"
+                (change)="filtrarPaquetes()"
+            />
         </div>
     </div>
     <div class="row">
         <div class="table-responsive">
-            <table class="table table-borderless table-hover mb-0">
+            <table class="table table-borderless table-hover align-middle mb-0">
                 <thead>
                     <tr>
                         <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
@@ -86,7 +91,7 @@
                         <!-- <th>Volumen</th> -->
                         <th>Estado</th>
                         <th class="text-end">Total</th>
-                        <th class="text-center">Más</th>
+                        <th class="text-end"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -108,7 +113,7 @@
                     @for (paquete of paquetes?.data; track paquete.id) {
                         <tr>
                             
-                            <td><span tooltip="{{ paquete.created_at | date:'hh:mm a'}}">{{paquete.fecha | date:'dd/MM/yyyy'}}</span></td>
+                            <td><span [title]="paquete.created_at | date:'hh:mm a'">{{ paquete.fecha | date:'dd/MM/yyyy' }}</span></td>
                             <td>{{paquete.nombre_cliente}}</td>
                             <td>{{paquete.nombre_asesor}}</td>
                             <td>{{paquete.wr}}</td>
@@ -125,28 +130,30 @@
                                 </span>
                             </td>
                             <td class="text-end">{{paquete.total | currency}}</td>
-                            <td class="text-center">
-                                <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                            <td class="text-end">
+                                <span class="btn" [popover]="accionesTemplate" placement="left" [outsideClick]="true" title="Acciones" (click)="setAccionesPaquete(paquete)">
                                     <i class="fa fa-ellipsis-vertical fa-fw"></i>
                                 </span>
-                                <ng-template #accionesTemplate>
-                                    <div class="list-group border-0">
-                                        <a (click)="openModal(mpaquete, paquete)" class="list-group-item list-group-item-action border-0 click">
-                                            <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
-                                        </a>
-                                        @if (apiService.canEditTest('productos.paquetes.editar')) {
-                                            <a routerLink="/paquete/editar/{{paquete.id}}" class="list-group-item list-group-item-action border-0 click">
-                                                <i class="fa fa-fw fa-edit"></i> Editar
-                                            </a>
-                                        }
-                                    </div>
-                                </ng-template>
                             </td>
 
                         </tr>
                     }
                 </tbody>
             </table>
+            <ng-template #accionesTemplate>
+                @if (accionesPaquete) {
+                    <div class="d-flex flex-column align-items-start">
+                        <a (click)="openModal(mpaquete, accionesPaquete)" class="btn click">
+                            <i class="fa fa-fw fa-magnifying-glass"></i> Ver detalles
+                        </a>
+                        @if (apiService.canEditTest('productos.paquetes.editar')) {
+                            <a routerLink="/paquete/editar/{{ accionesPaquete.id }}" class="btn">
+                                <i class="fa fa-fw fa-edit"></i> Editar
+                            </a>
+                        }
+                    </div>
+                }
+            </ng-template>
         </div>
 
         @if (paquetes?.last_page > 1) {
@@ -302,25 +309,19 @@
             </div>
             <div class="form-group col-sm-6">
                 <label for="filtros.num_guia">Guía:</label>
-                <ng-select name="num_guia" [(ngModel)]="filtros.num_guia" class="form-select p-0">
-                    <ng-option value="">Todos</ng-option>
-                    @for (guia of guias; track guia.num_guia) {
-                        <ng-option [value]="guia.num_guia">
-                            {{ guia.num_guia }}
-                        </ng-option>
-                    }
-                </ng-select>
+                <input type="text" class="form-control" name="filtros.num_guia" [(ngModel)]="filtros.num_guia" placeholder="Número de guía" />
             </div>
             <div class="form-group col-sm-6">
                 <label for="filtros.id_cliente">Cliente:</label>
-                <ng-select name="id_cliente" [(ngModel)]="filtros.id_cliente" class="form-select p-0">
-                    <ng-option value="">Todos</ng-option>
-                    @for (cliente of clientes; track cliente.id) {
-                        <ng-option [value]="cliente.id">
-                            {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}@if (cliente.nombre_comercial) { ({{ cliente.nombre_comercial }}) }
-                        </ng-option>
-                    }
-                </ng-select>
+                <app-select-search
+                    name="filtros.id_cliente"
+                    [(ngModel)]="filtros.id_cliente"
+                    [searchFunction]="searchClientes"
+                    [customDisplayFunction]="getClienteDisplay"
+                    valueProperty="id"
+                    placeholder="Buscar cliente..."
+                    cssClass="form-select p-0"
+                ></app-select-search>
             </div>
             <div class="form-group col-md-6">
                 <label for="filtros.id_asesor">Asesor:</label>

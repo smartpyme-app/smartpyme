@@ -17,6 +17,7 @@ export class CrearAbonoGastoComponent implements OnInit {
   @Output() update = new EventEmitter();
   public formaPagos: any[] = [];
   public bancos: any[] = [];
+  public usarCuentasEnSelect = false;
   public abono: any = {};
   public saving = false;
 
@@ -41,15 +42,10 @@ export class CrearAbonoGastoComponent implements OnInit {
       this.formaPagos = formaPagos;
     }, error => { this.alertService.error(error); });
 
-    if (this.apiService.isModuloBancos()) {
-      this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
-        this.bancos = bancos;
-      }, error => { this.alertService.error(error); });
-    } else {
-      this.apiService.getAll('bancos/list').subscribe(bancos => {
-        this.bancos = bancos;
-      }, error => { this.alertService.error(error); });
-    }
+    this.apiService.loadBancosParaAbono().subscribe(({ bancos, usarCuentas }) => {
+      this.bancos = bancos;
+      this.usarCuentasEnSelect = usarCuentas;
+    }, error => { this.alertService.error(error); });
   }
 
   public requiereBanco(): boolean {
@@ -62,7 +58,7 @@ export class CrearAbonoGastoComponent implements OnInit {
       this.abono.detalle_banco = '';
       return;
     }
-    if (this.apiService.isModuloBancos()) {
+    if (this.usarCuentasEnSelect || this.apiService.usarCuentasBancariasEnPagos()) {
       const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.abono.forma_pago);
       this.abono.detalle_banco = formaPagoSeleccionada?.banco?.nombre_banco || '';
     }

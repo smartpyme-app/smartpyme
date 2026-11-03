@@ -66,7 +66,7 @@ class PartidaIngresosService
                         ->where('estado', '!=', 'Pendiente')
                         ->where('fecha', $fecha)
                         ->select(['id', 'fecha', 'correlativo', 'id_documento', 'id_cliente', 'forma_pago',
-                                 'total', 'sub_total', 'iva', 'iva_retenido', 'total_costo',
+                                 'total', 'sub_total', 'iva', 'iva_retenido', 'cuenta_a_terceros', 'total_costo',
                                  'id_sucursal', 'estado'])
                         ->with([
                             'documento' => function($query) {
@@ -168,6 +168,7 @@ class PartidaIngresosService
                 $configuracion->id_cuenta_iva_ventas,
                 $configuracion->id_cuenta_iva_ventas_cf,
                 $configuracion->id_cuenta_iva_retenido_ventas,
+                $configuracion->id_cuenta_cuenta_a_terceros,
                 $configuracion->id_cuenta_costo_venta,
                 $configuracion->id_cuenta_inventario,
                 $configuracion->id_cuenta_cxc
@@ -180,6 +181,7 @@ class PartidaIngresosService
             $cuenta_ventas = $cuentasConfig->get($configuracion->id_cuenta_ventas);
             $cuenta_iva = $cuentasConfig->get($configuracion->id_cuenta_iva_ventas);
             $cuenta_iva_retenido = $cuentasConfig->get($configuracion->id_cuenta_iva_retenido_ventas);
+            $cuenta_terceros = $cuentasConfig->get($configuracion->id_cuenta_cuenta_a_terceros);
             $cuenta_costos = $cuentasConfig->get($configuracion->id_cuenta_costo_venta);
             $cuenta_inventarios = $cuentasConfig->get($configuracion->id_cuenta_inventario);
             $cuenta_cxc = $cuentasConfig->get($configuracion->id_cuenta_cxc);
@@ -401,6 +403,21 @@ class PartidaIngresosService
                             'concepto' => '  ' . $refDoc,
                             'debe' => $ingreso->iva_retenido,
                             'haber' => NULL,
+                            'saldo' => 0,
+                        ];
+                    }
+
+                    if ($ingreso->cuenta_a_terceros > 0) {
+                        if (!$cuenta_terceros) {
+                            throw new \Exception('No está configurada la cuenta contable de cuenta a terceros.');
+                        }
+                        $detalles[] = [
+                            'id_cuenta' => $cuenta_terceros->id,
+                            'codigo' => $cuenta_terceros->codigo,
+                            'nombre_cuenta' => $cuenta_terceros->nombre,
+                            'concepto' => 'Cobros a cuenta de terceros ' . $refDoc,
+                            'debe' => NULL,
+                            'haber' => $ingreso->cuenta_a_terceros,
                             'saldo' => 0,
                         ];
                     }

@@ -4,12 +4,14 @@ import {
   redondearMoneda,
   resolverPorcentajeImpuestoVenta,
 } from '@utils/impuestos-venta.util';
+import { filtrarPreciosPorUsuario } from '@utils/precios-usuario-venta.util';
 
 export interface ProductoDetalleV2MapperCtx {
   ivaEmpresa: number;
   valorInventarioPromedio: boolean;
   lotesActivo: boolean;
   idBodega: number | null | undefined;
+  idUsuario?: number | string | null;
   sumStock: (items: any[], field: string) => number;
   getNombreCompleto: (producto: any) => string;
 }
@@ -61,9 +63,11 @@ export function armarListaPreciosDetalleV2(
   precioSinIva: number,
   pctImpuesto: number,
   precioConIvaBase?: number,
+  idUsuario?: number | string | null,
 ): any[] {
-  const lista = producto.precios
-    ? producto.precios.map((p: any) => {
+  const preciosFuente = filtrarPreciosPorUsuario(producto?.precios, idUsuario);
+  const lista = preciosFuente.length
+    ? preciosFuente.map((p: any) => {
         const sinIvaLista = parseFloat(p.precio);
         const conIva = pctImpuesto > 0
           ? sinIvaLista * (1 + pctImpuesto / 100)
@@ -102,7 +106,13 @@ export function armarDetalleDesdeProductoV2(producto: any, ctx: ProductoDetalleV
   detalle.precio_iva = redondearMoneda(precioConIva).toFixed(2);
   detalle.precio = precioSinIva.toFixed(6);
   detalle.precio_base = precioSinIva;
-  detalle.precios = armarListaPreciosDetalleV2(producto, precioSinIva, pctImpuesto, precioConIva);
+  detalle.precios = armarListaPreciosDetalleV2(
+    producto,
+    precioSinIva,
+    pctImpuesto,
+    precioConIva,
+    ctx.idUsuario,
+  );
 
   if (ctx.valorInventarioPromedio && producto.costo_promedio > 0) {
     detalle.costo = parseFloat(producto.costo_promedio);

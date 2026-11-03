@@ -87,7 +87,9 @@
             (selectCliente)="selectCliente.emit($event)"></app-tienda-venta-paquetes>
         }
         @if (usuario.empresa.modulo_citas && venta.cotizacion != 1) {
-          <app-tienda-venta-citas [venta]="venta" (productoSelect)="productoSelect($event)"></app-tienda-venta-citas>
+          <app-tienda-venta-citas [venta]="venta"
+            (productoSelect)="productoSelect($event)"
+            (selectCliente)="selectCliente.emit($event)"></app-tienda-venta-citas>
         }
     </div>
 </div>

@@ -3,8 +3,10 @@
 namespace App\Exceptions;
 
 use Fruitcake\Cors\CorsService;
+use App\Support\ApiPublicErrorMessage;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException;
@@ -151,9 +153,17 @@ class Handler extends ExceptionHandler
             }
 
             if ($exception instanceof QueryException) {
+                Log::error('QueryException API', [
+                    'message' => $exception->getMessage(),
+                    'sql' => $exception->getSql(),
+                ]);
+
                 return $this->applyCorsToApi(
                     $request,
-                    response()->json(['error' => $exception->getMessage(), 'code' => 500], 500)
+                    response()->json([
+                        'error' => ApiPublicErrorMessage::fromQueryException($exception),
+                        'code' => 500,
+                    ], 500)
                 );
             }
 
@@ -172,14 +182,26 @@ class Handler extends ExceptionHandler
             }
 
             if ($exception instanceof HttpException) {
+                $msg = ApiPublicErrorMessage::sanitizeString($exception->getMessage());
+
                 return $this->applyCorsToApi(
                     $request,
                     response()->json(
-                        ['error' => $exception->getMessage(), 'code' => $exception->getStatusCode()],
+                        ['error' => $msg, 'code' => $exception->getStatusCode()],
                         $exception->getStatusCode()
                     )
                 );
             }
+
+            Log::error('Unhandled API exception', ['exception' => $exception]);
+
+            return $this->applyCorsToApi(
+                $request,
+                response()->json([
+                    'error' => ApiPublicErrorMessage::fromThrowable($exception),
+                    'code' => 500,
+                ], 500)
+            );
         }
 
         $parent = parent::render($request, $exception);

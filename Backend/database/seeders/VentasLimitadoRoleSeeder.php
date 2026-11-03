@@ -50,9 +50,13 @@ class VentasLimitadoRoleSeeder extends Seeder
         $nombres = [];
         foreach (config('permissions.PERMISSION_VENTAS', []) as $value) {
             foreach (is_array($value) ? $value : [$value] as $nombre) {
-                if ($nombre !== 'ventas.descuentos.autorizar') {
-                    $nombres[] = $nombre;
+                if ($nombre === 'ventas.descuentos.autorizar') {
+                    continue;
                 }
+                if (str_starts_with($nombre, 'ventas.solicitudes.')) {
+                    continue;
+                }
+                $nombres[] = $nombre;
             }
         }
 

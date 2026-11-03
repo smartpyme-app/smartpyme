@@ -90,9 +90,6 @@
                             @if (apiService.hasPermission('productos.categorias.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/categorias']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/folder.png" class="icon me-2">Categorías</a></li>
                             }
-                            @if (contabilidadHabilitada && apiService.hasPermission('productos.campos_personalizados.ver')) {
-                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/custom-fields']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/settings.png" class="icon me-2">Campos personalizados</a></li>
-                            }
                             @if (usuario.empresa?.modulo_paquetes && apiService.hasPermission('productos.paquetes.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/paquetes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/package.png" class="icon me-2">Paquetes</a></li>
                             }
@@ -124,7 +121,7 @@
                     </div>
                 </li>
             }
-            @if (apiService.hasPermission('ventas.ver') || tieneGiftCardsHabilitada || (apiService.canAccederOperacionesInventario() && apiService.hasPermission('ventas.consignas.ver'))) {
+            @if (apiService.hasPermission('ventas.ver') || mostrarMenuSolicitudesCompra || tieneGiftCardsHabilitada || (apiService.canAccederOperacionesInventario() && apiService.hasPermission('ventas.consignas.ver'))) {
                 <li class="mb-1">
                     <button (click)="toggleVentas()" tooltip="Ventas" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!ventasIsCollapsed" aria-controls="ventas">
                         <img appLazyImage="/assets/icons/trending-up.png" class="icon me-2">Ventas
@@ -166,7 +163,7 @@
                     </div>
                 </li>
             }
-            @if (apiService.hasPermission('compras.ver') || (apiService.canAccederOperacionesInventario() && apiService.hasPermission('compras.consignas.ver'))) {
+            @if (mostrarMenuCompras) {
                 <li class="mb-1">
                     <button (click)="toggleCompras()" tooltip="Compras" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!comprasIsCollapsed" aria-controls="collapseBasic">
                         <img appLazyImage="/assets/icons/log-in.png" class="icon me-2">Compras

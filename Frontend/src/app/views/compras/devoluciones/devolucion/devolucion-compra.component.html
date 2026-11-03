@@ -46,7 +46,9 @@
                     <tr>
                         <th class="text-center">N°</th>
                         <th>Producto</th>
+                        @if (apiService.canVerCostosInventario()) {
                         <th class="text-center">Costo</th>
+                        }
                         <th class="text-center">Descuento</th>
                         <th class="text-center">Cantidad</th>
                         <th class="text-end">Total</th>
@@ -71,7 +73,9 @@
                       <tr>
                         <td class="text-center"> {{ $index + 1 }} </td>
                         <td> {{ detalle.nombre_producto }} </td>
+                        @if (apiService.canVerCostosInventario()) {
                         <td class="text-center">{{ detalle.costo | currency }}</td>
+                        }
                         <td class="text-center">{{ detalle.descuento | currency }}</td>
                         <td class="text-center">{{ detalle.cantidad }}</td>
                         <td class="text-end">{{ detalle.total | currency }}</td>

@@ -202,36 +202,7 @@
 <!--</section>-->
 
 
-@if (venta.cotizacion == 1 && customField) {
-    <section class="card border-0 p-3 mb-3">
-        <h6>Campos personalizados a utilizar</h6>
-        <div class="row">
-            <div class="col-md-12">
-                <ng-select [items]="customFields.data" [multiple]="true" bindLabel="name" bindValue="id"
-                    placeholder="Seleccione campos personalizados" [(ngModel)]="selectedCustomFields"
-                    (change)="updateCustomFields()" [clearable]="false" [searchable]="true"
-                    class="form-control form-select p-0" dropdownPosition="bottom" [loading]="loading">
-                    <ng-template ng-option-tmp let-item="item">
-                        @if (
-                            item.field_type !== 'select' ||
-                            (item.field_type === 'select' && item.values?.length > 0)
-                        ) {
-                            <div>
-                                {{ item.name }}
-                                <small class="text-muted">({{ item.field_type }})</small>
-                            </div>
-                        }
-                    </ng-template>
-                    <ng-template ng-notfound-tmp>
-                        <div class="text-muted p-2">
-                            No hay campos personalizados disponibles
-                        </div>
-                    </ng-template>
-                </ng-select>
-            </div>
-        </div>
-    </section>
-}
+<!-- ponytail: SP-2356 — módulo campos personalizados oculto (selector retirado). -->
 
 @if (venta.cotizacion != 1 && venta.nombre_documento == 'Factura de exportación' && esFacturacionElSalvador()) {
     <section class="card border-0 p-3 mb-3">

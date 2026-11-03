@@ -494,28 +494,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     );
 
     //solo si es una cotizacion if (this.route.snapshot.queryParamMap.get('cotizacion')) {
-    if (this.route.snapshot.queryParamMap.get('cotizacion')) {
-      this.apiService.getAll('custom-fields', this.filtros).pipe(this.untilDestroyed()).subscribe(
-        (customFields) => {
-          // console.log('customFields', customFields);
-          this.customFields = customFields;
-          //verificar si hay campos personalizados
-          if (this.customFields.data.length > 0) {
-            // console.log('hay campos personalizados');
-            this.customField = true;
-          }else{
-            // console.log('no hay campos personalizados');
-            this.customField = false;
-          }
-          this.cdr.markForCheck();
-
-        },
-        (error) => {
-          this.alertService.error(error);
-          this.cdr.markForCheck();
-        }
-      );
-    }
+    // ponytail: SP-2356 — ya no se cargan campos personalizados en cotización desde facturación.
 
     // Cargar bodegas usando SharedDataService
     this.sharedDataService.getBodegas()
@@ -1086,7 +1065,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
           .read('cotizacionVentas/', +this.route.snapshot.queryParamMap.get('id_venta')!)
           .subscribe(
             (venta) => {
-              if (this.apiService.isVentasLimitado() && String(venta?.estado || '').toLowerCase() !== 'pendiente') {
+              if (this.apiService.isVentasLimitado() && venta?.estado !== 'Pendiente') {
                 this.alertService.error('Solo puede facturar cotizaciones pendientes.');
                 this.router.navigate(['/cotizaciones']);
                 return;
@@ -2988,7 +2967,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             'Cotización creada',
             'La cotizacion fue añadida exitosamente.'
           );
-        } else if (debeEmitirDteAlFacturar(this.apiService.auth_user()?.empresa)) {
+        } else if (debeEmitirDteAlFacturar(this.apiService.auth_user()?.empresa, this.venta.nombre_documento)) {
           this.emitirDTE();
         } else {
           if (debeImprimirTrasFacturar(this.apiService.auth_user()?.empresa, this.debeImprimir)) {
@@ -3076,6 +3055,10 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   }
 
   emitirDTE() {
+    if (!this.apiService.canEmitirFacturaElectronica()) {
+      this.alertService.error('No tiene permiso para emitir factura electrónica.');
+      return;
+    }
     this.emiting = true;
     const ventaPreDte = { ...this.venta };
     this.facturacionElectronica

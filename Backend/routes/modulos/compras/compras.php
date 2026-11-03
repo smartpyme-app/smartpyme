@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Compras\ComprasController;
 use App\Http\Controllers\Api\Compras\DocumentoImportController;
 use App\Http\Controllers\Api\Compras\SalidasController;
+use App\Support\PermisoAnular;
 use Illuminate\Support\Facades\Route;
 
     Route::get('/compras',         		    [ComprasController::class, 'index']);
@@ -10,7 +11,8 @@ use Illuminate\Support\Facades\Route;
     Route::post('/compras/filtrar',			[ComprasController::class, 'filter']);
     Route::get('/compra/{id}',              [ComprasController::class, 'read']);
     Route::post('/compra',                  [ComprasController::class, 'store']);
-    Route::delete('/compra/{id}',           [ComprasController::class, 'delete']);
+    Route::delete('/compra/{id}',           [ComprasController::class, 'delete'])
+        ->middleware('permission:'.PermisoAnular::eliminarOAnular('compras.eliminar'));
 
     Route::post('/compras/importar-documento', [DocumentoImportController::class, 'importarCompra']);
     Route::post('/compra/facturacion',      [ComprasController::class, 'facturacion']);

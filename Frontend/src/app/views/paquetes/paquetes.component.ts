@@ -3,19 +3,24 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
+import { SelectSearchComponent } from '@shared/parts/select-search/select-search.component';
+import { Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 
 @Component({
     selector: 'app-paquetes',
     templateUrl: './paquetes.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, ImportarExcelComponent],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PopoverModule, TooltipModule, PaginationComponent, ImportarExcelComponent, SelectSearchComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 
@@ -23,10 +28,9 @@ export class PaquetesComponent extends BaseCrudComponent<any> implements OnInit 
 
     public paquetes:any = {};
     public sucursales:any = [];
-    public clientes:any = [];
-    public guias:any = [];
     public usuarios:any = [];
     public paquete:any = {};
+    public accionesPaquete: any = null;
     public downloading:boolean = false;
 
     constructor(
@@ -60,24 +64,30 @@ export class PaquetesComponent extends BaseCrudComponent<any> implements OnInit 
     }
 
     ngOnInit() {
-        this.apiService.getAll('clientes/list')
-            .pipe(this.untilDestroyed())
-            .subscribe(clientes => { 
-                this.clientes = clientes;
-                this.cdr.markForCheck();
-            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
-
-        this.getGuias();
         this.loadAll();
     }
 
-    private getGuias() {   
-        this.apiService.getAll('paquetes/list/guias')
-            .pipe(this.untilDestroyed())
-            .subscribe(paquetes => { 
-                this.guias = paquetes;
-                this.cdr.markForCheck();
-            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
+    searchClientes = (term: string): Observable<any[]> => {
+        if (!term || term.length < 2) {
+            return of([]);
+        }
+        return this.apiService.getAll(`clientes/search?q=${encodeURIComponent(term)}`).pipe(
+            map((response: any) => (Array.isArray(response) ? response : response?.data ?? [])),
+            catchError(() => of([])),
+        );
+    };
+
+    getClienteDisplay = (cliente: any): string => {
+        const legal = cliente?.tipo === 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
+        const comercial = String(cliente?.nombre_comercial ?? '').trim();
+        if (!comercial || comercial.toLowerCase() === String(legal ?? '').trim().toLowerCase()) {
+            return legal;
+        }
+        return `${legal} (${comercial})`;
+    };
+
+    setAccionesPaquete(paquete: any): void {
+        this.accionesPaquete = paquete;
     }
 
     public setOrden(columna: string) {

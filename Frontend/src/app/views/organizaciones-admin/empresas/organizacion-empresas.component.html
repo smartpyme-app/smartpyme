@@ -1,7 +1,9 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Empresas</h2>
     <div class="d-flex gap-2">
+        @if (apiService.canCreateTest('organizacion.empresas.crear')) {
         <button (click)="openModal(mempresa, {})"  tooltip="Crear empresa (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir empresa</button>
+        }
         <!-- <button routerLink="/organizacion/empresa/crear" [queryParams]="{ licencia:1 }"  tooltip="Crear empresa (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Crear empresa</button> -->
     </div>
 </section>
@@ -90,8 +92,8 @@
                                         <a routerLink="/organizacion/empresa/{{empresa.id_empresa}}" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-edit"></i> Editar
                                         </a>
-                                        @if (empresa.activo != 'Cancelado') {
-                                            <a (click)="setEstado(empresa, 'Cancelado')" class="list-group-item list-group-item-action border-0 click">
+                                        @if (apiService.canDeleteTest('organizacion.empresas.eliminar') && !esEmpresaTitularLicencia(empresa)) {
+                                            <a (click)="quitarDeLicencia(empresa)" class="list-group-item list-group-item-action border-0 click">
                                                 <i class="fa fa-fw fa-ban"></i> Cancelar
                                             </a>
                                         }
@@ -186,12 +188,15 @@
         <div class="row">
             <div class="form-group col-md-12">
                 <label for="id_empresa">Empresa:</label>
-                <ng-select [(ngModel)]="empresa.id_empresa" class="form-select p-0" name="id_empresa">
-                    @for (empresa of empresasList; track empresa.id) {
-                        <ng-option [value]="empresa.id">
-                            {{ empresa.nombre }}
-                        </ng-option>
-                    }
+                <ng-select
+                    [(ngModel)]="empresa.id_empresa"
+                    [items]="empresasList"
+                    bindLabel="nombre"
+                    bindValue="id"
+                    placeholder="Seleccione una empresa"
+                    [searchable]="true"
+                    class="form-select p-0"
+                    name="id_empresa">
                 </ng-select>
             </div>
         </div>

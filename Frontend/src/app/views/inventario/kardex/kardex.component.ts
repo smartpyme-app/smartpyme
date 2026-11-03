@@ -206,8 +206,17 @@ export class KardexComponent implements OnInit, OnDestroy {
     return lote?.numero_lote ?? '—';
   }
 
+  get mostrarCostosInventario(): boolean {
+    return this.apiService.canVerCostosInventario();
+  }
+
   get colspanTabla(): number {
-    return this.mostrarLote ? 17 : 16;
+    let cols = this.mostrarLote ? 17 : 16;
+    if (!this.mostrarCostosInventario) {
+      cols -= 6;
+    }
+
+    return cols;
   }
 
   public cargarLotes() {

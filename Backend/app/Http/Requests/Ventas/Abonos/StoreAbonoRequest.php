@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Ventas\Abonos;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreAbonoRequest extends FormRequest
 {
@@ -27,6 +28,13 @@ class StoreAbonoRequest extends FormRequest
             'estado' => 'required|string|max:255',
             'forma_pago' => 'required|string|max:255',
             'detalle_banco' => 'required_unless:forma_pago,Efectivo,Wompi|nullable|string|max:255',
+            'referencia' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::requiredIf(fn () => $this->input('forma_pago') === 'Cheque'),
+                Rule::when($this->input('forma_pago') === 'Cheque', ['regex:/^\d+$/']),
+            ],
             'total' => 'required|numeric|min:0',
             'id_venta' => 'required|integer|exists:ventas,id',
             'id_usuario' => 'required|integer|exists:users,id',
@@ -53,6 +61,9 @@ class StoreAbonoRequest extends FormRequest
             'forma_pago.max' => 'La forma de pago no puede exceder 255 caracteres.',
             'detalle_banco.required_unless' => 'El detalle bancario es obligatorio cuando la forma de pago no es Efectivo ni Wompi.',
             'detalle_banco.max' => 'El detalle bancario no puede exceder 255 caracteres.',
+            'referencia.required' => 'La referencia (número de cheque) es obligatoria cuando la forma de pago es Cheque.',
+            'referencia.regex' => 'La referencia debe ser el número de cheque (solo dígitos).',
+            'referencia.max' => 'La referencia no puede exceder 255 caracteres.',
             'total.required' => 'El total es obligatorio.',
             'total.numeric' => 'El total debe ser un número.',
             'total.min' => 'El total no puede ser negativo.',
@@ -77,6 +88,7 @@ class StoreAbonoRequest extends FormRequest
             'estado' => 'estado',
             'forma_pago' => 'forma de pago',
             'detalle_banco' => 'detalle bancario',
+            'referencia' => 'referencia',
             'total' => 'total',
             'id_venta' => 'venta',
             'id_usuario' => 'usuario',

@@ -23,7 +23,15 @@ class UpdatePlanillaRequest extends FormRequest
             'fecha_inicio' => ['required', 'date'],
             'fecha_fin' => ['required', 'date', 'after_or_equal:fecha_inicio'],
             'tipo_planilla' => ['required', 'string', 'in:quincenal,mensual,semanal'],
+            'id_cuenta_banco' => ['nullable', 'integer', 'exists:cuentas_bancarias,id'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('id_cuenta_banco') === '' || $this->input('id_cuenta_banco') === 'null') {
+            $this->merge(['id_cuenta_banco' => null]);
+        }
     }
 
     /**

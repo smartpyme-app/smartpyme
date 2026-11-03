@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 @Component({
     selector: 'app-footer',
@@ -17,12 +18,10 @@ export class FooterComponent implements OnInit {
   constructor() { }
 
   ngOnInit() {
-    fetch('/manifest.webmanifest')
-      .then(response => response.json())
-      .then(manifest => {
-        this.appVersion = `Versión: ${manifest.version}`;
-      })
-      .catch(error => console.error('Error al cargar el manifest:', error));
+    // ponytail: evita fetch al manifest (en algunos despliegues pasa por PHP y tarda segundos).
+    this.appVersion = environment.appVersion
+      ? `Versión: ${environment.appVersion}`
+      : '';
   }
 
 }

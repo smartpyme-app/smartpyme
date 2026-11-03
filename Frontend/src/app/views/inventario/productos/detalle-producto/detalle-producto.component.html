@@ -45,7 +45,7 @@
     </div>
 </div>
 
-<div class="card border-0" id="historial-precio-costo" *ngIf="!loading && producto?.id && !apiService.isVentasLimitado()">
+<div class="card border-0" id="historial-precio-costo" *ngIf="!loading && producto?.id && !apiService.isVentasLimitado() && apiService.canVerCostosInventario()">
     <div class="card-body">
         <h5 class="mb-1">Historial de precio y costo</h5>
         <p class="text-muted small mb-3">Precio según ventas · Costo según compras</p>

@@ -127,6 +127,24 @@ export class FacturacionElectronicaService {
       : this.throwNoSoportadoObs();
   }
 
+  /** Payload MH generarDTEAnulado: el API exige id + tipo_dte (01, 03, 05, …). */
+  payloadGenerarDteAnulado(doc: any): Record<string, unknown> {
+    let tipoFromJson: string | undefined;
+    if (doc?.dte && typeof doc.dte === 'string') {
+      try {
+        tipoFromJson = JSON.parse(doc.dte)?.identificacion?.tipoDte;
+      } catch {
+        tipoFromJson = undefined;
+      }
+    }
+    const tipo = doc?.tipo_dte ?? doc?.dte?.identificacion?.tipoDte ?? tipoFromJson;
+    return {
+      ...doc,
+      id: doc?.id,
+      ...(tipo != null && tipo !== '' ? { tipo_dte: String(tipo) } : {}),
+    };
+  }
+
   consultarDTE(venta: any): Observable<any> {
     return this.esElSalvador()
       ? this.elSalvador.consultarDTE(venta)

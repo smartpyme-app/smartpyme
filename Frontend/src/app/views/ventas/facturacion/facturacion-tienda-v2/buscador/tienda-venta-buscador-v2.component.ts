@@ -115,8 +115,8 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
 
     public openModal(template: TemplateRef<any>) {
 
-        this.apiService.getAll('categorias').subscribe(categorias => {
-            this.categorias = categorias;
+        this.apiService.getAll('categorias/list').subscribe(categorias => {
+            this.categorias = Array.isArray(categorias) ? categorias : (categorias?.data ?? []);
         }, error => {this.alertService.error(error);});
 
         this.loadAll();
@@ -186,6 +186,7 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
             valorInventarioPromedio: this.apiService.auth_user().empresa.valor_inventario === 'promedio',
             lotesActivo: this.apiService.isLotesActivo(),
             idBodega: this.venta?.id_bodega,
+            idUsuario: this.apiService.auth_user()?.id,
             sumStock: (items: any[], field: string) => parseFloat(this.sumPipe.transform(items, field)),
             getNombreCompleto: (producto: any) => this.getNombreCompleto(producto),
         };

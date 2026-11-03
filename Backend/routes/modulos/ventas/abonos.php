@@ -1,12 +1,14 @@
-<?php 
+<?php
 
 use App\Http\Controllers\Api\Ventas\AbonosController;
+use App\Support\PermisoAnular;
 
     Route::get('/ventas/abonos',           [AbonosController::class, 'index']);
     Route::get('/venta/abono/{id}',       [AbonosController::class, 'read']);
     Route::post('/venta/abono',           [AbonosController::class, 'store']);
     Route::post('/venta/abono/update',       [AbonosController::class, 'update']);
-    Route::delete('/venta/abono/{id}',    [AbonosController::class, 'delete']);
+    Route::delete('/venta/abono/{id}',    [AbonosController::class, 'delete'])
+        ->middleware('permission:'.PermisoAnular::eliminarOAnular('ventas.abonos.eliminar'));
 
     Route::get('/venta/abono/imprimir/{id}',    [AbonosController::class, 'print']);
     Route::get('/ventas/abonos/exportar',    [AbonosController::class, 'export']);

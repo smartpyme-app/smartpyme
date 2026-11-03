@@ -19,10 +19,10 @@
             <label for="detalle_banco">Banco</label>
             <select name="detalle_banco" [(ngModel)]="abono.detalle_banco" class="form-select">
                 <option value="">Seleccione aquí</option>
-                <ng-container *ngIf="apiService.isModuloBancos()">
+                <ng-container *ngIf="usarCuentasEnSelect">
                     <option [value]="banco.nombre_banco" *ngFor="let banco of bancos">{{ banco.nombre_banco }} - {{ banco.numero }}</option>
                 </ng-container>
-                <ng-container *ngIf="!apiService.isModuloBancos()">
+                <ng-container *ngIf="!usarCuentasEnSelect">
                     <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
                 </ng-container>
             </select>

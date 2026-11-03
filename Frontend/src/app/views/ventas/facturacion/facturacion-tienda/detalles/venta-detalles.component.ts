@@ -47,6 +47,7 @@ import {
 } from '@shared/modals/fe-cr-exoneracion-detalle/fe-cr-exoneracion-detalle.util';
 import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { copiarImpuestosProductoAlDetalle } from '@utils/impuestos-venta.util';
+import { filtrarPreciosPorUsuario } from '@utils/precios-usuario-venta.util';
 import { CountryI18nService } from '@services/country-i18n.service';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 
@@ -218,6 +219,13 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
      * y dejaba el <select> en blanco. Las sin clasificación siguen visibles; si nada coincide, se muestran todas.
      */
     public preciosParaSelector(detalle: any): any[] {
+        const lista = this.preciosTrasClasificacion(detalle);
+        const userId = this.usuario?.id ?? this.apiService.auth_user()?.id;
+        const porUsuario = filtrarPreciosPorUsuario(lista, userId);
+        return porUsuario.length ? porUsuario : lista;
+    }
+
+    private preciosTrasClasificacion(detalle: any): any[] {
         const lista = Array.isArray(detalle?.precios) ? detalle.precios : [];
         const raw = this.venta?.cliente?.clasificacion;
         const clasificacion = raw == null || raw === '' ? '' : String(raw).trim().toLowerCase();

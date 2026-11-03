@@ -120,16 +120,7 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
         paginateRaw != null && paginateRaw !== '' ? +paginateRaw : 10,
       page: pageRaw != null && pageRaw !== '' ? +pageRaw : 1
     };
-
-    const u = this.apiService.auth_user();
-    if (u.tipo !== 'Administrador' && u.tipo !== 'Super Admin') {
-      if (
-        params['id_sucursal'] == null ||
-        params['id_sucursal'] === ''
-      ) {
-        this.filtros.id_sucursal = u.id_sucursal;
-      }
-    }
+    // ponytail: SP-2316 — no forzar sucursal del usuario; el API ya acota por id_empresa.
   }
 
   private buildQueryParams(): Record<string, string | number> {
@@ -186,22 +177,26 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
   }
 
   limpiarFiltros(): void {
-    const u = this.apiService.auth_user();
     this.filtros.buscador = '';
     this.filtros.estado = '';
     this.filtros.inicio = '';
     this.filtros.fin = '';
     this.filtros.canal = '';
+    this.filtros.id_sucursal = '';
     this.filtros.paginate = 10;
     this.filtros.page = 1;
     this.filtros.orden = 'fecha';
     this.filtros.direccion = 'desc';
-    if (u.tipo === 'Administrador' || u.tipo === 'Super Admin') {
-      this.filtros.id_sucursal = '';
-    } else {
-      this.filtros.id_sucursal = u.id_sucursal;
-    }
     this.navegarConFiltros();
+  }
+
+  nombreSucursal(p: { id_sucursal?: number | null }): string {
+    const id = p?.id_sucursal;
+    if (id == null) {
+      return '—';
+    }
+    const s = this.sucursales.find((x) => x.id == id);
+    return s?.nombre ?? '—';
   }
 
   cargarLista(): void {

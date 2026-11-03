@@ -41,7 +41,7 @@
                       <tbody>
                           <tr>
                               <td class="text-right"> <b>Total</b> </td>
-                              <td *ngIf="!apiService.isVentasLimitado()" style="width: 150px;" class="text-right"><b> {{ producto.costo | currency}}</b> </td>
+                              <td *ngIf="!apiService.isVentasLimitado() && apiService.canVerCostosInventario()" style="width: 150px;" class="text-right"><b> {{ producto.costo | currency}}</b> </td>
                               <td style="width: 50px;"></td>
                           </tr>
                       </tbody>
@@ -63,14 +63,14 @@
                   </div>
               </div>
           }
-          <div class="form-group col-md-4 col-lg-2" *ngIf="!apiService.isVentasLimitado()">
+          <div class="form-group col-md-4 col-lg-2" *ngIf="!apiService.isVentasLimitado() && apiService.canVerCostosInventario()">
               <label for="costo">Costo</label>
               <div class="input-group">
                   <span class="input-group-text">$</span>
                   <input type="number" class="form-control" [(ngModel)]="producto.costo" name="costo" placeholder="Escribe aquí" required>
               </div>
           </div>
-          @if (!apiService.isVentasLimitado() && !loading && producto.tipo != 'Materia prima') {
+          @if (!apiService.isVentasLimitado() && apiService.canVerCostosInventario() && !loading && producto.tipo != 'Materia prima') {
               <div class="form-group col-md-4 col-lg-2">
                   <label for="tipo_impuesto">Ganancia</label>
                   <div class="input-group">
@@ -79,7 +79,7 @@
                   </div>
               </div>
           }
-          @if (!apiService.isVentasLimitado() && !loading && producto.tipo != 'Materia prima') {
+          @if (!apiService.isVentasLimitado() && apiService.canVerCostosInventario() && !loading && producto.tipo != 'Materia prima') {
               <div class="form-group col-md-4 col-lg-2">
                   <label for="impuesto">Margen</label>
                   <div class="input-group">

@@ -209,6 +209,13 @@
             }
           </select>
         </div>
+        <div class="form-group col-md-6">
+          <label for="filtros.tipo_documento">Documento:</label>
+          <select [(ngModel)]="filtros.tipo_documento" class="form-select" name="filtros.tipo_documento">
+            <option value="">Todos</option>
+            <option value="Orden de compra">Orden de compra</option>
+          </select>
+        </div>
       </div>
       <div class="d-grid mt-4">
         <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
@@ -218,6 +225,9 @@
           @if (loading) {
             <span>Filtrando...</span>
           }
+        </button>
+        <button type="button" class="btn btn-outline-secondary mt-2" (click)="restablecerFiltrosModal()">
+          Restablecer filtros
         </button>
       </div>
     </form>

@@ -36,7 +36,7 @@
             </div>
             <div class="mb-3 d-flex justify-content-between">
                 <button class="btn btn-primary" (click)="loadAll()">Todos</button>
-                <ng-select style="width: 300px;" name="id_categoria" (change)="filtrarProductos()" [(ngModel)]="filtros.id_categoria" class="form-select p-0 border-0 bg-default">
+                <ng-select style="width: 300px;" name="id_categoria" [searchable]="true" [clearable]="true" (change)="filtrarProductos()" [(ngModel)]="filtros.id_categoria" class="form-select p-0 border-0 bg-default">
                     <ng-option value="">Categoria</ng-option>
                     @for (categoria of categorias; track categoria.id) {
                         <ng-option [value]="categoria.id">

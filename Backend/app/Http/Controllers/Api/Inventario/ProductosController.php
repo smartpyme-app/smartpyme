@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Inventario;
 
 use App\Exports\PlantillaInventarioExport;
+use App\Http\Controllers\Concerns\AuthorizesVerCostosInventario;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
@@ -70,6 +71,8 @@ use App\Http\Requests\Inventario\Productos\ImportarShopifyRequest;
 
 class ProductosController extends Controller
 {
+    use AuthorizesVerCostosInventario;
+
     protected $shopifyTransformer;
     protected $shopifyImportService;
     protected $productoService;
@@ -283,10 +286,11 @@ class ProductosController extends Controller
 
     public function searchProductos(Request $request)
     {
-        $term = $request->get('q', '');
-        $limit = $request->get('limit', 15);
-        $tipos = $request->get('tipos', ['Producto']);
-        $extraFields = $request->get('fields', []);
+        $term = trim((string) $request->get('q', ''));
+        $limit = (int) $request->get('limit', 15);
+        $limit = max(1, min($limit, 50));
+        $tipos = $this->normalizarTiposBusquedaProducto($request->get('tipos', ['Producto']));
+        $extraFields = $request->input('fields', []);
 
         if (strlen($term) < 2) {
             return response()->json([], 200);
@@ -302,6 +306,8 @@ class ProductosController extends Controller
             ->where(function ($q) use ($term, $incluirComponenteQuimico, $incluirNombreComercial) {
                 $q->where('nombre', 'LIKE', "%{$term}%")
                     ->orWhere('nombre_variante', 'LIKE', "%{$term}%")
+                    ->orWhere('codigo', 'LIKE', "%{$term}%")
+                    ->orWhere('barcode', 'LIKE', "%{$term}%")
                     ->orWhereRaw("CONCAT(nombre, ' (', COALESCE(nombre_variante, ''), ')') LIKE ?", ["%{$term}%"]);
                 if ($incluirComponenteQuimico) {
                     $q->orWhere('componente_quimico', 'LIKE', "%{$term}%");
@@ -319,14 +325,33 @@ class ProductosController extends Controller
             ->orderBy('nombre', 'asc')
             ->limit($limit);
 
-        if (!empty($extraFields) && is_array($extraFields)) {
-            $fields = array_merge(['id', 'nombre', 'codigo', 'precio', 'tipo'], $extraFields);
+        if (! empty($extraFields) && is_array($extraFields)) {
+            $fields = array_values(array_unique(array_merge(
+                ['id', 'nombre', 'codigo', 'barcode', 'precio', 'tipo'],
+                $extraFields
+            )));
             $productos = $query->get($fields);
         } else {
             $productos = $query->get();
         }
 
+        // ponytail: sin appends (img/nombre_categoria) en modales — evita N+1 y timeouts.
+        $productos->each(fn (Producto $p) => $p->setAppends([]));
+
         return response()->json($productos, 200);
+    }
+
+    /** @return list<string> */
+    private function normalizarTiposBusquedaProducto(mixed $tipos): array
+    {
+        if (is_string($tipos)) {
+            $tipos = array_filter(array_map('trim', explode(',', $tipos)));
+        }
+        if (! is_array($tipos) || $tipos === []) {
+            return ['Producto'];
+        }
+
+        return array_values($tipos);
     }
 
     public function search($txt)
@@ -669,6 +694,8 @@ class ProductosController extends Controller
             ->with($with)
             ->firstOrFail();
 
+        $this->ocultarCostosProductoSiAplica($producto);
+
         return Response()->json($producto, 200);
     }
 
@@ -690,6 +717,8 @@ class ProductosController extends Controller
         $producto = Producto::where('codigo', $codigo)
             ->with($with)
             ->firstOrFail();
+
+        $this->filtrarPreciosPorUsuarioAutenticado($producto);
 
         return Response()->json($producto, 200);
     }
@@ -725,6 +754,8 @@ class ProductosController extends Controller
 
         $local = $buscarEnEmpresa($idEmpresaLocal);
         if ($local) {
+            $this->filtrarPreciosPorUsuarioAutenticado($local);
+
             return Response()->json([
                 'modo' => 'local',
                 'producto' => $local,
@@ -734,6 +765,8 @@ class ProductosController extends Controller
         if ($idEmpresaOrigen > 0 && $idEmpresaOrigen !== $idEmpresaLocal) {
             $origen = $buscarEnEmpresa($idEmpresaOrigen);
             if ($origen) {
+                $this->filtrarPreciosPorUsuarioAutenticado($origen);
+
                 return Response()->json([
                     'modo' => 'origen',
                     'producto_origen' => $origen,
@@ -1101,6 +1134,8 @@ class ProductosController extends Controller
      */
     public function historialPrecioCosto(Request $request, $id)
     {
+        $this->authorizeVerCostosInventario($request->user());
+
         $request->validate([
             'inicio'     => 'required|date',
             'fin'        => 'required|date|after_or_equal:inicio',
@@ -2646,5 +2681,24 @@ class ProductosController extends Controller
         $barcode = (string) ((int) ($max ?? 0) + 1);
 
         return response()->json(['habilitado' => true, 'barcode' => $barcode, 'codigo' => $barcode]);
+    }
+
+    /** Tarifas con usuarios asignados: solo las del usuario autenticado (+ sin restricción). */
+    protected function filtrarPreciosPorUsuarioAutenticado($producto): void
+    {
+        if (! $producto || ! method_exists($producto, 'relationLoaded') || ! $producto->relationLoaded('precios')) {
+            return;
+        }
+
+        $userId = Auth::id();
+        $filtrados = $producto->precios->filter(function ($precio) use ($userId) {
+            if (! $precio->relationLoaded('usuarios') || $precio->usuarios->isEmpty()) {
+                return true;
+            }
+
+            return $precio->usuarios->contains('id_usuario', $userId);
+        })->values();
+
+        $producto->setRelation('precios', $filtrados);
     }
 }

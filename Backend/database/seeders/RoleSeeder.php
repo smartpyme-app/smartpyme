@@ -293,6 +293,7 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_PEDIDOS.editar'),
             config('permissions.PERMISSION_PEDIDOS.eliminar'),
             config('permissions.PERMISSION_FINANZAS.cierre_caja.ver'),
+            config('permissions.PERMISSION_COMPRAS.editar_precio'),
         ]);
 
         // Gerente Operaciones --ROL_GERENTE_OPERACIONES

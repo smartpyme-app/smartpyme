@@ -15,6 +15,7 @@ import { PermissionService } from '@services/permission.service';
 import { UtilityService } from '@services/utility.service';
 import { HttpClient, HttpHeaders, HttpResponse, HttpErrorResponse } from '@angular/common/http';
 import { map, catchError, retry, timeout, switchMap } from 'rxjs/operators';
+import { normalizeBancosListResponse } from '@shared/utils/abono-bancos.util';
 import { Observable, throwError, from, of, Subject } from 'rxjs';
 import { AlertService } from '@services/alert.service';
 import { environment } from './../../environments/environment';
@@ -342,6 +343,50 @@ export class ApiService {
     return this.permissionService.canDeleteTest(permission);
   }
 
+  /** SP-2339 / SP-2341: partida manual desde acciones del módulo. */
+  canGenerarPartidaContable(
+    tipo: 'venta' | 'cxc' | 'cxp' | 'compra' | 'gasto',
+    contabilidadHabilitada: boolean,
+  ): boolean {
+    if (!contabilidadHabilitada) {
+      return false;
+    }
+    const especifico = `contabilidad.partidas.generar_${tipo}`;
+    return (
+      this.hasPermission(especifico) ||
+      this.hasPermission('contabilidad.partidas.crear')
+    );
+  }
+
+  canEmitirFacturaElectronica(): boolean {
+    // ponytail: temporal — misma regla que menú ventas; volver a hasPermission('ventas.facturacion_electronica.emitir') tras sembrar roles.
+    return true;
+  }
+
+  canVerCostosInventario(): boolean {
+    if (this.supervisorLimitadoRestringidoEnCompras()) {
+      return false;
+    }
+    return this.hasPermission('productos.inventario.ver_costos');
+  }
+
+  /**
+   * Editar costo/precio unitario en compras y órdenes de compra.
+   * Supervisor limitado solo con compras.editar_precio; demás roles conservan ver costos de inventario.
+   */
+  canEditarPrecioCompra(): boolean {
+    if (this.supervisorLimitadoRestringidoEnCompras()) {
+      return false;
+    }
+    if (this.hasPermission('compras.editar_precio')) {
+      return true;
+    }
+    if (this.isSupervisorLimitado()) {
+      return false;
+    }
+    return this.hasPermission('productos.inventario.ver_costos');
+  }
+
   verifyRoleAdmin(): boolean {
     return this.permissionService.verifyRoleAdmin();
   }
@@ -481,6 +526,31 @@ export class ApiService {
     /** Formas de pago y selects de banco usan cuentas bancarias si hay contabilidad o el módulo de bancos. */
     usarCuentasBancarias(contabilidadHabilitada: boolean): boolean {
         return contabilidadHabilitada || this.isModuloBancos();
+    }
+
+    tieneContabilidadActivaEnSesion(): boolean {
+        return this.funcionalidadesService.tieneAccesoCacheado('contabilidad');
+    }
+
+    /** Igual criterio que ventas/gastos: contabilidad en plan o módulo bancos en empresa. */
+    usarCuentasBancariasEnPagos(): boolean {
+        return this.usarCuentasBancarias(this.tieneContabilidadActivaEnSesion());
+    }
+
+    /** Cuentas de la empresa (contabilidad/módulo bancos) o bancos activados en Ventas → Bancos. */
+    loadBancosParaAbono(): Observable<{ bancos: any[]; usarCuentas: boolean }> {
+        return this.funcionalidadesService.verificarAcceso('contabilidad').pipe(
+            switchMap((contabilidad) => {
+                const usarCuentas = this.usarCuentasBancarias(!!contabilidad);
+                const url = usarCuentas ? 'banco/cuentas/list' : 'bancos/list';
+                return this.getAll(url).pipe(
+                    map((raw) => ({
+                        bancos: normalizeBancosListResponse(raw),
+                        usarCuentas,
+                    })),
+                );
+            }),
+        );
     }
 
     /** Bancos en el menú Finanzas cuando no hay contabilidad pero el módulo está activo. */

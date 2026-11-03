@@ -13,6 +13,16 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
+import {
+  puedeEditarCotizacion,
+  puedeFacturarDesdeCotizacion,
+  puedeImprimirCotizacion,
+  puedeVerDetalleCotizacion,
+} from '@views/ventas/ventas-acciones-menu.util';
+import {
+  canonicoEstadoCotizacion,
+  estadoCotizacionBadgeClass,
+} from '@views/ventas/cotizaciones/cotizacion-estado.util';
 
 @Component({
     selector: 'app-cotizaciones',
@@ -36,6 +46,39 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
   public sucursales: any = [];
   public documentos: any = [];
   public filtrado: boolean = false;
+
+  private perm = (p: string) => this.apiService.hasPermission(p);
+
+  public readonly estadoCotizacionBadgeClass = estadoCotizacionBadgeClass;
+
+  public puedeFacturarCotizacion(estado: string): boolean {
+    return canonicoEstadoCotizacion(estado) === 'Pendiente' && puedeFacturarDesdeCotizacion(this.perm);
+  }
+
+  public puedeImprimirCotizacionEstado(estado: string): boolean {
+    return canonicoEstadoCotizacion(estado) === 'Facturada' && puedeImprimirCotizacion(this.perm);
+  }
+
+  public puedeVerDetalleCotizacion(): boolean {
+    return puedeVerDetalleCotizacion(this.perm);
+  }
+
+  public puedeEditarCotizacion(): boolean {
+    return puedeEditarCotizacion(this.perm);
+  }
+
+  public puedeImprimirFilaCotizacion(estado: string): boolean {
+    if (this.apiService.isVentasLimitado()) {
+      return this.puedeImprimirCotizacionEstado(estado);
+    }
+    return puedeImprimirCotizacion(this.perm);
+  }
+
+  public mostrarMenuAccionesCotizacion(estado: string): boolean {
+    return this.puedeFacturarCotizacion(estado)
+      || this.puedeImprimirFilaCotizacion(estado)
+      || (!this.apiService.isVentasLimitado() && (this.puedeVerDetalleCotizacion() || this.puedeEditarCotizacion()));
+  }
 
   constructor(
     apiService: ApiService,
@@ -125,7 +168,12 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
           .pipe(this.untilDestroyed())
           .subscribe({
             next: (ventas) => {
-              this.ventas = this.normalizeVentas(ventas);
+              this.ventas = ventas;
+              this.ventas?.data?.forEach((row: { estado?: string }) => {
+                if (row.estado != null) {
+                  row.estado = canonicoEstadoCotizacion(row.estado) as string;
+                }
+              });
               this.loading = false;
               if (this.modalRef) {
                 this.modalRef.hide();
@@ -139,24 +187,6 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
             }
           });
     }
-
-  private normalizeVentas(ventas: any) {
-    if (ventas && Array.isArray(ventas.data)) {
-      ventas.data = ventas.data.map((venta: any) => ({
-        ...venta,
-        estado: venta?.estado ? String(venta.estado).toLowerCase() : venta?.estado
-      }));
-    }
-    return ventas;
-  }
-
-  /** Pendiente factura, facturada imprime, anulada y el resto no actúan. */
-  accionVentasLimitado(estado: string): 'facturar' | 'imprimir' | null {
-    const valor = (estado || '').toLowerCase();
-    if (valor === 'pendiente') return 'facturar';
-    if (valor === 'facturada') return 'imprimir';
-    return null;
-  }
 
   public setEstado(cotizacion: any) {
     // Agregamos el distintivo

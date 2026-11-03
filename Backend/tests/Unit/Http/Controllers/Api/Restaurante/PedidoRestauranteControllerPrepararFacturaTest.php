@@ -50,6 +50,19 @@ class PedidoRestauranteControllerPrepararFacturaTest extends TestCase
         );
     }
 
+    public function test_store_y_update_validan_lotes_asignados_en_detalles(): void
+    {
+        $store = $this->methodSource(PedidoRestauranteController::class, 'store');
+        $update = $this->methodSource(PedidoRestauranteController::class, 'update');
+
+        foreach (['store' => $store, 'update' => $update] as $method => $source) {
+            $this->assertNotFalse(
+                strpos($source, 'detalles.*.lotes_asignados'),
+                "{$method} debe aceptar lotes_asignados en el payload de detalles"
+            );
+        }
+    }
+
     private function methodSource(string $class, string $method): string
     {
         $ref = new ReflectionMethod($class, $method);

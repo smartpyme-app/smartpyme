@@ -13,33 +13,32 @@ use Intervention\Image\ImageManagerStatic as Image;
 use Illuminate\Validation\Rules\Password;
 use JWTAuth;
 use App\Http\Requests\SuperAdmin\StoreUsuarioRequest;
+use App\Support\AdminUsuariosAlcance;
 use Spatie\Permission\PermissionRegistrar;
 
 class UsuariosController extends Controller
 {
     CONST EMPRESA_SP = 2;   
     public function index(Request $request) {
-       
-        $usuarios = Usuario::with('empresa','roles')
-                                ->when($request->estado !== null, function($q) use ($request){
-                                    $q->where('enable', !!$request->estado);
-                                })
-                                ->when($request->id_empresa, function($q) use ($request){
-                                    $q->where('id_empresa', $request->id_empresa);
-                                })
-                                ->when($request->id_sucursal, function($q) use ($request){
-                                    $q->where('id_sucursal', $request->id_sucursal);
-                                })
-                                ->when($request->tipo, function($q) use ($request){
-                                    $q->where('tipo', $request->tipo);
-                                })
-                                ->when($request->buscador, function($query) use ($request){
-                                    return $query->where('name', 'like' ,'%' . $request->buscador . '%')
-                                                 ->orwhere('email', 'like' ,"%" . $request->buscador . "%");
-                                })
-                                // ->orderBy('enable', 'desc')
-                                ->orderBy($request->orden, $request->direccion)
-                                ->paginate($request->paginate);
+        $actor = JWTAuth::parseToken()->authenticate();
+
+        $query = Usuario::with('empresa', 'roles')
+            ->when($request->estado !== null, function ($q) use ($request) {
+                $q->where('enable', !!$request->estado);
+            })
+            ->when($request->id_sucursal, function ($q) use ($request) {
+                $q->where('id_sucursal', $request->id_sucursal);
+            })
+            ->when($request->tipo, function ($q) use ($request) {
+                $q->where('tipo', $request->tipo);
+            });
+
+        AdminUsuariosAlcance::aplicarAlQuery($query, $actor, $request);
+        AdminUsuariosAlcance::aplicarBuscador($query, $request->buscador);
+
+        $usuarios = $query
+            ->orderBy($request->orden, $request->direccion)
+            ->paginate($request->paginate);
 
         return Response()->json($usuarios, 200);
 
@@ -74,8 +73,11 @@ class UsuariosController extends Controller
 
 
     public function read($id) {
-        
+        $actor = JWTAuth::parseToken()->authenticate();
         $usuario = Usuario::where('id', $id)->firstOrFail();
+        if (!AdminUsuariosAlcance::puedeGestionarUsuario($actor, $usuario)) {
+            abort(403, 'No autorizado para ver este usuario.');
+        }
         return Response()->json($usuario, 200);
     }
 
@@ -104,8 +106,13 @@ class UsuariosController extends Controller
 
     public function store(StoreUsuarioRequest $request)
     {
+        $actor = JWTAuth::parseToken()->authenticate();
+
         if ($request->isEnableOnlyUpdate()) {
             $usuario = Usuario::findOrFail($request->id);
+            if (!AdminUsuariosAlcance::puedeGestionarUsuario($actor, $usuario)) {
+                abort(403, 'No autorizado para modificar este usuario.');
+            }
             $usuario->enable = $request->enable;
             $usuario->save();
             $usuario->load('roles');
@@ -113,10 +120,19 @@ class UsuariosController extends Controller
             return Response()->json($usuario, 200);
         }
 
-        if($request->id)
+        if ($request->id) {
             $usuario = Usuario::findOrFail($request->id);
-        else
+            if (!AdminUsuariosAlcance::puedeGestionarUsuario($actor, $usuario)) {
+                abort(403, 'No autorizado para modificar este usuario.');
+            }
+        } else {
             $usuario = new Usuario;
+        }
+
+        $idEmpresa = (int) ($request->id_empresa ?? $usuario->id_empresa ?? $actor->id_empresa);
+        if (!AdminUsuariosAlcance::empresaIdPermitido($actor, $idEmpresa)) {
+            abort(403, 'No autorizado para usuarios de esta empresa.');
+        }
 
         $data = $request->all();
         
@@ -162,8 +178,11 @@ class UsuariosController extends Controller
 
     public function delete($id)
     {
-       
+        $actor = JWTAuth::parseToken()->authenticate();
         $usuario = Usuario::findOrFail($id);
+        if (!AdminUsuariosAlcance::puedeGestionarUsuario($actor, $usuario)) {
+            abort(403, 'No autorizado para eliminar este usuario.');
+        }
         $usuario->delete();
 
         return Response()->json($usuario, 201);

@@ -113,6 +113,8 @@ export class GastosComponent implements OnInit {
     ];
     public categoriasBulk: any[] = [];
     public contabilidadHabilitada = false;
+    public formaspagoBulk: any[] = [];
+    public bancosBulk: any[] = [];
 
     modalRef!: BsModalRef;
 
@@ -505,20 +507,87 @@ export class GastosComponent implements OnInit {
         this.bulkTabIndex = 0;
         this.alertService.modal = true;
         this.cargarCategoriasBulk(() => {
-            this.bulkModalRef = this.modalService.show(template, {
-                class: 'modal-xl modal-dialog-scrollable',
-                backdrop: 'static',
-            });
-            this.bulkModalRef.onHidden?.subscribe(() => {
-                this.bulkItems = [];
-                this.bulkTabIndex = 0;
-                this.alertService.modal = false;
+            this.cargarBulkPagoCatalogos(() => {
+                this.bulkModalRef = this.modalService.show(template, {
+                    class: 'modal-xl modal-dialog-scrollable',
+                    backdrop: 'static',
+                });
+                this.bulkModalRef.onHidden?.subscribe(() => {
+                    this.bulkItems = [];
+                    this.bulkTabIndex = 0;
+                    this.alertService.modal = false;
+                });
             });
         });
     }
 
     cerrarImportacionBulk() {
         this.bulkModalRef?.hide();
+    }
+
+    /** Formas de pago y bancos para el modal de importación masiva (mismo criterio que gasto individual). */
+    private cargarBulkPagoCatalogos(done?: () => void) {
+        let pending = 2;
+        const finish = () => {
+            pending -= 1;
+            if (pending <= 0) {
+                done?.();
+            }
+        };
+
+        this.apiService.getAll('formas-de-pago/list').subscribe(
+            (formas) => {
+                this.formaspagoBulk = formas || [];
+                finish();
+            },
+            (error) => {
+                this.alertService.error(error);
+                this.formaspagoBulk = [];
+                finish();
+            }
+        );
+
+        const endpoint = this.contabilidadHabilitada ? 'banco/cuentas/list' : 'bancos';
+        this.apiService.getAll(endpoint).subscribe(
+            (bancos) => {
+                if (!this.contabilidadHabilitada) {
+                    this.bancosBulk = (bancos || [])
+                        .filter((b: any) => b.activo === true || b.activo === 1)
+                        .map((b: any) => ({ nombre: b.nombre }));
+                } else {
+                    this.bancosBulk = bancos || [];
+                }
+                finish();
+            },
+            (error) => {
+                this.alertService.error(error);
+                this.bancosBulk = [];
+                finish();
+            }
+        );
+    }
+
+    bulkRequiereBanco(item: BulkGastoItem): boolean {
+        const fp = item.gasto?.forma_pago;
+        return !!fp && fp !== 'Efectivo' && fp !== 'Wompi';
+    }
+
+    onBulkFormaPagoChange(item: BulkGastoItem) {
+        if (item.gasto.forma_pago === 'Crédito') {
+            item.gasto.estado = 'Pendiente';
+        }
+        if (
+            this.apiService.isModuloBancos()
+            && item.gasto.forma_pago
+            && item.gasto.forma_pago !== 'Efectivo'
+            && item.gasto.forma_pago !== 'Wompi'
+        ) {
+            const forma = this.formaspagoBulk.find((fp: any) => fp.nombre === item.gasto.forma_pago);
+            item.gasto.detalle_banco = forma?.banco?.nombre_banco ?? '';
+        } else if (item.gasto.forma_pago === 'Efectivo' || item.gasto.forma_pago === 'Wompi') {
+            item.gasto.detalle_banco = '';
+            item.gasto.referencia_pago = '';
+        }
     }
 
     private cargarCategoriasBulk(done?: () => void) {
@@ -737,6 +806,13 @@ export class GastosComponent implements OnInit {
                 (d) => d.concepto && String(d.concepto).trim() && d.tipo && String(d.tipo).trim()
             );
         }
+        if (
+            this.bulkRequiereBanco(item)
+            && this.apiService.usarCuentasBancarias(this.contabilidadHabilitada)
+            && !String(item.gasto.detalle_banco || '').trim()
+        ) {
+            return false;
+        }
         return !!(item.gasto.concepto && String(item.gasto.concepto).trim() && item.gasto.tipo);
     }
 
@@ -758,6 +834,17 @@ export class GastosComponent implements OnInit {
             this.alertService.warning(
                 'Revisión',
                 'Complete proveedor, concepto y tipo de gasto antes de guardar.'
+            );
+            return;
+        }
+        if (
+            this.bulkRequiereBanco(item)
+            && this.apiService.usarCuentasBancarias(this.contabilidadHabilitada)
+            && !String(item.gasto.detalle_banco || '').trim()
+        ) {
+            this.alertService.warning(
+                'Revisión',
+                'Seleccione el banco para la forma de pago.'
             );
             return;
         }

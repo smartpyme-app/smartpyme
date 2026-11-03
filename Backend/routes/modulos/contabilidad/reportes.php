@@ -1,7 +1,10 @@
 <?php
 
+use App\Http\Controllers\Api\Contabilidad\Reportes\ContabilidadReporteExportController;
 use App\Http\Controllers\Api\Contabilidad\Reportes\GenerarReportesController;
 use Illuminate\Support\Facades\Route;
+
+Route::post('/reportes/contabilidad/exportaciones', [ContabilidadReporteExportController::class, 'store']);
 
 Route::middleware('reports.no_cache')->group(function () {
     Route::get('/reportes/libro/diario/{fecha_inicio}/{fecha_fin}/{cuenta}/{type}',        [GenerarReportesController::class, 'generarRepLibroDiario']); //genera el libro diario

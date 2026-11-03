@@ -14,6 +14,7 @@ import { CreditosComponent } from '@views/ventas/creditos/creditos.component';
 import { CreditoFormComponent } from '@views/ventas/creditos/credito-form.component';
 import { CreditoDetalleComponent } from '@views/ventas/creditos/credito-detalle.component';
 import { FuncionalidadGuard } from '@guards/funcionalidad.guard';
+import { PermissionGuard } from '@guards/permission.guard';
 import { SLUG_CREDITOS_CLIENTES } from '@views/ventas/creditos/creditos-acceso';
 import { AbonosVentasComponent } from '@views/ventas/abonos/abonos-ventas.component';
 
@@ -69,7 +70,13 @@ const routes: Routes = [
         { path: 'cotizacion/crear', component: FacturacionComponent, title: 'Cotización' },
         { path: 'cotizacion/editar/:id', component: FacturacionComponent, title: 'Cotización' },
 
-        { path: 'solicitudes-compra', component: SolicitudesCompraComponent, title: 'Solicitudes de compra' },
+        {
+            path: 'solicitudes-compra',
+            component: SolicitudesCompraComponent,
+            title: 'Solicitudes de compra',
+            canActivate: [PermissionGuard],
+            data: { permission: 'ventas.solicitudes.ver' },
+        },
 
         { path: 'ordenes/produccion', component: OrdenesProduccionComponent, title: 'Órdenes de producción' },
         { path: 'orden-produccion/crear/:id', component: CrearOrdenProduccionComponent, title: 'Crear orden de producción' },

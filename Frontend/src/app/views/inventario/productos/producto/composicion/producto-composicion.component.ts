@@ -26,9 +26,7 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
 
     @Input() producto: any = {};
 	public composicion: any = {};
-    public productos:any = [];
     public opcion: any = {};
-    public buscador:string = '';
 
     // Producto seleccionado del buscador
     public productoSeleccionado: any = null;
@@ -47,20 +45,12 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
 	ngOnInit() {}
 
     override openModal(template: TemplateRef<any>, compuesto:any) {
-        this.apiService.getAll('productos/list')
-          .pipe(this.untilDestroyed())
-          .subscribe(productos => {
-            this.productos = productos;
-            this.cdr.markForCheck();
-        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
-      // Limpiar selección
       this.productoSeleccionado = null;
 
         if(compuesto.id){
             this.composicion = compuesto;
-            // Si ya tiene un producto compuesto seleccionado, cargarlo
             if (compuesto.id_compuesto) {
-                this.apiService.read('productos/', compuesto.id_compuesto).subscribe(producto => {
+                this.apiService.read('producto/', compuesto.id_compuesto).subscribe(producto => {
                     this.productoSeleccionado = producto;
                     this.cdr.markForCheck();
                 });
@@ -151,12 +141,6 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
             // Limpiar selección para opciones
             this.productoSeleccionado = null;
             this.opcion = {};
-            this.apiService.getAll('productos/list')
-              .pipe(this.untilDestroyed())
-              .subscribe(productos => {
-                this.productos = productos;
-                this.cdr.markForCheck();
-            }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
             super.openModal(template, {class: 'modal-md'});
         }

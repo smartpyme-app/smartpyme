@@ -20,9 +20,11 @@ use App\Services\Contabilidad\OtrasEntradasService;
 use App\Services\Contabilidad\OtrasSalidasService;
 
 use App\Http\Requests\Contabilidad\RetaceoRequest;
+use App\Http\Controllers\Concerns\AuthorizesPartidaContable;
 
 class ApiController extends Controller
 {
+    use AuthorizesPartidaContable;
 
     protected $ventasService;
     protected $cxcService;
@@ -64,6 +66,7 @@ class ApiController extends Controller
 
     public function venta(Request $request)
     {
+        $this->authorizeGenerarPartida($request, 'venta');
         $venta = Venta::findOrFail($request->id);
         $resultado = $this->ventasService->crearPartida($venta);
 
@@ -72,6 +75,7 @@ class ApiController extends Controller
 
     public function compra(Request $request)
     {
+        $this->authorizeGenerarPartida($request, 'compra');
         $compra = Compra::findOrFail($request->id);
         $this->comprasService->crearPartida($compra);
 
@@ -80,6 +84,7 @@ class ApiController extends Controller
 
     public function gasto(Request $gasto)
     {
+        $this->authorizeGenerarPartida($gasto, 'gasto');
         $this->gastosService->crearPartida($gasto);
 
         return Response()->json($gasto, 200);
@@ -87,6 +92,7 @@ class ApiController extends Controller
 
     public function cxp(Request $cxp)
     {
+        $this->authorizeGenerarPartida($cxp, 'cxp');
         $this->cxpService->crearPartida($cxp);
 
         return Response()->json($cxp, 200);
@@ -94,6 +100,7 @@ class ApiController extends Controller
 
     public function cxc(Request $cxc)
     {
+        $this->authorizeGenerarPartida($cxc, 'cxc');
         $this->cxcService->crearPartida($cxc);
 
         return Response()->json($cxc, 200);

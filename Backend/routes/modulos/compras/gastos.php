@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\Compras\DocumentoImportController;
 use App\Http\Controllers\Api\Compras\Gastos\GastosController;
 use App\Http\Controllers\Api\Compras\Gastos\GastosAbonosController;
 use App\Http\Controllers\Api\Compras\Gastos\CategoriasController;
+use App\Support\PermisoAnular;
 use Illuminate\Support\Facades\Route;
 
     Route::get('/gastos',             [GastosController::class, 'index']);
@@ -11,7 +12,8 @@ use Illuminate\Support\Facades\Route;
     Route::post('/gasto/abono',       [GastosAbonosController::class, 'store']);
     Route::get('/gasto/{id}',         [GastosController::class, 'read']);
     Route::post('/gastos/filtrar',    [GastosController::class, 'filter']);
-    Route::delete('/gasto/{id}',      [GastosController::class, 'delete']);
+    Route::delete('/gasto/{id}',      [GastosController::class, 'delete'])
+        ->middleware('permission:'.PermisoAnular::eliminarOAnular('gastos.eliminar'));
     Route::get('/gastos/exportar',    [GastosController::class, 'export']);
 
 
@@ -24,7 +26,8 @@ use Illuminate\Support\Facades\Route;
     Route::get('/gastos/categorias',    [CategoriasController::class, 'index']);
     Route::get('/gastos/categorias/list',    [CategoriasController::class, 'list']);
     Route::post('/gastos/categoria',    [CategoriasController::class, 'store']);
-    Route::delete('/gastos/categoria/{id}', [CategoriasController::class, 'delete']);
+    Route::delete('/gastos/categoria/{id}', [CategoriasController::class, 'delete'])
+        ->middleware('permission:'.PermisoAnular::eliminarOAnular('gastos.categorias.eliminar'));
 
 
 ?>

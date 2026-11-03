@@ -91,6 +91,9 @@ use Illuminate\Support\Facades\Storage;
 
 class VentasController extends Controller
 {
+    /** ponytail: cache por request PHP; evita information_schema en cada GET /ventas. */
+    private static ?array $ventasFullSelectColumns = null;
+
     protected $ventaService;
     protected $inventarioService;
     protected $ventaQueryService;
@@ -145,16 +148,18 @@ class VentasController extends Controller
             return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
         }
 
-        $excludeFromList = ['dte_invalidacion'];
-        $columns = array_values(array_diff(Schema::getColumnListing('ventas'), $excludeFromList));
-        $dteIndex = array_search('dte', $columns, true);
-        if ($dteIndex !== false) {
-            $columns[$dteIndex] = DB::raw("IF(COALESCE(ventas.dte_s3_key,'') <> '', NULL, ventas.dte) as dte");
-        }
-        $columns[] = DB::raw("(CASE WHEN COALESCE(ventas.dte_invalidacion,'') <> '' OR COALESCE(ventas.dte_invalidacion_s3_key,'') <> '' THEN 1 ELSE 0 END) as tiene_dte_invalidacion");
+        $listadoLigero = filter_var($request->input('listado', false), FILTER_VALIDATE_BOOLEAN);
 
-        $ventas = Venta::select($columns)
-            ->where('ventas.id_empresa', $user->id_empresa)
+        $ventasQuery = Venta::query()
+            ->where('ventas.id_empresa', $user->id_empresa);
+
+        if ($listadoLigero) {
+            $ventasQuery->selectListado();
+        } else {
+            $ventasQuery->select($this->ventasFullSelectColumns());
+        }
+
+        $ventasQuery
             ->when($request->inicio, function ($query) use ($request) {
                 return $query->where('fecha', '>=', $request->inicio);
             })
@@ -226,27 +231,57 @@ class VentasController extends Controller
                 return $query->whereNotNull('sello_mh');
             })
             ->where('cotizacion', 0)
-            ->when($request->buscador, fn ($query) => $this->aplicarFiltroBuscador($query, (string) $request->buscador))
-            ->with(['cliente', 'usuario', 'vendedor', 'sucursal', 'canal', 'documento', 'proyecto'])
-            ->with(['paquetes' => function ($query) {
-                $query->where('transportista', 'Boxful')
-                    ->select('id', 'id_venta', 'num_guia', 'transportista', 'wr', 'peso', 'estado', 'id_cliente')
-                    ->with('boxfulShipment');
-            }])
-            ->with(['devolucionesNcNd' => function ($query) {
-                $query->with('documento:id,nombre');
-            }])
-            ->withSum(['abonos' => function ($query) {
-                $query->where('estado', 'Confirmado');
-            }], 'total')
-            ->withSum(['devoluciones' => function ($query) {
-                $query->where('enable', 1);
-            }], 'total')
-            ->orderBy($request->orden, $request->direccion)
-            ->orderBy('id', 'desc')
-            ->paginate($request->paginate);
+            ->when($request->buscador, fn ($query) => $this->aplicarFiltroBuscador($query, (string) $request->buscador));
+
+        if ($listadoLigero) {
+            $ventas = $ventasQuery->clone()
+                ->withListadoRelations()
+                ->orderBy($request->orden ?? 'fecha', $request->direccion ?? 'desc')
+                ->orderBy('ventas.id', 'desc')
+                ->paginate(min((int) ($request->paginate ?: 25), 50));
+        } else {
+            $ventas = $ventasQuery->clone()
+                ->with(['cliente', 'usuario', 'vendedor', 'sucursal', 'canal', 'documento', 'proyecto'])
+                ->with(['paquetes' => function ($query) {
+                    $query->where('transportista', 'Boxful')
+                        ->select('id', 'id_venta', 'num_guia', 'transportista', 'wr', 'peso', 'estado', 'id_cliente')
+                        ->with('boxfulShipment');
+                }])
+                ->with(['devolucionesNcNd' => function ($query) {
+                    $query->with('documento:id,nombre');
+                }])
+                ->withSum(['abonos' => function ($query) {
+                    $query->where('estado', 'Confirmado');
+                }], 'total')
+                ->withSum(['devoluciones' => function ($query) {
+                    $query->where('enable', 1);
+                }], 'total')
+                ->orderBy($request->orden, $request->direccion)
+                ->orderBy('id', 'desc')
+                ->paginate($request->paginate);
+        }
 
         return Response()->json($ventas, 200);
+    }
+
+    /** @return array<int, string|\Illuminate\Contracts\Database\Query\Expression> */
+    private function ventasFullSelectColumns(): array
+    {
+        if (self::$ventasFullSelectColumns !== null) {
+            return self::$ventasFullSelectColumns;
+        }
+
+        $excludeFromList = ['dte_invalidacion'];
+        $columns = array_values(array_diff(Schema::getColumnListing('ventas'), $excludeFromList));
+        $dteIndex = array_search('dte', $columns, true);
+        if ($dteIndex !== false) {
+            $columns[$dteIndex] = DB::raw("IF(COALESCE(ventas.dte_s3_key,'') <> '', NULL, ventas.dte) as dte");
+        }
+        $columns[] = DB::raw("(CASE WHEN COALESCE(ventas.dte_invalidacion,'') <> '' OR COALESCE(ventas.dte_invalidacion_s3_key,'') <> '' THEN 1 ELSE 0 END) as tiene_dte_invalidacion");
+
+        self::$ventasFullSelectColumns = $columns;
+
+        return self::$ventasFullSelectColumns;
     }
 
     /**

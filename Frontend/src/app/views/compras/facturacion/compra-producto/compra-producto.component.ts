@@ -59,9 +59,9 @@ export class CompraProductoComponent implements OnInit {
         );
     }
 
-    /** Oculta el costo en el buscador para Supervisor limitado. */
+    /** Oculta costo en buscador de compras (permiso compras.editar_precio o ver costos). */
     public ocultarCosto(): boolean {
-        return this.apiService.isSupervisorLimitado();
+        return !this.apiService.canEditarPrecioCompra();
     }
 
     constructor( 

@@ -243,6 +243,9 @@ class Partida extends AuditableModel
         if ($this->referencia == 'Pago de Prestamo') {
             return 'finanzas/prestamos';
         }
+        if ($this->referencia == 'Planilla' || $this->referencia == 'Pago Planilla') {
+            return 'planilla';
+        }
 
     }
 

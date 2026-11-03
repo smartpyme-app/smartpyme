@@ -3,13 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { lineasVentaDesdeCita } from '../../cita-venta';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
 
-import { SumPipe }     from '@pipes/sum.pipe';
-import { inventariosParaStockVenta } from '@shared/utils/inventario-venta.util';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { ModalManagerService } from '@services/modal-manager.service';
@@ -21,7 +21,7 @@ import { LazyImageDirective } from '../../../../../directives/lazy-image.directi
     selector: 'app-tienda-venta-citas',
     templateUrl: './tienda-venta-citas.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, NgSelectModule, LazyImageDirective],
+    imports: [CommonModule, FormsModule, RouterModule, NgSelectModule, PaginationComponent, LazyImageDirective],
     changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
@@ -29,6 +29,7 @@ export class TiendaVentaCitasComponent extends BasePaginatedModalComponent imple
 
     @Input() venta: any = {};
     @Output() productoSelect = new EventEmitter();
+    @Output() selectCliente = new EventEmitter<any>();
 
     public citas: PaginatedResponse<any> = {} as PaginatedResponse;
     public clientes:any = [];
@@ -41,7 +42,6 @@ export class TiendaVentaCitasComponent extends BasePaginatedModalComponent imple
         apiService: ApiService, 
         alertService: AlertService,
         modalManager: ModalManagerService,
-        private sumPipe:SumPipe,
         private cdr: ChangeDetectorRef
     ) {
         super(apiService, alertService, modalManager);
@@ -103,8 +103,10 @@ export class TiendaVentaCitasComponent extends BasePaginatedModalComponent imple
             this.citas = citas;
             
             this.detalles = [];
-            let radio = document.getElementById('marcarPaquetes') as HTMLInputElement;
-            radio.checked = false;
+            const radio = document.getElementById('marcarPaquetes') as HTMLInputElement | null;
+            if (radio) {
+              radio.checked = false;
+            }
 
             this.loading = false;
             this.cdr.markForCheck();
@@ -125,59 +127,28 @@ export class TiendaVentaCitasComponent extends BasePaginatedModalComponent imple
 
     // setPagination() ahora se hereda de BasePaginatedComponent
 
-    onCheckPaquete(cita:any){
-        console.log(cita);
-        let radio = document.getElementById('cita' + cita.id) as HTMLInputElement;
-        if(radio.checked){
-            
-            cita.productos.forEach((detalleProducto: any) => {
-                this.saving = true;
-                this.apiService.read('producto/', detalleProducto.id_producto).pipe(this.untilDestroyed()).subscribe(producto => {
-                    let detalle:any = {};
-                    detalle.id_cita    = cita.id;
-                    detalle.id_producto    = producto.id;
-                    detalle.descripcion = producto.nombre;
-                    detalle.img            = producto.img;
-                    detalle.precio         = parseFloat(producto.precio);
-                    detalle.costo          = parseFloat(producto.costo);
-                    detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
-                    if(producto.tipo != 'Servicio' && producto.inventarios.length > 0){
-                        producto.inventarios = inventariosParaStockVenta(producto.inventarios, this.venta);
-                        detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
-                    }else{
-                        detalle.stock = null;
-                    }
-                    detalle.cantidad       = detalleProducto.cantidad;
-                    detalle.descuento      = 0;
-                    detalle.descuento_porcentaje      = 0;
-                    detalle.total_costo = detalle.costo;
-                    detalle.total      = detalle.precio;
-
-                    if(!detalle.exenta){
-                        detalle.exenta = 0;
-                    }
-                    if(!detalle.no_sujeta){
-                        detalle.no_sujeta = 0;
-                    }
-                    if(!detalle.cuenta_a_terceros){
-                        detalle.cuenta_a_terceros = 0;
-                    }
-
-                    detalle.total = (parseFloat(detalle.cantidad) * parseFloat(detalle.precio) - parseFloat(detalle.descuento)).toFixed(4);
-
-                    this.detalles.unshift(detalle);
-                    this.saving = false;
-                    this.cdr.markForCheck();
-                }, error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck();});
-            });
-
-        }else{
-            
-            this.detalles = this.detalles.filter((item:any) => item.id_cita !== cita.id);
-            this.cdr.markForCheck();
+    onCheckPaquete(cita: any) {
+        const radio = document.getElementById('cita' + cita.id) as HTMLInputElement;
+        if (radio.checked) {
+            const lineas = lineasVentaDesdeCita(cita);
+            if (!lineas.length) {
+                this.alertService.warning('Sin productos', 'La cita no tiene productos o servicios para facturar.');
+                radio.checked = false;
+                return;
+            }
+            if (!this.venta.id_cliente && cita.id_cliente) {
+                this.venta.id_cliente = cita.id_cliente;
+                this.apiService.read('cliente/', cita.id_cliente).pipe(this.untilDestroyed()).subscribe({
+                    next: (cliente: any) => this.selectCliente.emit(cliente),
+                    error: (error) => this.alertService.error(error),
+                });
+            }
+            this.detalles = this.detalles.filter((item: any) => item.id_cita !== cita.id);
+            this.detalles.unshift(...lineas);
+        } else {
+            this.detalles = this.detalles.filter((item: any) => item.id_cita !== cita.id);
         }
-
-        console.log(this.detalles);
+        this.cdr.markForCheck();
     }
 
     onCheckAllPaquete(){

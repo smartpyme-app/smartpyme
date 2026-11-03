@@ -11,7 +11,7 @@ import { filter as rxFilter } from 'rxjs/operators';
 import { RestauranteSidebarLinksComponent } from '../restaurante-sidebar-links.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 import { syncLayoutSidebarInset } from '../../layout-sidebar-inset';
-import { perteneceOrganizacionLicencia } from '@views/ventas/solicitudes-compra/solicitudes-compra-acceso';
+import { mostrarMenuSolicitudesCompra } from '@views/ventas/solicitudes-compra/solicitudes-compra-acceso';
 
 @Component({
     selector: 'app-sidebar-ventas',
@@ -44,7 +44,14 @@ export class SidebarVentasComponent implements OnInit {
     public mostrarMenuPedidos = false;
 
     public get mostrarMenuSolicitudesCompra(): boolean {
-        return perteneceOrganizacionLicencia(this.usuario?.empresa);
+        return mostrarMenuSolicitudesCompra(
+            this.usuario?.empresa,
+            (perm) => this.apiService.hasPermission(perm),
+        );
+    }
+
+    public get mostrarMenuOrdenesCompra(): boolean {
+        return this.apiService.hasPermission('compras.ordenes_compra.ver');
     }
 
     private destroyRef = inject(DestroyRef);

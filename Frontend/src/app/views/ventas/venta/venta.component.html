@@ -672,18 +672,18 @@
                             <th class="d-none d-md-table-cell">Observaciones</th>
                             <th>Estado</th>
                             <th class="text-end">Total</th>
-                            <th class="text-center"><i class="fa fa-cog"></i></th>
+                            <th class="text-center">Más</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             @if (venta?.devoluciones?.total < 1 && !loading) {
-                                <td colspan="10" class="text-center">
+                                <td colspan="7" class="text-center">
                                     <span class="badge bg-primary">No tiene documentos vinculados</span>
                                 </td>
                             }
                             @if (loading) {
-                                <td colspan="10" class="text-center">
+                                <td colspan="7" class="text-center">
                                     <span class="badge bg-primary">Cargando...</span>
                                 </td>
                             }
@@ -709,33 +709,23 @@
                                         }
                                     </span>
                                 </td>
-                                <td class="text-right">{{ventaDev.total | currency}}</td>
+                                <td class="text-end">{{ventaDev.total | currency}}</td>
                                 <td class="text-center">
-                                    <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
-                                        <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                                    </span>
-                                    <ng-template #accionesTemplate>
-                                        <div class="list-group border-0">
-                                            <a routerLink="/devolucion/venta/{{ventaDev.id}}" class="list-group-item list-group-item-action border-0 click">
-                                                <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
-                                            </a>
-                                            @if (ventaDev.estado == 'Pagada' && apiService.canEditTest('ventas.editar')) {
-                                                <a (click)="setEstado(ventaDev, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
-                                                    <i class="fa fa-fw fa-ban"></i> Anular venta
-                                                </a>
-                                            }
-                                            @if (ventaDev.estado == 'Anulada' && apiService.canEditTest('ventas.editar')) {
-                                                <a (click)="setEstado(ventaDev, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
-                                                    <i class="fa fa-fw fa-check"></i> Revertir anulación
-                                                </a>
-                                            }
-                                            @if (apiService.canEditTest('ventas.editar')) {
-                                                <a (click)="imprimir(ventaDev)" class="list-group-item list-group-item-action border-0 click">
-                                                    <i class="fa fa-fw fa-print"></i> Imprimir
-                                                </a>
-                                            }
-                                        </div>
-                                    </ng-template>
+                                    @if (ventaDev.estado == 'Pagada' && apiService.canEditTest('ventas.editar')) {
+                                        <button type="button" class="btn btn-light" tooltip="Anular documento" (click)="setEstado(ventaDev, 'Anulada')">
+                                            <i class="fa fa-fw fa-ban"></i>
+                                        </button>
+                                    }
+                                    @if (ventaDev.estado == 'Anulada' && apiService.canEditTest('ventas.editar')) {
+                                        <button type="button" class="btn btn-light" tooltip="Revertir anulación" (click)="setEstado(ventaDev, 'Pagada')">
+                                            <i class="fa fa-fw fa-check"></i>
+                                        </button>
+                                    }
+                                    @if (apiService.canEditTest('ventas.editar')) {
+                                        <button type="button" class="btn btn-light" tooltip="Imprimir" (click)="imprimir(ventaDev)">
+                                            <i class="fa fa-fw fa-print"></i>
+                                        </button>
+                                    }
                                 </td>
                             </tr>
                         }

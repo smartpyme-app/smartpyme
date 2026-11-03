@@ -234,6 +234,11 @@ export class PermissionService {
   }
 
   canDeleteTest(permission: string): boolean {
+    const anular = permission.replace(/\.eliminar$/, '.anular');
+    if (anular !== permission && this.hasPermission(anular)) {
+      return true;
+    }
+
     return this.hasPermission(permission);
   }
 

@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import {BsModalRef} from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { NgSelectModule } from '@ng-select/ng-select';
 import {AlertService} from '@services/alert.service';
 import {ApiService} from '@services/api.service';
 import {PlanillaConstants} from '../../constants/planilla.constants';
@@ -20,7 +21,7 @@ import Swal from 'sweetalert2';
     selector: 'app-planillas',
     templateUrl: './planillas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent, CurrencyPipe, PlanillaNavComponent],
+    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, NgSelectModule, PaginationComponent, CurrencyPipe, PlanillaNavComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PlanillasComponent extends BasePaginatedModalComponent implements OnInit {
@@ -62,6 +63,13 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
 
   public usuario: any = {};
   public periodos: any[] = [];
+  public cuentasBanco: any[] = [];
+
+  /** Valores alineados con Backend\\PlanillaConstants */
+  readonly PLANILLA_BORRADOR = 2;
+  readonly PLANILLA_APROBADA = 4;
+  readonly PLANILLA_PAGADA = 5;
+  readonly PLANILLA_ANULADA = 6;
 
   @ViewChild('mNuevaPlanilla') mNuevaPlanilla!: TemplateRef<any>;
 
@@ -87,6 +95,25 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
     this.loadPlanillas();
+    if (this.puedeElegirCuentaBanco) {
+      this.cargarCuentasBanco();
+    }
+  }
+
+  get puedeElegirCuentaBanco(): boolean {
+    return this.apiService.hasPermission('contabilidad.catalogo_cuentas.ver');
+  }
+
+  private cargarCuentasBanco(): void {
+    this.apiService.getAll('banco/cuentas/list')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (cuentas) => {
+          this.cuentasBanco = cuentas ?? [];
+          this.cdr.markForCheck();
+        },
+        error: (error) => this.alertService.error(error),
+      });
   }
 
   private generarPeriodos() {
@@ -179,6 +206,7 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
       fecha_fin: '',
       tipo_planilla: 'quincenal',
       planillaTemplate: planillaParaDuplicar ? planillaParaDuplicar.id : null,
+      id_cuenta_banco: planillaParaDuplicar?.id_cuenta_banco ?? null,
     };
 
     super.openModal(template);
@@ -223,7 +251,7 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
   public aprobarPlanilla(planilla: any) {
     Swal.fire({
       title: '¿Está seguro?',
-      text: 'Una vez aprobada la planilla no podrá modificarla',
+      text: 'Se generará la partida de devengo si contabilidad está en modo Automático. Luego solo podrá cambiar la cuenta banco hasta pagar.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
@@ -255,7 +283,8 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
               this.cdr.markForCheck();
             },
             error: (error) => {
-              this.alertService.error(error);
+              const mensaje = error?.error?.error || error?.message || 'No se pudo aprobar la planilla';
+              this.alertService.error(mensaje);
               this.procesando = false;
               this.cdr.markForCheck();
             },
@@ -324,7 +353,7 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
           next: (response) => {
             Swal.fire({
               title: '¡Éxito!',
-              text: 'Pago procesado y registros contables generados correctamente',
+              text: response?.message || 'Pago procesado. Boletas enviadas según correo configurado; con contabilidad en Auto se generó la partida de egreso.',
               icon: 'success',
             });
             this.loadPlanillas();
@@ -332,9 +361,10 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
             this.cdr.markForCheck();
           },
           error: (error) => {
+            const mensaje = error?.error?.error || error?.message || 'Ocurrió un error al procesar el pago';
             Swal.fire({
               title: 'Error',
-              text: 'Ocurrió un error al procesar el pago',
+              text: mensaje,
               icon: 'error',
             });
             this.alertService.error(error);

@@ -78,15 +78,15 @@
         <tfoot>
           <tr>
             <td colspan="5" class="text-center"><b>TOTAL</b></td>
-            <td class="text-end"><b>{{ totalExentas | currency }}</b></td>
-            <td class="text-end"><b>{{ totalNoSujetas | currency }}</b></td>
-            <td class="text-end"><b>{{ totalGravadasLocales | currency }}</b></td>
-            <td class="text-end"><b>{{ totalDebitoFiscal | currency }}</b></td>
-            <td class="text-end"><b>{{ totalCtaTerceros | currency }}</b></td>
-            <td class="text-end"><b>{{ totalDebitoCtaTerceros | currency }}</b></td>
-            <td class="text-end"><b>{{ totalIvaPercibido | currency }}</b></td>
-            <td class="text-end"><b>{{ totalIvaRetenido | currency }}</b></td>
-            <td class="text-end"><b>{{ totalGeneral | currency }}</b></td>
+            <td class="text-end"><b>{{ totalesFilas.exentas | currency }}</b></td>
+            <td class="text-end"><b>{{ totalesFilas.no_sujetas | currency }}</b></td>
+            <td class="text-end"><b>{{ totalesFilas.gravadas_locales | currency }}</b></td>
+            <td class="text-end"><b>{{ totalesFilas.debito_fiscal | currency }}</b></td>
+            <td class="text-end"><b>{{ totalesFilas.cta_terceros | currency }}</b></td>
+            <td class="text-end"><b>{{ totalesFilas.debito_cta_terceros | currency }}</b></td>
+            <td class="text-end"><b>{{ totalesFilas.iva_percibido | currency }}</b></td>
+            <td class="text-end"><b>{{ totalesFilas.iva_retenido | currency }}</b></td>
+            <td class="text-end"><b>{{ totalesFilas.total | currency }}</b></td>
           </tr>
         </tfoot>
       </table>

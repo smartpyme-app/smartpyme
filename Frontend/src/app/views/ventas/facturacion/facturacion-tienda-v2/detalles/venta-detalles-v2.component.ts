@@ -51,6 +51,7 @@ import {
     totalAsignadoUnidadesLotes,
     formatCantidadLote,
 } from '@utils/lotes-venta.util';
+import { filtrarPreciosPorUsuario } from '@utils/precios-usuario-venta.util';
 
 @Component({
   selector: 'app-venta-detalles-v2',
@@ -267,6 +268,11 @@ export class VentaDetallesV2Component implements OnInit, OnDestroy {
      * y dejaba el <select> en blanco. Las sin clasificación siguen visibles; si nada coincide, se muestran todas.
      */
     public preciosParaSelector(detalle: any): any[] {
+        const lista = this.preciosTrasClasificacion(detalle);
+        return this.filtrarPreciosPorUsuarioSesion(lista);
+    }
+
+    private preciosTrasClasificacion(detalle: any): any[] {
         const lista = Array.isArray(detalle?.precios) ? detalle.precios : [];
         const raw = this.venta?.cliente?.clasificacion;
         const clasificacion = raw == null || raw === '' ? '' : String(raw).trim().toLowerCase();
@@ -280,6 +286,12 @@ export class VentaDetallesV2Component implements OnInit, OnDestroy {
             }
             return String(c).trim().toLowerCase() === clasificacion;
         });
+        return filtrada.length ? filtrada : lista;
+    }
+
+    private filtrarPreciosPorUsuarioSesion(lista: any[]): any[] {
+        const userId = this.usuario?.id ?? this.apiService.auth_user()?.id;
+        const filtrada = filtrarPreciosPorUsuario(lista, userId);
         return filtrada.length ? filtrada : lista;
     }
 

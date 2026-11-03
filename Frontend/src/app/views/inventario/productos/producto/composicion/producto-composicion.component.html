@@ -63,7 +63,7 @@
             <div class="row">
                 <div class="form-group col-md-12 mb-3">
                     <label>Producto:</label>
-                    <app-buscador-productos (selectProducto)="productoSelect($event)"></app-buscador-productos>
+                    <app-buscador-productos [busquedaLigera]="true" (selectProducto)="productoSelect($event)"></app-buscador-productos>
                     <div *ngIf="productoSeleccionado" class="mt-2">
                         <span class="badge bg-info">{{ productoSeleccionado.nombre_mostrar ||
                             productoSeleccionado.nombre }}</span>
@@ -100,7 +100,7 @@
         <div class="row">
             <div class="form-group col-md-12 mb-3">
                 <label for="">Seleccione un producto para agregarlo como opción:</label>
-                <app-buscador-productos (selectProducto)="productoSelectOpcion($event)"></app-buscador-productos>
+                <app-buscador-productos [busquedaLigera]="true" (selectProducto)="productoSelectOpcion($event)"></app-buscador-productos>
                 <div *ngIf="productoSeleccionado" class="mt-2">
                     <span class="badge bg-info">{{ productoSeleccionado.nombre }}</span>
                     <button type="button" class="btn btn-sm btn-link text-danger ms-2"

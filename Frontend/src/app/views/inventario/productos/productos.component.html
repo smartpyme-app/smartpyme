@@ -288,11 +288,11 @@
                                         routerLink="/producto/editar/{{producto.id}}" class="btn text-start border-0">
                                         <img src="/assets/icons/edit.png" class="icon me-2">Editar
                                     </button>
-                                    <button *ngIf="!apiService.isVentasLimitado()" type="button" [routerLink]="['/kardex', producto.id]"
+                                    <button *ngIf="!apiService.isVentasLimitado() && apiService.canVerCostosInventario()" type="button" [routerLink]="['/kardex', producto.id]"
                                         class="btn text-start border-0">
                                         <img src="/assets/icons/file-text.png" class="icon me-2">Kardex
                                     </button>
-                                    <button *ngIf="!apiService.isVentasLimitado()" type="button"
+                                    <button *ngIf="!apiService.isVentasLimitado() && apiService.canVerCostosInventario()" type="button"
                                         [routerLink]="['/detalle-producto', producto.id]"
                                         fragment="historial-precio-costo"
                                         class="btn text-start border-0">

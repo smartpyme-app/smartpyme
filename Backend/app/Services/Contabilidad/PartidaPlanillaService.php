@@ -3,7 +3,9 @@
 namespace App\Services\Contabilidad;
 
 use App\Helpers\CostaRicaCargasSocialesHelper;
+use App\Models\Bancos\Cuenta as CuentaBancaria;
 use App\Models\EmpresaConfiguracionPlanilla;
+use App\Models\Contabilidad\Catalogo\Cuenta as CuentaContable;
 use App\Models\Contabilidad\Configuracion;
 use App\Models\Contabilidad\Partidas\Partida;
 use App\Models\Contabilidad\Partidas\Detalle as DetallePartida;
@@ -14,6 +16,9 @@ use Illuminate\Support\Facades\Log;
 
 class PartidaPlanillaService
 {
+    public const REF_DEVENGO = 'Planilla';
+    public const REF_PAGO = 'Pago Planilla';
+
     /**
      * Generar la partida contable automática de planilla en estado 'Pendiente'
      *
@@ -26,10 +31,10 @@ class PartidaPlanillaService
         DB::beginTransaction();
         try {
             // Verificar si ya existe partida para esta planilla
-            if (Partida::existeParaDocumentoOrigen('Planilla', $planilla->id)) {
+            if (Partida::existeParaDocumentoOrigen(self::REF_DEVENGO, $planilla->id)) {
                 Log::info("La planilla {$planilla->codigo} ya tiene una partida contable asociada.");
                 DB::rollBack();
-                return Partida::where('referencia', 'Planilla')
+                return Partida::where('referencia', self::REF_DEVENGO)
                     ->where('id_referencia', $planilla->id)
                     ->first();
             }
@@ -93,7 +98,7 @@ class PartidaPlanillaService
             $partida->concepto = "Partida automática de Planilla {$planilla->codigo} ({$planilla->tipo_planilla}) - Período " .
                 date('d/m/Y', strtotime($planilla->fecha_inicio)) . " al " . date('d/m/Y', strtotime($planilla->fecha_fin));
             $partida->estado = 'Pendiente'; // Estado "Pendiente" para revisión y aprobación por el Contador
-            $partida->referencia = 'Planilla';
+            $partida->referencia = self::REF_DEVENGO;
             $partida->id_referencia = $planilla->id;
             $partida->id_empresa = $planilla->id_empresa;
             $partida->id_usuario = $idUsuario ?? auth()->id() ?? 1;
@@ -226,5 +231,170 @@ class PartidaPlanillaService
             ]);
             throw $e;
         }
+    }
+
+    /**
+     * Con partidas en Auto, exige cuentas de planilla en configuración contable antes de aprobar.
+     */
+    public function validarCuentasDevengoSiAuto(Planilla $planilla): void
+    {
+        if (!$this->esGeneracionAutomatica((int) $planilla->id_empresa)) {
+            return;
+        }
+
+        $configContable = Configuracion::where('id_empresa', $planilla->id_empresa)->first();
+        if (!$configContable) {
+            throw new \Exception('Configure la contabilidad de la empresa antes de aprobar planillas.');
+        }
+
+        $codPais = EmpresaConfiguracionPlanilla::resolverCodigoPaisEmpresa($planilla->empresa);
+
+        $requeridas = [
+            'id_cuenta_gasto_salarios' => 'Gasto de salarios',
+            'id_cuenta_gasto_cargas_patronales' => 'Gasto de cargas patronales',
+            'id_cuenta_gasto_aguinaldo' => 'Gasto de provisión de aguinaldo',
+            'id_cuenta_gasto_vacaciones' => 'Gasto de provisión de vacaciones',
+            'id_cuenta_pasivo_cargas_sociales' => 'Cargas sociales por pagar',
+            'id_cuenta_pasivo_retencion_renta' => 'Retención de renta por pagar',
+            'id_cuenta_pasivo_salarios_por_pagar' => 'Salarios netos por pagar',
+            'id_cuenta_pasivo_provision_aguinaldo' => 'Provisión de aguinaldo por pagar',
+            'id_cuenta_pasivo_provision_vacaciones' => 'Provisión de vacaciones por pagar',
+        ];
+
+        if ($codPais === 'CR') {
+            $requeridas['id_cuenta_pasivo_ins'] = 'INS riesgos del trabajo por pagar';
+        }
+
+        foreach ($requeridas as $campo => $etiqueta) {
+            if (empty($configContable->{$campo})) {
+                throw new \Exception(
+                    "Configure la cuenta de planilla «{$etiqueta}» en Contabilidad → Configuración."
+                );
+            }
+        }
+    }
+
+    /**
+     * Validar cuenta bancaria de la planilla cuando hay sueldo neto a pagar.
+     */
+    public function validarCuentaBancoParaPago(Planilla $planilla): void
+    {
+        $totalNeto = $this->totalSueldoNetoActivo($planilla->id);
+        if ($totalNeto <= 0) {
+            return;
+        }
+
+        if (!$planilla->id_cuenta_banco) {
+            throw new \Exception(
+                'Seleccione la cuenta caja/banco en la planilla (edite en borrador o antes de aprobar) antes de procesar el pago.'
+            );
+        }
+
+        $this->resolverCuentaContableDesdeBanco((int) $planilla->id_cuenta_banco, (int) $planilla->id_empresa);
+    }
+
+    /**
+     * Partida de egreso: debe salarios por pagar / haber banco (catálogo vía cuenta bancaria).
+     */
+    public function generarPartidaPagoPlanilla(Planilla $planilla, ?int $idUsuario = null): ?Partida
+    {
+        if (!$this->esGeneracionAutomatica((int) $planilla->id_empresa)) {
+            return null;
+        }
+
+        if (Partida::existeParaDocumentoOrigen(self::REF_PAGO, $planilla->id)) {
+            return Partida::where('referencia', self::REF_PAGO)
+                ->where('id_referencia', $planilla->id)
+                ->first();
+        }
+
+        $totalNeto = $this->totalSueldoNetoActivo($planilla->id);
+        if ($totalNeto <= 0) {
+            return null;
+        }
+
+        $configContable = Configuracion::where('id_empresa', $planilla->id_empresa)->first();
+        if (!$configContable || !$configContable->id_cuenta_pasivo_salarios_por_pagar) {
+            throw new \Exception('Configure la cuenta de salarios por pagar en Contabilidad → Configuración.');
+        }
+
+        $cuentaPasivo = CuentaContable::find($configContable->id_cuenta_pasivo_salarios_por_pagar);
+        if (!$cuentaPasivo) {
+            throw new \Exception('No se encontró la cuenta de salarios por pagar en el catálogo.');
+        }
+
+        $cuentaBanco = $this->resolverCuentaContableDesdeBanco(
+            (int) $planilla->id_cuenta_banco,
+            (int) $planilla->id_empresa
+        );
+
+        $concepto = "Pago de planilla {$planilla->codigo} — salarios netos";
+
+        $partida = Partida::create([
+            'fecha' => now()->format('Y-m-d'),
+            'tipo' => 'Egreso',
+            'concepto' => $concepto,
+            'estado' => 'Pendiente',
+            'referencia' => self::REF_PAGO,
+            'id_referencia' => $planilla->id,
+            'id_empresa' => $planilla->id_empresa,
+            'id_usuario' => $idUsuario ?? auth()->id() ?? 1,
+        ]);
+
+        DetallePartida::create([
+            'id_partida' => $partida->id,
+            'id_cuenta' => $cuentaPasivo->id,
+            'codigo' => $cuentaPasivo->codigo,
+            'nombre_cuenta' => $cuentaPasivo->nombre,
+            'concepto' => $concepto,
+            'debe' => $totalNeto,
+            'haber' => 0,
+        ]);
+
+        DetallePartida::create([
+            'id_partida' => $partida->id,
+            'id_cuenta' => $cuentaBanco->id,
+            'codigo' => $cuentaBanco->codigo,
+            'nombre_cuenta' => $cuentaBanco->nombre,
+            'concepto' => $concepto,
+            'debe' => 0,
+            'haber' => $totalNeto,
+        ]);
+
+        Log::info("Partida de pago de planilla {$planilla->codigo} creada (ID Partida: {$partida->id})");
+
+        return $partida->fresh(['detalles']);
+    }
+
+    private function totalSueldoNetoActivo(int $idPlanilla): float
+    {
+        return round((float) PlanillaDetalle::where('id_planilla', $idPlanilla)
+            ->where('estado', '!=', 0)
+            ->sum('sueldo_neto'), 2);
+    }
+
+    private function resolverCuentaContableDesdeBanco(int $idCuentaBancaria, int $idEmpresa): CuentaContable
+    {
+        $bancaria = CuentaBancaria::withoutGlobalScopes()
+            ->where('id_empresa', $idEmpresa)
+            ->find($idCuentaBancaria);
+
+        if (!$bancaria || !$bancaria->id_cuenta_contable) {
+            throw new \Exception('La cuenta bancaria seleccionada no tiene cuenta contable enlazada en Bancos.');
+        }
+
+        $cuenta = CuentaContable::find($bancaria->id_cuenta_contable);
+        if (!$cuenta) {
+            throw new \Exception('No se encontró la cuenta contable enlazada a la cuenta bancaria.');
+        }
+
+        return $cuenta;
+    }
+
+    private function esGeneracionAutomatica(int $idEmpresa): bool
+    {
+        $config = Configuracion::withoutGlobalScopes()->where('id_empresa', $idEmpresa)->first();
+
+        return $config && $config->generar_partidas === 'Auto';
     }
 }

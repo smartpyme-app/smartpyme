@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use stdClass;
 use Auth;
 use App\Http\Requests\Licencias\StoreLicenciaRequest;
+use App\Support\AdminUsuariosAlcance;
 
 class LicenciasController extends Controller
 {
@@ -65,27 +66,22 @@ class LicenciasController extends Controller
     }
 
     public function usuarios(Request $request) {
-        $licencia = Auth::user()->empresa()->first()->licencia()->first();
-        $empresas = $licencia->empresas()->pluck('id_empresa')->toArray();;
+        $actor = Auth::user();
 
-        $usuarios = Usuario::with('empresa','roles')
-                                ->whereIn('id_empresa', $empresas)
-                                ->when($request->estado !== null, function($q) use ($request){
-                                    $q->where('enable', !!$request->estado);
-                                })
-                                ->when($request->id_empresa, function($q) use ($request){
-                                    $q->where('id_empresa', $request->id_empresa);
-                                })
-                                ->when($request->id_sucursal, function($q) use ($request){
-                                    $q->where('id_sucursal', $request->id_sucursal);
-                                })
-                                ->when($request->buscador, function($query) use ($request){
-                                    return $query->where('name', 'like' ,'%' . $request->buscador . '%')
-                                                 ->orwhere('email', 'like' ,"%" . $request->buscador . "%");
-                                })
-                                // ->orderBy('enable', 'desc')
-                                ->orderBy($request->orden, $request->direccion)
-                                ->paginate($request->paginate);
+        $query = Usuario::with('empresa', 'roles')
+            ->when($request->estado !== null, function ($q) use ($request) {
+                $q->where('enable', !!$request->estado);
+            })
+            ->when($request->id_sucursal, function ($q) use ($request) {
+                $q->where('id_sucursal', $request->id_sucursal);
+            });
+
+        AdminUsuariosAlcance::aplicarAlQuery($query, $actor, $request);
+        AdminUsuariosAlcance::aplicarBuscador($query, $request->buscador);
+
+        $usuarios = $query
+            ->orderBy($request->orden, $request->direccion)
+            ->paginate($request->paginate);
 
         return Response()->json($usuarios, 200);
 
