@@ -238,6 +238,10 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_VENTAS.formas_pago.eliminar'),
             config('permissions.PERMISSION_VENTAS.descuentos.aplicar'),
             config('permissions.PERMISSION_VENTAS.descuentos.autorizar'),
+            config('permissions.PERMISSION_VENTAS.devoluciones.ver'),
+            config('permissions.PERMISSION_VENTAS.devoluciones.crear'),
+            config('permissions.PERMISSION_VENTAS.devoluciones.editar'),
+            config('permissions.PERMISSION_VENTAS.devoluciones.eliminar'),
             // Planilla
             config('permissions.PERMISSION_PLANILLA.ver'),
             config('permissions.PERMISSION_PLANILLA.crear'),

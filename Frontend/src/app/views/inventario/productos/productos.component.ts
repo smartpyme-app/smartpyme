@@ -121,10 +121,9 @@ export class ProductosComponent implements OnInit, OnDestroy {
         private funcionalidadesService: FuncionalidadesService
     ) { }
 
-    /** Supervisor consulta el listado; las acciones de fila quedan para el resto de roles. */
+    /** Ocultar acciones solo para supervisor limitado; cada ítem del menú sigue con su permiso/tipo. */
     mostrarMenuAcciones(): boolean {
-        return !this.apiService.isSupervisorLimitado()
-            && this.apiService.validateRole('usuario_supervisor', false);
+        return !this.apiService.isSupervisorLimitado();
     }
 
     ngOnInit() {
