@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import { FormControl } from '@angular/forms';
@@ -19,7 +21,7 @@ import { LazyImageDirective } from '../../../../../directives/lazy-image.directi
     selector: 'app-tienda-venta-paquetes',
     templateUrl: './tienda-venta-paquetes.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, LazyImageDirective, CurrencyPipe],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, NgSelectModule, PaginationComponent, LazyImageDirective, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent implements OnInit {
@@ -116,7 +118,8 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent im
 
             this.loading = false;
             this.notificarCuentaTercerosEnListadoPaquetes();
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
     }
 
@@ -148,7 +151,8 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent im
             this.paquetes = paquetes;
             this.loading = false;
             this.notificarCuentaTercerosEnListadoPaquetes();
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
 

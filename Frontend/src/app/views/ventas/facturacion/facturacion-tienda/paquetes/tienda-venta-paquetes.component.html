@@ -30,7 +30,7 @@
                             <option value="Pendiente">Pendiente</option>
                             <option value="Facturado">Facturado</option>
                         </select>
-                        <ng-select name="id_cliente" (change)="filtrarPaquetes()" [(ngModel)]="filtros.id_cliente" class="form-select bg-default w-auto p-0">
+                        <ng-select name="id_cliente" (change)="filtrarPaquetes()" [(ngModel)]="filtros.id_cliente" class="form-select bg-default p-0" style="min-width: 220px;">
                             <ng-option value="">Cliente</ng-option>
                             @for (cliente of clientes; track cliente.id) {
                                 <ng-option [value]="cliente.id">
