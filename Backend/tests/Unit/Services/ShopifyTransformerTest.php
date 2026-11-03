@@ -313,4 +313,52 @@ class ShopifyTransformerTest extends TestCase
 
         $this->assertSame('Transferencia', $formaPago);
     }
+
+    public function test_cotizacion_shopify_no_usa_la_tabla_de_ventas(): void
+    {
+        $datos = $this->transformer->transformarCotizacion([
+            'estado' => 'Pendiente',
+            'forma_pago' => 'Contra entrega',
+            'observaciones_shopify' => 'Dejar en recepción',
+            'fecha' => '2026-11-03',
+            'total' => 25.5,
+            'sub_total' => 22.57,
+            'gravada' => 22.57,
+            'exenta' => 0,
+            'iva' => 2.93,
+            'descuento' => 0,
+            'id_cliente' => 9,
+            'id_bodega' => 3,
+            'id_usuario' => 4,
+            'id_empresa' => 2,
+            'id_sucursal' => 1,
+            'id_canal' => 8,
+            'cotizacion' => 1,
+            'referencia_shopify' => 'SHOPIFY-99',
+            'num_orden' => '1042',
+        ], 15);
+
+        $this->assertSame('Pendiente', $datos['estado']);
+        $this->assertSame('SHOPIFY-99', $datos['referencia_shopify']);
+        $this->assertSame('1042', $datos['num_orden']);
+        $this->assertSame(15, $datos['id_documento']);
+        $this->assertSame('Pedido Shopify #1042 — Dejar en recepción', $datos['observaciones']);
+        $this->assertArrayNotHasKey('id_canal', $datos);
+        $this->assertArrayNotHasKey('cotizacion', $datos);
+
+        $detalle = $this->transformer->transformarDetalleCotizacion([
+            'cantidad' => 2,
+            'precio' => 10,
+            'total' => 20,
+            'descripcion' => 'Camisa',
+            'id_producto' => 7,
+            'id_venta' => 1,
+            'precio_con_iva' => 11.3,
+        ], 44);
+
+        $this->assertSame(44, $detalle['id_cotizacion_venta']);
+        $this->assertSame(7, $detalle['id_producto']);
+        $this->assertArrayNotHasKey('id_venta', $detalle);
+        $this->assertArrayNotHasKey('precio_con_iva', $detalle);
+    }
 }
