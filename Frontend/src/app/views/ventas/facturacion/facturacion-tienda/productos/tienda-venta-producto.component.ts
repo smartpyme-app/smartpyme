@@ -93,8 +93,8 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
 
     override openModal(template: TemplateRef<any>) {
 
-        this.apiService.getAll('categorias').pipe(this.untilDestroyed()).subscribe(categorias => {
-            this.categorias = categorias;
+        this.apiService.getAll('categorias/list').pipe(this.untilDestroyed()).subscribe(categorias => {
+            this.categorias = Array.isArray(categorias) ? categorias : (categorias?.data ?? []);
             this.cdr.markForCheck();
         }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 

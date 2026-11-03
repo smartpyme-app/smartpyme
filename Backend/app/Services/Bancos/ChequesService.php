@@ -28,7 +28,10 @@ class ChequesService
             $cheque->estado = 'Pendiente';
             $cheque->concepto = $concepto;
             $cheque->id_cuenta = $cuenta_bancaria->id;
-            $cheque->correlativo = $cuenta_bancaria->correlativo_cheques;
+            [$cheque->correlativo, $incrementarSecuenciaCuenta] = self::resolverCorrelativoCheque(
+                $registro,
+                $cuenta_bancaria
+            );
             $cheque->referencia = $referencia;
             $cheque->id_referencia = $registro->id;
             $cheque->anombrede = $anombrede;
@@ -38,7 +41,9 @@ class ChequesService
             $cheque->id_usuario = Auth::user()->id;
             $cheque->save();
 
-            $cheque->cuenta->increment('correlativo_cheques');
+            if ($incrementarSecuenciaCuenta) {
+                $cheque->cuenta->increment('correlativo_cheques');
+            }
 
             DB::commit();
         } catch (\Exception $e) {
@@ -48,5 +53,25 @@ class ChequesService
             DB::rollback();
             throw new Exception($e->getMessage(), 400);
         }
+    }
+
+    /**
+     * Número de cheque: referencia del pago (ej. abono) o secuencia de la cuenta bancaria.
+     *
+     * @return array{0: int, 1: bool} correlativo y si debe incrementar correlativo_cheques
+     */
+    private static function resolverCorrelativoCheque(object $registro, $cuenta_bancaria): array
+    {
+        $referenciaPago = trim((string) ($registro->referencia ?? ''));
+        if ($referenciaPago !== '' && ctype_digit($referenciaPago)) {
+            return [(int) $referenciaPago, false];
+        }
+
+        $secuencia = $cuenta_bancaria->correlativo_cheques;
+        if ($secuencia === null || $secuencia === '') {
+            $secuencia = 1;
+        }
+
+        return [(int) $secuencia, true];
     }
 }

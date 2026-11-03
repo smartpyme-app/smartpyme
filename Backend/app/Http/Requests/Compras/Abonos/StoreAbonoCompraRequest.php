@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Compras\Abonos;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreAbonoCompraRequest extends FormRequest
 {
@@ -31,7 +32,13 @@ class StoreAbonoCompraRequest extends FormRequest
             'id_sucursal' => ['required', 'integer', 'exists:sucursales,id'],
             'id' => ['nullable', 'integer', 'exists:abonos_compras,id'],
             'detalle_banco' => ['nullable', 'string'],
-            'referencia' => ['nullable', 'max:255'],
+            'referencia' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::requiredIf(fn () => $this->input('forma_pago') === 'Cheque'),
+                Rule::when($this->input('forma_pago') === 'Cheque', ['regex:/^\d+$/']),
+            ],
             'mora' => ['nullable', 'numeric', 'min:0'],
             'comision' => ['nullable', 'numeric', 'min:0'],
             'nota' => ['nullable', 'string'],
@@ -68,6 +75,9 @@ class StoreAbonoCompraRequest extends FormRequest
             'mora.min' => 'La mora no puede ser negativa.',
             'comision.numeric' => 'La comisión debe ser un número.',
             'comision.min' => 'La comisión no puede ser negativa.',
+            'referencia.required' => 'La referencia (número de cheque) es obligatoria cuando la forma de pago es Cheque.',
+            'referencia.regex' => 'La referencia debe ser el número de cheque (solo dígitos).',
+            'referencia.max' => 'La referencia no puede exceder 255 caracteres.',
         ];
     }
 
