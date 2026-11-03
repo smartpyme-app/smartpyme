@@ -34,8 +34,13 @@
       <div class="form-group col-md-4 col-lg-2">
         <label for="tipo_documento">Documento</label>
         <select name="tipo_documento" formControlName="tipo_documento" class="form-select" (change)="onTipoDocumentoChange()">
-          @for (documento of documentos; track documento.nombre || $index) {
-            <option [value]="documento.nombre">{{ documento.nombre }}</option>
+          @if (documentos.length === 0) {
+            <option [ngValue]="null">Sin «Orden de compra» para esta bodega/sucursal</option>
+          }
+          @for (documento of documentos; track documento.id) {
+            <option [value]="documento.nombre">
+              {{ documento.nombre }}@if (documento.correlativo != null && documento.correlativo !== '') { (#{{ documento.correlativo }})}
+            </option>
           }
         </select>
       </div>

@@ -163,18 +163,28 @@ export class OrdenCompraFormComponent implements OnInit {
     return bodega?.id_sucursal ?? null;
   }
 
+  /** documentos/list ya trae solo activos; activo en API es string "1"/"0" (cast del modelo). */
+  private documentoEsOrdenCompraActiva(d: {
+    nombre?: string;
+    activo?: boolean | number | string;
+  }): boolean {
+    const nombre = (d.nombre ?? '').trim().toLowerCase();
+    if (nombre !== 'orden de compra') {
+      return false;
+    }
+    return d.activo !== 0 && d.activo !== '0' && d.activo !== false && d.activo !== 'false';
+  }
+
   private filtrarDocumentosPorSucursal(): void {
     const pool = this.documentosTodos.length ? this.documentosTodos : this.documentos;
     const idSucursal = this.idSucursalDesdeBodega(this.ordenCompraForm?.get('id_bodega')?.value);
-    const esOrdenCompraActiva = (d: { nombre?: string; activo?: boolean | number }) =>
-      d.nombre === 'Orden de compra' && (d.activo === true || d.activo === 1);
     if (idSucursal == null) {
-      this.documentos = pool.filter(esOrdenCompraActiva);
+      this.documentos = pool.filter((d) => this.documentoEsOrdenCompraActiva(d));
       return;
     }
     this.documentos = pool.filter(
-      (d: { id_sucursal?: number; nombre?: string; activo?: boolean | number }) =>
-        d.id_sucursal == idSucursal && esOrdenCompraActiva(d),
+      (d: { id_sucursal?: number; nombre?: string; activo?: boolean | number | string }) =>
+        d.id_sucursal == idSucursal && this.documentoEsOrdenCompraActiva(d),
     );
   }
 
@@ -190,11 +200,7 @@ export class OrdenCompraFormComponent implements OnInit {
     if (this.activatedRoute.snapshot.params['id']) {
       return;
     }
-    const nombre = 'Orden de compra';
-    const doc = (this.documentos || []).find(
-      (d: { nombre?: string; activo?: boolean | number }) =>
-        d?.nombre === nombre && (d.activo === true || d.activo === 1),
-    );
+    const doc = (this.documentos || []).find((d) => this.documentoEsOrdenCompraActiva(d));
     const patch: { tipo_documento?: string; referencia?: number | string } = {};
     if (doc?.nombre) {
       patch.tipo_documento = doc.nombre;
