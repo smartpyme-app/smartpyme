@@ -53,7 +53,7 @@ export class N1coPaymentService {
     amount: number;
     description?: string;
   }): Observable<any> {
-    return this.http.post(`${this.apiUrl}/api/payment/process`, data);
+    return this.http.post(`${this.apiUrl}/payment/process`, data);
   }
 
   createChargewithMethodPayment(data: {

@@ -18,12 +18,20 @@ import {
 } from '@angular/platform-browser';
 import { Estado } from '../../../models/estado.interface';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
+import { ThreedsModalComponent } from '../../../auth/register/pago/modal/threeds-modal.component';
 
 @Component({
     selector: 'app-suscripcion',
     templateUrl: './suscripcion.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [
+      CommonModule,
+      RouterModule,
+      FormsModule,
+      NotificacionesContainerComponent,
+      ThreedsModalComponent,
+    ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
@@ -89,6 +97,16 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
 
   ngOnInit() {
     this.loadAll();
+  }
+
+  private setSaving(value: boolean): void {
+    this.saving = value;
+    this.cdr.markForCheck();
+  }
+
+  private setMostrar3DSModal(value: boolean): void {
+    this.mostrar3DSModal = value;
+    this.cdr.markForCheck();
   }
 
   public loadAll() {
@@ -173,7 +191,7 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
   }
 
   public async payWithSavedMethod() {
-    this.saving = true;
+    this.setSaving(true);
     try {
       const chargeData = {
         metodo_pago_id: this.suscripcion.metodoPago.id,
@@ -218,7 +236,7 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
           (error.error?.message || error.message || 'Error desconocido')
       );
     } finally {
-      this.saving = false;
+      this.setSaving(false);
     }
   }
 
@@ -230,13 +248,13 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
         return;
       }
 
-      this.saving = true;
+      this.setSaving(true);
       this.createNewSubscriptionPayment();
     });
   }
 
   public async onSubmit() {
-    this.saving = true;
+    this.setSaving(true);
     try {
       const suscripcionGuardada = await this.apiService.store('suscripcion', this.suscripcion)
         .pipe(this.untilDestroyed())
@@ -250,7 +268,7 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
     } catch (error: any) {
       this.alertService.error(error);
     } finally {
-      this.saving = false;
+      this.setSaving(false);
     }
   }
 
@@ -271,13 +289,13 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
       return;
     }
 
-    this.saving = true;
+    this.setSaving(true);
     this.apiService
       .store('cancelar-suscripcion', this.cancelarSuscripcion)
       .pipe(this.untilDestroyed())
       .subscribe(
         (response) => {
-          this.saving = false;
+          this.setSaving(false);
           if (response.success) {
             this.closeModal();
             this.alertService.success(
@@ -288,7 +306,7 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
           }
         },
         (error) => {
-          this.saving = false;
+          this.setSaving(false);
           this.alertService.error(
             error.error?.error || 'Error al procesar la solicitud'
           );
@@ -303,7 +321,7 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
         return;
       }
 
-      this.saving = true;
+      this.setSaving(true);
       // if (this.suscripcion.metodoPago) {
       this.updatePayment();
       // } else {
@@ -367,7 +385,7 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
           (error.error?.message || error.message || 'Error desconocido')
       );
     } finally {
-      this.saving = false;
+      this.setSaving(false);
     }
   }
 
@@ -399,15 +417,15 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
     this.urlAutenticacion = this.sanitizer.bypassSecurityTrustResourceUrl(
       result.authentication_url
     );
-    this.mostrar3DSModal = true;
+    this.setMostrar3DSModal(true);
 
     // Timeout máximo de seguridad (2 minutos)
     // Si no llega ningún mensaje del iframe, cerrar el modal
     setTimeout(() => {
       if (this.mostrar3DSModal) {
         this.stopAuthCheck();
-        this.mostrar3DSModal = false;
-        this.saving = false;
+        this.setMostrar3DSModal(false);
+        this.setSaving(false);
         this.alertService.error('El tiempo de autenticación ha expirado');
       }
     }, 120000);
@@ -430,7 +448,7 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Cerrar el modal después de mostrar la confirmación
-      this.mostrar3DSModal = false;
+      this.setMostrar3DSModal(false);
 
       // Esperar 100ms antes de procesar el pago
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -457,14 +475,14 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
           );
         }
 
-        this.saving = false;
+        this.setSaving(false);
       } catch (error: any) {
         console.error('Error procesando pago 3DS:', error);
         this.alertService.error(
           'Error al procesar el pago: ' +
             (error.error?.message || error.message || 'Error desconocido')
         );
-        this.saving = false;
+        this.setSaving(false);
       }
     }
     // Manejar autenticación fallida
@@ -486,8 +504,8 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
         );
 
         // Cerrar el modal
-        this.mostrar3DSModal = false;
-        this.saving = false;
+        this.setMostrar3DSModal(false);
+        this.setSaving(false);
 
         // Mostrar alerta de error
         this.alertService.error(
@@ -499,8 +517,8 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
           error
         );
         // Cerrar el modal de todas formas
-        this.mostrar3DSModal = false;
-        this.saving = false;
+        this.setMostrar3DSModal(false);
+        this.setSaving(false);
 
         // Mostrar alerta de error
         this.alertService.error(
@@ -570,7 +588,7 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
           (error.error?.message || error.message || 'Error desconocido')
       );
     } finally {
-      this.saving = false;
+      this.setSaving(false);
     }
   }
 
@@ -913,7 +931,7 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
   }
 
   public onRecurrentPaymentChange(event: any): void {
-    this.saving = true;
+    this.setSaving(true);
     const isRecurrent = event.target.checked;
 
     this.apiService
@@ -930,14 +948,14 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
               isRecurrent ? 'activado' : 'desactivado'
             } exitosamente.`
           );
-          this.saving = false;
+          this.setSaving(false);
           this.loadAll(); // Para actualizar los datos desde el servidor
         },
         (error) => {
           this.alertService.error(
             error.error?.message || 'Error al actualizar el pago recurrente'
           );
-          this.saving = false;
+          this.setSaving(false);
           // Restaurar el estado anterior del interruptor
           event.target.checked = !isRecurrent;
         }
