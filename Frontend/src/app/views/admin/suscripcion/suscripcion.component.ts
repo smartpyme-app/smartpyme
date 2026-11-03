@@ -104,6 +104,13 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
+  /** No quitar el cargando mientras el modal 3DS sigue abierto. */
+  private endSavingUnless3dsPending(): void {
+    if (!this.mostrar3DSModal) {
+      this.setSaving(false);
+    }
+  }
+
   private setMostrar3DSModal(value: boolean): void {
     this.mostrar3DSModal = value;
     this.cdr.markForCheck();
@@ -236,7 +243,7 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
           (error.error?.message || error.message || 'Error desconocido')
       );
     } finally {
-      this.setSaving(false);
+      this.endSavingUnless3dsPending();
     }
   }
 
@@ -385,7 +392,7 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
           (error.error?.message || error.message || 'Error desconocido')
       );
     } finally {
-      this.setSaving(false);
+      this.endSavingUnless3dsPending();
     }
   }
 
@@ -414,6 +421,7 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
   }
 
   private async handleThreeDSAuthentication(result: any) {
+    this.setSaving(true);
     this.urlAutenticacion = this.sanitizer.bypassSecurityTrustResourceUrl(
       result.authentication_url
     );
