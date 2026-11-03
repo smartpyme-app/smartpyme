@@ -90,9 +90,6 @@
                             @if (apiService.hasPermission('productos.categorias.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/categorias']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/folder.png" class="icon me-2">Categorías</a></li>
                             }
-                            @if (contabilidadHabilitada && apiService.hasPermission('productos.campos_personalizados.ver')) {
-                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/custom-fields']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/settings.png" class="icon me-2">Campos personalizados</a></li>
-                            }
                             @if (usuario.empresa?.modulo_paquetes && apiService.hasPermission('productos.paquetes.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/paquetes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/package.png" class="icon me-2">Paquetes</a></li>
                             }

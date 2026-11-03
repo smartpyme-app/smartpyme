@@ -449,7 +449,7 @@
             } @else {
               @for (concepto of conceptosPatronales; track concepto[0]) {
                 <td class="text-end">
-                  ${{ calcularConcepto(detalle, concepto[1], concepto[0]) | currency }}
+                  {{ calcularConcepto(detalle, concepto[1], concepto[0]) | currency }}
                 </td>
               }
             }

@@ -115,8 +115,8 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
 
     public openModal(template: TemplateRef<any>) {
 
-        this.apiService.getAll('categorias').subscribe(categorias => {
-            this.categorias = categorias;
+        this.apiService.getAll('categorias/list').subscribe(categorias => {
+            this.categorias = Array.isArray(categorias) ? categorias : (categorias?.data ?? []);
         }, error => {this.alertService.error(error);});
 
         this.loadAll();

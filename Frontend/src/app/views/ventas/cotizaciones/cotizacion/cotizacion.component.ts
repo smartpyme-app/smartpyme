@@ -141,27 +141,7 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
       }
     );
 
-    //solo si es una cotizacion if (this.route.snapshot.queryParamMap.get('cotizacion')) {
-    if (this.route.snapshot.queryParamMap.get('cotizacion')) {
-      this.apiService.getAll('custom-fields', this.filtros).pipe(this.untilDestroyed()).subscribe(
-        (customFields) => {
-
-          this.customFields = customFields;
-          //verificar si hay campos personalizados
-          if (this.customFields.data.length > 0) {
-
-            this.customField = true;
-          }else{
-
-            this.customField = false;
-          }
-
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
-    }
+    // ponytail: SP-2356 — módulo campos personalizados oculto; no cargar definiciones en cotización.
 
 // <<<<<<< HEAD
 //     this.apiService.getAll('bodegas/list').subscribe(bodegas => {

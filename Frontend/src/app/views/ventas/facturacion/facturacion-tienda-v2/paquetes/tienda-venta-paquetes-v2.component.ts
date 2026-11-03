@@ -2,6 +2,8 @@
 import { CommonModule } from '@angular/common';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { SumPipe }     from '@pipes/sum.pipe';
@@ -14,7 +16,7 @@ import { normalizarPorcentajeImpuestoDetalle, redondearMoneda } from '@utils/imp
   selector: 'app-tienda-venta-paquetes-v2',
   templateUrl: './tienda-venta-paquetes-v2.component.html',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyPipe]
+  imports: [CommonModule, FormsModule, NgSelectModule, PaginationComponent, CurrencyPipe]
 })
 export class TiendaVentaPaquetesV2Component implements OnInit {
 
