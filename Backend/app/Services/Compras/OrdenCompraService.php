@@ -3,6 +3,7 @@
 namespace App\Services\Compras;
 
 use App\Models\Compras\Compra;
+use App\Models\Inventario\Bodega;
 use App\Models\OrdenCompra;
 use App\Models\OrdenCompraDetalle;
 use App\Models\Authorization\AuthorizationType;
@@ -249,6 +250,14 @@ class OrdenCompraService
             
             if ($existCompras) {
                 throw new \Exception("No se puede anular una cotización que ya tiene compras asociadas");
+            }
+        }
+
+        // ponytail: id_sucursal no viene del formulario; se deriva de la bodega (como en facturación de compra).
+        if ($request->filled('id_bodega')) {
+            $idSucursal = Bodega::where('id', $request->input('id_bodega'))->value('id_sucursal');
+            if ($idSucursal) {
+                $request->merge(['id_sucursal' => $idSucursal]);
             }
         }
 

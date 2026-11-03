@@ -23,7 +23,7 @@
       </div>
       <div class="form-group col-md-4 col-lg-3">
         <label for="id_bodega">Bodega</label>
-        <select name="id_bodega" formControlName="id_bodega" class="form-select">
+        <select name="id_bodega" formControlName="id_bodega" class="form-select" (change)="onBodegaChange()">
           @for (bodega of bodegas; track bodega.id) {
             <option [value]="bodega.id">
               {{ bodega.nombre }}
@@ -33,8 +33,7 @@
       </div>
       <div class="form-group col-md-4 col-lg-2">
         <label for="tipo_documento">Documento</label>
-        <!-- (change)="selectTipoDocumento()" -->
-        <select name="tipo_documento" formControlName="tipo_documento" class="form-select">
+        <select name="tipo_documento" formControlName="tipo_documento" class="form-select" (change)="onTipoDocumentoChange()">
           @for (documento of documentos; track documento.nombre || $index) {
             <option [value]="documento.nombre">{{ documento.nombre }}</option>
           }

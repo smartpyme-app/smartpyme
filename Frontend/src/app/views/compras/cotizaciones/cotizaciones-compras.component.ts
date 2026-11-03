@@ -86,14 +86,25 @@ export class CotizacionesComprasComponent extends BaseCrudComponent<any> impleme
 
   public override loadAll() {
     this.filtros.id_sucursal = '';
-    this.filtros.id_proveedor = '';
+    this.filtros.id_proveedor = null;
     this.filtros.id_usuario = '';
     this.filtros.estado = '';
     this.filtros.buscador = '';
+    this.filtros.inicio = '';
+    this.filtros.fin = '';
+    this.filtros.tipo_documento = '';
+    this.filtros.id_documento = '';
     this.filtros.orden = 'fecha';
     this.filtros.direccion = 'desc';
     this.filtros.paginate = 10;
+    this.filtros.page = 1;
+    this.filtrado = false;
     this.filtrarCompras();
+  }
+
+  /** Restablece filtros del modal y recarga (SP-2357). */
+  public restablecerFiltrosModal(): void {
+    this.loadAll();
   }
 
   public filtrarCompras() {
@@ -197,11 +208,13 @@ export class CotizacionesComprasComponent extends BaseCrudComponent<any> impleme
 
   openModalEdit(template: TemplateRef<any>, compra:any) {
     this.compra = compra;
-    
-    this.apiService.getAll('documentos')
+
+    this.apiService.getAll('documentos/list')
         .pipe(this.untilDestroyed())
         .subscribe(documentos => {
-            this.documentos = documentos;
+            this.documentos = compra.id_sucursal
+              ? documentos.filter((d: { id_sucursal?: number }) => d.id_sucursal == compra.id_sucursal)
+              : documentos;
             this.cdr.markForCheck();
         }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 

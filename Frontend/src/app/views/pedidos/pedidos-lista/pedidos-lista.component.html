@@ -68,6 +68,7 @@
               [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}"
               class="click">Fecha</th>
             <th>Cliente</th>
+            <th class="d-none d-lg-table-cell">Sucursal</th>
             <th class="d-none d-md-table-cell">Canal</th>
             <th class="d-none d-md-table-cell">Ref. ext.</th>
             <th (click)="setOrden('estado')"
@@ -82,10 +83,10 @@
         </thead>
         <tbody>
           <tr>
-            <td [attr.colspan]="tieneBoxful ? 9 : 8" class="text-center" *ngIf="pedidos?.total < 1 && !loading">
+            <td [attr.colspan]="tieneBoxful ? 10 : 9" class="text-center" *ngIf="pedidos?.total < 1 && !loading">
               <span class="badge bg-primary">No hay pedidos con estos criterios</span>
             </td>
-            <td [attr.colspan]="tieneBoxful ? 9 : 8" class="text-center" *ngIf="loading">
+            <td [attr.colspan]="tieneBoxful ? 10 : 9" class="text-center" *ngIf="loading">
               <span class="badge bg-primary">Cargando...</span>
             </td>
           </tr>
@@ -93,6 +94,7 @@
             <td>{{ p.id }}</td>
             <td>{{ p.fecha | date:'dd/MM/yyyy' }}</td>
             <td>{{ nombreCliente(p) | truncate:32 }}</td>
+            <td class="d-none d-lg-table-cell"><small>{{ nombreSucursal(p) }}</small></td>
             <td class="d-none d-md-table-cell">{{ p.canal || '—' }}</td>
             <td class="d-none d-md-table-cell"><small>{{ p.referencia_externa || '—' }}</small></td>
             <td>
@@ -188,8 +190,7 @@
           <label>Canal (contiene):</label>
           <input type="text" class="form-control" name="canal" [(ngModel)]="filtros.canal" placeholder="Ej. Pedidos Ya">
         </div>
-        <div class="form-group col-md-12"
-          *ngIf="apiService.auth_user().tipo === 'Administrador' || apiService.auth_user().tipo === 'Super Admin'">
+        <div class="form-group col-md-12">
           <label>Sucursal:</label>
           <select [(ngModel)]="filtros.id_sucursal" class="form-select" name="id_sucursal">
             <option [ngValue]="''">Todas</option>
