@@ -56,7 +56,9 @@ class CotizacionVenta extends AuditableModel
         "id_sucursal",
         "cobrar_impuestos",
         "aplicar_retencion",
-        "terminos_de_venta"
+        "terminos_de_venta",
+        "referencia_shopify",
+        "num_orden",
     ];
 
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_documento','facturada'];

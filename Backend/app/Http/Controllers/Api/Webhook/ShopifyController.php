@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Webhook;
 
+use App\Constants\CotizacionConstants;
 use App\Helpers\ShopifyHelper;
 use App\Http\Controllers\Controller;
 use App\Jobs\ExportProductsToShopify;
@@ -11,9 +12,12 @@ use App\Models\Admin\Empresa;
 use App\Models\Inventario\Categorias\Categoria;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
+use App\Models\CotizacionVenta;
+use App\Models\CotizacionVentaDetalle;
 use App\Models\User;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Venta;
+use App\Services\Ventas\CotizacionService;
 use App\Services\ShopifyApiClient;
 use Illuminate\Http\Request;
 use App\Services\ShopifyTransformer;
@@ -1695,7 +1699,29 @@ class ShopifyController extends Controller
                 ->where('id_empresa', $usuario->id_empresa)
                 ->first();
 
-            if ($ventaExistente) {
+            if ($ventaExistente && (int) $ventaExistente->cotizacion === 1 && $esPagada) {
+                $cotizacionLegacy = $this->cotizacionVentaDeLegado($ventaExistente);
+                if ($cotizacionLegacy) {
+                    $ventaPagada = $this->materializarVentaDesdeCotizacion($cotizacionLegacy, $request, $empresa, $usuario);
+                    if (!$ventaPagada) {
+                        return response()->json([
+                            'status' => 'error',
+                            'mensaje' => 'No se pudo convertir la cotización en venta',
+                            'cotizacion_id' => $cotizacionLegacy->id,
+                        ], 500);
+                    }
+
+                    return response()->json([
+                        'status' => 'success',
+                        'mensaje' => 'Cotización convertida a venta',
+                        'venta_id' => $ventaPagada->id,
+                        'cotizacion_id' => $cotizacionLegacy->id,
+                        'tipo' => 'venta',
+                    ], 200);
+                }
+            }
+
+            if ($ventaExistente && (int) $ventaExistente->cotizacion !== 1) {
                 ShopifyHelper::log("orders/create: [OMITIDO] Venta duplicada detectada - orden ya procesada previamente", [
                     'shopify_order_id' => $request->id,
                     'venta_id_existente' => $ventaExistente->id,
@@ -1707,6 +1733,50 @@ class ShopifyController extends Controller
                     'mensaje' => 'Orden ya procesada previamente',
                     'venta_id' => $ventaExistente->id,
                     'duplicado' => true
+                ], 200);
+            }
+
+            if ($ventaExistente && (int) $ventaExistente->cotizacion === 1) {
+                return response()->json([
+                    'status' => 'success',
+                    'mensaje' => 'Cotización ya procesada previamente',
+                    'cotizacion_id' => $ventaExistente->id,
+                    'tipo' => 'cotizacion',
+                    'duplicado' => true,
+                ], 200);
+            }
+
+            $cotizacionExistente = CotizacionVenta::withoutGlobalScopes()
+                ->where('referencia_shopify', $referenciaShopify)
+                ->where('id_empresa', $usuario->id_empresa)
+                ->first();
+
+            if ($cotizacionExistente) {
+                if ($esPagada) {
+                    $ventaPagada = $this->materializarVentaDesdeCotizacion($cotizacionExistente, $request, $empresa, $usuario);
+                    if (!$ventaPagada) {
+                        return response()->json([
+                            'status' => 'error',
+                            'mensaje' => 'No se pudo convertir la cotización en venta',
+                            'cotizacion_id' => $cotizacionExistente->id,
+                        ], 500);
+                    }
+
+                    return response()->json([
+                        'status' => 'success',
+                        'mensaje' => 'Cotización convertida a venta',
+                        'venta_id' => $ventaPagada->id,
+                        'cotizacion_id' => $cotizacionExistente->id,
+                        'tipo' => 'venta',
+                    ], 200);
+                }
+
+                return response()->json([
+                    'status' => 'success',
+                    'mensaje' => 'Cotización ya procesada previamente',
+                    'cotizacion_id' => $cotizacionExistente->id,
+                    'tipo' => 'cotizacion',
+                    'duplicado' => true,
                 ], 200);
             }
 
@@ -1809,18 +1879,28 @@ class ShopifyController extends Controller
             }
 
             // Resolver documento de facturación según los datos fiscales del cliente.
-            // - Cotizaciones: cualquier documento activo (solo placeholder, no emite).
+            // - Cotizaciones: documento "Cotización" (correlativo propio, no fiscal).
             // - Facturación electrónica: FCF o CCF según los datos fiscales del cliente.
             // - Sin facturación electrónica: Ticket.
             if ($debeCrearCotizacion) {
                 $documento = Documento::where('id_sucursal', $idSucursalOrden)
+                    ->where('nombre', 'Cotización')
                     ->where('activo', true)
                     ->first();
 
                 if (!$documento) {
                     $documento = Documento::where('id_empresa', $empresa->id)
+                        ->where('nombre', 'Cotización')
                         ->where('activo', true)
                         ->first();
+                }
+
+                if (!$documento) {
+                    Log::channel('shopify')->warning('orders/create: sin documento Cotización; se guarda la cotización sin correlativo', [
+                        'id_sucursal' => $idSucursalOrden,
+                        'empresa_id' => $empresa->id,
+                        'shopify_order_id' => $request->id,
+                    ]);
                 }
             } elseif ($empresa->facturacion_electronica) {
                 $documento = $this->resolverDocumentoFactura($usuario, $empresa, $cliente, $idSucursalOrden);
@@ -1838,7 +1918,7 @@ class ShopifyController extends Controller
                 }
             }
 
-            if (!$documento) {
+            if (!$documento && !$debeCrearCotizacion) {
                 DB::rollBack();
                 Log::channel('shopify')->error("Ningún documento encontrado", [
                     'id_sucursal' => $idSucursalOrden,
@@ -1851,25 +1931,40 @@ class ShopifyController extends Controller
                 ], 500);
             }
 
-            $request->merge(['id_documento' => $documento->id]);
+            if ($documento) {
+                $request->merge(['id_documento' => $documento->id]);
+            }
 
             $ventaData = $this->transformer->transformarVenta(
                 $request->all(),
                 $cliente->id,
-                $documento->id,
-                $documento->correlativo
+                $documento ? $documento->id : null,
+                $documento ? $documento->correlativo : null
             );
-            
-            // Si debe crearse como cotización, marcar el campo cotizacion = 1
+
             if ($debeCrearCotizacion) {
-                $ventaData['cotizacion'] = 1;
-                Log::info("Creando cotización en lugar de venta", [
-                    'shopify_order_id' => $request->id,
-                    'financial_status' => $financialStatus
-                ]);
+                $idDocumentoCotizacion = ($documento && $documento->nombre === 'Cotización')
+                    ? (int) $documento->id
+                    : null;
+                $cotizacion = CotizacionVenta::create(
+                    $this->transformer->transformarCotizacion($ventaData, $idDocumentoCotizacion)
+                );
+                if ($idDocumentoCotizacion) {
+                    app(CotizacionService::class)->asignarCorrelativo($cotizacion, $idDocumentoCotizacion);
+                }
+                $this->agregarLineasShopify($cotizacion, $request, $usuario, true);
+
+                DB::commit();
+
+                return response()->json([
+                    'status' => 'success',
+                    'mensaje' => 'Cotización procesada correctamente',
+                    'cotizacion_id' => $cotizacion->id,
+                    'tipo' => 'cotizacion',
+                    'es_cotizacion' => true,
+                ], 201);
             }
-            
-            // Log::info("Datos de la venta transformados", $ventaData);
+
             $venta = Venta::create($ventaData);
             
             // Log::info("Venta creada", ['venta_id' => $venta->id]);
@@ -2997,6 +3092,23 @@ class ShopifyController extends Controller
                 ->first();
 
             if (!$venta) {
+                $cotizacion = $this->buscarCotizacionShopify($empresa->id, $referencia, $request->order_number ?? null);
+                if ($cotizacion) {
+                    if (CotizacionConstants::normalizarEstado($cotizacion->estado) !== CotizacionConstants::ESTADO_ANULADA) {
+                        $cotizacion->estado = CotizacionConstants::ESTADO_ANULADA;
+                        $cotizacion->observaciones = trim(($cotizacion->observaciones ? $cotizacion->observaciones.' | ' : '')
+                            .'Pedido cancelado en Shopify el '.now()->format('d/m/Y H:i:s'));
+                        $cotizacion->save();
+                    }
+
+                    return response()->json([
+                        'status' => 'success',
+                        'mensaje' => 'Cotización anulada correctamente',
+                        'cotizacion_id' => $cotizacion->id,
+                        'estado' => $cotizacion->estado,
+                    ], 200);
+                }
+
                 Log::warning("Venta no encontrada para el pedido cancelado de Shopify", [
                     'shopify_order_id' => $shopifyOrderId,
                     'referencia_buscada' => $referencia,
@@ -3044,6 +3156,14 @@ class ShopifyController extends Controller
                 'observaciones' => ($venta->observaciones ? $venta->observaciones . ' | ' : '') . 
                     'Pedido cancelado en Shopify el ' . now()->format('d/m/Y H:i:s')
             ]);
+
+            if (!empty($venta->num_cotizacion) && !empty($venta->referencia_shopify)) {
+                CotizacionVenta::withoutGlobalScopes()
+                    ->where('id', $venta->num_cotizacion)
+                    ->where('id_empresa', $empresa->id)
+                    ->where('referencia_shopify', $venta->referencia_shopify)
+                    ->update(['estado' => CotizacionConstants::ESTADO_ANULADA]);
+            }
 
             // Verificar si se debe revertir el inventario según la configuración de Shopify
             $debeRevertirInventario = $this->shopifyVentaService->debeRevertirInventario($request);
@@ -3252,6 +3372,370 @@ class ShopifyController extends Controller
         }
 
         return $documento;
+    }
+
+    private function buscarCotizacionShopify(int $empresaId, string $referencia, $orderNumber = null): ?CotizacionVenta
+    {
+        $cotizacion = CotizacionVenta::withoutGlobalScopes()
+            ->where('id_empresa', $empresaId)
+            ->where('referencia_shopify', $referencia)
+            ->first();
+
+        if (!$cotizacion && $orderNumber) {
+            $cotizacion = CotizacionVenta::withoutGlobalScopes()
+                ->where('id_empresa', $empresaId)
+                ->where('num_orden', (string) $orderNumber)
+                ->first();
+        }
+
+        return $cotizacion;
+    }
+
+    /**
+     * Líneas de la orden. Las cotizaciones no mueven inventario.
+     */
+    private function agregarLineasShopify($registro, Request $request, $usuario, bool $esCotizacion): void
+    {
+        foreach ($request->line_items ?? [] as $item) {
+            if (empty($item) || !is_array($item)) {
+                continue;
+            }
+
+            $producto = null;
+            if (!empty($item['variant_id'])) {
+                $producto = Producto::where('shopify_variant_id', $item['variant_id'])
+                    ->where('id_empresa', $usuario->id_empresa)
+                    ->first();
+            }
+
+            if (!$producto && !empty($item['sku'])) {
+                $producto = Producto::where('codigo', $item['sku'])
+                    ->where('id_empresa', $usuario->id_empresa)
+                    ->first();
+            }
+
+            if (!$producto) {
+                $producto = Producto::create($this->transformer->transformarProducto(
+                    $item,
+                    $usuario->id_empresa,
+                    $usuario->id,
+                    $usuario->id_sucursal
+                ));
+            } elseif (!empty($item['variant_id']) && $producto->shopify_variant_id != $item['variant_id']) {
+                $existeConVariant = Producto::where('shopify_variant_id', $item['variant_id'])
+                    ->where('id_empresa', $usuario->id_empresa)
+                    ->where('id', '!=', $producto->id)
+                    ->exists();
+                if (!$existeConVariant) {
+                    $producto->shopify_variant_id = $item['variant_id'];
+                    if (!empty($item['product_id']) && empty($producto->shopify_product_id)) {
+                        $producto->shopify_product_id = $item['product_id'];
+                    }
+                    $producto->save();
+                }
+            }
+
+            $taxesIncluded = $request->taxes_included ?? false;
+            $ventaExenta = filter_var($request->input('tax_exempt', false), FILTER_VALIDATE_BOOLEAN);
+            $detalleData = $this->transformer->transformarDetallesVenta(
+                $item,
+                $esCotizacion ? 0 : $registro->id,
+                $usuario->id_empresa,
+                $taxesIncluded,
+                $ventaExenta
+            );
+            $detalleData['id_producto'] = $producto->id;
+
+            if ($esCotizacion) {
+                CotizacionVentaDetalle::create(
+                    $this->transformer->transformarDetalleCotizacion($detalleData, $registro->id)
+                );
+                continue;
+            }
+
+            $registro->detalles()->create($detalleData);
+
+            $stockAntes = Inventario::where('id_producto', $producto->id)
+                ->where('id_bodega', $registro->id_bodega)
+                ->value('stock') ?? 0;
+
+            Cache::put("shopify_syncing_inv_{$producto->id}", true, 60);
+            Inventario::where('id_producto', $producto->id)
+                ->where('id_bodega', $registro->id_bodega)
+                ->decrement('stock', $item['quantity']);
+
+            $inventario = Inventario::where('id_producto', $producto->id)
+                ->where('id_bodega', $registro->id_bodega)
+                ->first();
+
+            if ($inventario) {
+                $inventario->kardex($registro, $item['quantity'], $item['price'], null, null, ['origen' => 'shopify']);
+            }
+
+            ShopifyHelper::log('orders/create: [DESCUENTO VENTA PAGADA] Inventario descontado por venta directa', [
+                'producto_id' => $producto->id,
+                'bodega_id' => $registro->id_bodega,
+                'stock_anterior' => $stockAntes,
+                'cantidad_descontada' => $item['quantity'],
+                'stock_nuevo' => $inventario ? $inventario->stock : null,
+                'shopify_order_id' => $request->id,
+            ]);
+        }
+
+        $shippingLines = $request->shipping_lines ?? [];
+        if (empty($shippingLines) && !empty($request->shipping_line)) {
+            $shippingLines = [$request->shipping_line];
+        }
+
+        if (!empty($shippingLines)) {
+            $this->shippingService->procesarTiposEnvio(
+                $shippingLines,
+                $registro->id,
+                $usuario->id_empresa,
+                $usuario->id,
+                $usuario->id_sucursal,
+                $esCotizacion ? 'cotizacion' : 'venta'
+            );
+        }
+    }
+
+    private function actualizarCotizacionShopify(CotizacionVenta $cotizacion, Request $request, $usuario): void
+    {
+        $nuevoEstado = $this->shopifyVentaService->mapearEstado($request->financial_status ?? 'pending');
+        if ($nuevoEstado === 'Anulada') {
+            $cotizacion->estado = CotizacionConstants::ESTADO_ANULADA;
+            $cotizacion->save();
+            return;
+        }
+
+        if (empty($request->line_items)) {
+            return;
+        }
+
+        $request->merge([
+            'id_empresa' => $cotizacion->id_empresa,
+            'id_usuario' => $cotizacion->id_usuario ?: $usuario->id,
+            'id_bodega' => $cotizacion->id_bodega,
+            'id_sucursal' => $cotizacion->id_sucursal,
+        ]);
+
+        DB::transaction(function () use ($cotizacion, $request, $usuario) {
+            $ventaData = $this->transformer->transformarVenta(
+                $request->all(),
+                $cotizacion->id_cliente,
+                $cotizacion->id_documento,
+                $cotizacion->correlativo
+            );
+            $datos = $this->transformer->transformarCotizacion($ventaData, $cotizacion->id_documento);
+            $cotizacion->fill($datos);
+            $cotizacion->estado = CotizacionConstants::ESTADO_PENDIENTE;
+            $cotizacion->save();
+            $cotizacion->detalles()->delete();
+            $this->agregarLineasShopify($cotizacion, $request, $usuario, true);
+        });
+    }
+
+    /**
+     * La copia conservó ventas.id. La cotización vigente es esa fila en cotizacion_ventas.
+     * referencia_shopify sigue en la venta vieja porque el script no la copió.
+     */
+    private function cotizacionVentaDeLegado(Venta $venta): ?CotizacionVenta
+    {
+        if ((int) $venta->cotizacion !== 1) {
+            return null;
+        }
+
+        $cotizacion = CotizacionVenta::withoutGlobalScopes()
+            ->where('id', $venta->id)
+            ->where('id_empresa', $venta->id_empresa)
+            ->first();
+        if (!$cotizacion) {
+            return null;
+        }
+
+        if (empty($cotizacion->referencia_shopify) && !empty($venta->referencia_shopify)) {
+            $cotizacion->referencia_shopify = $venta->referencia_shopify;
+            if (empty($cotizacion->num_orden) && !empty($venta->num_orden)) {
+                $cotizacion->num_orden = $venta->num_orden;
+            }
+            $cotizacion->save();
+        }
+
+        return $cotizacion;
+    }
+
+    /**
+     * Crea la venta fiscal a partir de la cotización cuando Shopify marca el pedido pagado.
+     */
+    private function materializarVentaDesdeCotizacion(CotizacionVenta $cotizacion, Request $request, Empresa $empresa, $usuario): ?Venta
+    {
+        $estado = CotizacionConstants::normalizarEstado($cotizacion->estado);
+        if (in_array($estado, [CotizacionConstants::ESTADO_FACTURADA, CotizacionConstants::ESTADO_ANULADA], true)) {
+            return Venta::where('id_empresa', $empresa->id)
+                ->where('referencia_shopify', $cotizacion->referencia_shopify)
+                ->where('cotizacion', 0)
+                ->first();
+        }
+
+        $ya = Venta::where('id_empresa', $empresa->id)
+            ->where('cotizacion', 0)
+            ->where('referencia_shopify', $cotizacion->referencia_shopify)
+            ->first();
+        if ($ya) {
+            if (CotizacionConstants::normalizarEstado($cotizacion->estado) !== CotizacionConstants::ESTADO_FACTURADA) {
+                $cotizacion->estado = CotizacionConstants::ESTADO_FACTURADA;
+                $cotizacion->save();
+            }
+            return $ya;
+        }
+
+        $cliente = $cotizacion->cliente
+            ?: $this->shopifyClienteService->obtenerClienteConsumidorFinal($empresa->id);
+        $idSucursal = $cotizacion->id_sucursal ?: $usuario->id_sucursal;
+        $documento = $this->resolverDocumentoFactura($usuario, $empresa, $cliente, $idSucursal);
+        if (!$documento) {
+            Log::channel('shopify')->error('No se encontró documento para convertir cotización Shopify en venta', [
+                'cotizacion_id' => $cotizacion->id,
+                'empresa_id' => $empresa->id,
+            ]);
+            return null;
+        }
+
+        $request->merge([
+            'id_empresa' => $cotizacion->id_empresa,
+            'id_usuario' => $cotizacion->id_usuario ?: $usuario->id,
+            'id_bodega' => $cotizacion->id_bodega,
+            'id_sucursal' => $idSucursal,
+            'id_canal' => $request->input('id_canal') ?: $this->mapearCanalVenta($request, $empresa->id),
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // El script de copia dejó la referencia en ventas (cotizacion = 1) con el mismo id.
+            // El índice único de ventas solo admite una fila por referencia.
+            if (!empty($cotizacion->referencia_shopify)) {
+                Venta::where('id_empresa', $cotizacion->id_empresa)
+                    ->where('cotizacion', 1)
+                    ->where('referencia_shopify', $cotizacion->referencia_shopify)
+                    ->update([
+                        'referencia_shopify' => null,
+                        'estado' => 'Facturada',
+                    ]);
+            }
+
+            $documento = Documento::where('id', $documento->id)->lockForUpdate()->first();
+            $ventaData = $this->transformer->transformarVenta(
+                $request->all(),
+                $cliente->id,
+                $documento->id,
+                $documento->correlativo
+            );
+            $fechas = $this->transformer->fechasOficialesDesdePago();
+            $ventaData['cotizacion'] = 0;
+            $ventaData['num_cotizacion'] = $cotizacion->id;
+            $ventaData['estado'] = 'Pagada';
+            $ventaData['fecha'] = $fechas['fecha'];
+            $ventaData['fecha_pago'] = $fechas['fecha_pago'];
+            $ventaData['forma_pago'] = $this->transformer->mapearFormaPago($request->all());
+            $ventaData['referencia_shopify'] = $cotizacion->referencia_shopify;
+            $ventaData['num_orden'] = $cotizacion->num_orden ?: ($ventaData['num_orden'] ?? null);
+            $ventaData['id_bodega'] = $cotizacion->id_bodega;
+            $ventaData['id_sucursal'] = $idSucursal;
+            $ventaData['id_empresa'] = $cotizacion->id_empresa;
+            $ventaData['id_usuario'] = $cotizacion->id_usuario ?: $usuario->id;
+
+            $venta = Venta::create($ventaData);
+            $venta->created_at = $fechas['created_at'];
+            $venta->save();
+
+            if (!empty($request->line_items)) {
+                // Misma consolidación que una venta Shopify: cantidad vigente, IVA prorrateado, envío y totales.
+                app(\App\Services\ShopifyVentaConsolidacionService::class)
+                    ->consolidar($venta, $request->all(), $usuario);
+                $venta->refresh();
+                $venta->estado = 'Pagada';
+                $venta->fecha = $fechas['fecha'];
+                $venta->fecha_pago = $fechas['fecha_pago'];
+                $venta->forma_pago = $ventaData['forma_pago'];
+                $venta->num_cotizacion = $cotizacion->id;
+                $venta->referencia_shopify = $cotizacion->referencia_shopify;
+                $venta->num_orden = $cotizacion->num_orden ?: $venta->num_orden;
+                $venta->id_documento = $documento->id;
+                $venta->correlativo = $ventaData['correlativo'];
+                $venta->created_at = $fechas['created_at'];
+                $venta->save();
+            } else {
+                $this->copiarDetallesCotizacionAVenta($cotizacion, $venta);
+            }
+
+            $documento->increment('correlativo');
+            $cotizacion->estado = CotizacionConstants::ESTADO_FACTURADA;
+            $cotizacion->save();
+
+            if ($venta->id_cliente) {
+                try {
+                    app(ConsumoPuntosService::class)->procesarAcumulacionPuntos($venta);
+                } catch (\Exception $e) {
+                    Log::channel('shopify')->error('Error al procesar puntos al convertir cotización Shopify', [
+                        'venta_id' => $venta->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return $venta;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::channel('shopify')->error('Error al convertir cotización Shopify en venta', [
+                'cotizacion_id' => $cotizacion->id,
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    private function copiarDetallesCotizacionAVenta(CotizacionVenta $cotizacion, Venta $venta): void
+    {
+        foreach ($cotizacion->detalles()->with('producto')->get() as $det) {
+            $venta->detalles()->create([
+                'cantidad' => $det->cantidad,
+                'costo' => $det->costo,
+                'precio' => $det->precio,
+                'precio_sin_iva' => $det->precio,
+                'total' => $det->total,
+                'sub_total' => $det->subtotal,
+                'total_costo' => $det->total_costo,
+                'descuento' => $det->descuento,
+                'no_sujeta' => $det->no_sujeta,
+                'exenta' => $det->exenta,
+                'cuenta_a_terceros' => $det->cuenta_a_terceros,
+                'gravada' => $det->gravada,
+                'iva' => $det->iva,
+                'tipo_gravado' => ((float) $det->exenta) > 0 ? 'exenta' : 'gravada',
+                'descripcion' => $det->descripcion,
+                'id_producto' => $det->id_producto,
+                'id_venta' => $venta->id,
+            ]);
+
+            $producto = $det->producto;
+            if (!$producto || $producto->tipo === 'Servicio') {
+                continue;
+            }
+
+            Cache::put("shopify_syncing_inv_{$producto->id}", true, 60);
+            Inventario::where('id_producto', $producto->id)
+                ->where('id_bodega', $venta->id_bodega)
+                ->decrement('stock', $det->cantidad);
+
+            $inventario = Inventario::where('id_producto', $producto->id)
+                ->where('id_bodega', $venta->id_bodega)
+                ->first();
+            if ($inventario) {
+                $inventario->kardex($venta, $det->cantidad, $det->precio, null, null, ['origen' => 'shopify']);
+            }
+        }
     }
 
     /**
@@ -4018,16 +4502,64 @@ class ShopifyController extends Controller
             }
 
             if (!$venta) {
-                Log::warning("Venta no encontrada para actualización", [
-                    'shopify_order_id' => $shopifyOrderId,
-                    'order_number' => $orderNumber,
-                    'referencia_buscada' => $referencia,
-                    'empresa_id' => $empresa->id
-                ]);
+                $cotizacion = $this->buscarCotizacionShopify($empresa->id, $referencia, $orderNumber);
+                if (!$cotizacion) {
+                    Log::warning("Venta no encontrada para actualización", [
+                        'shopify_order_id' => $shopifyOrderId,
+                        'order_number' => $orderNumber,
+                        'referencia_buscada' => $referencia,
+                        'empresa_id' => $empresa->id
+                    ]);
+                    return response()->json([
+                        'status' => 'warning',
+                        'mensaje' => 'Venta no encontrada para actualizar'
+                    ], 404);
+                }
+
+                $usuarioCotizacion = User::where('id_empresa', $empresa->id)
+                    ->where('shopify_status', 'connected')
+                    ->first();
+                if (!$usuarioCotizacion) {
+                    return response()->json([
+                        'status' => 'error',
+                        'mensaje' => 'Usuario no encontrado'
+                    ], 404);
+                }
+
+                $financialStatusCotizacion = $request->financial_status ?? 'pending';
+                $cotizacionPagada = ($financialStatusCotizacion === 'paid' || $financialStatusCotizacion === 'partially_paid');
+                if ($cotizacionPagada) {
+                    $ventaDesdeCotizacion = $this->materializarVentaDesdeCotizacion(
+                        $cotizacion,
+                        $request,
+                        $empresa,
+                        $usuarioCotizacion
+                    );
+                    if (!$ventaDesdeCotizacion) {
+                        return response()->json([
+                            'status' => 'error',
+                            'mensaje' => 'No se pudo convertir la cotización en venta',
+                            'cotizacion_id' => $cotizacion->id,
+                        ], 500);
+                    }
+
+                    return response()->json([
+                        'status' => 'success',
+                        'mensaje' => 'Cotización convertida a venta',
+                        'venta_id' => $ventaDesdeCotizacion->id,
+                        'cotizacion_id' => $cotizacion->id,
+                        'estado' => $ventaDesdeCotizacion->estado,
+                    ], 200);
+                }
+
+                $this->actualizarCotizacionShopify($cotizacion, $request, $usuarioCotizacion);
+
                 return response()->json([
-                    'status' => 'warning',
-                    'mensaje' => 'Venta no encontrada para actualizar'
-                ], 404);
+                    'status' => 'success',
+                    'mensaje' => 'Cotización actualizada correctamente',
+                    'cotizacion_id' => $cotizacion->id,
+                    'tipo' => 'cotizacion',
+                ], 200);
             }
 
             // Si la venta ya fue emitida (DTE enviado a Hacienda), no se modifica desde Shopify.
@@ -4070,6 +4602,44 @@ class ShopifyController extends Controller
             // Se ejecuta ANTES del guard de 10 segundos para no perder la conversión cuando el
             // webhook de pago llega inmediatamente después de la creación del pedido.
             $fueConvertida = false;
+            if ((int) $venta->cotizacion === 1) {
+                $cotizacion = $this->cotizacionVentaDeLegado($venta);
+                if ($cotizacion) {
+                    if ($esPagada) {
+                        $ventaDesdeCotizacion = $this->materializarVentaDesdeCotizacion(
+                            $cotizacion,
+                            $request,
+                            $empresa,
+                            $usuario
+                        );
+                        if (!$ventaDesdeCotizacion) {
+                            return response()->json([
+                                'status' => 'error',
+                                'mensaje' => 'No se pudo convertir la cotización en venta',
+                                'cotizacion_id' => $cotizacion->id,
+                            ], 500);
+                        }
+
+                        return response()->json([
+                            'status' => 'success',
+                            'mensaje' => 'Cotización convertida a venta',
+                            'venta_id' => $ventaDesdeCotizacion->id,
+                            'cotizacion_id' => $cotizacion->id,
+                            'estado' => $ventaDesdeCotizacion->estado,
+                        ], 200);
+                    }
+
+                    $this->actualizarCotizacionShopify($cotizacion, $request, $usuario);
+
+                    return response()->json([
+                        'status' => 'success',
+                        'mensaje' => 'Cotización actualizada correctamente',
+                        'cotizacion_id' => $cotizacion->id,
+                        'tipo' => 'cotizacion',
+                    ], 200);
+                }
+            }
+
             if ($esPagada && (int) $venta->cotizacion === 1) {
                 // Si la cotización ya fue facturada en SmartPyme, o ya existe una venta activa para esta orden, omitir
                 $yaFacturada = ($venta->estado === 'Facturada')
