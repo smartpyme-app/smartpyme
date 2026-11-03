@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\CotizacionVentaDetalle;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Categorias\Categoria;
 use App\Models\Ventas\Detalle;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 
 class ShippingService
@@ -26,12 +28,12 @@ class ShippingService
      * @param int $sucursalId ID de la sucursal
      * @return array Detalles de envío creados
      */
-    public function procesarTiposEnvio(array $shippingLines, int $ventaId, int $empresaId, int $usuarioId, int $sucursalId): array
+    public function procesarTiposEnvio(array $shippingLines, int $ventaId, int $empresaId, int $usuarioId, int $sucursalId, string $destino = 'venta'): array
     {
         $detallesEnvio = [];
 
         foreach ($shippingLines as $shippingLine) {
-            $detalleEnvio = $this->procesarTipoEnvio($shippingLine, $ventaId, $empresaId, $usuarioId, $sucursalId);
+            $detalleEnvio = $this->procesarTipoEnvio($shippingLine, $ventaId, $empresaId, $usuarioId, $sucursalId, $destino);
 
             if ($detalleEnvio) {
                 $detallesEnvio[] = $detalleEnvio;
@@ -51,7 +53,7 @@ class ShippingService
      * @param int $sucursalId ID de la sucursal
      * @return Detalle|null Detalle de envío creado o null si no se procesa
      */
-    private function procesarTipoEnvio(array $shippingLine, int $ventaId, int $empresaId, int $usuarioId, int $sucursalId): ?Detalle
+    private function procesarTipoEnvio(array $shippingLine, int $ventaId, int $empresaId, int $usuarioId, int $sucursalId, string $destino = 'venta'): ?Model
     {
         $title = $shippingLine['title'] ?? '';
 
@@ -122,24 +124,36 @@ class ShippingService
 
         $descuentoSinIVA = $precioOriginalSinIVA - $precioConDescuentoSinIVA;
 
-        // Crear el detalle de venta para el envío
-        $detalleEnvio = Detalle::create([
-            'id_venta' => $ventaId,
+        $montoLinea = $tieneIva ? $precioConDescuentoSinIVA : $precioConDescuentoConIVA;
+        $datosEnvio = [
             'id_producto' => $productoEnvio->id,
-            'descripcion' => $title, // Usar el título exacto de Shopify
+            'descripcion' => mb_substr($title, 0, 255),
             'cantidad' => 1,
             'precio' => $precioOriginalSinIVA,
-            'precio_sin_iva' => $precioConDescuentoSinIVA,
-            'precio_con_iva' => $precioConDescuentoConIVA,
-            'costo' => 0, // Los envíos no tienen costo
+            'costo' => 0,
             'descuento' => $descuentoSinIVA,
-            'total'         => $tieneIva ? $precioConDescuentoSinIVA : $precioConDescuentoConIVA,
-            'gravada'       => $tieneIva ? $precioConDescuentoSinIVA : 0.0,
-            'exenta'        => $tieneIva ? 0.0 : $precioConDescuentoConIVA,
-            'iva'           => $ivaConDescuento,
-            'no_sujeta'     => 0,
-            'id_vendedor' => $usuarioId
-        ]);
+            'total' => $montoLinea,
+            'gravada' => $tieneIva ? $precioConDescuentoSinIVA : 0.0,
+            'exenta' => $tieneIva ? 0.0 : $precioConDescuentoConIVA,
+            'iva' => $ivaConDescuento,
+            'no_sujeta' => 0,
+            'id_vendedor' => $usuarioId,
+        ];
+
+        if ($destino === 'cotizacion') {
+            $detalleEnvio = CotizacionVentaDetalle::create($datosEnvio + [
+                'id_cotizacion_venta' => $ventaId,
+                'total_costo' => 0,
+                'cuenta_a_terceros' => 0,
+                'subtotal' => $montoLinea,
+            ]);
+        } else {
+            $detalleEnvio = Detalle::create($datosEnvio + [
+                'id_venta' => $ventaId,
+                'precio_sin_iva' => $precioConDescuentoSinIVA,
+                'precio_con_iva' => $precioConDescuentoConIVA,
+            ]);
+        }
 
         Log::info("Detalle de envío creado", [
             'detalle_id' => $detalleEnvio->id,
