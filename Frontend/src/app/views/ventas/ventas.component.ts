@@ -2461,6 +2461,8 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       return;
     }
 
+    const contenido = this.contenidoDescripcionBoxfulVenta(venta);
+
     this.boxfulVentaId = venta.id;
     this.boxfulClienteId = venta.id_cliente;
     this.boxfulSugerirCod = venta.condicion === 'Crédito' || !!venta.credito;
@@ -2472,6 +2474,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       ancho: 43,
       largo: 47.5,
       es_fragil: false,
+      contenido,
       parcels: [{
         id: null,
         peso: paquete.peso || 1,
@@ -2479,11 +2482,28 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
         ancho: 43,
         largo: 47.5,
         es_fragil: false,
-        contenido: '',
+        contenido,
         valor: parseFloat(venta.total || 50)
       }]
     };
     this.mostrarModalBoxful = true;
+  }
+
+  private contenidoDescripcionBoxfulVenta(venta: any): string {
+    const fuente = venta?.detalles;
+    if (!Array.isArray(fuente) || !fuente.length) {
+      return 'Productos varios';
+    }
+    const nombres = fuente
+      .map((d: any) =>
+        String(d.descripcion || d.nombre || d.producto?.nombre || '').trim()
+      )
+      .filter(Boolean);
+    if (!nombres.length) {
+      return 'Productos varios';
+    }
+    const texto = nombres.join(', ');
+    return texto.length > 500 ? `${texto.slice(0, 497)}...` : texto;
   }
 
   verDetallesEnvioBoxful(venta: any): void {

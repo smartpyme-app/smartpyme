@@ -275,8 +275,8 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges, OnDes
       codigo_area: [this.codigoAreaEmpresa, [Validators.required, Validators.maxLength(10)]],
       stateId: [null, [Validators.required]],
       cityId: [null, [Validators.required]],
-      latitud: [null, [Validators.required, Validators.pattern(/^-?[0-9]+(\.[0-9]+)?$/)]],
-      longitud: [null, [Validators.required, Validators.pattern(/^-?[0-9]+(\.[0-9]+)?$/)]],
+      latitud: [null, [Validators.pattern(/^-?[0-9]+(\.[0-9]+)?$/)]],
+      longitud: [null, [Validators.pattern(/^-?[0-9]+(\.[0-9]+)?$/)]],
       guardarDireccion: [true] // Opción para guardar la dirección en el cliente al final
     });
 
@@ -288,8 +288,8 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges, OnDes
       codigo_area: [this.codigoAreaEmpresa, [Validators.required, Validators.maxLength(10)]],
       stateId: [null, [Validators.required]],
       cityId: [null, [Validators.required]],
-      latitud: [null, [Validators.required, Validators.pattern(/^-?[0-9]+(\.[0-9]+)?$/)]],
-      longitud: [null, [Validators.required, Validators.pattern(/^-?[0-9]+(\.[0-9]+)?$/)]]
+      latitud: [null, [Validators.pattern(/^-?[0-9]+(\.[0-9]+)?$/)]],
+      longitud: [null, [Validators.pattern(/^-?[0-9]+(\.[0-9]+)?$/)]]
     });
   }
 
@@ -678,13 +678,42 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges, OnDes
     return null;
   }
 
+  /** Rellena lat/lng desde la ciudad BoxFul si el formulario quedó sin coordenadas (campos ocultos). */
+  private ensureDestinoCoordinates(): void {
+    const latCtrl = this.addressForm.get('latitud')?.value;
+    const lngCtrl = this.addressForm.get('longitud')?.value;
+    if (latCtrl !== null && latCtrl !== '' && lngCtrl !== null && lngCtrl !== '') {
+      return;
+    }
+    const cityId = this.addressForm.get('cityId')?.value;
+    const selectedCity = this.filteredCities.find((c) => String(c.id) === String(cityId));
+    if (
+      selectedCity &&
+      selectedCity.latitude !== undefined &&
+      selectedCity.longitude !== undefined
+    ) {
+      this.addressForm.patchValue({
+        latitud: selectedCity.latitude,
+        longitud: selectedCity.longitude,
+      });
+      return;
+    }
+    // ponytail: si la API no trae coords en la ciudad, no bloquear el wizard; BoxFul valida en servidor
+    if (cityId) {
+      this.addressForm.patchValue({ latitud: 0, longitud: 0 });
+    }
+  }
+
   private getDireccionDestino(): any {
+    this.ensureDestinoCoordinates();
     const formVal = this.addressForm.value;
+    const lat = parseFloat(formVal.latitud);
+    const lng = parseFloat(formVal.longitud);
     return {
       direccion: formVal.direccion,
       referencia: formVal.referencia || '',
-      latitud: parseFloat(formVal.latitud),
-      longitud: parseFloat(formVal.longitud),
+      latitud: Number.isFinite(lat) ? lat : 0,
+      longitud: Number.isFinite(lng) ? lng : 0,
       stateId: formVal.stateId,
       cityId: formVal.cityId,
       telefono: formVal.telefono,
