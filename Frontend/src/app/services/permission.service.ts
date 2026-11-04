@@ -140,6 +140,20 @@ export class PermissionService {
       return false;
     }
 
+    // ponytail: finanzas.cuentas y finanzas.bancos son el mismo submódulo en UI (cuentas bancarias)
+    const bancosCuentasAlias = permission.startsWith('finanzas.cuentas.')
+      ? permission.replace('finanzas.cuentas.', 'finanzas.bancos.')
+      : permission.startsWith('finanzas.bancos.')
+        ? permission.replace('finanzas.bancos.', 'finanzas.cuentas.')
+        : null;
+    if (
+      bancosCuentasAlias &&
+      !revokedPermissions.includes(bancosCuentasAlias) &&
+      effectivePermissions.includes(bancosCuentasAlias)
+    ) {
+      return true;
+    }
+
     const role = this.currentUserPermissions.role;
     if (role === 'admin' || role === 'super_admin') {
       return true;

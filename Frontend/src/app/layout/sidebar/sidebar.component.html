@@ -241,7 +241,7 @@
                             @if (apiService.hasPermission('ventas.formas_pago.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/formas-de-pago']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/coins.png" class="icon me-2">Métodos de pago</a></li>
                             }
-                            @if (apiService.mostrarBancosEnFinanzas(contabilidadHabilitada)) {
+                            @if (apiService.mostrarBancosEnFinanzas(contabilidadHabilitada) && apiService.hasPermission('finanzas.bancos.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bancos/cuentas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/home.png" class="icon me-2">Bancos</a></li>
                             }
                             @if (mostrarMenuPrestamos) {

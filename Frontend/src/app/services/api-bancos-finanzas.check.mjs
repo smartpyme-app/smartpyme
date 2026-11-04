@@ -26,6 +26,18 @@ assert.match(formasHtml, /usarCuentasBancarias\(contabilidadHabilitada\)/);
 const cuentaHtml = fs.readFileSync(path.join(root, 'src/app/views/contabilidad/bancos/cuentas/cuenta/cuenta.component.html'), 'utf8');
 assert.match(cuentaHtml, /@if \(contabilidadHabilitada\)/);
 
+const cuentasListHtml = fs.readFileSync(
+  path.join(root, 'src/app/views/contabilidad/bancos/cuentas/cuentas.component.html'),
+  'utf8',
+);
+assert.match(cuentasListHtml, /finanzas\.bancos\.crear/);
+assert.match(cuentasListHtml, /finanzas\.bancos\.editar/);
+assert.doesNotMatch(cuentasListHtml, /finanzas\.cuentas\.(crear|editar)/);
+
+const permService = fs.readFileSync(path.join(root, 'src/app/services/permission.service.ts'), 'utf8');
+assert.match(permService, /finanzas\.cuentas\./);
+assert.match(permService, /finanzas\.bancos\./);
+
 function usarCuentasBancarias(contabilidad, bancos) {
   return contabilidad || bancos;
 }
