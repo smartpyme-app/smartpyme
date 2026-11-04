@@ -8,8 +8,8 @@ export interface EmailAccount {
   provider: string;
   is_active: boolean;
   last_sync_at?: string;
-  id_sucursal?: number;
-  id_bodega?: number;
+  id_sucursal?: number | null;
+  id_bodega?: number | null;
   actualizar_inventario?: boolean;
   notification_user_id?: number | null;
   notification_user?: { id: number; name: string; email?: string } | null;
@@ -65,5 +65,16 @@ export class EmailAccountService {
 
   updateNotificaciones(id: number, notificationUserId: number | null): Observable<{ success: boolean; message: string; account: EmailAccount }> {
     return this.api.store(`email-accounts/${id}/notificaciones`, { notification_user_id: notificationUserId });
+  }
+
+  updateConfig(
+    id: number,
+    config: { id_sucursal?: number | null; id_bodega?: number | null; actualizar_inventario: boolean }
+  ): Observable<{ success: boolean; message: string; account: EmailAccount }> {
+    return this.api.store(`email-accounts/${id}/config`, {
+      id_sucursal: config.id_sucursal ?? null,
+      id_bodega: config.id_bodega ?? null,
+      actualizar_inventario: config.actualizar_inventario,
+    });
   }
 }

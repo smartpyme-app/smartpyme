@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\DteManagement;
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessEmailAccountJob;
 use App\Models\DteManagement\UserEmailAccount;
+use App\Models\Inventario\Bodega;
+use App\Models\Admin\Sucursal;
 use App\Models\User;
 use App\Services\Imap\ImapConnectionService;
 use Carbon\Carbon;
@@ -218,6 +220,76 @@ class EmailAccountController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Cuenta desconectada',
+        ]);
+    }
+
+    /**
+     * Sucursal, bodega e inventario al procesar compras desde DTE.
+     */
+    public function updateConfig(Request $request, int $id): JsonResponse
+    {
+        $account = UserEmailAccount::find($id);
+
+        if (!$account) {
+            return response()->json(['error' => 'Cuenta no encontrada'], 404);
+        }
+
+        if ($account->id_empresa !== auth()->user()->id_empresa) {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
+        $request->validate([
+            'id_sucursal' => 'nullable|integer|exists:sucursales,id',
+            'id_bodega' => 'nullable|integer|exists:sucursal_bodegas,id',
+            'actualizar_inventario' => 'required|boolean',
+        ]);
+
+        $idEmpresa = (int) auth()->user()->id_empresa;
+        $idSucursal = $request->input('id_sucursal');
+        $idBodega = $request->input('id_bodega');
+        $actualizarInventario = $request->boolean('actualizar_inventario');
+
+        if ($actualizarInventario && !$idBodega) {
+            return response()->json([
+                'error' => 'Seleccione una bodega para actualizar inventario al procesar compras.',
+            ], 422);
+        }
+
+        if ($idSucursal) {
+            $sucursalOk = Sucursal::withoutGlobalScopes()
+                ->where('id', $idSucursal)
+                ->where('id_empresa', $idEmpresa)
+                ->exists();
+            if (!$sucursalOk) {
+                return response()->json(['error' => 'La sucursal no pertenece a la empresa'], 422);
+            }
+        }
+
+        if ($idBodega) {
+            $bodega = Bodega::withoutGlobalScopes()
+                ->where('id', $idBodega)
+                ->where('id_empresa', $idEmpresa)
+                ->first();
+            if (!$bodega) {
+                return response()->json(['error' => 'La bodega no pertenece a la empresa'], 422);
+            }
+            if ($idSucursal && (int) $bodega->id_sucursal !== (int) $idSucursal) {
+                return response()->json(['error' => 'La bodega no pertenece a la sucursal seleccionada'], 422);
+            }
+        }
+
+        $account->update([
+            'id_sucursal' => $idSucursal ?: null,
+            'id_bodega' => $idBodega ?: null,
+            'actualizar_inventario' => $actualizarInventario,
+        ]);
+
+        $account->load(['sucursal:id,nombre', 'bodega:id,nombre', 'notificationUser:id,name,email']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Configuración de compras e inventario guardada',
+            'account' => $this->formatAccount($account),
         ]);
     }
 
