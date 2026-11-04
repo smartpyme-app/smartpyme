@@ -120,6 +120,8 @@ class EmailInboxService
      */
     public function toApi(EmailInbox $inbox): array
     {
+        $account = $inbox->userEmailAccount()->withoutGlobalScopes()->first();
+
         return [
             'id' => $inbox->id,
             'email' => $inbox->email,
@@ -132,6 +134,10 @@ class EmailInboxService
             'verification_code' => $inbox->verification_code,
             'verification_link' => $inbox->verification_link,
             'verification_received_at' => $inbox->verification_received_at?->toIso8601String(),
+            'user_email_account_id' => $inbox->user_email_account_id,
+            'id_sucursal' => $account?->id_sucursal,
+            'id_bodega' => $account?->id_bodega,
+            'actualizar_inventario' => (bool) ($account?->actualizar_inventario ?? false),
         ];
     }
 

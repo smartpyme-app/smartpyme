@@ -14,6 +14,10 @@ export interface EmailInbox {
   verification_code?: string | null;
   verification_link?: string | null;
   verification_received_at?: string | null;
+  user_email_account_id?: number;
+  id_sucursal?: number | null;
+  id_bodega?: number | null;
+  actualizar_inventario?: boolean;
 }
 
 @Injectable({

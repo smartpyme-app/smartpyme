@@ -30,9 +30,17 @@ export class EmailAccountsComponent implements OnInit {
   saving = false;
   testing = false;
   savingNotifications = false;
+  savingConfig = false;
   modalRef!: BsModalRef;
   notificationAccount: EmailAccount | null = null;
   notificationUserId: number | null = null;
+  configAccount: EmailAccount | null = null;
+  configAccountLabel = '';
+  configForm = {
+    id_sucursal: null as number | null,
+    id_bodega: null as number | null,
+    actualizar_inventario: false,
+  };
   usuarios: any[] = [];
 
   syncingAccountId: number | null = null;
@@ -138,6 +146,24 @@ export class EmailAccountsComponent implements OnInit {
     });
   }
 
+  get bodegasConfigFiltradas(): any[] {
+    if (!this.configForm.id_sucursal) {
+      return this.bodegas;
+    }
+    return this.bodegas.filter(
+      (b: any) => Number(b.id_sucursal) === Number(this.configForm.id_sucursal)
+    );
+  }
+
+  onConfigSucursalChange(): void {
+    const ok = this.bodegasConfigFiltradas.some(
+      (b: any) => Number(b.id) === Number(this.configForm.id_bodega)
+    );
+    if (!ok) {
+      this.configForm.id_bodega = null;
+    }
+  }
+
   loadUsuarios(): void {
     this.apiService.getAll('usuarios/list').subscribe({
       next: (data) => this.usuarios = data,
@@ -187,6 +213,62 @@ export class EmailAccountsComponent implements OnInit {
       },
       error: (err) => {
         this.savingNotifications = false;
+        this.alertService.error(err);
+      }
+    });
+  }
+
+  openConfigModal(template: TemplateRef<any>, account: EmailAccount, label?: string): void {
+    this.configAccount = account;
+    this.configAccountLabel = label ?? account.email;
+    this.configForm = {
+      id_sucursal: account.id_sucursal ?? null,
+      id_bodega: account.id_bodega ?? null,
+      actualizar_inventario: !!account.actualizar_inventario,
+    };
+    this.modalRef = this.modalService.show(template, { class: 'modal-md' });
+  }
+
+  openInboxConfigModal(template: TemplateRef<any>): void {
+    if (!this.inbox?.user_email_account_id) {
+      this.alertService.warning('Sin cuenta', 'No hay cuenta de correo asociada al reenvío.');
+      return;
+    }
+    this.openConfigModal(
+      template,
+      {
+        id: this.inbox.user_email_account_id,
+        email: this.inbox.email,
+        provider: 'forward',
+        is_active: true,
+        id_sucursal: this.inbox.id_sucursal ?? null,
+        id_bodega: this.inbox.id_bodega ?? null,
+        actualizar_inventario: !!this.inbox.actualizar_inventario,
+      },
+      `Reenvío automático (${this.inbox.email})`
+    );
+  }
+
+  saveConfig(): void {
+    if (!this.configAccount) {
+      return;
+    }
+    if (this.configForm.actualizar_inventario && !this.configForm.id_bodega) {
+      this.alertService.warning('Bodega requerida', 'Seleccione la bodega donde ingresará el inventario.');
+      return;
+    }
+
+    this.savingConfig = true;
+    this.emailAccountService.updateConfig(this.configAccount.id, this.configForm).subscribe({
+      next: () => {
+        this.savingConfig = false;
+        this.modalRef?.hide();
+        this.alertService.success('Configuración guardada', 'Compras e inventario actualizados.');
+        this.loadAccounts();
+        this.loadInbox();
+      },
+      error: (err) => {
+        this.savingConfig = false;
         this.alertService.error(err);
       }
     });
