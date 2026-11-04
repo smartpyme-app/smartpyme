@@ -65,6 +65,7 @@ export class EmailAccountsComponent implements OnInit {
 
   sucursales: any[] = [];
   bodegas: any[] = [];
+  bodegasParaConfig: any[] = [];
 
   inbox: EmailInbox | null = null;
   inboxLoading = false;
@@ -154,22 +155,28 @@ export class EmailAccountsComponent implements OnInit {
 
   loadBodegas(): void {
     this.apiService.getAll('bodegas/list').subscribe({
-      next: (data) => this.bodegas = data,
+      next: (data) => {
+        this.bodegas = data || [];
+        this.actualizarBodegasParaConfig();
+      },
       error: (err) => this.alertService.error(err)
     });
   }
 
-  get bodegasConfigFiltradas(): any[] {
-    if (!this.configForm.id_sucursal) {
-      return this.bodegas;
+  private actualizarBodegasParaConfig(): void {
+    const idSucursal = this.configForm.id_sucursal;
+    if (!idSucursal) {
+      this.bodegasParaConfig = [...this.bodegas];
+      return;
     }
-    return this.bodegas.filter(
-      (b: any) => Number(b.id_sucursal) === Number(this.configForm.id_sucursal)
+    this.bodegasParaConfig = this.bodegas.filter(
+      (b: any) => Number(b.id_sucursal) === Number(idSucursal)
     );
   }
 
   onConfigSucursalChange(): void {
-    const ok = this.bodegasConfigFiltradas.some(
+    this.actualizarBodegasParaConfig();
+    const ok = this.bodegasParaConfig.some(
       (b: any) => Number(b.id) === Number(this.configForm.id_bodega)
     );
     if (!ok) {
@@ -214,6 +221,7 @@ export class EmailAccountsComponent implements OnInit {
       id_bodega: account.id_bodega ?? null,
       actualizar_inventario: !!account.actualizar_inventario,
     };
+    this.actualizarBodegasParaConfig();
     this.modalRef = this.modalService.show(template, { class: 'modal-lg modal-ng-select-overflow' });
   }
 

@@ -43,10 +43,16 @@ class BodegasController extends Controller
     {
         $user = JWTAuth::parseToken()->authenticate();
 
+        $idEmpresa = (int) $user->id_empresa;
+
         $bodegas = Bodega::withoutGlobalScopes()
+            ->with('sucursal:id,id_empresa')
             ->orderby('nombre')
-            ->where('activo', true)
-            ->where('id_empresa', $user->id_empresa)
+            ->whereIn('activo', ['1', 1, true])
+            ->where(function ($q) use ($idEmpresa) {
+                $q->where('id_empresa', $idEmpresa)
+                    ->orWhereHas('sucursal', fn ($s) => $s->withoutGlobalScopes()->where('id_empresa', $idEmpresa));
+            })
             ->get();
 
         return Response()->json($bodegas, 200);

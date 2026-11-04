@@ -66,7 +66,7 @@ class SucursalesController extends Controller
 
         $sucursales = Sucursal::withoutGlobalScopes()
             ->orderby('nombre')
-            ->where('activo', true)
+            ->whereIn('activo', ['1', 1, true])
             ->where('id_empresa', $user->id_empresa)
             ->get();
 

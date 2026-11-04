@@ -323,13 +323,16 @@
           [(ngModel)]="configForm.id_bodega"
           name="config_id_bodega"
           class="form-select p-0"
-          [items]="bodegasConfigFiltradas"
+          [items]="bodegasParaConfig"
           bindLabel="nombre"
           bindValue="id"
           [clearable]="true"
           [searchable]="true"
           placeholder="Seleccione"
         ></ng-select>
+        <p class="text-warning small mb-0 mt-1" *ngIf="configForm.id_sucursal && !bodegasParaConfig.length">
+          No hay bodegas activas para la sucursal seleccionada.
+        </p>
       </div>
       <div class="col-12 mb-0 without-label">
         <div class="form-switch border rounded">
