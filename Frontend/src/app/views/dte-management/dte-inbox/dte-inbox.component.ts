@@ -170,17 +170,13 @@ export class DteInboxComponent implements OnInit {
       this.errorProcesar = 'Seleccione la sucursal.';
       return;
     }
-    if (this.destinoSeleccionado === 'compra' && !this.idBodega) {
-      this.errorProcesar = 'Seleccione la bodega de la sucursal.';
-      return;
-    }
     this.procesando = true;
     const doc = this.documentoProcesar;
 
     this.dteService.procesar(doc.id, {
-      destino: this.destinoSeleccionado,
+      destino: 'gasto',
       id_sucursal: this.idSucursal,
-      id_bodega: this.destinoSeleccionado === 'compra' ? this.idBodega : null,
+      id_bodega: null,
     }).subscribe({
       next: (res) => {
         // ponytail: alerta in-modal; AlertService.success hace scroll al tope de la página
