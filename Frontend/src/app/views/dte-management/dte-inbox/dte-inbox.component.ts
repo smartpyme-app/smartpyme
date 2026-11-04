@@ -160,6 +160,12 @@ export class DteInboxComponent implements OnInit {
 
   confirmarProcesar(): void {
     if (!this.documentoProcesar) return;
+    if (this.destinoSeleccionado === 'compra') {
+      const id = this.documentoProcesar.id;
+      this.modalProcesarRef?.hide();
+      this.router.navigate(['/dte-management/dtes', id]);
+      return;
+    }
     if (!this.idSucursal) {
       this.errorProcesar = 'Seleccione la sucursal.';
       return;

@@ -122,6 +122,24 @@ export class DteDetailComponent implements OnInit {
       && this.document.processing_status !== 'anulado';
   }
 
+  get puedeEditarProductosCompra(): boolean {
+    if (!this.document || !this.esCompra) return false;
+    return this.document.validation_status === 'valid'
+      && this.document.processing_status === 'processed';
+  }
+
+  get puedeEditarLineasCompra(): boolean {
+    return this.puedeEditarClasificacion || this.puedeEditarProductosCompra;
+  }
+
+  get mostrarPanelProcesar(): boolean {
+    if (!this.document) return false;
+    if (this.document.validation_status !== 'valid' || this.document.processing_status === 'anulado') {
+      return false;
+    }
+    return this.puedeEditarClasificacion || this.puedeEditarProductosCompra;
+  }
+
   get bodegasDeSucursal(): any[] {
     if (!this.idSucursal) {
       return [];
@@ -559,6 +577,7 @@ export class DteDetailComponent implements OnInit {
             cantidad: Number(item.cantidad) || 0,
           }))
         : [],
+      actualizar_inventario: this.esCompra ? true : undefined,
     };
   }
 
@@ -594,6 +613,7 @@ export class DteDetailComponent implements OnInit {
         this.document = procRes.document || this.document!;
         this.alertService.success('Éxito', procRes.message || this.countryI18n.fe('processedDefault'));
         this.procesando = false;
+        this.loadDocument(this.document.id);
       },
       error: (err) => {
         this.alertService.error(err?.error?.error || err?.error?.reason || err);

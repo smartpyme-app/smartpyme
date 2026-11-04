@@ -194,8 +194,11 @@
         <option *ngFor="let bodega of bodegasDeSucursal" [ngValue]="bodega.id">{{ bodega.nombre }}</option>
       </select>
     </ng-container>
-    <p class="small text-muted mb-0">
-      Las compras usan la misma resolución de productos que la importación JSON del módulo de compras (código proveedor + descripción).
+    <p class="small text-muted mb-0" *ngIf="destinoSeleccionado === 'compra'">
+      Para compras debe vincular cada línea a un producto de inventario. Al continuar se abrirá el detalle del DTE.
+    </p>
+    <p class="small text-muted mb-0" *ngIf="destinoSeleccionado === 'gasto'">
+      Los gastos se procesan aquí sin asignación de productos de inventario.
     </p>
   </div>
   <div class="modal-footer">
@@ -204,7 +207,7 @@
     </button>
     <button type="button" class="btn btn-primary" (click)="confirmarProcesar()" [disabled]="procesando || !!mensajeProcesar">
       <span *ngIf="procesando">Procesando...</span>
-      <span *ngIf="!procesando">Procesar</span>
+      <span *ngIf="!procesando">{{ destinoSeleccionado === 'compra' ? 'Continuar al detalle' : 'Procesar' }}</span>
     </button>
   </div>
 </ng-template>
