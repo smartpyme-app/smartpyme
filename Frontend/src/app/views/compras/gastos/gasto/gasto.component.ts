@@ -801,7 +801,16 @@ export class GastoComponent implements OnInit {
     return this.gasto?.forma_pago !== 'Efectivo' && this.gasto?.forma_pago !== 'Wompi';
   }
 
+  /** Gasto anulado/cancelado: no usar switch Pendiente (evita sobrescribir con Confirmado). */
+  get gastoEnEstadoAnulado(): boolean {
+    const e = this.gasto?.estado;
+    return e === 'Anulada' || e === 'Anulado' || e === 'Cancelado';
+  }
+
   public setCredito() {
+    if (this.gastoEnEstadoAnulado) {
+      return;
+    }
     if (this.gasto.credito) {
       this.gasto.estado = 'Pendiente';
     } else {

@@ -301,13 +301,17 @@
     <div class="bg-white rounded p-3 mb-3">
         <h6>Pagos</h6>
         <div class="row">
-            <div class="form-group col-md-4 col-lg-3 without-label">
+            <div class="form-group col-md-4 col-lg-3 without-label" *ngIf="!gastoEnEstadoAnulado">
                 <div class="form-switch border rounded">
                   <label for="credito">Pendiente</label>
                   <input class="form-check-input float-end" type="checkbox" role="switch" id="credito" (change)="setCredito()" [(ngModel)]="gasto.credito" name="credito">
                 </div>
             </div>
-            <div class="form-group col-md-4 col-lg-3" *ngIf="gasto.credito">
+            <div class="form-group col-md-4 col-lg-3" *ngIf="gastoEnEstadoAnulado">
+                <label class="fw-medium">Estado</label>
+                <p class="mb-0 pt-2"><span class="badge bg-danger">{{ gasto.estado }}</span></p>
+            </div>
+            <div class="form-group col-md-4 col-lg-3" *ngIf="gasto.credito && !gastoEnEstadoAnulado">
                 <label for="fecha_pago">Fecha de pago:</label>
                 <input type="date" class="form-control" [(ngModel)]="gasto.fecha_pago" name="fecha_pago" id="fecha_pago">
             </div>

@@ -16,6 +16,7 @@ describe('GastoComponent - campos condicionales', () => {
   describe('setCredito', () => {
     it('deja el gasto pendiente y conserva la fecha de pago al activar crédito', () => {
       const ctx = { gasto: { credito: true, estado: 'Confirmado', fecha_pago: '2026-09-01' } };
+      Object.defineProperty(ctx, 'gastoEnEstadoAnulado', { get: () => false });
 
       invocar('setCredito', ctx);
 
@@ -23,8 +24,20 @@ describe('GastoComponent - campos condicionales', () => {
       expect(ctx.gasto.fecha_pago).toBe('2026-09-01');
     });
 
+    it('no cambia el estado si el gasto está anulado', () => {
+      const ctx = { gasto: { credito: false, estado: 'Anulada', fecha_pago: '2026-09-01' } };
+      Object.defineProperty(ctx, 'gastoEnEstadoAnulado', {
+        get: () => ['Anulada', 'Anulado', 'Cancelado'].includes(ctx.gasto.estado),
+      });
+
+      invocar('setCredito', ctx);
+
+      expect(ctx.gasto.estado).toBe('Anulada');
+    });
+
     it('limpia la fecha de pago al desactivar crédito', () => {
       const ctx = { gasto: { credito: false, estado: 'Pendiente', fecha_pago: '2026-09-01' } };
+      Object.defineProperty(ctx, 'gastoEnEstadoAnulado', { get: () => false });
 
       invocar('setCredito', ctx);
 
