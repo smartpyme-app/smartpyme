@@ -293,8 +293,27 @@ export class FacturacionV2Component implements OnInit {
     if (venta?.boxful_paquete_stub_id || this.venta?.boxful_paquete_stub_id) {
       return { id: venta?.boxful_paquete_stub_id || this.venta?.boxful_paquete_stub_id, peso: 1 };
     }
-    if (this.paqueteData?.id) return { id: this.paqueteData.id, peso: this.paqueteData.peso || 1 };
     return null;
+  }
+
+  private contenidoDescripcionBoxful(venta: any): string {
+    const fuente =
+      Array.isArray(venta?.detalles) && venta.detalles.length
+        ? venta.detalles
+        : this.venta?.detalles;
+    if (!Array.isArray(fuente) || !fuente.length) {
+      return 'Productos varios';
+    }
+    const nombres = fuente
+      .map((d: any) =>
+        String(d.descripcion || d.nombre || d.producto?.nombre || '').trim()
+      )
+      .filter(Boolean);
+    if (!nombres.length) {
+      return 'Productos varios';
+    }
+    const texto = nombres.join(', ');
+    return texto.length > 500 ? `${texto.slice(0, 497)}...` : texto;
   }
 
   private abrirWizardBoxfulDesdeVenta(venta: any): void {
@@ -305,16 +324,21 @@ export class FacturacionV2Component implements OnInit {
     }
     const stub = this.resolverPaqueteStubBoxful(venta);
     const peso = parseFloat(stub?.peso || 1) || 1;
+    const contenido = this.contenidoDescripcionBoxful(venta);
     this.boxfulVentaId = venta.id;
     this.boxfulClienteId = venta.id_cliente;
     this.boxfulSugerirCod = !!(venta.credito || venta.condicion === 'Crédito' || this.venta?.credito || this.venta?.condicion === 'Crédito');
     this.boxfulMontoCod = parseFloat(venta.total || this.venta?.total || 0) || null;
     this.boxfulPaqueteData = {
       id: stub?.id || null, peso, alto: 11, ancho: 43, largo: 47.5, es_fragil: false,
-      parcels: [{ peso, alto: 11, ancho: 43, largo: 47.5, es_fragil: false, contenido: '', valor: parseFloat(venta.total || 50) }]
+      contenido,
+      parcels: [{ peso, alto: 11, ancho: 43, largo: 47.5, es_fragil: false, contenido, valor: parseFloat(venta.total || 50) }]
     };
     this.mostrarModalBoxful = true;
-    this.alertService.success('Venta creada', 'Complete los datos del envío BoxFul.');
+    this.alertService.info(
+      'Venta guardada',
+      'Complete dirección y paquetería en el asistente BoxFul para generar la guía.'
+    );
   }
 
   onBoxfulGuiaGenerada(guia: any): void {

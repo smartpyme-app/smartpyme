@@ -2122,7 +2122,9 @@ class VentasController extends Controller
             ->where('id_venta', $venta->id)
             ->where('transportista', 'Boxful')
             ->where(function ($q) {
-                $q->whereNull('num_guia')->orWhere('num_guia', '');
+                $q->whereNull('num_guia')
+                    ->orWhere('num_guia', '')
+                    ->orWhere('num_guia', 'like', 'PENDING-%');
             })
             ->value('id');
 
@@ -2130,12 +2132,13 @@ class VentasController extends Controller
             return (int) $stubId;
         }
 
-        // Si ya hay guía BoxFul, no crear otro stub
+        // Si ya hay guía BoxFul real, no crear otro stub
         $conGuia = Paquete::withoutGlobalScopes()
             ->where('id_venta', $venta->id)
             ->where('transportista', 'Boxful')
             ->whereNotNull('num_guia')
             ->where('num_guia', '!=', '')
+            ->where('num_guia', 'not like', 'PENDING-%')
             ->exists();
 
         if ($conGuia) {
