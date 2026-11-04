@@ -66,6 +66,21 @@
 
 @import './finanzas-suite.shared.css';
 
+.suite-filtros-compartidos {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.suite-filtro-mes {
+  min-width: 9.5rem;
+}
+
+.suite-filtro-anio {
+  min-width: 5.5rem;
+}
+
 .pl-gerencial-toolbar {
   display: flex;
   flex-wrap: wrap;

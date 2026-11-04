@@ -78,7 +78,24 @@ export class FinanzasComponent implements OnInit {
   /** Mes por defecto: alinea con dashboard Ventas (un mes, no YTD). */
   plPeriodo: PlPeriodoId = 'mes';
   plBase: PlBaseId = 'gerencial';
-  plSucursalId = 'consolidado';
+  suiteSucursalId = 'consolidado';
+  suiteMes = 0;
+  suiteAnio = 0;
+  readonly suiteMesOpciones: { value: number; label: string }[] = [
+    { value: 1, label: 'Enero' },
+    { value: 2, label: 'Febrero' },
+    { value: 3, label: 'Marzo' },
+    { value: 4, label: 'Abril' },
+    { value: 5, label: 'Mayo' },
+    { value: 6, label: 'Junio' },
+    { value: 7, label: 'Julio' },
+    { value: 8, label: 'Agosto' },
+    { value: 9, label: 'Septiembre' },
+    { value: 10, label: 'Octubre' },
+    { value: 11, label: 'Noviembre' },
+    { value: 12, label: 'Diciembre' },
+  ];
+  suiteAnioOpciones: number[] = [];
   rentHorizonte: RentabilidadHorizonteId = 'mes';
   readonly rentHorizonteOpciones: { id: RentabilidadHorizonteId; label: string }[] = [
     { id: 'mes', label: 'Mes' },
@@ -91,9 +108,21 @@ export class FinanzasComponent implements OnInit {
   plSucursalOpciones: PlSegmentOption[] = [
     { id: 'consolidado', label: 'Consolidado' },
   ];
-  plQuery: PlGerencialQuery = this.buildPlQuery();
+  plQuery: PlGerencialQuery = {
+    periodo: 'mes',
+    base: 'gerencial',
+    sucursalId: 'consolidado',
+    comparacion: 'mes_anterior',
+    anio: new Date().getFullYear(),
+    mes: 1,
+  };
 
   ngOnInit(): void {
+    const ref = this.mesReferenciaInicial();
+    this.suiteMes = ref.getMonth() + 1;
+    this.suiteAnio = ref.getFullYear();
+    this.suiteAnioOpciones = this.aniosDisponibles();
+    this.refreshPlQuery();
     this.plComparacionOpciones = this.buildComparacionOpciones();
     this.catalogo
       .sucursalesParaFiltro()
@@ -121,14 +150,27 @@ export class FinanzasComponent implements OnInit {
     this.refreshPlQuery();
   }
 
-  seleccionarPlSucursal(event: Event): void {
-    this.plSucursalId = (event.target as HTMLSelectElement).value;
+  seleccionarSuiteSucursal(event: Event): void {
+    this.suiteSucursalId = (event.target as HTMLSelectElement).value;
+    this.refreshPlQuery();
+  }
+
+  seleccionarSuiteMes(event: Event): void {
+    this.suiteMes = Number((event.target as HTMLSelectElement).value);
+    this.refreshPlQuery();
+  }
+
+  seleccionarSuiteAnio(event: Event): void {
+    this.suiteAnio = Number((event.target as HTMLSelectElement).value);
     this.refreshPlQuery();
   }
 
   seleccionarRentHorizonte(event: Event): void {
     const id = (event.target as HTMLSelectElement).value as RentabilidadHorizonteId;
-    if (id !== 'mes' && id !== 'trimestre' && id !== 'anio' || id === this.rentHorizonte) {
+    if (id !== 'mes' && id !== 'trimestre' && id !== 'anio') {
+      return;
+    }
+    if (id === this.rentHorizonte) {
       return;
     }
     this.rentHorizonte = id;
@@ -144,16 +186,13 @@ export class FinanzasComponent implements OnInit {
   }
 
   private buildPlQuery(): PlGerencialQuery {
-    // Año completo llega hasta el mes en curso (igual que Ventas con mes vacío).
-    // Mes suelto sigue en el mes cerrado anterior.
-    const mesRef = this.plPeriodo === 'anio_completo' ? new Date() : this.plMesReferencia;
     return {
       periodo: this.plPeriodo,
       base: this.plBase,
-      sucursalId: this.plSucursalId,
+      sucursalId: this.suiteSucursalId,
       comparacion: this.plComparacion,
-      anio: mesRef.getFullYear(),
-      mes: mesRef.getMonth() + 1,
+      anio: this.suiteAnio,
+      mes: this.suiteMes,
     };
   }
 
@@ -212,11 +251,9 @@ export class FinanzasComponent implements OnInit {
 
   get plPeriodoTitulo(): string {
     if (this.plPeriodo === 'anio_completo') {
-      return `año ${new Date().getFullYear()}`;
+      return `año ${this.suiteAnio} (ene–${this.mesAbr(new Date(this.suiteAnio, this.suiteMes - 1, 1))})`;
     }
-    const ref = new Date();
-    const mes = new Date(ref.getFullYear(), ref.getMonth() - 1, 1);
-    return `${this.mesNombre(mes)} ${mes.getFullYear()}`;
+    return `${this.mesNombre(new Date(this.suiteAnio, this.suiteMes - 1, 1))} ${this.suiteAnio}`;
   }
 
   get plComparacionTitulo(): string {
@@ -226,13 +263,23 @@ export class FinanzasComponent implements OnInit {
   }
 
   get plAnioAcumulado(): number {
-    return this.plMesReferencia.getFullYear();
+    return this.suiteAnio;
   }
 
-  /** Mes de referencia del P&L (mes calendario anterior, alineado al título de periodo). */
-  private get plMesReferencia(): Date {
+  /** Mes calendario anterior al día de hoy (referencia inicial del P&L). */
+  private mesReferenciaInicial(): Date {
     const ref = new Date();
     return new Date(ref.getFullYear(), ref.getMonth() - 1, 1);
+  }
+
+  private aniosDisponibles(): number[] {
+    const hasta = new Date().getFullYear();
+    const desde = 2024;
+    const out: number[] = [];
+    for (let a = hasta; a >= desde; a--) {
+      out.push(a);
+    }
+    return out;
   }
 
   get subtituloContexto(): string {

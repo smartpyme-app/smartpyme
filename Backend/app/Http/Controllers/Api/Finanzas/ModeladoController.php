@@ -23,7 +23,7 @@ class ModeladoController extends Controller
             'clasificaciones' => DB::table('modelado_clasificaciones')
                 ->where('id_empresa', $empresa)
                 ->orderBy('nombre')
-                ->get(['clave', 'nombre', 'rubro', 'tipo']),
+                ->get(['clave', 'nombre', 'rubro', 'tipo', 'monto', 'pct_ventas', 'dia_pago']),
             'calendario' => DB::table('modelado_calendario')
                 ->where('id_empresa', $empresa)
                 ->orderBy('id')
@@ -63,6 +63,9 @@ class ModeladoController extends Controller
             'nombre' => 'required|string|max:200',
             'rubro' => 'required|in:'.self::RUBROS_GASTO,
             'tipo' => 'nullable|in:fijo,variable',
+            'monto' => 'nullable|numeric|min:0',
+            'pctVentas' => 'nullable|numeric|min:0|max:100',
+            'diaPago' => 'nullable|string|max:32',
         ]);
         $empresa = $this->empresaId();
         $now = now();
@@ -71,6 +74,9 @@ class ModeladoController extends Controller
             'nombre' => $data['nombre'],
             'rubro' => $data['rubro'],
             'tipo' => $data['tipo'] ?? null,
+            'monto' => $data['monto'] ?? null,
+            'pct_ventas' => $data['pctVentas'] ?? null,
+            'dia_pago' => $data['diaPago'] ?? null,
             'updated_at' => $now,
         ];
         if (DB::table('modelado_clasificaciones')->where($where)->exists()) {
@@ -159,6 +165,11 @@ class ModeladoController extends Controller
             'filas.*.anual' => 'required|numeric|min:0',
             'estacionalidad' => 'nullable|array|size:12',
             'estacionalidad.*' => 'numeric|min:0',
+            'sucursales' => 'nullable|array',
+            'sucursales.*.idSucursal' => 'required|integer|min:1',
+            'sucursales.*.filas' => 'required|array|min:1',
+            'sucursales.*.filas.*.rubro' => 'required|in:'.self::RUBROS_PRESUPUESTO,
+            'sucursales.*.filas.*.anual' => 'required|numeric|min:0',
         ]);
         if ($data['reparto'] === 'estacionalidad' && empty($data['estacionalidad'])) {
             return response()->json(['message' => 'estacionalidad requiere 12 pesos'], 422);
@@ -204,6 +215,26 @@ class ModeladoController extends Controller
                         'created_at' => $now,
                         'updated_at' => $now,
                     ]);
+                }
+            }
+            if (! empty($data['sucursales'])) {
+                DB::table('modelado_presupuesto_sucursal_lineas')
+                    ->where('id_empresa', $empresa)
+                    ->where('anio', $anio)
+                    ->delete();
+                foreach ($data['sucursales'] as $bloque) {
+                    $idSuc = (int) $bloque['idSucursal'];
+                    foreach ($bloque['filas'] as $fila) {
+                        DB::table('modelado_presupuesto_sucursal_lineas')->insert([
+                            'id_empresa' => $empresa,
+                            'anio' => $anio,
+                            'id_sucursal' => $idSuc,
+                            'rubro' => $fila['rubro'],
+                            'monto_anual' => $fila['anual'],
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ]);
+                    }
                 }
             }
         });

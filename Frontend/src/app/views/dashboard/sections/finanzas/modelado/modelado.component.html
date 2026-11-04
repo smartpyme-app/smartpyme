@@ -149,13 +149,20 @@
                       </div>
                       <div class="modelado-gasto-meta">{{ gastoSubtitulo(gasto) }}</div>
                     </div>
+                    <input
+                      type="text"
+                      inputmode="decimal"
+                      class="form-control form-control-sm modelado-gasto-input"
+                      [attr.value]="gasto.montoMensual ? gasto.montoMensual : ''"
+                      (blur)="guardarMonto(gasto, $event)"
+                      [attr.aria-label]="'Monto mensual ' + gasto.nombre" />
                     <div class="modelado-tipo-group" role="group" [attr.aria-label]="'Tipo de ' + gasto.nombre">
                       <button
                         type="button"
                         class="modelado-tipo-btn"
                         [class.modelado-tipo-btn--active]="gasto.tipo === 'fijo'"
                         [attr.aria-pressed]="gasto.tipo === 'fijo'"
-                        (click)="seleccionarTipo(gasto, 'fijo')">
+                        (mousedown)="elegirTipo(gasto, 'fijo', $event)">
                         Fijo
                       </button>
                       <button
@@ -163,15 +170,130 @@
                         class="modelado-tipo-btn"
                         [class.modelado-tipo-btn--active]="gasto.tipo === 'variable'"
                         [attr.aria-pressed]="gasto.tipo === 'variable'"
-                        (click)="seleccionarTipo(gasto, 'variable')">
+                        (mousedown)="elegirTipo(gasto, 'variable', $event)">
                         Variable
                       </button>
                     </div>
                   </li>
                 }
               </ul>
-              @if (!gastos.length) {
-                <p class="text-muted mb-0">No hay gastos del mes anterior para clasificar.</p>
+              @if (gastoNuevo; as nuevo) {
+                <div class="modelado-gasto-form card border-0 bg-light mb-3">
+                  <div class="card-body p-3">
+                    <h3 class="modelado-gasto-form-titulo mb-3">Nuevo gasto</h3>
+                    <div class="row g-2 mb-2">
+                      <div class="col-md-6">
+                        <label class="form-label modelado-gasto-form-label">Nombre</label>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm"
+                          placeholder="Ej.: Comisiones de vendedores"
+                          [(ngModel)]="nuevo.nombre"
+                          aria-label="Nombre del gasto" />
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label modelado-gasto-form-label">Categoría del P&amp;L</label>
+                        <select class="form-select form-select-sm" [(ngModel)]="nuevo.rubro" aria-label="Categoría">
+                          @for (rubro of rubrosGasto; track rubro.id) {
+                            <option [value]="rubro.id">{{ rubro.label }}</option>
+                          }
+                        </select>
+                      </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                      <div class="col-md-6">
+                        <label class="form-label modelado-gasto-form-label">Área</label>
+                        <select class="form-select form-select-sm" disabled aria-label="Área">
+                          @for (a of areasGasto; track a.id) {
+                            <option [value]="a.id">{{ a.label }}</option>
+                          }
+                        </select>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label modelado-gasto-form-label">Sucursal</label>
+                        <select class="form-select form-select-sm" disabled aria-label="Sucursal">
+                          <option>Todas</option>
+                        </select>
+                      </div>
+                    </div>
+                    <p class="modelado-gasto-form-label mb-1">¿Cómo se comporta?</p>
+                    <div class="modelado-comportamiento mb-3" role="group" aria-label="Comportamiento del gasto">
+                      <button
+                        type="button"
+                        class="modelado-comportamiento-btn"
+                        [class.modelado-comportamiento-btn--active]="nuevo.tipo === 'variable'"
+                        (click)="nuevo.tipo = 'variable'">
+                        Variable — sube con las ventas
+                      </button>
+                      <button
+                        type="button"
+                        class="modelado-comportamiento-btn"
+                        [class.modelado-comportamiento-btn--active]="nuevo.tipo === 'fijo'"
+                        (click)="nuevo.tipo = 'fijo'">
+                        Fijo — mismo monto cada mes
+                      </button>
+                    </div>
+                    @if (nuevo.tipo === 'variable') {
+                      <div class="row g-2 align-items-end mb-3">
+                        <div class="col-md-4">
+                          <label class="form-label modelado-gasto-form-label">% de las ventas</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.1"
+                            class="form-control form-control-sm"
+                            [(ngModel)]="nuevo.pctVentas"
+                            aria-label="Porcentaje de ventas" />
+                        </div>
+                        <div class="col-md-8 modelado-gasto-form-hint">
+                          <span>{{ formatMonto(nuevoGastoMontoVariable()) }}/mes</span>
+                          @if (nuevoGastoMargenPreview(); as margen) {
+                            <span class="modelado-gasto-form-impacto">{{ margen }}</span>
+                          }
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="row g-2 align-items-end mb-3">
+                        <div class="col-md-4">
+                          <label class="form-label modelado-gasto-form-label">Monto mensual</label>
+                          <input
+                            type="number"
+                            min="0"
+                            class="form-control form-control-sm"
+                            [(ngModel)]="nuevo.montoMensual"
+                            aria-label="Monto mensual" />
+                        </div>
+                        <div class="col-md-3">
+                          <label class="form-label modelado-gasto-form-label">Día de pago</label>
+                          <input
+                            type="text"
+                            class="form-control form-control-sm"
+                            [(ngModel)]="nuevo.diaPago"
+                            aria-label="Día de pago" />
+                        </div>
+                        <div class="col-md-5">
+                          <div class="form-check modelado-gasto-form-iva">
+                            <input class="form-check-input" type="checkbox" [(ngModel)]="nuevo.llevaIva" id="gastoNuevoIva" />
+                            <label class="form-check-label" for="gastoNuevoIva">Lleva IVA</label>
+                          </div>
+                          @if (nuevoGastoEquilibrioPreview(); as eqPrev) {
+                            <p class="modelado-gasto-form-impacto mb-0">{{ eqPrev }}</p>
+                          }
+                        </div>
+                      </div>
+                    }
+                    <div class="d-flex flex-wrap gap-2">
+                      <button type="button" class="btn btn-sm btn-primary" (click)="guardarGastoNuevo()">Agregar gasto</button>
+                      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="cancelarGastoNuevo()">Cancelar</button>
+                    </div>
+                  </div>
+                </div>
+              }
+              @if (!gastoNuevo) {
+                <button type="button" class="btn btn-link btn-sm px-0" (click)="mostrarGastoNuevo()">
+                  + Agregar gasto fijo o variable
+                </button>
               }
             </div>
           </div>
@@ -251,6 +373,7 @@
                       <th scope="col">Frecuencia</th>
                       <th scope="col" class="text-center">Día</th>
                       <th scope="col" class="text-end">Próximo</th>
+                      <th scope="col" class="text-end modelado-cal-acciones-col">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -298,6 +421,19 @@
                           }
                         </td>
                         <td class="text-end modelado-cal-proximo">{{ fila.proximo }}</td>
+                        <td class="text-end modelado-cal-acciones-col">
+                          @if (puedeEliminarCalendario(fila)) {
+                            <button
+                              type="button"
+                              class="btn btn-sm btn-link modelado-cal-quitar"
+                              tooltip="Quitar"
+                              (mousedown)="$event.preventDefault()"
+                              (click)="eliminarCalendario(fila)"
+                              [attr.aria-label]="'Quitar del calendario ' + fila.nombre">
+                              <span aria-hidden="true">×</span>
+                            </button>
+                          }
+                        </td>
                       </tr>
                     }
                     @if (calendarioPendiente; as pendiente) {
@@ -319,7 +455,8 @@
                             [(ngModel)]="pendiente.dia"
                             [attr.aria-label]="'Día ' + pendiente.nombre" />
                         </td>
-                        <td class="text-end">
+                        <td class="text-end modelado-cal-proximo"></td>
+                        <td class="text-end modelado-cal-acciones-col">
                           <button type="button" class="btn btn-sm btn-outline-primary" (click)="agregarCalendarioPendiente()">
                             Agregar
                           </button>
@@ -330,25 +467,123 @@
                 </table>
               </div>
               @if (costoNuevo; as nuevo) {
-                <div class="d-flex flex-wrap gap-2 align-items-end mt-2">
-                  <label class="mb-0">
-                    <span class="modelado-p4-sublabel">Nombre</span>
-                    <input type="text" class="form-control form-control-sm" [(ngModel)]="nuevo.nombre" aria-label="Nombre del costo fijo" />
-                  </label>
-                  <label class="mb-0">
-                    <span class="modelado-p4-sublabel">Monto</span>
-                    <input type="number" class="form-control form-control-sm" [(ngModel)]="nuevo.monto" aria-label="Monto del costo fijo" />
-                  </label>
-                  <label class="mb-0">
-                    <span class="modelado-p4-sublabel">Día</span>
-                    <input type="text" class="form-control form-control-sm modelado-cal-input--dia" [(ngModel)]="nuevo.dia" aria-label="Día del costo fijo" />
-                  </label>
-                  <button type="button" class="btn btn-sm btn-outline-primary" (click)="guardarCostoNuevo()">Guardar</button>
+                <div class="modelado-gasto-form card border-0 bg-light mt-3">
+                  <div class="card-body p-3">
+                    <h3 class="modelado-gasto-form-titulo mb-3">Nuevo costo</h3>
+                    <div class="row g-2 mb-2">
+                      <div class="col-md-6">
+                        <label class="form-label modelado-gasto-form-label">Nombre</label>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm"
+                          placeholder="Ej.: Materia prima local"
+                          [(ngModel)]="nuevo.nombre"
+                          aria-label="Nombre del costo" />
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label modelado-gasto-form-label">Categoría del P&amp;L</label>
+                        <select class="form-select form-select-sm" [(ngModel)]="nuevo.rubro" aria-label="Categoría del costo">
+                          @for (rubro of rubrosCosto; track rubro.id) {
+                            <option [value]="rubro.id">{{ rubro.label }}</option>
+                          }
+                        </select>
+                      </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                      <div class="col-md-6">
+                        <label class="form-label modelado-gasto-form-label">Área</label>
+                        <select class="form-select form-select-sm" disabled aria-label="Área">
+                          @for (a of areasGasto; track a.id) {
+                            <option [value]="a.id">{{ a.label }}</option>
+                          }
+                        </select>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label modelado-gasto-form-label">Sucursal</label>
+                        <select class="form-select form-select-sm" disabled aria-label="Sucursal">
+                          <option>Todas</option>
+                        </select>
+                      </div>
+                    </div>
+                    <p class="modelado-gasto-form-label mb-1">¿Cómo se comporta?</p>
+                    <div class="modelado-comportamiento mb-3" role="group" aria-label="Comportamiento del costo">
+                      <button
+                        type="button"
+                        class="modelado-comportamiento-btn"
+                        [class.modelado-comportamiento-btn--active]="nuevo.tipo === 'variable'"
+                        (click)="nuevo.tipo = 'variable'">
+                        Variable — sube con las ventas
+                      </button>
+                      <button
+                        type="button"
+                        class="modelado-comportamiento-btn"
+                        [class.modelado-comportamiento-btn--active]="nuevo.tipo === 'fijo'"
+                        (click)="nuevo.tipo = 'fijo'">
+                        Fijo — mismo monto cada mes
+                      </button>
+                    </div>
+                    @if (nuevo.tipo === 'variable') {
+                      <div class="row g-2 align-items-end mb-3">
+                        <div class="col-md-4">
+                          <label class="form-label modelado-gasto-form-label">% de las ventas</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.1"
+                            class="form-control form-control-sm"
+                            [(ngModel)]="nuevo.pctVentas"
+                            aria-label="Porcentaje de ventas del costo" />
+                        </div>
+                        <div class="col-md-8 modelado-gasto-form-hint">
+                          <span>{{ formatMonto(nuevoCostoMontoVariable()) }}/mes</span>
+                          @if (nuevoCostoMargenPreview(); as margen) {
+                            <span class="modelado-gasto-form-impacto">{{ margen }}</span>
+                          }
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="row g-2 align-items-end mb-3">
+                        <div class="col-md-4">
+                          <label class="form-label modelado-gasto-form-label">Monto mensual</label>
+                          <input
+                            type="number"
+                            min="0"
+                            class="form-control form-control-sm"
+                            [(ngModel)]="nuevo.montoMensual"
+                            aria-label="Monto mensual del costo" />
+                        </div>
+                        <div class="col-md-3">
+                          <label class="form-label modelado-gasto-form-label">Día de pago</label>
+                          <input
+                            type="text"
+                            class="form-control form-control-sm"
+                            [(ngModel)]="nuevo.diaPago"
+                            aria-label="Día de pago del costo" />
+                        </div>
+                        <div class="col-md-5">
+                          <div class="form-check modelado-gasto-form-iva">
+                            <input class="form-check-input" type="checkbox" [(ngModel)]="nuevo.llevaIva" id="costoNuevoIva" />
+                            <label class="form-check-label" for="costoNuevoIva">Lleva IVA</label>
+                          </div>
+                          @if (nuevoCostoEquilibrioPreview(); as eqPrev) {
+                            <p class="modelado-gasto-form-impacto mb-0">{{ eqPrev }}</p>
+                          }
+                        </div>
+                      </div>
+                    }
+                    <div class="d-flex flex-wrap gap-2">
+                      <button type="button" class="btn btn-sm btn-primary" (click)="guardarCostoNuevo()">Agregar costo</button>
+                      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="cancelarCostoNuevo()">Cancelar</button>
+                    </div>
+                  </div>
                 </div>
               }
-              <button type="button" class="btn btn-link modelado-agregar-costo ps-0 mt-2" (click)="mostrarCostoNuevo()">
-                + Agregar costo fijo
-              </button>
+              @if (!costoNuevo) {
+                <button type="button" class="btn btn-link modelado-agregar-costo ps-0 mt-2" (click)="mostrarCostoNuevo()">
+                  + Agregar costo fijo o variable
+                </button>
+              }
             </div>
           </div>
         </div>
@@ -371,7 +606,7 @@
                       class="modelado-vista-btn"
                       [class.modelado-vista-btn--active]="presupuestoVista === vista.id"
                       [attr.aria-pressed]="presupuestoVista === vista.id"
-                      [disabled]="!vista.activo"
+                      [disabled]="!vista.activo || (vista.id === 'sucursales' && !presupuestoSucursalesActivo())"
                       (click)="presupuestoVista = vista.id">
                       {{ vista.label }}
                     </button>
@@ -413,6 +648,7 @@
               </div>
             </div>
             <div class="card-body pt-0 px-3 pb-3">
+              @if (presupuestoVista === 'empresa') {
               <div class="table-responsive">
                 <table class="table table-sm modelado-presupuesto-table mb-0">
                   <thead>
@@ -478,6 +714,102 @@
                   (blur)="guardarPresupuesto()"
                   aria-label="Meta de ventas anual" />
               </div>
+              } @else if (presupuestoVista === 'sucursales' && presupuestoSucursales; as suc) {
+              <div class="table-responsive">
+                <table class="table table-sm modelado-pres-suc-table mb-0">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="modelado-pres-suc-anual-col">Anual {{ data.anio }}</th>
+                      @for (col of suc.sucursales; track col.id) {
+                        <th scope="col" class="text-end">{{ col.nombre }}</th>
+                      }
+                      <th scope="col" class="text-end">Suma</th>
+                      <th scope="col" class="text-end">Empresa</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (fila of suc.filas; track fila.id) {
+                      <tr>
+                        <td class="modelado-pres-categoria">{{ fila.categoria }}</td>
+                        @for (col of suc.sucursales; track col.id) {
+                          <td class="text-end">
+                            <input
+                              type="number"
+                              class="form-control form-control-sm modelado-pres-suc-input"
+                              [ngModel]="presupuestoSucursalCelda(fila, col.id)"
+                              (ngModelChange)="presupuestoSucursalSetCelda(fila, col.id, $event)"
+                              (blur)="guardarPresupuestoSucursales()"
+                              [attr.aria-label]="fila.categoria + ' ' + col.nombre" />
+                          </td>
+                        }
+                        <td class="text-end modelado-pres-suc-readonly">{{ formatMonto(presupuestoSumaFila(fila)) }}</td>
+                        <td class="text-end modelado-pres-suc-readonly">{{ formatMonto(fila.empresa) }}</td>
+                      </tr>
+                    }
+                    <tr class="modelado-pres-suc-contrib-row">
+                      <td class="modelado-pres-categoria fw-semibold">Contribución presupuestada</td>
+                      @for (col of suc.sucursales; track col.id) {
+                        <td
+                          class="text-end fw-semibold"
+                          [class]="presupuestoContribClase(presupuestoContribSucursal(col.id))">
+                          {{ formatMonto(presupuestoContribSucursal(col.id)) }}
+                        </td>
+                      }
+                      <td
+                        class="text-end fw-semibold"
+                        [class]="presupuestoContribClase(presupuestoContribSuma())">
+                        {{ formatMonto(presupuestoContribSuma()) }}
+                      </td>
+                      <td
+                        class="text-end fw-semibold"
+                        [class]="presupuestoContribClase(suc.contribucion.empresa)">
+                        {{ formatMonto(suc.contribucion.empresa) }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              @if (suc.comparacionMes.titulo && suc.comparacionMes.filas.length) {
+                <h3 class="modelado-pres-suc-cmp-titulo">{{ suc.comparacionMes.titulo }}</h3>
+                <div class="table-responsive">
+                  <table class="table table-sm modelado-pres-suc-cmp-table mb-0">
+                    <thead>
+                      <tr>
+                        <th scope="col">Sucursal</th>
+                        <th scope="col" class="text-end">Ventas presup.</th>
+                        <th scope="col" class="text-end">Ventas real</th>
+                        <th scope="col" class="text-end">Var.</th>
+                        <th scope="col" class="text-end">Contrib. presup.</th>
+                        <th scope="col" class="text-end">Contrib. real</th>
+                        <th scope="col" class="text-end">Var.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (row of suc.comparacionMes.filas; track row.idSucursal) {
+                        <tr [class.modelado-pres-suc-cmp-row--alerta]="row.destacar">
+                          <td>{{ row.nombre }}</td>
+                          <td class="text-end">{{ formatMonto(row.ventasPresup) }}</td>
+                          <td class="text-end">{{ formatMonto(row.ventasReal) }}</td>
+                          <td
+                            class="text-end"
+                            [class.modelado-pres-vs--neg]="row.ventasVarPct != null && row.ventasVarPct < 0">
+                            {{ varPctLabel(row.ventasVarPct) }}
+                          </td>
+                          <td class="text-end">{{ formatMonto(row.contribPresup) }}</td>
+                          <td class="text-end">{{ formatMonto(row.contribReal) }}</td>
+                          <td
+                            class="text-end"
+                            [class.modelado-pres-vs--neg]="row.contribVar < 0">
+                            {{ formatMonto(row.contribVar) }}
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+              }
             </div>
           </div>
         </div>

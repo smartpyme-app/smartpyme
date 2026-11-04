@@ -141,8 +141,9 @@ export class HttpService {
   }
 
   delete(url: string, id: string | number): Observable<any> {
+    const path = url.replace(/\/+$/, '');
     return this.http
-      .delete<any>(this.apiUrl + url + id)
+      .delete<any>(`${this.apiUrl}${path}/${id}`)
       .pipe(retry(0), catchError(this.handleError));
   }
 

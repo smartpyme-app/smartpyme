@@ -76,70 +76,88 @@
     </nav>
 
     @if (tabActiva === 'pl' || tabActiva === 'rentabilidad' || tabActiva === 'flujo') {
-      <div class="pl-gerencial-toolbar" [attr.aria-label]="tabActiva === 'pl' ? 'Filtros P&L Gerencial' : tabActiva === 'rentabilidad' ? 'Filtros de rentabilidad' : 'Filtros de flujo de caja'">
-        @if (tabActiva === 'pl') {
-        <div class="pl-segment-group pl-segment-group--navy" role="group" aria-label="Periodo">
-          @for (opt of plPeriodoOpciones; track opt.id) {
-            <button
-              type="button"
-              class="pl-segment"
-              [class.pl-segment--active]="plPeriodo === opt.id"
-              [attr.aria-pressed]="plPeriodo === opt.id"
-              (click)="seleccionarPlPeriodo(opt.id)">
-              {{ opt.label }}
-            </button>
-          }
-        </div>
+      <div class="pl-gerencial-toolbar" aria-label="Filtros P&L, rentabilidad y flujo de caja">
+        <div class="suite-filtros-compartidos" role="group" aria-label="Mes, año y sucursal">
+          <select
+            class="pl-sucursal-select suite-filtro-mes"
+            [value]="suiteMes"
+            (change)="seleccionarSuiteMes($event)"
+            aria-label="Mes de referencia">
+            @for (opt of suiteMesOpciones; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
 
-        <div class="pl-segment-group pl-segment-group--navy" role="group" aria-label="Base contable">
-          @for (opt of plBaseOpciones; track opt.id) {
-            <button
-              type="button"
-              class="pl-segment"
-              [class.pl-segment--active]="plBase === opt.id"
-              [attr.aria-pressed]="plBase === opt.id"
-              (click)="seleccionarPlBase(opt.id)">
-              {{ opt.label }}
-            </button>
-          }
-        </div>
-        }
+          <select
+            class="pl-sucursal-select suite-filtro-anio"
+            [value]="suiteAnio"
+            (change)="seleccionarSuiteAnio($event)"
+            aria-label="Año de referencia">
+            @for (anio of suiteAnioOpciones; track anio) {
+              <option [value]="anio">{{ anio }}</option>
+            }
+          </select>
 
-        <select
-          class="pl-sucursal-select"
-          [value]="plSucursalId"
-          (change)="seleccionarPlSucursal($event)"
-          aria-label="Sucursales">
-          @for (opt of plSucursalOpciones; track opt.id) {
-            <option [value]="opt.id">{{ opt.label }}</option>
-          }
-        </select>
+          <select
+            class="pl-sucursal-select"
+            [value]="suiteSucursalId"
+            (change)="seleccionarSuiteSucursal($event)"
+            aria-label="Sucursal">
+            @for (opt of plSucursalOpciones; track opt.id) {
+              <option [value]="opt.id">{{ opt.label }}</option>
+            }
+          </select>
 
-        @if (tabActiva === 'rentabilidad') {
           <select
             class="rent-horizonte-select"
             [value]="rentHorizonte"
             (change)="seleccionarRentHorizonte($event)"
-            aria-label="Mes, trimestre o año">
+            aria-label="Horizonte de rentabilidad">
             @for (opt of rentHorizonteOpciones; track opt.id) {
               <option [value]="opt.id">{{ opt.label }}</option>
             }
           </select>
-        }
+        </div>
 
         @if (tabActiva === 'pl') {
-        <div class="pl-segment-group pl-segment-group--orange" role="group" aria-label="Comparación">
-          @for (opt of plComparacionOpciones; track opt.id) {
-            <button
-              type="button"
-              class="pl-segment"
-              [class.pl-segment--active]="plComparacion === opt.id"
-              [attr.aria-pressed]="plComparacion === opt.id"
-              (click)="seleccionarPlComparacion(opt.id)">
-              {{ opt.label }}
-            </button>
-          }
-        </div>
+          <div class="pl-segment-group pl-segment-group--navy" role="group" aria-label="Periodo P&L">
+            @for (opt of plPeriodoOpciones; track opt.id) {
+              <button
+                type="button"
+                class="pl-segment"
+                [class.pl-segment--active]="plPeriodo === opt.id"
+                [attr.aria-pressed]="plPeriodo === opt.id"
+                (click)="seleccionarPlPeriodo(opt.id)">
+                {{ opt.label }}
+              </button>
+            }
+          </div>
+
+          <div class="pl-segment-group pl-segment-group--navy" role="group" aria-label="Base contable">
+            @for (opt of plBaseOpciones; track opt.id) {
+              <button
+                type="button"
+                class="pl-segment"
+                [class.pl-segment--active]="plBase === opt.id"
+                [attr.aria-pressed]="plBase === opt.id"
+                (click)="seleccionarPlBase(opt.id)">
+                {{ opt.label }}
+              </button>
+            }
+          </div>
+
+          <div class="pl-segment-group pl-segment-group--orange" role="group" aria-label="Comparación">
+            @for (opt of plComparacionOpciones; track opt.id) {
+              <button
+                type="button"
+                class="pl-segment"
+                [class.pl-segment--active]="plComparacion === opt.id"
+                [attr.aria-pressed]="plComparacion === opt.id"
+                (click)="seleccionarPlComparacion(opt.id)">
+                {{ opt.label }}
+              </button>
+            }
+          </div>
         }
       </div>
     }

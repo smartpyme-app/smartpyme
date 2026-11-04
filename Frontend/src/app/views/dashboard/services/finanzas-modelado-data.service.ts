@@ -10,6 +10,7 @@ import {
   ModeladoGastoFila,
   ModeladoGastoTipo,
   ModeladoPresupuestoReparto,
+  ModeladoPresupuestoSucursales,
   ModeladoVista,
 } from '../sections/finanzas/modelado/modelado.model';
 
@@ -77,6 +78,7 @@ export const MODELADO_VACIA: ModeladoVista = {
       avanceEsperadoPct: null,
       montoAnual: 0,
     },
+    sucursales: null,
   },
   paso4Titulo: 'Paso 4 · Parámetros del pronóstico',
   parametrosPronostico: {
@@ -125,6 +127,7 @@ interface ModeladoApi {
     rubro?: string;
     montoMensual?: number;
     tipo?: string | null;
+    pctVentas?: number | null;
     nuevo?: boolean;
   }[];
   puntoEquilibrio?: {
@@ -172,6 +175,35 @@ interface ModeladoApi {
       avancePct?: number | null;
       avanceEsperadoPct?: number | null;
     };
+    sucursales?: {
+      sucursales?: { id?: number; nombre?: string }[];
+      filas?: {
+        id?: string;
+        categoria?: string;
+        porSucursal?: Record<string, number>;
+        suma?: number;
+        empresa?: number;
+      }[];
+      contribucion?: {
+        porSucursal?: Record<string, number>;
+        suma?: number;
+        empresa?: number;
+      };
+      comparacionMes?: {
+        titulo?: string;
+        filas?: {
+          idSucursal?: number;
+          nombre?: string;
+          ventasPresup?: number;
+          ventasReal?: number;
+          ventasVarPct?: number | null;
+          contribPresup?: number;
+          contribReal?: number;
+          contribVar?: number;
+          destacar?: boolean;
+        }[];
+      };
+    } | null;
   };
   pronostico?: {
     efectivo?: number | null;
@@ -206,12 +238,15 @@ export class FinanzasModeladoDataService {
     );
   }
 
-  guardarClasificacion(gasto: ModeladoGastoFila, tipo: ModeladoGastoTipo): Observable<unknown> {
+  guardarClasificacion(gasto: ModeladoGastoFila, extra?: { pctVentas?: number | null; diaPago?: string | null }): Observable<unknown> {
     return this.api.putToUrl('finanzas/modelado/clasificacion', {
       clave: gasto.id,
       nombre: gasto.nombre,
       rubro: gasto.rubro || 'otros',
-      tipo,
+      tipo: gasto.tipo,
+      monto: Number(gasto.montoMensual) || 0,
+      pctVentas: extra?.pctVentas ?? null,
+      diaPago: extra?.diaPago ?? null,
     });
   }
 
@@ -236,11 +271,19 @@ export class FinanzasModeladoDataService {
     });
   }
 
+  borrarCalendario(id: number): Observable<unknown> {
+    return this.api.delete('finanzas/modelado/calendario', id);
+  }
+
   guardarPresupuesto(
     anio: number,
     reparto: ModeladoPresupuestoReparto,
     filas: { id: string; anual: number }[],
     pesos: number[],
+    sucursales?: {
+      idSucursal: number;
+      filas: { rubro: string; anual: number }[];
+    }[],
   ): Observable<unknown> {
     const estacionalidad =
       reparto === 'estacionalidad'
@@ -253,6 +296,7 @@ export class FinanzasModeladoDataService {
       reparto,
       filas: filas.map((f) => ({ rubro: f.id, anual: Number(f.anual) || 0 })),
       estacionalidad,
+      sucursales,
     });
   }
 
@@ -352,6 +396,7 @@ function mapModelado(raw: ModeladoApi, anio: number): ModeladoVista {
         avanceEsperadoPct: raw.presupuesto?.metaVentas?.avanceEsperadoPct ?? null,
         montoAnual: raw.presupuesto?.metaVentas?.montoAnual ?? 0,
       },
+      sucursales: mapPresupuestoSucursales(raw.presupuesto?.sucursales),
     },
     paso4Titulo: 'Paso 4 · Parámetros del pronóstico',
     parametrosPronostico: {
@@ -374,6 +419,7 @@ function mapModelado(raw: ModeladoApi, anio: number): ModeladoVista {
 function mapGasto(g: NonNullable<ModeladoApi['gastos']>[number]): ModeladoGastoFila {
   const tipo = g.tipo === 'fijo' || g.tipo === 'variable' ? g.tipo : null;
   const rubro = g.rubro ?? '';
+  const pctVentas = g.pctVentas != null && g.tipo === 'variable' ? Number(g.pctVentas) : null;
   return {
     id: g.id ?? '',
     nombre: g.nombre || g.id || 'Gasto',
@@ -381,7 +427,48 @@ function mapGasto(g: NonNullable<ModeladoApi['gastos']>[number]): ModeladoGastoF
     categoria: RUBRO[rubro] || rubro || 'Sin rubro',
     montoMensual: g.montoMensual ?? 0,
     tipo,
+    pctVentas,
     nuevo: g.nuevo === true,
+  };
+}
+
+function mapPresupuestoSucursales(
+  raw: NonNullable<ModeladoApi['presupuesto']>['sucursales'],
+): ModeladoPresupuestoSucursales | null {
+  if (!raw?.sucursales?.length) {
+    return null;
+  }
+  return {
+    sucursales: (raw.sucursales ?? []).map((s) => ({
+      id: Number(s.id) || 0,
+      nombre: s.nombre ?? '',
+    })),
+    filas: (raw.filas ?? []).map((f) => ({
+      id: f.id ?? '',
+      categoria: f.categoria ?? '',
+      porSucursal: { ...(f.porSucursal ?? {}) },
+      suma: f.suma ?? 0,
+      empresa: f.empresa ?? 0,
+    })),
+    contribucion: {
+      porSucursal: { ...(raw.contribucion?.porSucursal ?? {}) },
+      suma: raw.contribucion?.suma ?? 0,
+      empresa: raw.contribucion?.empresa ?? 0,
+    },
+    comparacionMes: {
+      titulo: raw.comparacionMes?.titulo ?? '',
+      filas: (raw.comparacionMes?.filas ?? []).map((f) => ({
+        idSucursal: Number(f.idSucursal) || 0,
+        nombre: f.nombre ?? '',
+        ventasPresup: f.ventasPresup ?? 0,
+        ventasReal: f.ventasReal ?? 0,
+        ventasVarPct: f.ventasVarPct ?? null,
+        contribPresup: f.contribPresup ?? 0,
+        contribReal: f.contribReal ?? 0,
+        contribVar: f.contribVar ?? 0,
+        destacar: f.destacar === true,
+      })),
+    },
   };
 }
 
@@ -398,8 +485,8 @@ function mapCalendario(c: NonNullable<ModeladoApi['calendario']>[number]): Model
     frecuencia: c.frecuencia || 'mensual',
     dia: c.dia ?? '',
     proximo: c.proximo || '—',
-    editableMonto: c.editable !== false,
-    editableDia: c.editable !== false,
+    editableMonto: c.editable === true,
+    editableDia: c.editable === true,
   };
 }
 

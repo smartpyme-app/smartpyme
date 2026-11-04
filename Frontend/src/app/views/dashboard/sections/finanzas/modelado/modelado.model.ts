@@ -27,6 +27,7 @@ export interface ModeladoGastoFila {
   categoria: string;
   montoMensual: number;
   tipo: ModeladoGastoTipo | null;
+  pctVentas?: number | null;
   nuevo?: boolean;
 }
 
@@ -106,6 +107,46 @@ export interface ModeladoPresupuestoBloque {
     avanceEsperadoPct: number | null;
     montoAnual: number;
   };
+  sucursales: ModeladoPresupuestoSucursales | null;
+}
+
+export interface ModeladoPresupuestoSucursalCol {
+  id: number;
+  nombre: string;
+}
+
+export interface ModeladoPresupuestoSucursalFila {
+  id: string;
+  categoria: string;
+  porSucursal: Record<string, number>;
+  suma: number;
+  empresa: number;
+}
+
+export interface ModeladoPresupuestoComparacionSucursal {
+  idSucursal: number;
+  nombre: string;
+  ventasPresup: number;
+  ventasReal: number;
+  ventasVarPct: number | null;
+  contribPresup: number;
+  contribReal: number;
+  contribVar: number;
+  destacar: boolean;
+}
+
+export interface ModeladoPresupuestoSucursales {
+  sucursales: ModeladoPresupuestoSucursalCol[];
+  filas: ModeladoPresupuestoSucursalFila[];
+  contribucion: {
+    porSucursal: Record<string, number>;
+    suma: number;
+    empresa: number;
+  };
+  comparacionMes: {
+    titulo: string;
+    filas: ModeladoPresupuestoComparacionSucursal[];
+  };
 }
 
 export interface ModeladoEstacionalidadMes {
@@ -147,10 +188,4 @@ export interface ModeladoCalendarioPendiente {
   monto: number;
   dia: string;
   nuevo?: boolean;
-}
-
-export interface ModeladoCostoNuevo {
-  nombre: string;
-  monto: number | null;
-  dia: string;
 }

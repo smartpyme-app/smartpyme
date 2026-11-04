@@ -28,10 +28,11 @@ La tabla no es un listado de transacciones: es un **árbol fijo de conceptos** c
 |-----------|---------|-----------------|
 | `plPeriodo` | `mes` \| `anio_completo` | Columna principal = mes seleccionado o suma del año; acumulado coherente con el modo |
 | `plBase` | `gerencial` (sin IVA) \| `caja` (con IVA) | Misma base en ventas, COGS y OPEX |
-| `plSucursalId` | `consolidado` \| `id_sucursal` | Scope de agregación |
+| `plSucursalId` | `consolidado` \| `id_sucursal` | Scope de agregación (compartido con Rentabilidad y Flujo) |
+| `suiteMes`, `suiteAnio` | Selects en toolbar | Mes de corte compartido P&L + Rentabilidad |
 | `plComparacion` | `mes_anterior` \| `mes_anterior_2` \| `presupuesto` | Columna “VS.” y sublíneas de KPIs |
 
-**Faltante en toolbar:** año y mes concretos (los dashboards de ventas/gastos ya usan `anio` / `mes` en `DashboardAnalyticsApiService.params`). Hoy `periodoTitulo` / `comparacionTitulo` se arman en el padre, no desde datos reales.
+`periodoTitulo` y `comparacionTitulo` se arman en el padre a partir de esos filtros; el API también puede devolver meta en la respuesta.
 
 ### 2.2 KPIs (`PlKpi` — `pl-gerencial.model.ts`)
 
