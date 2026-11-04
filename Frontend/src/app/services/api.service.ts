@@ -14,7 +14,7 @@ import { AuthService } from '@services/auth.service';
 import { PermissionService } from '@services/permission.service';
 import { UtilityService } from '@services/utility.service';
 import { HttpClient, HttpHeaders, HttpResponse, HttpErrorResponse } from '@angular/common/http';
-import { map, catchError, retry, timeout, switchMap } from 'rxjs/operators';
+import { map, catchError, retry, timeout } from 'rxjs/operators';
 import { normalizeBancosListResponse } from '@shared/utils/abono-bancos.util';
 import { Observable, throwError, from, of, Subject } from 'rxjs';
 import { AlertService } from '@services/alert.service';
@@ -532,24 +532,20 @@ export class ApiService {
         return this.funcionalidadesService.tieneAccesoCacheado('contabilidad');
     }
 
-    /** Igual criterio que ventas/gastos: contabilidad en plan o módulo bancos en empresa. */
+    /** Selects de abono/pago: mismo criterio que facturación (solo módulo bancos). */
     usarCuentasBancariasEnPagos(): boolean {
-        return this.usarCuentasBancarias(this.tieneContabilidadActivaEnSesion());
+        return this.isModuloBancos();
     }
 
-    /** Cuentas de la empresa (contabilidad/módulo bancos) o bancos activados en Ventas → Bancos. */
+    /** Catálogo viejo o cuentas: solo el switch de módulo, no contabilidad. */
     loadBancosParaAbono(): Observable<{ bancos: any[]; usarCuentas: boolean }> {
-        return this.funcionalidadesService.verificarAcceso('contabilidad').pipe(
-            switchMap((contabilidad) => {
-                const usarCuentas = this.usarCuentasBancarias(!!contabilidad);
-                const url = usarCuentas ? 'banco/cuentas/list' : 'bancos/list';
-                return this.getAll(url).pipe(
-                    map((raw) => ({
-                        bancos: normalizeBancosListResponse(raw),
-                        usarCuentas,
-                    })),
-                );
-            }),
+        const usarCuentas = this.isModuloBancos();
+        const url = usarCuentas ? 'banco/cuentas/list' : 'bancos/list';
+        return this.getAll(url).pipe(
+            map((raw) => ({
+                bancos: normalizeBancosListResponse(raw),
+                usarCuentas,
+            })),
         );
     }
 

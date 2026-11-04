@@ -509,7 +509,12 @@
                     <label for="detalle_banco">Bancos</label>
                     <select name="detalle_banco" [(ngModel)]="venta.detalle_banco" class="form-select">
                         <option value="">Seleccione aquí</option>
-                        <option *ngFor="let banco of bancos" [value]="banco.nombre_banco">{{ banco.nombre_banco }}<ng-container *ngIf="banco.numero"> — {{ banco.numero }}</ng-container></option>
+                        <ng-container *ngIf="apiService.isModuloBancos()">
+                            <option *ngFor="let banco of bancos" [value]="banco.nombre_banco">{{ banco.nombre_banco }}<ng-container *ngIf="banco.numero"> — {{ banco.numero }}</ng-container></option>
+                        </ng-container>
+                        <ng-container *ngIf="!apiService.isModuloBancos()">
+                            <option *ngFor="let banco of bancos" [value]="banco.nombre">{{ banco.nombre }}</option>
+                        </ng-container>
                     </select>
                 </div>
                 <div class="form-group col-md-4">

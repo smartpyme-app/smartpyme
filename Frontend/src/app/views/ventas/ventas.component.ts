@@ -726,10 +726,10 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
               return;
             }
             this.apiService
-              .getAll('banco/cuentas/list')
+              .loadBancosParaAbono()
               .pipe(this.untilDestroyed())
               .subscribe({
-                next: (bancos) => {
+                next: ({ bancos }) => {
                   this.bancos = bancos;
                   this.cdr.markForCheck();
                   next();

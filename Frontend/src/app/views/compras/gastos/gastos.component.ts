@@ -547,16 +547,9 @@ export class GastosComponent implements OnInit {
             }
         );
 
-        const endpoint = this.contabilidadHabilitada ? 'banco/cuentas/list' : 'bancos';
-        this.apiService.getAll(endpoint).subscribe(
-            (bancos) => {
-                if (!this.contabilidadHabilitada) {
-                    this.bancosBulk = (bancos || [])
-                        .filter((b: any) => b.activo === true || b.activo === 1)
-                        .map((b: any) => ({ nombre: b.nombre }));
-                } else {
-                    this.bancosBulk = bancos || [];
-                }
+        this.apiService.loadBancosParaAbono().subscribe(
+            ({ bancos }) => {
+                this.bancosBulk = bancos || [];
                 finish();
             },
             (error) => {
@@ -808,7 +801,7 @@ export class GastosComponent implements OnInit {
         }
         if (
             this.bulkRequiereBanco(item)
-            && this.apiService.usarCuentasBancarias(this.contabilidadHabilitada)
+            && this.apiService.isModuloBancos()
             && !String(item.gasto.detalle_banco || '').trim()
         ) {
             return false;
@@ -839,7 +832,7 @@ export class GastosComponent implements OnInit {
         }
         if (
             this.bulkRequiereBanco(item)
-            && this.apiService.usarCuentasBancarias(this.contabilidadHabilitada)
+            && this.apiService.isModuloBancos()
             && !String(item.gasto.detalle_banco || '').trim()
         ) {
             this.alertService.warning(

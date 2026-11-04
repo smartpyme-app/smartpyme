@@ -466,27 +466,15 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   }
 
   cargarBancos() {
-    // Si tiene contabilidad habilitada, usar el endpoint de cuentas bancarias
-    // Si no tiene contabilidad, usar el endpoint simple de bancos (index)
-    const endpoint = this.contabilidadHabilitada ? 'banco/cuentas/list' : 'bancos';
-
-    this.apiService.getAll(endpoint).pipe(this.untilDestroyed()).subscribe(
-      (bancos) => {
-        // Si no tiene contabilidad, los bancos vienen como array de objetos {nombre, activo}
-        // del endpoint bancos (index)
-        // Necesitamos transformarlos para que tengan la estructura esperada {id, nombre_banco}
-        if (!this.contabilidadHabilitada) {
-          // Los bancos del endpoint bancos tienen estructura {nombre, activo}
-          // Transformar a formato {id, nombre_banco} para que coincida con lo esperado
-          // Usar el nombre como id temporal ya que no hay id en este endpoint
-          this.bancos = bancos
-            .filter((banco: any) => banco.activo === true || banco.activo === 1)
-            .map((banco: any) => ({
-              id: banco.nombre, // Usar nombre como id temporal
-              nombre_banco: banco.nombre
-            }));
+    this.apiService.loadBancosParaAbono().pipe(this.untilDestroyed()).subscribe(
+      ({ bancos, usarCuentas }) => {
+        if (!usarCuentas) {
+          this.bancos = (bancos || []).map((banco: any) => ({
+            id: banco.id ?? banco.nombre,
+            nombre_banco: banco.nombre,
+            nombre: banco.nombre,
+          }));
         } else {
-          // Con contabilidad, los bancos ya vienen en el formato correcto {id, nombre_banco, ...}
           this.bancos = bancos;
         }
         this.cdr.markForCheck();
