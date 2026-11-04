@@ -478,7 +478,7 @@
                 [(ngModel)]="item.gasto.detalle_banco"
                 [name]="'bg-' + item.uid + '-banco'">
                 <option value="">Seleccione aquí</option>
-                @if (contabilidadHabilitada) {
+                @if (apiService.isModuloBancos()) {
                   @for (banco of bancosBulk; track banco.id) {
                     <option [value]="banco.nombre_banco">{{ banco.nombre_banco }}</option>
                   }

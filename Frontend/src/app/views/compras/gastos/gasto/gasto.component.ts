@@ -2064,21 +2064,11 @@ export class GastoComponent implements OnInit {
   }
 
   cargarBancos() {
-    const endpoint = this.contabilidadHabilitada ? 'banco/cuentas/list' : 'bancos';
-    this.apiService.getAll(endpoint)
+    this.apiService.loadBancosParaAbono()
       .pipe(this.untilDestroyed())
       .subscribe(
-        (bancos) => {
-          if (!this.contabilidadHabilitada) {
-            // Filtrar solo bancos activos y transformar estructura
-            this.bancos = bancos
-              .filter((banco: any) => banco.activo === true || banco.activo === 1)
-              .map((banco: any) => ({
-                nombre: banco.nombre
-              }));
-          } else {
-            this.bancos = bancos;
-          }
+        ({ bancos }) => {
+          this.bancos = bancos;
           this.cdr.markForCheck();
         },
         (error) => {

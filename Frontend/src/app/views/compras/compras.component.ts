@@ -475,11 +475,11 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
                     };
 
                     if (!this.bancos.length) {
-                        this.apiService.getAll('banco/cuentas/list')
+                        this.apiService.loadBancosParaAbono()
                             .pipe(this.untilDestroyed())
                             .subscribe({
-                                next: (cuentas) => {
-                                    this.bancos = cuentas as any[];
+                                next: ({ bancos }) => {
+                                    this.bancos = bancos;
                                     abrirModalEdicion();
                                 },
                                 error: (err) => {

@@ -347,9 +347,9 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             }
           });
 
-      this.apiService.getAll('banco/cuentas/list')
+      this.apiService.loadBancosParaAbono()
           .pipe(this.untilDestroyed())
-          .subscribe(bancos => {
+          .subscribe(({ bancos }) => {
           this.bancos = bancos;
           this.cdr.markForCheck();
       }, error => {this.alertService.error(error); this.cdr.markForCheck();});
