@@ -41,9 +41,12 @@ class BodegasController extends Controller
 
     public function list()
     {
+        $user = JWTAuth::parseToken()->authenticate();
 
-        $bodegas = Bodega::orderby('nombre')
+        $bodegas = Bodega::withoutGlobalScopes()
+            ->orderby('nombre')
             ->where('activo', true)
+            ->where('id_empresa', $user->id_empresa)
             ->get();
 
         return Response()->json($bodegas, 200);

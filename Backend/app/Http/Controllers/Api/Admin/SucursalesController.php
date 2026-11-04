@@ -64,13 +64,10 @@ class SucursalesController extends Controller
     {
         $user = JWTAuth::parseToken()->authenticate();
 
-        // Empresa 2 (super admin): sin filtro de empresa, igual que bodegas/list.
-        // Resto de usuarios: solo sucursales de su empresa.
-        $sucursales = Sucursal::orderby('nombre')
+        $sucursales = Sucursal::withoutGlobalScopes()
+            ->orderby('nombre')
             ->where('activo', true)
-            ->when($user->id_empresa != 2, function ($q) use ($user) {
-                $q->where('id_empresa', $user->id_empresa);
-            })
+            ->where('id_empresa', $user->id_empresa)
             ->get();
 
         return Response()->json($sucursales, 200);

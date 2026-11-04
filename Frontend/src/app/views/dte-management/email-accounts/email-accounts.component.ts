@@ -214,7 +214,7 @@ export class EmailAccountsComponent implements OnInit {
       id_bodega: account.id_bodega ?? null,
       actualizar_inventario: !!account.actualizar_inventario,
     };
-    this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
+    this.modalRef = this.modalService.show(template, { class: 'modal-lg modal-ng-select-overflow' });
   }
 
   openInboxConfigModal(template: TemplateRef<any>): void {
