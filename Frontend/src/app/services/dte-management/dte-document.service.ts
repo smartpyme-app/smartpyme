@@ -36,6 +36,7 @@ export interface DteDocument {
   tipo_costo_gasto?: string | null;
   pago_sugerido?: { forma_pago?: string; credito?: boolean };
   line_items?: DteLineItem[];
+  compra_id?: number | null;
   email_message_id?: string;
   json_path?: string;
   xml_path?: string;
@@ -67,6 +68,7 @@ export interface DteProcesarPayload {
   id_sucursal?: number | null;
   id_bodega?: number | null;
   line_mappings?: { index: number; id_producto: number | null; cantidad: number }[];
+  actualizar_inventario?: boolean;
 }
 
 @Injectable({

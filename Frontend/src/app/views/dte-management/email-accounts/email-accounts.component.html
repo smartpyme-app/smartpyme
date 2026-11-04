@@ -51,8 +51,8 @@
       Hasta confirmarlo en Gmail, el reenvío no funciona.
     </div>
     <div class="d-flex flex-wrap gap-2">
-      <button type="button" class="btn btn-sm btn-outline-primary" (click)="openInboxConfigModal(configModal)" [disabled]="inboxBusy || !inbox.user_email_account_id">
-        Compras e inventario
+      <button type="button" class="btn btn-sm btn-outline-primary" (click)="openInboxConfigModal(accountSettingsModal)" [disabled]="inboxBusy || !inbox.user_email_account_id">
+        Configurar cuenta
       </button>
       <button *ngIf="inbox.status === 'ACTIVE'" type="button" class="btn btn-sm btn-outline-secondary" (click)="pauseInbox()" [disabled]="inboxBusy">Pausar</button>
       <button *ngIf="inbox.status === 'PAUSED'" type="button" class="btn btn-sm btn-outline-success" (click)="resumeInbox()" [disabled]="inboxBusy">Reanudar</button>
@@ -135,6 +135,9 @@
     <button class="btn btn-primary" (click)="connectGmail()" [disabled]="isSyncing">
       <i class="fa-brands fa-google me-2"></i>Conectar Gmail
     </button>
+    <span class="align-self-center text-muted small d-none d-md-inline">
+      Tras conectar Gmail use <strong>Configurar cuenta</strong> para inventario y notificaciones.
+    </span>
     <button class="btn btn-outline-primary" (click)="openImapModal(imapModal)" [disabled]="isSyncing">
       <i class="fa fa-server me-2"></i>Conectar Otros
     </button>
@@ -161,18 +164,19 @@
           <th>Proveedor</th>
           <th>Estado</th>
           <th>Notificaciones</th>
+          <th>Inventario al procesar</th>
           <th>Última sincronización</th>
           <th class="text-center"><i class="fa fa-cog"></i></th>
         </tr>
       </thead>
       <tbody>
         <tr *ngIf="loading">
-          <td colspan="6" class="text-center py-4">
+          <td colspan="7" class="text-center py-4">
             <span class="badge bg-primary">Cargando...</span>
           </td>
         </tr>
         <tr *ngIf="!loading && accounts.length === 0">
-          <td colspan="6" class="text-center py-4">
+          <td colspan="7" class="text-center py-4">
             <span class="text-muted">{{ 'country.tax.fe.emailAccountsEmptyHint' | translate }}</span>
           </td>
         </tr>
@@ -194,6 +198,11 @@
             </ng-template>
           </td>
           <td>
+            <span class="badge" [ngClass]="account.actualizar_inventario ? 'bg-success' : 'bg-secondary'">
+              {{ inventarioResumen(account) }}
+            </span>
+          </td>
+          <td>
             {{ account.last_sync_at ? (account.last_sync_at | date:'dd/MM/yyyy HH:mm') : '-' }}
           </td>
           <td class="text-center">
@@ -202,11 +211,8 @@
             </span>
             <ng-template #accionesTemplate>
               <div class="list-group border-0">
-                <a (click)="openNotificationModal(notificacionesModal, account)" class="list-group-item list-group-item-action border-0 click">
-                  <i class="fa fa-fw fa-bell"></i> Configurar notificaciones
-                </a>
-                <a (click)="openConfigModal(configModal, account)" class="list-group-item list-group-item-action border-0 click">
-                  <i class="fa fa-fw fa-boxes-stacked"></i> Compras e inventario
+                <a (click)="openAccountSettingsModal(accountSettingsModal, account)" class="list-group-item list-group-item-action border-0 click">
+                  <i class="fa fa-fw fa-gear"></i> Configurar cuenta
                 </a>
                 <a *ngIf="account.is_active" (click)="disconnectAccount(account)" class="list-group-item list-group-item-action border-0 click text-danger">
                   <i class="fa fa-fw fa-unlink"></i> Desconectar
@@ -255,17 +261,19 @@
   </div>
 </ng-template>
 
-<ng-template #notificacionesModal>
+<ng-template #accountSettingsModal>
   <div class="modal-header">
-    <h5 class="modal-title">Configurar notificaciones</h5>
+    <h5 class="modal-title">Configurar cuenta</h5>
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
-    <p class="text-muted mb-3" *ngIf="notificationAccount">
-      Cuenta: <strong>{{ notificationAccount.email }}</strong>
+    <p class="text-muted mb-3">
+      Cuenta: <strong>{{ configAccountLabel || configAccount?.email }}</strong>
     </p>
+
+    <h6 class="mb-2">Notificaciones</h6>
     <div class="mb-3">
-      <label class="form-label">Seleccione usuario que recibirá las notificaciones</label>
+      <label class="form-label">Usuario que recibirá alertas de DTEs por revisar</label>
       <ng-select
         [(ngModel)]="notificationUserId"
         [items]="usuarios"
@@ -286,34 +294,17 @@
         </ng-template>
       </ng-select>
     </div>
-    <p class="text-muted small mb-0">
+    <p class="text-muted small mb-4">
       {{ 'country.tax.fe.emailAccountsPendingNotice' | translate }}
     </p>
-  </div>
-  <div class="modal-footer">
-    <button type="button" class="btn btn-light" (click)="modalRef.hide()">Cancelar</button>
-    <button type="button" class="btn btn-primary" (click)="saveNotificationConfig()" [disabled]="savingNotifications">
-      <span *ngIf="!savingNotifications">Guardar</span>
-      <span *ngIf="savingNotifications">Guardando...</span>
-    </button>
-  </div>
-</ng-template>
 
-<ng-template #configModal>
-  <div class="modal-header">
-    <h5 class="modal-title">Compras e inventario</h5>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
-  </div>
-  <div class="modal-body">
-    <p class="text-muted mb-3">
-      Cuenta: <strong>{{ configAccountLabel || configAccount?.email }}</strong>
-    </p>
+    <h6 class="mb-2">Compras e inventario</h6>
     <p class="text-muted small">
-      Al procesar DTE recibidos como compra, puede ingresar stock en bodega automáticamente (igual que al conectar IMAP).
+      Aplica a Gmail, IMAP y reenvío automático. Al procesar un DTE como compra (manual o automático), puede ingresar stock en bodega.
     </p>
     <div class="row">
       <div class="col-md-6 mb-3">
-        <label class="form-label">Sucursal</label>
+        <label class="form-label">Sucursal predeterminada</label>
         <ng-select
           [(ngModel)]="configForm.id_sucursal"
           (ngModelChange)="onConfigSucursalChange()"
@@ -329,7 +320,7 @@
         ></ng-select>
       </div>
       <div class="col-md-6 mb-3">
-        <label class="form-label">Bodega</label>
+        <label class="form-label">Bodega predeterminada</label>
         <ng-select
           [(ngModel)]="configForm.id_bodega"
           name="config_id_bodega"
@@ -343,7 +334,7 @@
           appendTo="body"
         ></ng-select>
       </div>
-      <div class="col-12 mb-3 without-label">
+      <div class="col-12 mb-0 without-label">
         <div class="form-switch border rounded">
           <label for="config_actualizar_inventario">Actualizar inventario al procesar compras</label>
           <input
@@ -359,9 +350,9 @@
   </div>
   <div class="modal-footer">
     <button type="button" class="btn btn-light" (click)="modalRef.hide()">Cancelar</button>
-    <button type="button" class="btn btn-primary" (click)="saveConfig()" [disabled]="savingConfig">
-      <span *ngIf="!savingConfig">Guardar</span>
-      <span *ngIf="savingConfig">Guardando...</span>
+    <button type="button" class="btn btn-primary" (click)="saveAccountSettings()" [disabled]="savingAccountSettings">
+      <span *ngIf="!savingAccountSettings">Guardar</span>
+      <span *ngIf="savingAccountSettings">Guardando...</span>
     </button>
   </div>
 </ng-template>
@@ -372,6 +363,9 @@
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
+    <p class="text-muted small mb-3">
+      Tras conectar se abrirá <strong>Configurar cuenta</strong> para notificaciones e inventario (igual que Gmail).
+    </p>
     <form (ngSubmit)="saveImapAccount()">
       <div class="row">
         <div class="col-md-6 mb-3">

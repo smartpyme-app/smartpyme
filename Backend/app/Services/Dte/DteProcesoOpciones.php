@@ -21,6 +21,8 @@ final class DteProcesoOpciones
         public readonly array $lineMappings = [],
         public readonly ?int $idSucursal = null,
         public readonly ?int $idBodega = null,
+        /** null = usar configuración de la cuenta de correo */
+        public readonly ?bool $actualizarInventario = null,
     ) {}
 
     public static function fromArray(array $input): self
@@ -41,6 +43,11 @@ final class DteProcesoOpciones
         $fechaPago = isset($input['fecha_pago']) ? trim((string) $input['fecha_pago']) : null;
         $detalleBanco = isset($input['detalle_banco']) ? trim((string) $input['detalle_banco']) : null;
 
+        $actualizarInventario = null;
+        if (array_key_exists('actualizar_inventario', $input)) {
+            $actualizarInventario = filter_var($input['actualizar_inventario'], FILTER_VALIDATE_BOOLEAN);
+        }
+
         return new self(
             formaPago: $formaPago !== '' ? $formaPago : null,
             credito: filter_var($input['credito'] ?? false, FILTER_VALIDATE_BOOLEAN),
@@ -50,6 +57,7 @@ final class DteProcesoOpciones
             lineMappings: $mappings,
             idSucursal: self::enteroPositivo($input['id_sucursal'] ?? null),
             idBodega: self::enteroPositivo($input['id_bodega'] ?? null),
+            actualizarInventario: $actualizarInventario,
         );
     }
 
