@@ -100,6 +100,7 @@ class CotizacionVentaController extends Controller
                 $b = trim($request->buscador);
                 $q->where(function ($qq) use ($b) {
                     $qq->where('correlativo', 'like', "%{$b}%")
+                       ->orWhere('num_orden', 'like', "%{$b}%")
                        ->orWhere('estado', 'like', "%{$b}%")
                        ->orWhere('observaciones', 'like', "%{$b}%")
                        ->orWhereHas('cliente', function ($qc) use ($b) {
