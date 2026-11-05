@@ -170,8 +170,24 @@ class ElSalvadorDteService
 
     public function generarDTEAnuladoSujetoExcluidoCompra(Compra $compra): JsonResponse
     {
+        $compra->loadMissing('proveedor', 'empresa', 'sucursal');
+        $dte = $compra->dte;
+        $tipoDte = is_array($dte) ? ($dte['identificacion']['tipoDte'] ?? null) : null;
+
+        if ($compra->tipo_documento !== 'Sujeto excluido' && ($compra->tipo_dte ?? '') !== '14') {
+            return response()->json([
+                'error' => ['Solo se invalida en Hacienda una compra de sujeto excluido emitida por su empresa. Anule la compra en el sistema sin envío a MH.'],
+            ], 422);
+        }
+
+        if (!$dte || $tipoDte !== '14') {
+            return response()->json([
+                'error' => ['La compra no tiene un DTE tipo 14 asociado para invalidar en Hacienda.'],
+            ], 422);
+        }
+
         $mh = new MHAnulacion;
-        $DTEAnular = $mh->generarDTE($compra, $compra->dte);
+        $DTEAnular = $mh->generarDTE($compra, $dte);
 
         return response()->json($DTEAnular, 200);
     }

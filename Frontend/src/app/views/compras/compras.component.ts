@@ -814,6 +814,14 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
         return compra.tipo_documento === 'Sujeto excluido';
     }
 
+    /** Invalidación MH solo si esta empresa emitió DTE 14 (sujeto excluido), no DTE recibido del proveedor. */
+    private requiereInvalidacionMhSujetoExcluido(compra: any): boolean {
+        if (this.esFeCostaRica() || !compra?.sello_mh) {
+            return false;
+        }
+        return this.puedeEmitirFeCompra(compra);
+    }
+
     esFeCostaRica(): boolean {
         return this.facturacionElectronica.isCostaRicaFe();
     }
@@ -1008,7 +1016,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
             }
             return;
           }
-            if(c.sello_mh){
+            if (this.requiereInvalidacionMhSujetoExcluido(c)) {
                 if (confirm(this.countryI18n.fe('annulPurchaseConfirm'))) {
                     this.compra = c;
                     this.saving = true;
