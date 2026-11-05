@@ -21,6 +21,11 @@ class DNS1D
      */
     public static function getBarcodePNG($code, $type = 'C39', $widthFactor = 2, $height = 30, $color = [0, 0, 0], $base64 = false)
     {
+        $code = trim((string) $code);
+        if ($code === '') {
+            return '';
+        }
+
         try {
             // Map milon/barcode types to picqer types (using string constants)
             $typeMap = [
@@ -52,18 +57,60 @@ class DNS1D
             ];
 
             $mappedType = $typeMap[$type] ?? 'C39';
-            
+
             // Ensure color array has 3 elements
             $foregroundColor = count($color) >= 3 ? [$color[0], $color[1], $color[2]] : [0, 0, 0];
-            
-            $generator = new BarcodeGeneratorPNG();
-            $barcode = $generator->getBarcode($code, $mappedType, $widthFactor, $height, $foregroundColor);
-            
-            // Always return base64 encoded
-            return base64_encode($barcode);
+
+            $png = self::renderPng($code, $mappedType, $widthFactor, $height, $foregroundColor);
+            if ($png !== '') {
+                return base64_encode($png);
+            }
+
+            // ponytail: C39 solo mayúsculas; códigos/SKU con minúsculas → C128 (mismo dato escaneable).
+            if (self::isCode39Family($mappedType)) {
+                $upper = strtoupper($code);
+                if ($upper !== $code) {
+                    $png = self::renderPng($upper, $mappedType, $widthFactor, $height, $foregroundColor);
+                    if ($png !== '') {
+                        return base64_encode($png);
+                    }
+                }
+                $png = self::renderPng($code, 'C128', $widthFactor, $height, $foregroundColor);
+                if ($png !== '') {
+                    return base64_encode($png);
+                }
+            }
+
+            Log::error('Barcode generation error: no se pudo generar imagen', [
+                'type' => $mappedType,
+                'code_len' => strlen($code),
+            ]);
+
+            return '';
         } catch (\Exception $e) {
-            // Fallback: return empty image
-            Log::error('Barcode generation error: ' . $e->getMessage());
+            Log::error('Barcode generation error: '.$e->getMessage());
+
+            return '';
+        }
+    }
+
+    private static function isCode39Family(string $mappedType): bool
+    {
+        return str_starts_with($mappedType, 'C39');
+    }
+
+    private static function renderPng(
+        string $code,
+        string $mappedType,
+        int $widthFactor,
+        int $height,
+        array $foregroundColor
+    ): string {
+        try {
+            $generator = new BarcodeGeneratorPNG();
+
+            return $generator->getBarcode($code, $mappedType, $widthFactor, $height, $foregroundColor);
+        } catch (\Throwable) {
             return '';
         }
     }

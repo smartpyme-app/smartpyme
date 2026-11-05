@@ -42,9 +42,13 @@ class DNS2D
 
         try {
             if (extension_loaded('imagick')) {
-                $pngBinary = self::pngViaImagick($text, $pixelSize, $marginPx);
-                if ($pngBinary !== '') {
-                    return base64_encode($pngBinary);
+                try {
+                    $pngBinary = self::pngViaImagick($text, $pixelSize, $marginPx);
+                    if ($pngBinary !== '') {
+                        return base64_encode($pngBinary);
+                    }
+                } catch (Throwable $e) {
+                    Log::warning('DNS2D: Imagick falló, intentando GD', ['message' => $e->getMessage()]);
                 }
             }
 
