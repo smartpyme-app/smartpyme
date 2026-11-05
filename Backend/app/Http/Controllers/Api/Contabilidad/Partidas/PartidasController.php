@@ -29,6 +29,7 @@ use App\Services\Contabilidad\SimulacionCierreService;
 use App\Services\Contabilidad\Partidas\ReglaAbonosCartera;
 use App\Services\Contabilidad\Partidas\ReglaCuentaIva;
 use App\Services\Contabilidad\Partidas\ReglaIngresoVenta;
+use App\Services\Contabilidad\Partidas\ReglaLineasDebeIngresoVenta;
 use App\Services\Contabilidad\Partidas\ReglaMontoIngresoVentaDetalle;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
@@ -644,7 +645,10 @@ class PartidasController extends Controller
                             },
                             'detalles.producto' => function($query) {
                                 $query->select(['id', 'id_categoria']);
-                            }
+                            },
+                            'metodos_de_pago' => function ($query) {
+                                $query->select(['id', 'id_venta', 'nombre', 'total']);
+                            },
                         ])
                         ->get();
 
@@ -718,7 +722,7 @@ class PartidasController extends Controller
 
             // OPTIMIZACIÓN 3: Cargar todas las formas de pago con banco de una vez
             // El GlobalScope de FormaDePago ya filtra por id_empresa del usuario autenticado
-            $formasPagoNombres = $ingresos->pluck('forma_pago')->unique()->filter()->values();
+            $formasPagoNombres = collect(ReglaLineasDebeIngresoVenta::nombresFormasPagoDesdeIngresos($ingresos));
             
             \Log::info('Formas de pago encontradas en ingresos', [
                 'nombres' => $formasPagoNombres->toArray(),
@@ -875,6 +879,8 @@ class PartidasController extends Controller
             foreach ($ingresos as $ingreso) {
                 $refDoc = $this->referenciaDocumentoIngreso($ingreso);
 
+                $refVenta = ($ingreso->nombre_documento ?? 'N/A') . ' #' . ($ingreso->correlativo ?? 'N/A');
+
                 if (($ingreso->tipo ?? '') === 'abono') {
                     try {
                         $cuenta = CuentaContableDesdePagoResolver::resolve($ingreso);
@@ -886,33 +892,72 @@ class PartidasController extends Controller
                             'code' => 400,
                         ], 400);
                     }
+
+                    $detalles[] = [
+                        'id_cuenta' => $cuenta->id,
+                        'codigo' => $cuenta->codigo,
+                        'nombre_cuenta' => $cuenta->nombre,
+                        'concepto' => 'Ingresos por ' . $ingreso->tipo . ' ' . $refDoc,
+                        'debe' => $ingreso->total,
+                        'haber' => NULL,
+                        'saldo' => 0,
+                    ];
                 } else {
-                    $formapago = $formasPago[$ingreso->forma_pago] ?? null;
-
-                    if(!$formapago){
-                        return  Response()->json(['titulo' => 'La forma de pago ' . $ingreso->forma_pago . ' no fue encontrada.', 'error' => 'Venta: ' . ($ingreso->nombre_documento ?? 'N/A') . ' #' . ($ingreso->correlativo ?? 'N/A'), 'code' => 400], 400);
+                    try {
+                        $lineasDebe = ReglaLineasDebeIngresoVenta::lineasDebe($ingreso);
+                    } catch (Exception $e) {
+                        return Response()->json([
+                            'titulo' => 'Pago múltiple',
+                            'error' => $e->getMessage(),
+                            'code' => 400,
+                        ], 400);
                     }
 
-                    if(!$formapago->banco || !$formapago->banco->id_cuenta_contable){
-                        return  Response()->json(['titulo' => 'La forma de pago ' . $ingreso->forma_pago . ' no tiene cuenta contable.', 'error' => 'Venta: ' . ($ingreso->nombre_documento ?? 'N/A') . ' #' . ($ingreso->correlativo ?? 'N/A'), 'code' => 400], 400);
-                    }
+                    $variasLineas = count($lineasDebe) > 1;
+                    foreach ($lineasDebe as $linea) {
+                        $formapago = $formasPago[$linea['nombre']] ?? null;
 
-                    $cuenta = $cuentas[$formapago->banco->id_cuenta_contable] ?? null;
+                        if (!$formapago) {
+                            return Response()->json([
+                                'titulo' => 'La forma de pago ' . $linea['nombre'] . ' no fue encontrada.',
+                                'error' => 'Venta: ' . $refVenta,
+                                'code' => 400,
+                            ], 400);
+                        }
 
-                    if (!$cuenta) {
-                        return Response()->json(['titulo' => 'La cuenta contable no existe.', 'error' => 'Forma de pago: ' . $ingreso->forma_pago, 'code' => 400], 400);
+                        if (!$formapago->banco || !$formapago->banco->id_cuenta_contable) {
+                            return Response()->json([
+                                'titulo' => 'La forma de pago ' . $linea['nombre'] . ' no tiene cuenta contable.',
+                                'error' => 'Venta: ' . $refVenta,
+                                'code' => 400,
+                            ], 400);
+                        }
+
+                        $cuenta = $cuentas[$formapago->banco->id_cuenta_contable] ?? null;
+                        if (!$cuenta) {
+                            return Response()->json([
+                                'titulo' => 'La cuenta contable no existe.',
+                                'error' => 'Forma de pago: ' . $linea['nombre'],
+                                'code' => 400,
+                            ], 400);
+                        }
+
+                        $conceptoDebe = 'Ingresos por ' . $ingreso->tipo . ' ' . $refDoc;
+                        if ($variasLineas) {
+                            $conceptoDebe .= ' (' . $linea['nombre'] . ')';
+                        }
+
+                        $detalles[] = [
+                            'id_cuenta' => $cuenta->id,
+                            'codigo' => $cuenta->codigo,
+                            'nombre_cuenta' => $cuenta->nombre,
+                            'concepto' => $conceptoDebe,
+                            'debe' => $linea['monto'],
+                            'haber' => NULL,
+                            'saldo' => 0,
+                        ];
                     }
                 }
-
-                $detalles[] = [
-                    'id_cuenta' => $cuenta->id,
-                    'codigo' => $cuenta->codigo,
-                    'nombre_cuenta' => $cuenta->nombre,
-                    'concepto' => 'Ingresos por ' . $ingreso->tipo . ' ' . $refDoc,
-                    'debe' => $ingreso->total,
-                    'haber' => NULL,
-                    'saldo' => 0,
-                ];
 
                 if($ingreso->tipo == 'venta'){
                     // Los detalles ya están cargados con eager loading
