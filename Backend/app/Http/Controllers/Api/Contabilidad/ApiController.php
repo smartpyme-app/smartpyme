@@ -67,7 +67,7 @@ class ApiController extends Controller
     public function venta(Request $request)
     {
         $this->authorizeGenerarPartida($request, 'venta');
-        $venta = Venta::findOrFail($request->id);
+        $venta = Venta::with('metodos_de_pago')->findOrFail($request->id);
         $resultado = $this->ventasService->crearPartida($venta);
 
         return response()->json($resultado, 200);
