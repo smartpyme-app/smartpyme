@@ -16,10 +16,11 @@ class DNS1D
      * @param int $widthFactor Width factor
      * @param int $height Height in pixels
      * @param array $color RGB color array [r, g, b]
-     * @param bool $base64 Whether to return base64 encoded string
+     * @param bool $base64 Whether to return base64 encoded string (legacy milon API; siempre se devuelve base64)
+     * @param bool $includeLabel Dibuja el código legible debajo de las barras (incluido al guardar PNG)
      * @return string Base64 encoded PNG image
      */
-    public static function getBarcodePNG($code, $type = 'C39', $widthFactor = 2, $height = 30, $color = [0, 0, 0], $base64 = false)
+    public static function getBarcodePNG($code, $type = 'C39', $widthFactor = 2, $height = 30, $color = [0, 0, 0], $base64 = false, $includeLabel = false)
     {
         $code = trim((string) $code);
         if ($code === '') {
@@ -63,7 +64,7 @@ class DNS1D
 
             $png = self::renderPng($code, $mappedType, $widthFactor, $height, $foregroundColor);
             if ($png !== '') {
-                return base64_encode($png);
+                return self::encodePng($png, $code, $includeLabel);
             }
 
             // ponytail: C39 solo mayúsculas; códigos/SKU con minúsculas → C128 (mismo dato escaneable).
@@ -72,12 +73,12 @@ class DNS1D
                 if ($upper !== $code) {
                     $png = self::renderPng($upper, $mappedType, $widthFactor, $height, $foregroundColor);
                     if ($png !== '') {
-                        return base64_encode($png);
+                        return self::encodePng($png, $code, $includeLabel);
                     }
                 }
                 $png = self::renderPng($code, 'C128', $widthFactor, $height, $foregroundColor);
                 if ($png !== '') {
-                    return base64_encode($png);
+                    return self::encodePng($png, $code, $includeLabel);
                 }
             }
 
@@ -113,6 +114,72 @@ class DNS1D
         } catch (\Throwable) {
             return '';
         }
+    }
+
+    private static function encodePng(string $png, string $label, bool $includeLabel): string
+    {
+        if ($includeLabel) {
+            $png = self::appendLabelToPng($png, $label);
+        }
+
+        return base64_encode($png);
+    }
+
+    /** @return string PNG binario (sin base64) */
+    public static function appendLabelToPng(string $pngBinary, string $label): string
+    {
+        if ($pngBinary === '' || ! extension_loaded('gd')) {
+            return $pngBinary;
+        }
+
+        $label = trim($label);
+        if ($label === '') {
+            return $pngBinary;
+        }
+
+        $bars = @imagecreatefromstring($pngBinary);
+        if ($bars === false) {
+            return $pngBinary;
+        }
+
+        $font = 4;
+        $charW = imagefontwidth($font);
+        $charH = imagefontheight($font);
+        $textW = strlen($label) * $charW;
+        $barsW = imagesx($bars);
+        $barsH = imagesy($bars);
+        $padX = 12;
+        $padY = 8;
+        $canvasW = max($barsW, $textW + (2 * $padX));
+        $canvasH = $barsH + $padY + $charH + $padY;
+
+        $canvas = imagecreatetruecolor($canvasW, $canvasH);
+        if ($canvas === false) {
+            imagedestroy($bars);
+
+            return $pngBinary;
+        }
+
+        $white = imagecolorallocate($canvas, 255, 255, 255);
+        $black = imagecolorallocate($canvas, 0, 0, 0);
+        imagefill($canvas, 0, 0, $white);
+        imagecopy($canvas, $bars, (int) (($canvasW - $barsW) / 2), 0, 0, 0, $barsW, $barsH);
+        imagestring(
+            $canvas,
+            $font,
+            (int) max($padX, ($canvasW - $textW) / 2),
+            $barsH + $padY,
+            $label,
+            $black
+        );
+
+        ob_start();
+        imagepng($canvas);
+        $out = ob_get_clean() ?: $pngBinary;
+        imagedestroy($bars);
+        imagedestroy($canvas);
+
+        return $out;
     }
 }
 

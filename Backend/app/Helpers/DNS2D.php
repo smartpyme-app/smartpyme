@@ -21,9 +21,10 @@ class DNS2D
      * Fallback: rasteriza la matriz QR con ext-gd (disponible en la mayoría de servidores).
      *
      * @param  array<int, int>  $color  RGB (reservado; salida monocromática)
+     * @param  bool  $includeLabel  Dibuja el código legible debajo del QR en el PNG
      * @return string Base64 PNG o cadena vacía si falla
      */
-    public static function getBarcodePNG($code, $type = 'QRCODE', $size = 10, $margin = 1, $color = [0, 0, 0], $base64 = false)
+    public static function getBarcodePNG($code, $type = 'QRCODE', $size = 10, $margin = 1, $color = [0, 0, 0], $base64 = false, $includeLabel = false)
     {
         if ($type !== 'QRCODE') {
             Log::warning('DNS2D: solo QRCODE está soportado', ['type' => $type]);
@@ -45,7 +46,7 @@ class DNS2D
                 try {
                     $pngBinary = self::pngViaImagick($text, $pixelSize, $marginPx);
                     if ($pngBinary !== '') {
-                        return base64_encode($pngBinary);
+                        return self::encodePng($pngBinary, $text, $includeLabel);
                     }
                 } catch (Throwable $e) {
                     Log::warning('DNS2D: Imagick falló, intentando GD', ['message' => $e->getMessage()]);
@@ -55,7 +56,7 @@ class DNS2D
             if (extension_loaded('gd')) {
                 $pngBinary = self::pngViaGdMatrix($text, $pixelSize, $marginPx);
                 if ($pngBinary !== '') {
-                    return base64_encode($pngBinary);
+                    return self::encodePng($pngBinary, $text, $includeLabel);
                 }
             }
 
@@ -119,5 +120,14 @@ class DNS2D
         imagedestroy($img);
 
         return $png;
+    }
+
+    private static function encodePng(string $png, string $label, bool $includeLabel): string
+    {
+        if ($includeLabel) {
+            $png = DNS1D::appendLabelToPng($png, $label);
+        }
+
+        return base64_encode($png);
     }
 }
