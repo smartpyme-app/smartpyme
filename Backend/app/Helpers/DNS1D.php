@@ -142,16 +142,14 @@ class DNS1D
             return $pngBinary;
         }
 
-        $font = 4;
-        $charW = imagefontwidth($font);
-        $charH = imagefontheight($font);
-        $textW = strlen($label) * $charW;
         $barsW = imagesx($bars);
         $barsH = imagesy($bars);
         $padX = 12;
-        $padY = 8;
+        $padY = 10;
+        $fontSize = 18;
+        [$textW, $textH] = self::measureLabelText($label, $fontSize);
         $canvasW = max($barsW, $textW + (2 * $padX));
-        $canvasH = $barsH + $padY + $charH + $padY;
+        $canvasH = $barsH + $padY + $textH + $padY;
 
         $canvas = imagecreatetruecolor($canvasW, $canvasH);
         if ($canvas === false) {
@@ -164,13 +162,13 @@ class DNS1D
         $black = imagecolorallocate($canvas, 0, 0, 0);
         imagefill($canvas, 0, 0, $white);
         imagecopy($canvas, $bars, (int) (($canvasW - $barsW) / 2), 0, 0, 0, $barsW, $barsH);
-        imagestring(
+        self::drawLabelText(
             $canvas,
-            $font,
-            (int) max($padX, ($canvasW - $textW) / 2),
-            $barsH + $padY,
             $label,
-            $black
+            (int) max($padX, ($canvasW - $textW) / 2),
+            $barsH + $padY + $textH,
+            $black,
+            $fontSize
         );
 
         ob_start();
@@ -180,6 +178,65 @@ class DNS1D
         imagedestroy($canvas);
 
         return $out;
+    }
+
+    /** @return array{0: int, 1: int} ancho y alto del texto */
+    private static function measureLabelText(string $label, int $fontSize): array
+    {
+        $fontPath = self::labelFontPath();
+        if ($fontPath !== null && function_exists('imagettfbbox')) {
+            $box = imagettfbbox($fontSize, 0, $fontPath, $label);
+            if ($box !== false) {
+                return [
+                    (int) abs($box[2] - $box[0]),
+                    (int) abs($box[7] - $box[1]),
+                ];
+            }
+        }
+
+        $font = 5;
+        $charW = imagefontwidth($font);
+        $charH = imagefontheight($font);
+
+        return [strlen($label) * $charW, $charH];
+    }
+
+    private static function drawLabelText($canvas, string $label, int $x, int $yBaseline, int $color, int $fontSize): void
+    {
+        $fontPath = self::labelFontPath();
+        if ($fontPath !== null && function_exists('imagettftext')) {
+            imagettftext($canvas, $fontSize, 0, $x, $yBaseline, $color, $fontPath, $label);
+
+            return;
+        }
+
+        $font = 5;
+        $y = $yBaseline - imagefontheight($font);
+        imagestring($canvas, $font, $x, $y, $label, $color);
+        imagestring($canvas, $font, $x + 1, $y, $label, $color);
+    }
+
+    private static function labelFontPath(): ?string
+    {
+        static $resolved = null;
+        if ($resolved !== null) {
+            return $resolved !== '' ? $resolved : null;
+        }
+
+        foreach ([
+            __DIR__.'/../../vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf',
+            __DIR__.'/../../vendor/mpdf/mpdf/ttfonts/DejaVuSans-Bold.ttf',
+        ] as $path) {
+            if (is_readable($path)) {
+                $resolved = realpath($path) ?: $path;
+
+                return $resolved;
+            }
+        }
+
+        $resolved = '';
+
+        return null;
     }
 }
 
