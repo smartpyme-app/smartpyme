@@ -5,7 +5,7 @@
 /** Mantener alineado con src/manifest.webmanifest → version */
 export const environment = {
   production: false,
-  appVersion: '05.11.26',
+  appVersion: '05.11.26a',
   // API_URL: 'http://localhost:8000',
    API_URL: 'https://api.smartpyme.test',
   // API_URL: 'https://api.smartpyme.bk.test',
