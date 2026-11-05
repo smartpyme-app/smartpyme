@@ -1,17 +1,17 @@
 <center>
-    {{ $codigo }}
-    <br>
     {!! '<img id="barcode" src="data:image/png;base64,' . DNS1D::getBarcodePNG($codigo, 'C39+', 2, 50) . '" alt="barcode"   />' !!}
-    <br><br>
+    <br>
+    <p style="margin: 0.75rem 0; font-family: monospace; font-size: 1.1rem;">{{ $codigo }}</p>
+    <br>
     <button onclick="descargarImagen()">Guardar imagen</button>
 </center>
 
 <br> <br> 
 <center>
-    {{ $codigo }}
-    <br>
     {!! '<img id="qrcode" src="data:image/png;base64,' . DNS2D::getBarcodePNG($codigo, 'QRCODE', 10, 10) . '" alt="barcode"   />' !!}
-    <br><br>
+    <br>
+    <p style="margin: 0.75rem 0; font-family: monospace; font-size: 1.1rem;">{{ $codigo }}</p>
+    <br>
     <button onclick="descargarImagen2()">Guardar imagen</button>
 </center>
 
