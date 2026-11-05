@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, EventEmitter, Input, Output, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -52,14 +53,17 @@ import {
     formatCantidadLote,
 } from '@utils/lotes-venta.util';
 import { filtrarPreciosPorUsuario } from '@utils/precios-usuario-venta.util';
+import { idProductoEditable, rutaEditarProductoDetalle } from '@views/ventas/venta-detalle-producto-link.util';
 
 @Component({
   selector: 'app-venta-detalles-v2',
   templateUrl: './venta-detalles-v2.component.html',
   standalone: true,
+  styleUrls: ['../../../venta-detalle-producto-link.styles.css'],
   imports: [
     CommonModule, 
     FormsModule,
+    RouterModule,
     TiendaVentaBuscadorV2Component,
     TiendaVentaProductoComponent,
     TiendaVentaPaquetesV2Component,
@@ -70,6 +74,9 @@ import { filtrarPreciosPorUsuario } from '@utils/precios-usuario-venta.util';
   ]
 })
 export class VentaDetallesV2Component implements OnInit, OnDestroy {
+    readonly rutaEditarProductoDetalle = rutaEditarProductoDetalle;
+    readonly idProductoEditable = idProductoEditable;
+
     private destroy$ = new Subject<void>();
 
     @Input() venta: any = {};

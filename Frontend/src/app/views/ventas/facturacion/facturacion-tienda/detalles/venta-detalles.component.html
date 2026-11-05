@@ -144,7 +144,20 @@
                                     height="50px" width="50px">
                             </div>
                             <div>
-                                {{ detalle.descripcion }} <br>
+                                <span class="product-name">
+                                  @if (rutaEditarProductoDetalle(detalle); as ruta) {
+                                    <a [routerLink]="ruta" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-dark">
+                                      {{ detalle.descripcion }}
+                                      <span class="product-eye-wrap ms-2">
+                                        <i class="fa fa-eye fa-fw text-info product-eye"></i>
+                                        <span class="eye-tooltip">Editar producto</span>
+                                      </span>
+                                    </a>
+                                  } @else {
+                                    {{ detalle.descripcion }}
+                                  }
+                                </span>
+                                <br>
                                 <small class="text-muted text-tiny">{{ detalle?.tipo }}
                                   @if (detalle.id_presentacion) {
                                     <span class="badge bg-success ms-1" style="font-size: 10px; cursor: help;" tooltip="Presentación">P</span>

@@ -50,11 +50,13 @@ import { copiarImpuestosProductoAlDetalle } from '@utils/impuestos-venta.util';
 import { filtrarPreciosPorUsuario } from '@utils/precios-usuario-venta.util';
 import { CountryI18nService } from '@services/country-i18n.service';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
+import { idProductoEditable, rutaEditarProductoDetalle } from '@views/ventas/venta-detalle-producto-link.util';
 
 @Component({
     selector: 'app-venta-detalles',
     templateUrl: './venta-detalles.component.html',
     standalone: true,
+    styleUrls: ['../../../venta-detalle-producto-link.styles.css'],
     imports: [
         CommonModule,
         RouterModule,
@@ -70,6 +72,9 @@ import { CurrencyPipe } from '@pipes/currency-format.pipe';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class VentaDetallesComponent extends BaseModalComponent implements OnInit {
+
+  readonly rutaEditarProductoDetalle = rutaEditarProductoDetalle;
+  readonly idProductoEditable = idProductoEditable;
 
   private readonly countryI18n = inject(CountryI18nService);
 

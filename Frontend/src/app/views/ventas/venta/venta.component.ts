@@ -22,6 +22,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 import { porcentajeIvaDetalle, redondearMoneda, totalAPagarConSeguroFlete } from '@utils/impuestos-venta.util';
 import { puedeFacturarVentaCuota, queryFacturarVenta } from '@views/ventas/creditos/creditos-facturar';
+import { idProductoEditable, rutaEditarProductoDetalle } from '@views/ventas/venta-detalle-producto-link.util';
 
 @Component({
     selector: 'app-venta',
@@ -32,6 +33,9 @@ import { puedeFacturarVentaCuota, queryFacturarVenta } from '@views/ventas/credi
 
 })
 export class VentaComponent implements OnInit {
+
+    readonly rutaEditarProductoDetalle = rutaEditarProductoDetalle;
+    readonly idProductoEditable = idProductoEditable;
 
     public venta:any = {};
     public proyecto:any ={};

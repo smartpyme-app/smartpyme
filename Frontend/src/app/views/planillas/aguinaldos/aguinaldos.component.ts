@@ -7,13 +7,16 @@ import { ApiService } from '@services/api.service';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { Router } from '@angular/router';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-aguinaldos',
   templateUrl: './aguinaldos.component.html',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyPipe]
+  imports: [CommonModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent, CurrencyPipe]
 })
 export class AguinaldosComponent implements OnInit {
   public aguinaldos: any = [];
