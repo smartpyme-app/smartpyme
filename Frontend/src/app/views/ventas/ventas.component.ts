@@ -1515,7 +1515,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       }
     };
 
-    if (venta.dte_en_s3 && !venta.dte) {
+    if ((venta.dte_en_s3 || venta.sello_mh) && !venta.dte) {
       this.apiService.read('venta/', venta.id)
         .pipe(this.untilDestroyed())
         .subscribe({
@@ -1745,6 +1745,15 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   anularDTE(venta: any) {
     // ponytail: en CR no hay invalidación MH; anulación de venta no aplica en UI
     if (this.esFeCostaRica()) {
+      return;
+    }
+    if (venta.sello_mh && !('dte_invalidacion' in venta)) {
+      this.apiService.read('venta/', venta.id)
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (v: any) => this.anularDTE(v),
+          error: (e) => this.alertService.error(e),
+        });
       return;
     }
     this.venta = venta;
