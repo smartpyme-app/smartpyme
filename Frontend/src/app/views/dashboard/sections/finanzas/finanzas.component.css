@@ -74,11 +74,16 @@
 }
 
 .suite-filtro-mes {
-  min-width: 9.5rem;
+  min-width: 10rem;
 }
 
 .suite-filtro-anio {
   min-width: 5.5rem;
+}
+
+.suite-filtro-sucursal {
+  max-width: 14rem;
+  width: 100%;
 }
 
 .pl-gerencial-toolbar {

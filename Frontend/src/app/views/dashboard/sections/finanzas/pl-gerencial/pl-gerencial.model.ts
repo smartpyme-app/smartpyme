@@ -1,6 +1,9 @@
 export type PlFilaEstilo = 'normal' | 'subtotal' | 'total';
 
+export type PlVistaEstadoId = 'mes' | 'anio_mensual';
+
 export interface PlEstadoResultadosFila {
+  lineId?: string;
   concepto: string;
   detalle?: string;
   indent?: boolean;
@@ -11,6 +14,9 @@ export interface PlEstadoResultadosFila {
   vsPct: number;
   acum: number;
   pctVentasAcum: number | null;
+  /** 12 montos firmados (ene..dic) cuando vista anual mensual. */
+  meses?: number[];
+  totalAnual?: number;
 }
 
 export type PlGastoPctBarTone = 'orange' | 'blue';

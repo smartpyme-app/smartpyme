@@ -82,6 +82,70 @@
   padding: 12px 16px;
 }
 
+.pl-estado-table--mes thead th,
+.pl-estado-table--anual thead th {
+  background: #f8fafc !important;
+  color: #64748b !important;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: right;
+}
+
+.pl-estado-table--mes thead th.pl-col-concepto,
+.pl-estado-table--anual thead th.pl-col-concepto {
+  text-align: left;
+}
+
+.pl-estado-periodo {
+  font-weight: 500;
+  color: #64748b;
+}
+
+.pl-estado-table--mes tbody td {
+  padding: 0.55rem 0.75rem;
+  font-size: 0.8125rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.pl-estado-table--mes tbody tr:nth-child(even),
+.pl-estado-table--mes tbody tr:nth-child(odd) {
+  background: #fff;
+}
+
+.pl-estado-table--mes tbody tr:hover {
+  background: #f8fafc;
+}
+
+.pl-celda-pct {
+  color: #64748b;
+}
+
+.pl-vs-pos {
+  color: #16a34a !important;
+  font-weight: 500;
+}
+
+.pl-vs-neg {
+  color: #dc2626 !important;
+  font-weight: 500;
+}
+
+.pl-mes-row-subtotal td {
+  background: #eef4ff !important;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.pl-mes-row-destacado td {
+  font-weight: 700;
+  color: #1e40af;
+}
+
 .pl-estado-table thead th.pl-col-concepto {
   text-align: left;
 }
@@ -124,4 +188,152 @@
 
 .pl-row-total:hover td {
   background-color: #ffffff !important;
+}
+
+.pl-estado-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pl-anual-estado-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.pl-anual-estado-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #eef0f3;
+}
+
+.pl-anual-estado-icon {
+  color: #64748b;
+  display: inline-flex;
+}
+
+.pl-anual-estado-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.pl-estado-table--anual {
+  margin-bottom: 0;
+}
+
+.pl-estado-table--anual thead th {
+  background: #f8fafc !important;
+  color: #64748b !important;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.65rem 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.pl-estado-table--mes .pl-col-concepto,
+.pl-estado-table--anual .pl-col-concepto {
+  min-width: 10.5rem;
+  text-align: left;
+}
+
+.pl-estado-table--anual tbody td {
+  padding: 0.55rem 0.5rem;
+  font-size: 0.8125rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+}
+
+.pl-estado-table--anual tbody tr:nth-child(even),
+.pl-estado-table--anual tbody tr:nth-child(odd) {
+  background: #fff;
+}
+
+.pl-estado-table--anual .pl-col-mes {
+  min-width: 4.5rem;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.pl-col-mes-activo {
+  background-color: #fdf3e7 !important;
+}
+
+.pl-mes-activo-mark {
+  color: #ea580c;
+  margin-left: 1px;
+}
+
+.pl-col-total-anual {
+  min-width: 5.5rem;
+  font-weight: 600;
+}
+
+.pl-estado-table--anual thead th.pl-col-total-anual {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+}
+
+.pl-estado-table--anual tbody td.pl-col-total-anual {
+  background: #f8fafc;
+}
+
+.pl-anual-row-subtotal td {
+  background: #eef4ff !important;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.pl-anual-row-subtotal .pl-col-sticky {
+  background: #eef4ff !important;
+}
+
+.pl-anual-row-margen td {
+  background: #fff !important;
+  font-size: 0.75rem;
+}
+
+.pl-concepto-margen {
+  font-style: italic;
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.pl-celda-margen {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.pl-anual-row-resultado td {
+  background: #1e3a5f !important;
+  color: #fff !important;
+  font-weight: 700;
+  border-bottom: none;
+}
+
+.pl-anual-row-resultado .pl-col-sticky,
+.pl-anual-row-resultado .pl-col-total-anual {
+  background: #1e3a5f !important;
+  color: #fff !important;
+}
+
+.pl-anual-row-resultado .pl-concepto-chevron {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.pl-col-sticky {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background-color: inherit;
+  box-shadow: 2px 0 4px rgba(15, 23, 42, 0.04);
+}
+
+.pl-estado-table--anual thead th.pl-col-sticky {
+  z-index: 3;
+  background: #f8fafc !important;
 }

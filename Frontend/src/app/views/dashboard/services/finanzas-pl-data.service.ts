@@ -7,6 +7,7 @@ import {
   PlGastoPctVentaFila,
   PlGastosPctVentasMock,
   PlKpi,
+  PlVistaEstadoId,
 } from '../sections/finanzas/pl-gerencial/pl-gerencial.model';
 export interface PlGerencialQuery {
   periodo: 'mes' | 'anio_completo';
@@ -22,6 +23,7 @@ export interface PlGerencialResponse {
     periodoTitulo: string;
     comparacionTitulo: string;
     anioAcumulado: number;
+    vistaEstado?: PlVistaEstadoId;
   };
   kpis: PlKpi[];
   estadoResultados: PlEstadoResultadosFila[];
@@ -47,8 +49,13 @@ export class FinanzasPlDataService {
     if (!empresa) {
       return of(null);
     }
-    let p = `empresa=${empresa}&anio=${q.anio}&mes=${q.mes}`;
-    p += `&periodo=${q.periodo}&base=${q.base}&comparacion=${q.comparacion}`;
+    let p = `empresa=${empresa}&anio=${q.anio}&periodo=${q.periodo}&base=${q.base}&comparacion=${q.comparacion}`;
+    if (q.periodo === 'mes') {
+      if (q.mes < 1 || q.mes > 12) {
+        return throwError(() => new Error('mes inválido en consulta P&L'));
+      }
+      p += `&mes=${q.mes}`;
+    }
     if (q.sucursalId && q.sucursalId !== 'consolidado') {
       p += `&sucursal=${encodeURIComponent(q.sucursalId)}`;
     }
@@ -76,14 +83,20 @@ export class FinanzasPlDataService {
   private mapear(raw: Record<string, unknown>): PlGerencialResponse {
     const meta = (raw['meta'] ?? {}) as Record<string, unknown>;
     const kpisRaw = (raw['kpis'] ?? []) as PlGerencialApiKpi[];
-    const filas = (raw['estadoResultados'] ?? []) as PlEstadoResultadosFila[];
+    const filasRaw = (raw['estadoResultados'] ?? []) as Record<string, unknown>[];
+    const filas = filasRaw.map((row) => this.mapearFilaEstado(row));
     const gpv = (raw['gastosPctVentas'] ?? {}) as { filas?: PlGastoPctVentaFila[] };
+
+    const vistaRaw = meta['vistaEstado'];
+    const vistaEstado: PlVistaEstadoId | undefined =
+      vistaRaw === 'anio_mensual' || vistaRaw === 'mes' ? vistaRaw : undefined;
 
     return {
       meta: {
         periodoTitulo: String(meta['periodoTitulo'] ?? ''),
         comparacionTitulo: String(meta['comparacionTitulo'] ?? ''),
         anioAcumulado: Number(meta['anioAcumulado'] ?? new Date().getFullYear()),
+        vistaEstado,
       },
       kpis: kpisRaw.map((k) => ({
         titulo: k.titulo,
@@ -93,6 +106,35 @@ export class FinanzasPlDataService {
       })),
       estadoResultados: filas,
       gastosPctVentas: { filas: gpv.filas ?? [] },
+    };
+  }
+
+  private mapearFilaEstado(row: Record<string, unknown>): PlEstadoResultadosFila {
+    const mesesRaw = row['meses'];
+    let meses: number[] | undefined;
+    if (Array.isArray(mesesRaw) && mesesRaw.length === 12) {
+      meses = mesesRaw.map((v) => Number(v));
+    }
+    return {
+      lineId: row['lineId'] != null ? String(row['lineId']) : undefined,
+      concepto: String(row['concepto'] ?? ''),
+      detalle: row['detalle'] != null ? String(row['detalle']) : undefined,
+      indent: Boolean(row['indent']),
+      estilo: row['estilo'] as PlEstadoResultadosFila['estilo'],
+      mes: Number(row['mes'] ?? 0),
+      pctVentasMes:
+        row['pctVentasMes'] === null || row['pctVentasMes'] === undefined
+          ? null
+          : Number(row['pctVentasMes']),
+      vsAbs: Number(row['vsAbs'] ?? 0),
+      vsPct: Number(row['vsPct'] ?? 0),
+      acum: Number(row['acum'] ?? 0),
+      pctVentasAcum:
+        row['pctVentasAcum'] === null || row['pctVentasAcum'] === undefined
+          ? null
+          : Number(row['pctVentasAcum']),
+      meses,
+      totalAnual: row['totalAnual'] != null ? Number(row['totalAnual']) : undefined,
     };
   }
 

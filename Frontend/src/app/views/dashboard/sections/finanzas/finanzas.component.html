@@ -99,7 +99,7 @@
           </select>
 
           <select
-            class="pl-sucursal-select"
+            class="pl-sucursal-select suite-filtro-sucursal"
             [value]="suiteSucursalId"
             (change)="seleccionarSuiteSucursal($event)"
             aria-label="Sucursal">
@@ -120,19 +120,6 @@
         </div>
 
         @if (tabActiva === 'pl') {
-          <div class="pl-segment-group pl-segment-group--navy" role="group" aria-label="Periodo P&L">
-            @for (opt of plPeriodoOpciones; track opt.id) {
-              <button
-                type="button"
-                class="pl-segment"
-                [class.pl-segment--active]="plPeriodo === opt.id"
-                [attr.aria-pressed]="plPeriodo === opt.id"
-                (click)="seleccionarPlPeriodo(opt.id)">
-                {{ opt.label }}
-              </button>
-            }
-          </div>
-
           <div class="pl-segment-group pl-segment-group--navy" role="group" aria-label="Base contable">
             @for (opt of plBaseOpciones; track opt.id) {
               <button
@@ -176,7 +163,7 @@
       <app-rentabilidad
         [periodoTitulo]="plPeriodoTitulo"
         [anio]="plQuery.anio"
-        [mes]="plQuery.mes"
+        [mes]="suiteMesParaRentabilidad"
         [sucursalId]="plQuery.sucursalId"
         [horizonte]="rentHorizonte">
       </app-rentabilidad>

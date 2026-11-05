@@ -66,22 +66,19 @@ export class FinanzasComponent implements OnInit {
   tabActiva: FinanzasSuiteTabId = 'pl';
   totalSucursales = 0;
 
-  readonly plPeriodoOpciones: PlSegmentOption<PlPeriodoId>[] = [
-    { id: 'mes', label: 'Mes' },
-    { id: 'anio_completo', label: 'Año completo' },
-  ];
   readonly plBaseOpciones: PlSegmentOption<PlBaseId>[] = [
     { id: 'gerencial', label: 'Gerencial (sin IVA)' },
     { id: 'caja', label: 'Caja (con IVA)' },
   ];
 
-  /** Mes por defecto: alinea con dashboard Ventas (un mes, no YTD). */
-  plPeriodo: PlPeriodoId = 'mes';
+  /** Periodo P&L se sincroniza con suiteMes (0 = anio_completo, 1..12 = mes). */
+  plPeriodo: PlPeriodoId = 'anio_completo';
   plBase: PlBaseId = 'gerencial';
   suiteSucursalId = 'consolidado';
   suiteMes = 0;
   suiteAnio = 0;
   readonly suiteMesOpciones: { value: number; label: string }[] = [
+    { value: 0, label: 'Todo el año' },
     { value: 1, label: 'Enero' },
     { value: 2, label: 'Febrero' },
     { value: 3, label: 'Marzo' },
@@ -109,17 +106,18 @@ export class FinanzasComponent implements OnInit {
     { id: 'consolidado', label: 'Consolidado' },
   ];
   plQuery: PlGerencialQuery = {
-    periodo: 'mes',
+    periodo: 'anio_completo',
     base: 'gerencial',
     sucursalId: 'consolidado',
     comparacion: 'mes_anterior',
     anio: new Date().getFullYear(),
-    mes: 1,
+    mes: 0,
   };
 
   ngOnInit(): void {
     const ref = this.mesReferenciaInicial();
-    this.suiteMes = ref.getMonth() + 1;
+    this.suiteMes = 0;
+    this.plPeriodo = 'anio_completo';
     this.suiteAnio = ref.getFullYear();
     this.suiteAnioOpciones = this.aniosDisponibles();
     this.refreshPlQuery();
@@ -140,11 +138,6 @@ export class FinanzasComponent implements OnInit {
     this.tabActiva = id;
   }
 
-  seleccionarPlPeriodo(id: PlPeriodoId): void {
-    this.plPeriodo = id;
-    this.refreshPlQuery();
-  }
-
   seleccionarPlBase(id: PlBaseId): void {
     this.plBase = id;
     this.refreshPlQuery();
@@ -157,6 +150,7 @@ export class FinanzasComponent implements OnInit {
 
   seleccionarSuiteMes(event: Event): void {
     this.suiteMes = Number((event.target as HTMLSelectElement).value);
+    this.plPeriodo = this.suiteMes === 0 ? 'anio_completo' : 'mes';
     this.refreshPlQuery();
   }
 
@@ -250,10 +244,14 @@ export class FinanzasComponent implements OnInit {
   }
 
   get plPeriodoTitulo(): string {
-    if (this.plPeriodo === 'anio_completo') {
-      return `año ${this.suiteAnio} (ene–${this.mesAbr(new Date(this.suiteAnio, this.suiteMes - 1, 1))})`;
+    if (this.plPeriodo === 'anio_completo' || this.suiteMes === 0) {
+      return `año ${this.suiteAnio}`;
     }
     return `${this.mesNombre(new Date(this.suiteAnio, this.suiteMes - 1, 1))} ${this.suiteAnio}`;
+  }
+
+  get suiteMesParaRentabilidad(): number {
+    return this.suiteMes || this.mesReferenciaInicial().getMonth() + 1;
   }
 
   get plComparacionTitulo(): string {
