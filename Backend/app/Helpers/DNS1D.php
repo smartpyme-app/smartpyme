@@ -146,7 +146,7 @@ class DNS1D
         $barsH = imagesy($bars);
         $padX = 12;
         $padY = 10;
-        $fontSize = 18;
+        $fontSize = 16;
         [$textW, $textH] = self::measureLabelText($label, $fontSize);
         $canvasW = max($barsW, $textW + (2 * $padX));
         $canvasH = $barsH + $padY + $textH + $padY;
