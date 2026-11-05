@@ -80,7 +80,7 @@
                                 </tr>
                             }
                             @for (producto of productosData?.data; track producto.id) {
-                                <tr class="click" [ngClass]="{'table-primary' : detalle.id_producto == producto.id}">
+                                <tr class="click" [ngClass]="{'table-primary' : detalle.id_producto == producto.id}" (click)="onClickFila($event, producto)">
                                 <!-- <td>
                                     <input type="radio" name="producto" id="producto{{producto.id}}" class="form-check" (click)="onCheckProducto(producto)">
                                 </td> -->
@@ -101,7 +101,8 @@
                             {{ producto.lotes | sum:'stock' }}
                             </span>
                         </div>
-                        <div *ngIf="!producto.inventario_por_lotes || !producto.lotes || producto.lotes.length == 0">
+                        <span *ngIf="producto.tipo == 'Servicio'" class="text-muted">Servicio</span>
+                        <div *ngIf="producto.tipo != 'Servicio' && (!producto.inventario_por_lotes || !producto.lotes || producto.lotes.length == 0)">
                             <!-- Si no tiene lotes, mostrar stock tradicional -->
                             <div *ngIf="apiService.auth_user().tipo == 'Ventas' || apiService.auth_user().tipo == 'Ventas Limitado' ">
                             {{ producto.inventarios | filter:'id_bodega': apiService.auth_user().id_bodega | sum:'stock' }}

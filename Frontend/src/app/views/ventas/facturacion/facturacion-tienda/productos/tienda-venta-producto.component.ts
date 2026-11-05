@@ -111,6 +111,8 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
         this.filtros.orden = 'nombre';
         this.filtros.direccion = 'asc';
         this.filtros.paginate = 5;
+        this.filtros.con_precios = 1;
+        this.filtros.con_servicios = 1;
 
         this.filtrarProductos();
     }
@@ -175,6 +177,13 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
         this.onSubmit();
     }
 
+    onClickFila(event: MouseEvent, producto: any) {
+        if ((event.target as HTMLElement).tagName === 'INPUT') return;
+        const check = document.getElementById('producto' + producto.id) as HTMLInputElement;
+        check.checked = !check.checked;
+        this.onCheckProducto(producto);
+    }
+
     onCheckProducto(producto:any){
         let radio = document.getElementById('producto' + producto.id) as HTMLInputElement;
         if(radio.checked){
@@ -185,10 +194,7 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
             this.detalle.img            = producto.img;
             this.detalle.precio         = parseFloat(producto.precio);
             this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
-            this.detalle.precios        = producto.precios;
-            this.detalle.precios.unshift({
-                    'precio' : this.detalle.precio
-                });
+            this.detalle.precios        = [{ 'precio' : this.detalle.precio }, ...(producto.precios ?? [])];
             if(this.apiService.auth_user().empresa.valor_inventario == 'promedio' && producto.costo_promedio > 0){
                 this.detalle.costo          = parseFloat(producto.costo_promedio);
             }else{
