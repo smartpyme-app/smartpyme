@@ -11,6 +11,7 @@ use App\Models\Contabilidad\Partidas\Partida;
 use App\Models\Contabilidad\Partidas\Detalle as DetallePartida;
 use App\Models\Planilla\Planilla;
 use App\Models\Planilla\PlanillaDetalle;
+use App\Services\Funcionalidades\FuncionalidadAccess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -28,6 +29,10 @@ class PartidaPlanillaService
      */
     public function generarPartidaPlanilla(Planilla $planilla, ?int $idUsuario = null): ?Partida
     {
+        if (!$this->debeGenerarPartidasAutomaticasPlanilla((int) $planilla->id_empresa)) {
+            return null;
+        }
+
         DB::beginTransaction();
         try {
             // Verificar si ya existe partida para esta planilla
@@ -238,7 +243,7 @@ class PartidaPlanillaService
      */
     public function validarCuentasDevengoSiAuto(Planilla $planilla): void
     {
-        if (!$this->esGeneracionAutomatica((int) $planilla->id_empresa)) {
+        if (!$this->debeGenerarPartidasAutomaticasPlanilla((int) $planilla->id_empresa)) {
             return;
         }
 
@@ -279,6 +284,10 @@ class PartidaPlanillaService
      */
     public function validarCuentaBancoParaPago(Planilla $planilla): void
     {
+        if (!$this->debeGenerarPartidasAutomaticasPlanilla((int) $planilla->id_empresa)) {
+            return;
+        }
+
         $totalNeto = $this->totalSueldoNetoActivo($planilla->id);
         if ($totalNeto <= 0) {
             return;
@@ -298,7 +307,7 @@ class PartidaPlanillaService
      */
     public function generarPartidaPagoPlanilla(Planilla $planilla, ?int $idUsuario = null): ?Partida
     {
-        if (!$this->esGeneracionAutomatica((int) $planilla->id_empresa)) {
+        if (!$this->debeGenerarPartidasAutomaticasPlanilla((int) $planilla->id_empresa)) {
             return null;
         }
 
@@ -389,6 +398,18 @@ class PartidaPlanillaService
         }
 
         return $cuenta;
+    }
+
+    /**
+     * Módulo contabilidad activo en la empresa y generación de partidas en modo Auto.
+     */
+    public function debeGenerarPartidasAutomaticasPlanilla(int $idEmpresa): bool
+    {
+        if (!FuncionalidadAccess::empresaTieneSlug($idEmpresa, 'contabilidad')) {
+            return false;
+        }
+
+        return $this->esGeneracionAutomatica($idEmpresa);
     }
 
     private function esGeneracionAutomatica(int $idEmpresa): bool

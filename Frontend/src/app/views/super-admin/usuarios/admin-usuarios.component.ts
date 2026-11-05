@@ -8,7 +8,6 @@ import { ModalModule } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { SharedDataService } from '@services/shared-data.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
@@ -50,7 +49,6 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
         apiService:ApiService,
         alertService:AlertService,
         modalManager: ModalManagerService,
-        private sharedDataService: SharedDataService
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'admin-usuario',
@@ -92,16 +90,6 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
                 this.empresas = empresas;
             }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('sucursales/list')
-            .pipe(this.untilDestroyed())
-            .subscribe({
-                next: (sucursales) => {
-                    this.sucursalesList = sucursales;
-                },
-                error: (error) => {
-                    this.alertService.error(error);
-                }
-            });
     }
 
     public override loadAll(closeFilterModal = false){
@@ -149,27 +137,34 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
             this.usuario.rol_id = 2;
         }
 
-        const afterSucursales = () => {
-            this.setSucursales();
-        };
+        this.loadCatalogosEmpresa(this.usuario.id_empresa);
 
-        if (this.sucursalesList?.length) {
-            afterSucursales();
-        } else {
-            this.apiService.getAll('sucursales/list')
-                .pipe(this.untilDestroyed())
-                .subscribe({
-                    next: (sucursales) => {
-                        this.sucursalesList = sucursales;
-                        afterSucursales();
-                    },
-                    error: (error) => {
-                        this.alertService.error(error);
-                    }
-                });
+        super.openLargeModal(template);
+    }
+
+    private loadCatalogosEmpresa(idEmpresa: number | string | null | undefined): void {
+        if (idEmpresa === null || idEmpresa === undefined || idEmpresa === '') {
+            this.sucursalesList = [];
+            this.sucursales = [];
+            this.bodegas = [];
+            return;
         }
 
-        this.sharedDataService.getBodegas()
+        const params = { id_empresa: idEmpresa };
+
+        this.apiService.getAll('sucursales/list', params)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (sucursales) => {
+                    this.sucursalesList = sucursales;
+                    this.applySucursalesSelection();
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                }
+            });
+
+        this.apiService.getAll('bodegas/list', params)
             .pipe(this.untilDestroyed())
             .subscribe({
                 next: (bodegas) => {
@@ -180,12 +175,14 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
                     this.alertService.error(error);
                 }
             });
-
-        super.openLargeModal(template);
     }
 
     setSucursales(): void {
-        this.sucursales = this.sucursalesList.filter((item: any) => item.id_empresa == this.usuario.id_empresa);
+        this.loadCatalogosEmpresa(this.usuario.id_empresa);
+    }
+
+    private applySucursalesSelection(): void {
+        this.sucursales = this.sucursalesList;
         const current = this.usuario.id_sucursal;
         const stillValid = this.sucursales.some((s: any) => String(s.id) === String(current));
         if (!stillValid && this.sucursales.length) {

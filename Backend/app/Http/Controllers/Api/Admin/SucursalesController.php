@@ -11,6 +11,7 @@ use App\Models\Inventario\Producto;
 use Illuminate\Support\Facades\Log;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use App\Http\Requests\Admin\Sucursales\StoreSucursalRequest;
+use App\Support\AdminUsuariosAlcance;
 
 class SucursalesController extends Controller
 {
@@ -60,14 +61,22 @@ class SucursalesController extends Controller
         return Response()->json($sucursales, 200);
     }
 
-    public function list()
+    public function list(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
+        $idEmpresa = (int) $user->id_empresa;
+        if ($request->filled('id_empresa')) {
+            $requested = (int) $request->id_empresa;
+            if (!AdminUsuariosAlcance::empresaIdPermitido($user, $requested)) {
+                abort(403, 'No autorizado para esta empresa.');
+            }
+            $idEmpresa = $requested;
+        }
 
         $sucursales = Sucursal::withoutGlobalScopes()
             ->orderby('nombre')
             ->whereIn('activo', ['1', 1, true])
-            ->where('id_empresa', $user->id_empresa)
+            ->where('id_empresa', $idEmpresa)
             ->get();
 
         return Response()->json($sucursales, 200);

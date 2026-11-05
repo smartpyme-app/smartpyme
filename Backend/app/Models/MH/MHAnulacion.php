@@ -2,6 +2,7 @@
 
 namespace App\Models\MH;
 
+use App\Services\Dte\DteJsonHelper;
 use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
 
@@ -19,6 +20,16 @@ class MHAnulacion extends Model
         $this->venta = $venta;
         $this->empresa = $this->venta->empresa()->first();
         $this->sucursal = $this->venta->sucursal()->first();
+
+        if (!is_array($DTE)) {
+            $DTE = is_string($DTE) ? json_decode($DTE, true) : [];
+        }
+        $DTE = $DTE ?: [];
+
+        $selloRecibido = DteJsonHelper::extractSelloRecibido($DTE);
+        if ($selloRecibido === null && !empty($this->venta->sello_mh)) {
+            $selloRecibido = (string) $this->venta->sello_mh;
+        }
 
         $codigoGeneracion = strtoupper(Uuid::uuid4()->toString());
         $this->caja_codigo = 'P001';
@@ -81,7 +92,7 @@ class MHAnulacion extends Model
         $documento = [
             "tipoDte" => $DTE['identificacion']['tipoDte'],
             "codigoGeneracion" => $DTE['identificacion']['codigoGeneracion'],
-            "selloRecibido" => $DTE['sello'],
+            "selloRecibido" => $selloRecibido,
             "numeroControl" => $DTE['identificacion']['numeroControl'],
             "fecEmi" => $DTE['identificacion']['fecEmi'],
             "montoIva" => isset($DTE['resumen']['totalIva']) ? $DTE['resumen']['totalIva'] : NULL,

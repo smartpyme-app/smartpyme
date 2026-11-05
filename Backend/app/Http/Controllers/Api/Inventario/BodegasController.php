@@ -12,6 +12,7 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\Inventario\StoreBodegaRequest;
+use App\Support\AdminUsuariosAlcance;
 
 class BodegasController extends Controller
 {
@@ -39,11 +40,18 @@ class BodegasController extends Controller
         return Response()->json($bodegas, 200);
     }
 
-    public function list()
+    public function list(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
 
         $idEmpresa = (int) $user->id_empresa;
+        if ($request->filled('id_empresa')) {
+            $requested = (int) $request->id_empresa;
+            if (!AdminUsuariosAlcance::empresaIdPermitido($user, $requested)) {
+                abort(403, 'No autorizado para esta empresa.');
+            }
+            $idEmpresa = $requested;
+        }
 
         $bodegas = Bodega::withoutGlobalScopes()
             ->with('sucursal:id,id_empresa')
