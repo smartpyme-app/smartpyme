@@ -161,6 +161,10 @@ export class ProductosComponent implements OnInit, OnDestroy {
             this.bodegas = bodegas;
         }, error => { this.alertService.error(error); });
 
+        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+            this.proveedores = proveedores;
+        }, error => { this.alertService.error(error); });
+
     }
 
     public loadAll() {
