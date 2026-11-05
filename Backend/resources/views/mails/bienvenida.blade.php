@@ -4,7 +4,7 @@
     <table style="width: 100%;">
         <tr>
             <td style="text-align: center;">
-                <img width="150px" src="https://www.smartpyme.sv/wp-content/uploads/2022/09/logo-web-smartpyme-2022-new.png" alt="Logo SmartPyme">
+                <img width="150px" src="https://www.smartpyme.app/wp-content/uploads/2022/09/logo-web-smartpyme-2022-new.png" alt="Logo SmartPyme">
                 <div style="margin-top: 15px; border-bottom: 1px solid #cecece;">
             </td>
         </tr>
@@ -26,7 +26,7 @@
                 <p><b>Encuentra Ayuda:</b></p>
                 <p>¿Tienes alguna pregunta o problema? Estamos aquí para ayudarte. Visita nuestro Centro de Ayuda o ponte en contacto con nuestro equipo de soporte a través de:
                 <br><b>Whatsapp:</b> <a href="wa.me/50377325932" target="blank">+503 7732-5932</a>
-                <br><b>Correo:</b> contact@smartpyme.sv
+                <br><b>Correo:</b> contact@smartpyme.app
                 </p>.
                 <br>
                 <p>Agradecemos tu confianza en nosotros y esperamos que disfrutes de tu tiempo en SmartPyme. Si tienes alguna sugerencia o comentario, no dudes en hacérnoslo saber. <br> ¡Estamos aquí para ti!</p>

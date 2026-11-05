@@ -13,5 +13,7 @@ final class CostaRicaFeCorreoDestinoTest extends TestCase
         self::assertSame('cliente@empresa.com', CorreoDestinoDte::resolver('cliente@empresa.com', ''));
         self::assertSame('cliente@empresa.com', CorreoDestinoDte::resolver('cliente@empresa.com', null));
         self::assertSame('cliente@empresa.com', CorreoDestinoDte::resolver('cliente@empresa.com', '   '));
+        self::assertSame('cliente@empresa.com', CorreoDestinoDte::resolver('  cliente@empresa.com  ', null));
+        self::assertNull(CorreoDestinoDte::resolver('   ', null));
     }
 }

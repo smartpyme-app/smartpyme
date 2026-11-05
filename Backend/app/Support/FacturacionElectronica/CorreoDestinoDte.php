@@ -14,6 +14,8 @@ final class CorreoDestinoDte
             return $escrito;
         }
 
-        return $correoRegistro;
+        $registro = trim((string) ($correoRegistro ?? ''));
+
+        return $registro !== '' ? $registro : null;
     }
 }

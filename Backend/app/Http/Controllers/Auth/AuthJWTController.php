@@ -214,12 +214,12 @@ class AuthJWTController extends Controller
         ];
 
         // Notificar
-        $toAddress = env('MAIL_TO_ADDRESS', 'contact@smartpyme.sv');
+        $toAddress = env('MAIL_TO_ADDRESS', 'contact@smartpyme.app');
         Mail::send('mails.notificacion', ['data' => $data], function ($m) use ($data, $fromAddress, $toAddress) {
             $m->from($fromAddress, 'SmartPyme')
                 ->to($toAddress)
-                ->cc('gabrielaq@smartpyme.sv')
-                ->cc('contact@smartpyme.sv')
+                ->cc('gabrielaq@smartpyme.app')
+                ->cc('contact@smartpyme.app')
                 ->subject('Se ha registrado una nueva cuenta en SmartPyme');
         });
 

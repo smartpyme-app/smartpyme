@@ -161,7 +161,7 @@
             <p style="margin: 5px;">{{ $empresa->nombre }} &copy; {{ date('Y') }}</p>
             <!-- Logo de SmartPyme -->
             <div style="text-align: center; padding: 20px 0; margin-top: 10px;">
-                <img width="120px" src="https://www.smartpyme.sv/wp-content/uploads/2022/09/logo-web-smartpyme-2022-new.png" alt="Logo SmartPyme">
+                <img width="120px" src="https://www.smartpyme.app/wp-content/uploads/2022/09/logo-web-smartpyme-2022-new.png" alt="Logo SmartPyme">
             </div>
             <!-- @if($empresa->telefono)
                 <p><b>Teléfono: </b>{{ $empresa->telefono }}</p>

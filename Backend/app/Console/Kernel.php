@@ -159,7 +159,7 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->runInBackground()
             ->appendOutputTo(storage_path('logs/fidelizacion-expiracion-puntos.log'))
-            ->emailOutputOnFailure('jose.e@smartpyme.sv');
+            ->emailOutputOnFailure('jose.e@smartpyme.app');
 
         $schedule->command('bonos:evaluar')
             ->dailyAt('02:30')

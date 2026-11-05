@@ -122,7 +122,7 @@
             <p>SmartPyme Technologies S.A DE S.V</p>
         </div>
     <div id="footer">
-        <a href="https://www.smartpyme.sv/">smartpyme.sv</a>
+        <a href="https://www.smartpyme.app/">smartpyme.app</a>
     </div>
     </center>
 </body>

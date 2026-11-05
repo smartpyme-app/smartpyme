@@ -594,8 +594,11 @@ public function handle()
         $correo = $venta->cliente->correo;
         $nombre = $DTE['receptor']['nombre'] ?? $venta->cliente->nombre_completo;
 
-        Mail::send('mails.DTE', ['DTE' => $DTE, 'nombre' => $nombre], function ($m) use ($pdfContent, $DTE, $correo, $nombre) {
-            $m->from('noreply@smartpyme.sv', $DTE['emisor']['nombre'])
+        $fromAddress = config('mail.from.address', 'no-reply@smartpyme.app');
+        $fromName = (string) ($DTE['emisor']['nombre'] ?? config('mail.from.name', 'SmartPyme'));
+
+        Mail::send('mails.DTE', ['DTE' => $DTE, 'nombre' => $nombre], function ($m) use ($pdfContent, $DTE, $correo, $nombre, $fromAddress, $fromName) {
+            $m->from($fromAddress, $fromName)
                 ->to($correo, $nombre)
                 ->attachData($pdfContent, $DTE['identificacion']['codigoGeneracion'] . '.pdf', [
                     'mime' => 'application/pdf',
