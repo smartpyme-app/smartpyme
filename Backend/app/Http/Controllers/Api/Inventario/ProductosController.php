@@ -101,6 +101,10 @@ class ProductosController extends Controller
         $empresa = Empresa::find($user->id_empresa);
 
         $query = $this->buildProductosListadoQuery($request, $empresa, true);
+        // El modal de selección múltiple en ventas necesita las tarifas; el listado de inventario no.
+        if ($request->boolean('con_precios')) {
+            $query->with('precios.usuarios');
+        }
 
         $stockTotalFiltrado = null;
         if ($empresa && $empresa->isInventarioSumarStockBusquedasHabilitado()) {
@@ -128,7 +132,8 @@ class ProductosController extends Controller
      */
     protected function buildProductosListadoQuery(Request $request, ?Empresa $empresa, bool $withRelations): \Illuminate\Database\Eloquent\Builder
     {
-        $query = Producto::query()->whereIn('tipo', ['Producto', 'Compuesto']);
+        $tipos = $request->boolean('con_servicios') ? ['Producto', 'Compuesto', 'Servicio'] : ['Producto', 'Compuesto'];
+        $query = Producto::query()->whereIn('tipo', $tipos);
 
         if ($withRelations) {
             $query->with([
