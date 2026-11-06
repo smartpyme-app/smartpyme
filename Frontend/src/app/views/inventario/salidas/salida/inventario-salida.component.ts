@@ -59,6 +59,11 @@ export class InventarioSalidaComponent extends BaseModalComponent implements OnI
         }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
 	}
 
+	private esCreacionNuevaSalida(): boolean {
+	    const id = +this.route.snapshot.paramMap.get('id')!;
+	    return !id;
+	}
+
 	public loadAll(){
 	    const id = +this.route.snapshot.paramMap.get('id')!;
 
@@ -155,6 +160,10 @@ export class InventarioSalidaComponent extends BaseModalComponent implements OnI
     }
 
 	public async onSubmit() {
+        if (this.esCreacionNuevaSalida() && !this.apiService.canCrearOtraSalidaInventario() && !this.apiService.canCreateTest('productos.inventario.crear')) {
+            this.alertService.error('No tiene permiso para crear salidas de inventario.');
+            return;
+        }
         const faltanLotes = (this.salida.detalles || []).some((d: any) =>
             this.requiereDistribucionLotes(d) && !(d.lotes_asignados?.length || d.lote_id)
         );

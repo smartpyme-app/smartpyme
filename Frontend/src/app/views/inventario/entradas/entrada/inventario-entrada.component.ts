@@ -71,6 +71,11 @@ export class InventarioEntradaComponent extends BaseModalComponent implements On
 
 	}
 
+	private esCreacionNuevaEntrada(): boolean {
+	    const id = +this.route.snapshot.paramMap.get('id')!;
+	    return !id;
+	}
+
 	public loadAll(){
 	    const id = +this.route.snapshot.paramMap.get('id')!;
 
@@ -233,6 +238,10 @@ export class InventarioEntradaComponent extends BaseModalComponent implements On
     }
 
 	public async onSubmit() {
+        if (this.esCreacionNuevaEntrada() && !this.apiService.canCrearOtraEntradaInventario() && !this.apiService.canCreateTest('productos.inventario.crear')) {
+            this.alertService.error('No tiene permiso para crear entradas de inventario.');
+            return;
+        }
         this.saving = true;
         try {
             await this.apiService.store('entrada', this.entrada)

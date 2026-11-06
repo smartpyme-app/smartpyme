@@ -293,7 +293,8 @@ export class InventarioSalidasComponent extends BaseCrudComponent<any> implement
      * Verifica si el usuario puede crear salidas
      */
     public puedeCrearSalida(): boolean {
-        return this.apiService.puedeCrearOperacionesInventarioEnUi();
+        return this.apiService.canCrearOtraSalidaInventario()
+            || this.apiService.canCreateTest('productos.inventario.crear');
     }
 
 }

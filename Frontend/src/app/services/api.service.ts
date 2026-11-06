@@ -359,8 +359,23 @@ export class ApiService {
   }
 
   canEmitirFacturaElectronica(): boolean {
-    // ponytail: temporal — misma regla que menú ventas; volver a hasPermission('ventas.facturacion_electronica.emitir') tras sembrar roles.
-    return true;
+    return this.hasPermission('ventas.facturacion_electronica.emitir');
+  }
+
+  /** SPT-648: crear movimiento en «Otras entradas» (independiente de otros submódulos de inventario). */
+  canCrearOtraEntradaInventario(): boolean {
+    if (!this.esEmpresaInventarioOperacionesSoloAdministrador()) {
+      return this.canCreateTest('productos.otras_entradas_salidas.entradas.crear');
+    }
+    return this.auth_user()?.tipo === 'Administrador';
+  }
+
+  /** SPT-648: crear movimiento en «Otras salidas». */
+  canCrearOtraSalidaInventario(): boolean {
+    if (!this.esEmpresaInventarioOperacionesSoloAdministrador()) {
+      return this.canCreateTest('productos.otras_entradas_salidas.salidas.crear');
+    }
+    return this.auth_user()?.tipo === 'Administrador';
   }
 
   canVerCostosInventario(): boolean {
@@ -817,6 +832,16 @@ export class ApiService {
       return this.canCreate();
     }
     return usuario?.tipo === 'Administrador';
+  }
+
+  /**
+   * Crear en ajustes / traslados (empresa 324 solo admin; resto: tipo legacy o granular productos.inventario.crear).
+   */
+  puedeCrearAjustesTrasladosEnUi(): boolean {
+    if (!this.esEmpresaInventarioOperacionesSoloAdministrador()) {
+      return this.canCreate() || this.canCreateTest('productos.inventario.crear');
+    }
+    return this.auth_user()?.tipo === 'Administrador';
   }
 
   /** Empresa activó bloquear facturar/editar/gestionar cotizaciones para vendedores (Mi cuenta). */

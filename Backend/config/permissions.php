@@ -212,7 +212,15 @@ return [
             'crear' => 'productos.traslados.crear',
             'editar' => 'productos.traslados.editar',
             'eliminar' => 'productos.traslados.eliminar'
-        ]
+        ],
+
+        /** SPT-648: «Otras entradas» / «Otras salidas» (además de inventario.crear genérico). */
+        'otras_entradas' => [
+            'crear' => 'productos.otras_entradas_salidas.entradas.crear',
+        ],
+        'otras_salidas' => [
+            'crear' => 'productos.otras_entradas_salidas.salidas.crear',
+        ],
     ],
 
     /*

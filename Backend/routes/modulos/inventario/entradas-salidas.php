@@ -1,46 +1,57 @@
-<?php 
+<?php
 
 use App\Http\Controllers\Api\Inventario\Entradas\EntradasController;
 use App\Http\Controllers\Api\Inventario\Entradas\DetallesController as EDController;
-
 use App\Http\Controllers\Api\Inventario\Salidas\SalidasController;
 use App\Http\Controllers\Api\Inventario\Salidas\DetallesController as SDController;
+use App\Support\PermisoAnular;
+
+$pVerInv = config('permissions.PERMISSION_PRODUCTOS.inventario.ver');
+$pInvCrear = config('permissions.PERMISSION_PRODUCTOS.inventario.crear');
+$pInvEditar = config('permissions.PERMISSION_PRODUCTOS.inventario.editar');
+$pInvEliminar = PermisoAnular::eliminarOAnular(config('permissions.PERMISSION_PRODUCTOS.inventario.eliminar'));
+$pCrearOtraEntrada = config('permissions.PERMISSION_PRODUCTOS.otras_entradas.crear');
+$pCrearOtraSalida = config('permissions.PERMISSION_PRODUCTOS.otras_salidas.crear');
+$storeEntrada = $pCrearOtraEntrada.'|'.$pInvCrear;
+$storeSalida = $pCrearOtraSalida.'|'.$pInvCrear;
+$detalleEntrada = $pCrearOtraEntrada.'|'.$pInvCrear.'|'.$pInvEditar;
+$detalleSalida = $pCrearOtraSalida.'|'.$pInvCrear.'|'.$pInvEditar;
 
 // Entradas
-    Route::get('/entradas',                [EntradasController::class, 'index']);
-    Route::get('/entrada/{id}',            [EntradasController::class, 'read']);
-    Route::get('/entradas/buscar/{txt}',   [EntradasController::class, 'search']);
-    Route::post('/entradas/filtrar',       [EntradasController::class, 'filter']);
-    Route::post('/entrada',                [EntradasController::class, 'store']);
-    Route::delete('/entrada/{id}',         [EntradasController::class, 'delete']);
-    Route::post('/entrada/aprobar/{id}',   [EntradasController::class, 'aprobar']);
-    Route::post('/entrada/anular/{id}',    [EntradasController::class, 'anular']);
-    Route::get('/reporte/entrada/{id}',    [EntradasController::class, 'generarDoc']);
-    Route::post('/entrada/partida-contable/{id}', [EntradasController::class, 'generarPartidaContable']);
+    Route::get('/entradas',                [EntradasController::class, 'index'])->middleware('permission:'.$pVerInv);
+    Route::get('/entrada/{id}',            [EntradasController::class, 'read'])->middleware('permission:'.$pVerInv);
+    Route::get('/entradas/buscar/{txt}',   [EntradasController::class, 'search'])->middleware('permission:'.$pVerInv);
+    Route::post('/entradas/filtrar',       [EntradasController::class, 'filter'])->middleware('permission:'.$pVerInv);
+    Route::post('/entrada',                [EntradasController::class, 'store'])->middleware('permission:'.$storeEntrada);
+    Route::delete('/entrada/{id}',         [EntradasController::class, 'delete'])->middleware('permission:'.$pInvEliminar);
+    Route::post('/entrada/aprobar/{id}',   [EntradasController::class, 'aprobar'])->middleware('permission:'.$pInvEditar);
+    Route::post('/entrada/anular/{id}',    [EntradasController::class, 'anular'])->middleware('permission:'.$pInvEditar);
+    Route::get('/reporte/entrada/{id}',    [EntradasController::class, 'generarDoc'])->middleware('permission:'.$pVerInv);
+    Route::post('/entrada/partida-contable/{id}', [EntradasController::class, 'generarPartidaContable'])->middleware('permission:'.$pInvEditar);
 
 // Detalles
-    Route::get('/entrada/detalles',        [EDController::class, 'index']);
-    Route::get('/entrada/detalle/{id}',    [EDController::class, 'read']);
-    Route::post('/entrada/detalle',        [EDController::class, 'store']);
-    Route::delete('/entrada/detalle/{id}', [EDController::class, 'delete']);
+    Route::get('/entrada/detalles',        [EDController::class, 'index'])->middleware('permission:'.$pVerInv);
+    Route::get('/entrada/detalle/{id}',    [EDController::class, 'read'])->middleware('permission:'.$pVerInv);
+    Route::post('/entrada/detalle',        [EDController::class, 'store'])->middleware('permission:'.$detalleEntrada);
+    Route::delete('/entrada/detalle/{id}', [EDController::class, 'delete'])->middleware('permission:'.$pInvEditar.'|'.$pInvEliminar);
 
 // Salidas
-    Route::get('/salidas',                [SalidasController::class, 'index']);
-    Route::get('/salida/{id}',            [SalidasController::class, 'read']);
-    Route::get('/salidas/buscar/{txt}',   [SalidasController::class, 'search']);
-    Route::post('/salidas/filtrar',       [SalidasController::class, 'filter']);
-    Route::post('/salida',                [SalidasController::class, 'store']);
-    Route::delete('/salida/{id}',         [SalidasController::class, 'delete']);
-    Route::post('/salida/aprobar/{id}',   [SalidasController::class, 'aprobar']);
-    Route::post('/salida/anular/{id}',    [SalidasController::class, 'anular']);
-    Route::get('/reporte/salida/{id}',    [SalidasController::class, 'generarDoc']);
-    Route::post('/salida/partida-contable/{id}', [SalidasController::class, 'generarPartidaContable']);
+    Route::get('/salidas',                [SalidasController::class, 'index'])->middleware('permission:'.$pVerInv);
+    Route::get('/salida/{id}',            [SalidasController::class, 'read'])->middleware('permission:'.$pVerInv);
+    Route::get('/salidas/buscar/{txt}',   [SalidasController::class, 'search'])->middleware('permission:'.$pVerInv);
+    Route::post('/salidas/filtrar',       [SalidasController::class, 'filter'])->middleware('permission:'.$pVerInv);
+    Route::post('/salida',                [SalidasController::class, 'store'])->middleware('permission:'.$storeSalida);
+    Route::delete('/salida/{id}',         [SalidasController::class, 'delete'])->middleware('permission:'.$pInvEliminar);
+    Route::post('/salida/aprobar/{id}',   [SalidasController::class, 'aprobar'])->middleware('permission:'.$pInvEditar);
+    Route::post('/salida/anular/{id}',    [SalidasController::class, 'anular'])->middleware('permission:'.$pInvEditar);
+    Route::get('/reporte/salida/{id}',    [SalidasController::class, 'generarDoc'])->middleware('permission:'.$pVerInv);
+    Route::post('/salida/partida-contable/{id}', [SalidasController::class, 'generarPartidaContable'])->middleware('permission:'.$pInvEditar);
 
 // Detalles
-    Route::get('/salida/detalles',        [SDController::class, 'index']);
-    Route::get('/salida/detalle/{id}',    [SDController::class, 'read']);
-    Route::post('/salida/detalle',        [SDController::class, 'store']);
-    Route::delete('/salida/detalle/{id}', [SDController::class, 'delete']);
+    Route::get('/salida/detalles',        [SDController::class, 'index'])->middleware('permission:'.$pVerInv);
+    Route::get('/salida/detalle/{id}',    [SDController::class, 'read'])->middleware('permission:'.$pVerInv);
+    Route::post('/salida/detalle',        [SDController::class, 'store'])->middleware('permission:'.$detalleSalida);
+    Route::delete('/salida/detalle/{id}', [SDController::class, 'delete'])->middleware('permission:'.$pInvEditar.'|'.$pInvEliminar);
 
 
 ?>
