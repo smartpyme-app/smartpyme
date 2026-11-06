@@ -10,7 +10,9 @@ export function initSentry(): void {
     dsn: environment.sentry.dsn,
     environment: environment.sentry.environment,
     ...(environment.sentry.release ? { release: environment.sentry.release } : {}),
-    sendDefaultPii: false,
+    dataCollection: {
+      userInfo: false,
+    },
     integrations: [Sentry.browserTracingIntegration()],
     tracesSampleRate: environment.sentry.tracesSampleRate ?? 0.1,
     tracePropagationTargets: environment.sentry.tracePropagationTargets ?? [

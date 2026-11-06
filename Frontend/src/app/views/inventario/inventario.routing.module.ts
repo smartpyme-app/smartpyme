@@ -92,12 +92,62 @@ const routes: Routes = [
         { path: 'traslado-masivo/crear', canActivate: [InventarioOperacionesAdminGuard], component: TrasladoMasivoComponent, title: 'Traslado masivo' },
 
         // Nuevas rutas para entradas y salidas
-        { path: 'entradas', canActivate: [InventarioOperacionesAdminGuard], component: InventarioEntradasComponent, title: 'Entradas de Inventario' },
-        { path: 'entrada/:id', canActivate: [InventarioOperacionesAdminGuard], component: InventarioEntradaComponent, title: 'Entrada de Inventario' },
-        { path: 'entrada/detalle/:id', canActivate: [InventarioOperacionesAdminGuard], component: EntradaDetalleComponent, title: 'Detalle de entrada' },
-        { path: 'salidas', canActivate: [InventarioOperacionesAdminGuard], component: InventarioSalidasComponent, title: 'Salidas de Inventario' },
-        { path: 'salida/:id', canActivate: [InventarioOperacionesAdminGuard], component: InventarioSalidaComponent, title: 'Salida de Inventario' },
-        { path: 'salida/detalle/:id', canActivate: [InventarioOperacionesAdminGuard], component: SalidaDetalleComponent, title: 'Detalle de salida' },
+        {
+          path: 'entradas',
+          canActivate: [InventarioOperacionesAdminGuard, PermissionGuard],
+          data: { permission: 'productos.inventario.ver' },
+          component: InventarioEntradasComponent,
+          title: 'Entradas de Inventario',
+        },
+        {
+          path: 'entrada/crear',
+          canActivate: [InventarioOperacionesAdminGuard, PermissionGuard],
+          data: { permissions: ['productos.otras_entradas_salidas.entradas.crear', 'productos.inventario.crear'] },
+          component: InventarioEntradaComponent,
+          title: 'Entrada de Inventario',
+        },
+        {
+          path: 'entrada/:id',
+          canActivate: [InventarioOperacionesAdminGuard, PermissionGuard],
+          data: { permission: 'productos.inventario.ver' },
+          component: InventarioEntradaComponent,
+          title: 'Entrada de Inventario',
+        },
+        {
+          path: 'entrada/detalle/:id',
+          canActivate: [InventarioOperacionesAdminGuard, PermissionGuard],
+          data: { permission: 'productos.inventario.ver' },
+          component: EntradaDetalleComponent,
+          title: 'Detalle de entrada',
+        },
+        {
+          path: 'salidas',
+          canActivate: [InventarioOperacionesAdminGuard, PermissionGuard],
+          data: { permission: 'productos.inventario.ver' },
+          component: InventarioSalidasComponent,
+          title: 'Salidas de Inventario',
+        },
+        {
+          path: 'salida/crear',
+          canActivate: [InventarioOperacionesAdminGuard, PermissionGuard],
+          data: { permissions: ['productos.otras_entradas_salidas.salidas.crear', 'productos.inventario.crear'] },
+          component: InventarioSalidaComponent,
+          title: 'Salida de Inventario',
+        },
+        {
+          path: 'salida/:id',
+          canActivate: [InventarioOperacionesAdminGuard, PermissionGuard],
+          data: { permission: 'productos.inventario.ver' },
+          component: InventarioSalidaComponent,
+          title: 'Salida de Inventario',
+        },
+        {
+          path: 'salida/detalle/:id',
+          canActivate: [InventarioOperacionesAdminGuard, PermissionGuard],
+          data: { permission: 'productos.inventario.ver' },
+          component: SalidaDetalleComponent,
+          title: 'Detalle de salida',
+        },
 
         { path: 'transformacion', canActivate: [InventarioOperacionesAdminGuard, TransformacionProductosGuard], component: TransformacionCrearComponent, title: 'Conversión de Productos' },
 

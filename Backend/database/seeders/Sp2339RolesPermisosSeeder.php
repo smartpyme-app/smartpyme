@@ -317,6 +317,23 @@ class Sp2339RolesPermisosSeeder extends Seeder
             $ventasLimitado->givePermissionTo($emitirFe);
         }
 
+        // SPT-648: quien ya puede crear en inventario recibe otras entradas/salidas (idempotente)
+        $crearInv = config('permissions.PERMISSION_PRODUCTOS.inventario.crear');
+        $otraEntrada = config('permissions.PERMISSION_PRODUCTOS.otras_entradas.crear');
+        $otraSalida = config('permissions.PERMISSION_PRODUCTOS.otras_salidas.crear');
+        if ($crearInv && $otraEntrada && $otraSalida) {
+            foreach (Role::query()->where('guard_name', 'web')->get() as $role) {
+                if (! $role->hasPermissionTo($crearInv)) {
+                    continue;
+                }
+                foreach ([$otraEntrada, $otraSalida] as $p) {
+                    if (! $role->hasPermissionTo($p)) {
+                        $role->givePermissionTo($p);
+                    }
+                }
+            }
+        }
+
         // Contador: partidas granulares sí; quitar crear genérico en auxiliar si solo debe ver
         if ($contadorAuxiliar) {
             $crear = config('permissions.PERMISSION_CONTABILIDAD.partidas.crear');
