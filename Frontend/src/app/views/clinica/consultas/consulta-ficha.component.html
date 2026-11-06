@@ -21,6 +21,9 @@
         @if (apiService.hasPermission('clinica.tratamientos.crear')) {
             <a class="btn btn-default" [routerLink]="['/clinica/pacientes', idPaciente, 'tratamientos', 'nuevo']" [queryParams]="{ id_consulta: idConsulta }">Nuevo tratamiento</a>
         }
+        @if (apiService.hasPermission('clinica.recetas.crear')) {
+            <a class="btn btn-default" [routerLink]="['/clinica/pacientes', idPaciente, 'recetas', 'nuevo']" [queryParams]="{ id_consulta: idConsulta }">Nueva receta</a>
+        }
         <button type="button" class="btn btn-default" [routerLink]="['/clinica/pacientes', idPaciente, 'expediente', 'historial']">Historial</button>
     </div>
 </section>

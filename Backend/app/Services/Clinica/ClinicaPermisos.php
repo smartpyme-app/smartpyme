@@ -25,4 +25,24 @@ final class ClinicaPermisos
     public const DIAGNOSTICOS_CREAR = 'clinica.diagnosticos.crear';
 
     public const DIAGNOSTICOS_EDITAR = 'clinica.diagnosticos.editar';
+
+    public const MEDICAMENTOS_VER = 'clinica.medicamentos.ver';
+
+    public const MEDICAMENTOS_CONFIGURAR = 'clinica.medicamentos.configurar';
+
+    public const RECETAS_VER = 'clinica.recetas.ver';
+
+    public const RECETAS_CREAR = 'clinica.recetas.crear';
+
+    public const RECETAS_EDITAR = 'clinica.recetas.editar';
+
+    public const RECETAS_ANULAR = 'clinica.recetas.anular';
+
+    public const VACUNAS_VER = 'clinica.vacunas.ver';
+
+    public const VACUNAS_CREAR = 'clinica.vacunas.crear';
+
+    public const VACUNAS_CONFIGURAR = 'clinica.vacunas.configurar';
+
+    public const VACUNAS_ANULAR = 'clinica.vacunas.anular';
 }

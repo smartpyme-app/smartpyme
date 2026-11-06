@@ -1,0 +1,35 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <div>
+        <h2 class="page-heading mb-0">Vacuna / preventivo</h2>
+        @if (vacuna) {
+            <span class="badge py-2 mt-2" [ngClass]="vacuna.estado === 'activa' ? 'bg-success' : 'bg-danger'">{{ vacuna.estado }}</span>
+        }
+    </div>
+    <div class="d-flex gap-2">
+        @if (vacuna?.estado === 'activa' && apiService.hasPermission('clinica.vacunas.anular')) {
+            <button type="button" class="btn btn-outline-danger" (click)="anular()">Anular</button>
+        }
+        <button type="button" class="btn btn-default" [routerLink]="['/clinica/pacientes', idPaciente, 'vacunas']">Listado</button>
+    </div>
+</section>
+
+@if (cargando) {
+    <section class="bg-white p-4 rounded"><span class="badge bg-primary">Cargando...</span></section>
+}
+
+@if (!cargando && vacuna) {
+    <section class="bg-white p-4 rounded mb-3">
+        <div class="row">
+            <div class="col-md-4"><label class="fw-medium">Nombre</label><p>{{ vacuna.nombre_vacuna }}</p></div>
+            <div class="col-md-4"><label class="fw-medium">Fecha</label><p>{{ vacuna.fecha_aplicacion }}</p></div>
+            <div class="col-md-4"><label class="fw-medium">Próxima</label><p>{{ vacuna.proxima_fecha || '—' }}</p></div>
+            <div class="col-md-4"><label class="fw-medium">Dosis</label><p>{{ vacuna.dosis || '—' }}</p></div>
+            <div class="col-md-4"><label class="fw-medium">Profesional</label><p>{{ vacuna.profesional?.nombre || '—' }}</p></div>
+            <div class="col-md-4"><label class="fw-medium">Lote</label><p>{{ vacuna.lote_numero || '—' }}</p></div>
+            <div class="col-12"><label class="fw-medium">Observaciones</label><p>{{ vacuna.observaciones || '—' }}</p></div>
+            @if (vacuna.motivo_anulacion) {
+                <div class="col-12 text-danger"><strong>Motivo anulación:</strong> {{ vacuna.motivo_anulacion }}</div>
+            }
+        </div>
+    </section>
+}
