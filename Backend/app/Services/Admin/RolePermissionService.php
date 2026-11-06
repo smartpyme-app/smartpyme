@@ -392,7 +392,8 @@ class RolePermissionService
      */
     public function listarModulos($request)
     {
-        $query = Module::with('permissions', 'submodules');
+        // ponytail: submodule.permissions was N+1 when serializing modules list
+        $query = Module::with(['permissions', 'submodules.permissions']);
 
         if ($request->buscador) {
             $query->where('name', 'like', '%' . $request->buscador . '%');

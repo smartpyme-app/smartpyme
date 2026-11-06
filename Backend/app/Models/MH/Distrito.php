@@ -26,9 +26,10 @@ class Distrito extends Model {
         return $this->departamento ? $this->departamento->nombre : null;
     }
 
-    public function municipio(){
-        return $this->belongsTo('App\Models\MH\Municipio', 'cod_municipio', 'cod')
-                    ->where('cod_departamento', $this->cod_departamento);
+    public function municipio()
+    {
+        // Composite key: mismo cod de municipio puede repetirse en otro departamento
+        return $this->belongsTo(Municipio::class, ['cod_municipio', 'cod_departamento'], ['cod', 'cod_departamento']);
     }
 
     public function departamento(){

@@ -149,17 +149,23 @@ class Gasto extends AuditableModel {
 
     public function getNombreUsuarioAttribute()
     {
-        return $this->usuario()->pluck('name')->first();
+        if ($this->relationLoaded('usuario') && $this->usuario) {
+            return $this->usuario->name;
+        }
+        return $this->usuario()->value('name');
     }
 
     public function getNombreCategoriaAttribute()
     {
-        return $this->categoria()->pluck('nombre')->first();
+        if ($this->relationLoaded('categoria') && $this->categoria) {
+            return $this->categoria->nombre;
+        }
+        return $this->categoria()->value('nombre');
     }
 
     public function getNombreProveedorAttribute()
     {
-        $proveedor = $this->proveedor()->first();
+        $proveedor = $this->relationLoaded('proveedor') ? $this->proveedor : $this->proveedor()->first();
         if ($proveedor) {
             return $proveedor->nombreParaDocumento();
         }
@@ -183,7 +189,10 @@ class Gasto extends AuditableModel {
 
     public function getNombreSucursalAttribute()
     {
-        return $this->sucursal()->pluck('nombre')->first();
+        if ($this->relationLoaded('sucursal') && $this->sucursal) {
+            return $this->sucursal->nombre;
+        }
+        return $this->sucursal()->value('nombre');
     }
 
 
