@@ -238,8 +238,16 @@ export class InventarioEntradaComponent extends BaseModalComponent implements On
     }
 
 	public async onSubmit() {
-        if (this.esCreacionNuevaEntrada() && !this.apiService.canCrearOtraEntradaInventario() && !this.apiService.canCreateTest('productos.inventario.crear')) {
-            this.alertService.error('No tiene permiso para crear entradas de inventario.');
+        if (this.esCreacionNuevaEntrada()) {
+            if (!this.apiService.canCrearOtraEntradaInventario() && !this.apiService.canCreateTest('productos.inventario.crear')) {
+                this.alertService.error('No tiene permiso para crear entradas de inventario.');
+                return;
+            }
+        } else if (
+            !this.apiService.canEditarOtraEntradaInventario()
+            && !this.apiService.canEditTest('productos.inventario.editar')
+        ) {
+            this.alertService.error('No tiene permiso para editar entradas de inventario.');
             return;
         }
         this.saving = true;

@@ -18,7 +18,7 @@ trait AuthorizesVerCostosInventario
         return $perm && $user->can($perm);
     }
 
-    /** Ver costos en ficha de producto: permiso explícito o quien puede editar productos. */
+    /** Ver costos en ficha de producto: ver_costos, ver inventario, editar productos o admin. */
     protected function userCanVerCostosEnFichaProducto(?Authenticatable $user): bool
     {
         if ($this->userCanVerCostosInventario($user)) {
@@ -27,6 +27,11 @@ trait AuthorizesVerCostosInventario
 
         if (! $user) {
             return false;
+        }
+
+        $invVer = config('permissions.PERMISSION_PRODUCTOS.inventario.ver');
+        if ($invVer && $user->can($invVer)) {
+            return true;
         }
 
         $editar = config('permissions.PERMISSION_PRODUCTOS.editar');

@@ -95,7 +95,12 @@ const routes: Routes = [
         {
           path: 'entradas',
           canActivate: [InventarioOperacionesAdminGuard, PermissionGuard],
-          data: { permission: 'productos.inventario.ver' },
+          data: {
+            permissions: [
+              'productos.otras_entradas_salidas.entradas.ver',
+              'productos.inventario.ver',
+            ],
+          },
           component: InventarioEntradasComponent,
           title: 'Entradas de Inventario',
         },
@@ -109,21 +114,36 @@ const routes: Routes = [
         {
           path: 'entrada/:id',
           canActivate: [InventarioOperacionesAdminGuard, PermissionGuard],
-          data: { permission: 'productos.inventario.ver' },
+          data: {
+            permissions: [
+              'productos.otras_entradas_salidas.entradas.ver',
+              'productos.inventario.ver',
+            ],
+          },
           component: InventarioEntradaComponent,
           title: 'Entrada de Inventario',
         },
         {
           path: 'entrada/detalle/:id',
           canActivate: [InventarioOperacionesAdminGuard, PermissionGuard],
-          data: { permission: 'productos.inventario.ver' },
+          data: {
+            permissions: [
+              'productos.otras_entradas_salidas.entradas.ver',
+              'productos.inventario.ver',
+            ],
+          },
           component: EntradaDetalleComponent,
           title: 'Detalle de entrada',
         },
         {
           path: 'salidas',
           canActivate: [InventarioOperacionesAdminGuard, PermissionGuard],
-          data: { permission: 'productos.inventario.ver' },
+          data: {
+            permissions: [
+              'productos.otras_entradas_salidas.salidas.ver',
+              'productos.inventario.ver',
+            ],
+          },
           component: InventarioSalidasComponent,
           title: 'Salidas de Inventario',
         },
@@ -137,14 +157,24 @@ const routes: Routes = [
         {
           path: 'salida/:id',
           canActivate: [InventarioOperacionesAdminGuard, PermissionGuard],
-          data: { permission: 'productos.inventario.ver' },
+          data: {
+            permissions: [
+              'productos.otras_entradas_salidas.salidas.ver',
+              'productos.inventario.ver',
+            ],
+          },
           component: InventarioSalidaComponent,
           title: 'Salida de Inventario',
         },
         {
           path: 'salida/detalle/:id',
           canActivate: [InventarioOperacionesAdminGuard, PermissionGuard],
-          data: { permission: 'productos.inventario.ver' },
+          data: {
+            permissions: [
+              'productos.otras_entradas_salidas.salidas.ver',
+              'productos.inventario.ver',
+            ],
+          },
           component: SalidaDetalleComponent,
           title: 'Detalle de salida',
         },

@@ -371,10 +371,42 @@ export class ApiService {
     return this.auth_user()?.tipo === 'Administrador';
   }
 
+  /** SPT-648: ver listado/detalle de «Otras entradas». */
+  canVerOtraEntradaInventario(): boolean {
+    if (!this.esEmpresaInventarioOperacionesSoloAdministrador()) {
+      return this.hasPermission('productos.otras_entradas_salidas.entradas.ver');
+    }
+    return this.auth_user()?.tipo === 'Administrador';
+  }
+
+  /** SPT-648: aprobar/anular/partidas y líneas en «Otras entradas». */
+  canEditarOtraEntradaInventario(): boolean {
+    if (!this.esEmpresaInventarioOperacionesSoloAdministrador()) {
+      return this.canEditTest('productos.otras_entradas_salidas.entradas.editar');
+    }
+    return this.auth_user()?.tipo === 'Administrador';
+  }
+
   /** SPT-648: crear movimiento en «Otras salidas». */
   canCrearOtraSalidaInventario(): boolean {
     if (!this.esEmpresaInventarioOperacionesSoloAdministrador()) {
       return this.canCreateTest('productos.otras_entradas_salidas.salidas.crear');
+    }
+    return this.auth_user()?.tipo === 'Administrador';
+  }
+
+  /** SPT-648: ver listado/detalle de «Otras salidas». */
+  canVerOtraSalidaInventario(): boolean {
+    if (!this.esEmpresaInventarioOperacionesSoloAdministrador()) {
+      return this.hasPermission('productos.otras_entradas_salidas.salidas.ver');
+    }
+    return this.auth_user()?.tipo === 'Administrador';
+  }
+
+  /** SPT-648: aprobar/anular/partidas y líneas en «Otras salidas». */
+  canEditarOtraSalidaInventario(): boolean {
+    if (!this.esEmpresaInventarioOperacionesSoloAdministrador()) {
+      return this.canEditTest('productos.otras_entradas_salidas.salidas.editar');
     }
     return this.auth_user()?.tipo === 'Administrador';
   }

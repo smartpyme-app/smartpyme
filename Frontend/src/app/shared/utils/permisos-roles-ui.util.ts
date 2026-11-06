@@ -8,6 +8,13 @@ export function etiquetaPermisoRoles(name: string): string {
   if (!name) {
     return '';
   }
+  // Otras entradas / salidas: el último segmento es ver|crear|editar; el contexto va en la tarjeta del submódulo.
+  if (name.includes('otras_entradas_salidas.entradas')) {
+    return 'Entradas: ' + (name.split('.').pop() ?? '').replace(/_/g, ' ');
+  }
+  if (name.includes('otras_entradas_salidas.salidas')) {
+    return 'Salidas: ' + (name.split('.').pop() ?? '').replace(/_/g, ' ');
+  }
   const segmento = name.split('.').pop() ?? name;
   if (segmento === 'anular') {
     return 'Anular';

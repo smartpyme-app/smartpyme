@@ -160,8 +160,16 @@ export class InventarioSalidaComponent extends BaseModalComponent implements OnI
     }
 
 	public async onSubmit() {
-        if (this.esCreacionNuevaSalida() && !this.apiService.canCrearOtraSalidaInventario() && !this.apiService.canCreateTest('productos.inventario.crear')) {
-            this.alertService.error('No tiene permiso para crear salidas de inventario.');
+        if (this.esCreacionNuevaSalida()) {
+            if (!this.apiService.canCrearOtraSalidaInventario() && !this.apiService.canCreateTest('productos.inventario.crear')) {
+                this.alertService.error('No tiene permiso para crear salidas de inventario.');
+                return;
+            }
+        } else if (
+            !this.apiService.canEditarOtraSalidaInventario()
+            && !this.apiService.canEditTest('productos.inventario.editar')
+        ) {
+            this.alertService.error('No tiene permiso para editar salidas de inventario.');
             return;
         }
         const faltanLotes = (this.salida.detalles || []).some((d: any) =>

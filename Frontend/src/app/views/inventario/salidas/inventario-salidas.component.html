@@ -113,7 +113,7 @@
                                 </span>
                                 <ng-template #accionesTemplate>
                                     <div class="d-flex flex-column">
-                                        @if (apiService.auth_user().tipo == 'Administrador' && salida.estado == 'Pendiente') {
+                                        @if ((apiService.canEditarOtraSalidaInventario() || apiService.canEditTest('productos.inventario.editar')) && salida.estado == 'Pendiente') {
                                             <button type="button" [routerLink]="'/salida/' + salida.id" class="btn text-start border-0">
                                                 <i class="fa fa-fw fa-edit"></i>Editar
                                             </button>
@@ -124,22 +124,22 @@
                                         <button type="button" (click)="reemprimir(salida)" class="btn text-start border-0">
                                             <i class="fa fa-fw fa-print"></i>Imprimir
                                         </button>
-                                        @if ((apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Supervisor') && salida.estado != 'Aprobada') {
+                                        @if ((apiService.canEditarOtraSalidaInventario() || apiService.canEditTest('productos.inventario.editar')) && salida.estado != 'Aprobada') {
                                             <button type="button" (click)="setEstado(salida, 'Aprobada')" class="btn text-start border-0">
                                                 <i class="fa fa-fw fa-check"></i>Aprobar
                                             </button>
                                         }
-                                        @if ((apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Supervisor') && salida.estado == 'Aprobada') {
+                                        @if ((apiService.canEditarOtraSalidaInventario() || apiService.canEditTest('productos.inventario.editar')) && salida.estado == 'Aprobada') {
                                             <button type="button" (click)="setEstado(salida, 'Anulada')" class="btn text-start border-0">
                                                 <i class="fa fa-fw fa-times"></i>Anular
                                             </button>
                                         }
-                                        @if (salida.estado == 'Aprobada') {
+                                        @if (salida.estado == 'Aprobada' && (apiService.canEditarOtraSalidaInventario() || apiService.canEditTest('productos.inventario.editar'))) {
                                             <button type="button" (click)="generarPartidaContable(salida)" class="btn text-start border-0">
                                                 <i class="fa fa-fw fa-calculator"></i>Generar partida contable
                                             </button>
                                         }
-                                        @if (salida.estado == 'Pendiente') {
+                                        @if (salida.estado == 'Pendiente' && apiService.canDeleteTest('productos.inventario.eliminar')) {
                                             <button type="button" (click)="delete(salida.id)" class="btn text-start text-danger">
                                                 <i class="fa fa-fw fa-trash"></i>Eliminar
                                             </button>

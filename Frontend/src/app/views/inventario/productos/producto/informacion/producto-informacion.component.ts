@@ -118,6 +118,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     }
     return (
       this.apiService.canVerCostosInventario() ||
+      this.apiService.hasPermission('productos.inventario.ver') ||
       this.apiService.canEditTest('productos.editar') ||
       this.apiService.isAdminCreate()
     );
