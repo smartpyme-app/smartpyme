@@ -1651,7 +1651,7 @@ class VentasController extends Controller
                 ->count('id_vendedor');
 
             $destinatarios = [
-                'cristian.g@smartpyme.sv',
+                'cristian.g@smartpyme.app',
             ];
 
             $datos = [

@@ -156,7 +156,7 @@ class AuthorizationService
     // private function notifyAuthorizers(Authorization $authorization)
     // {
     //     Log::info("Notifying authorizers for authorization: " . $authorization->id);
-    //     Mail::to("jose.e@smartpyme.sv")->send(
+    //     Mail::to("jose.e@smartpyme.app")->send(
     //         new AuthorizationRequest($authorization, auth()->user())
     //     );
     // }

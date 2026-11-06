@@ -163,7 +163,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="https://www.smartpyme.sv/wp-content/uploads/2022/09/logo-web-smartpyme-2022-new.png" alt="SmartPyme">
+            <img src="https://www.smartpyme.app/wp-content/uploads/2022/09/logo-web-smartpyme-2022-new.png" alt="SmartPyme">
             <h1>Resumen de ventas recurrentes</h1>
             <p>{{ $empresaNombre }} · {{ $fechaEtiqueta }}</p>
         </div>

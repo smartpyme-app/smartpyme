@@ -32,6 +32,7 @@ use App\Services\MhGovSvGatewayService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
@@ -461,12 +462,17 @@ class ElSalvadorDteService
         }
 
         $correo = CorreoDestinoDte::resolver(is_string($correo) ? $correo : null, $request->input('correo'));
+        if (! is_string($correo) || $correo === '' || ! filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+            return response()->json(['error' => 'Registro sin correo electrónico válido.'], 400);
+        }
 
         $DTE = $registro->dte;
 
         if (! $DTE) {
             return response()->json(['error' => 'El registro no tiene DTE.'], 404);
         }
+
+        $fromAddress = config('mail.from.address', 'no-reply@smartpyme.app');
 
         $registro->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente=' . $DTE['identificacion']['ambiente'] . '&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
 
@@ -477,9 +483,11 @@ class ElSalvadorDteService
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
             $pdfContent = $pdf->output();
 
-            if ($correo) {
-                Mail::send('mails.DTE-Anulado', ['DTE' => $DTE, 'nombre' => $nombre], function ($m) use ($pdfContent, $DTE, $correo, $nombre) {
-                    $m->from('noreply@smartpyme.sv', $DTE['emisor']['nombre'])
+            $fromName = (string) ($DTE['emisor']['nombre'] ?? config('mail.from.name', 'SmartPyme'));
+
+            try {
+                Mail::send('mails.DTE-Anulado', ['DTE' => $DTE, 'nombre' => $nombre], function ($m) use ($pdfContent, $DTE, $correo, $nombre, $fromAddress, $fromName) {
+                    $m->from($fromAddress, $fromName)
                         ->to($correo, $nombre)
                         ->attachData($pdfContent, $DTE['identificacion']['codigoGeneracion'] . '.pdf', [
                             'mime' => 'application/pdf',
@@ -489,11 +497,13 @@ class ElSalvadorDteService
                         ])
                         ->subject('Documento Tributario Electrónico Anulado');
                 });
+            } catch (\Throwable $e) {
+                Log::error('FE SV correo DTE anulado', ['error' => $e->getMessage(), 'id' => $request->id, 'tipo_dte' => $request->tipo_dte]);
 
-                return response()->json($DTE, 200);
+                return response()->json(['error' => 'No se pudo enviar el correo. Intente de nuevo o revise la configuración SMTP.'], 500);
             }
 
-            return response()->json(['error' => 'El cliente no tienen correo'], 400);
+            return response()->json($DTE, 200);
         }
 
         $pdf = null;
@@ -518,9 +528,11 @@ class ElSalvadorDteService
             $nombre = $DTE['sujetoExcluido']['nombre'];
         }
 
-        if ($correo) {
-            Mail::send('mails.DTE', ['DTE' => $DTE, 'nombre' => $nombre], function ($m) use ($pdfContent, $DTE, $correo, $nombre) {
-                $m->from('noreply@smartpyme.sv', $DTE['emisor']['nombre'])
+        $fromName = (string) ($DTE['emisor']['nombre'] ?? config('mail.from.name', 'SmartPyme'));
+
+        try {
+            Mail::send('mails.DTE', ['DTE' => $DTE, 'nombre' => $nombre], function ($m) use ($pdfContent, $DTE, $correo, $nombre, $fromAddress, $fromName) {
+                $m->from($fromAddress, $fromName)
                     ->to($correo, $nombre)
                     ->attachData($pdfContent, $DTE['identificacion']['codigoGeneracion'] . '.pdf', [
                         'mime' => 'application/pdf',
@@ -530,11 +542,13 @@ class ElSalvadorDteService
                     ])
                     ->subject('Documento Tributario Electrónico');
             });
+        } catch (\Throwable $e) {
+            Log::error('FE SV correo DTE', ['error' => $e->getMessage(), 'id' => $request->id, 'tipo_dte' => $request->tipo_dte]);
 
-            return response()->json($DTE, 200);
+            return response()->json(['error' => 'No se pudo enviar el correo. Intente de nuevo o revise la configuración SMTP.'], 500);
         }
 
-        return response()->json(['error' => 'Registro sin correo electrónico'], 400);
+        return response()->json($DTE, 200);
     }
 
     public function consultarDTE(ConsultarDTERequest $request): JsonResponse

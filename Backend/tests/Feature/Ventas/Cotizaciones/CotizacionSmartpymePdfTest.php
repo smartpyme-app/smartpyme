@@ -29,7 +29,7 @@ final class CotizacionSmartpymePdfTest extends TestCase
         $this->assertStringContainsString('1,000.00', $html);
         $this->assertStringContainsString('+ IVA', $html);
         $this->assertStringContainsString('¿Por qué elegir SmartPyme?', $html);
-        $this->assertStringContainsString('contact@smartpyme.sv', $html);
+        $this->assertStringContainsString('contact@smartpyme.app', $html);
     }
 
     public function test_pdf_corto_y_extenso_respetan_saltos_de_pagina(): void

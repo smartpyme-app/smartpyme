@@ -176,7 +176,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="https://www.smartpyme.sv/wp-content/uploads/2022/09/logo-web-smartpyme-2022-new.png" alt="SmartPyme Logo">
+            <img src="https://www.smartpyme.app/wp-content/uploads/2022/09/logo-web-smartpyme-2022-new.png" alt="SmartPyme Logo">
             <h1>Resumen de Facturación Mensual</h1>
         </div>
         

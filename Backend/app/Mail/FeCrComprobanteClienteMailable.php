@@ -32,7 +32,7 @@ class FeCrComprobanteClienteMailable extends Mailable
 
     public function build(): self
     {
-        $fromAddress = config('mail.from.address', 'noreply@smartpyme.sv');
+        $fromAddress = config('mail.from.address', 'no-reply@smartpyme.app');
         $fromName = $this->empresa->nombre ?: (config('mail.from.name') ?: 'SmartPyME');
 
         return $this->from($fromAddress, $fromName)

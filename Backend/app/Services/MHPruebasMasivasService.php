@@ -1495,7 +1495,7 @@ class MHPruebasMasivasService
                     'tipoTexto' => $tipoTexto,
                     'cantidad' => $cantidad
                 ], function ($mensaje) use ($usuario, $tipoTexto) {
-                    // $mensaje->to("jose.e@smartpyme.sv", $usuario->name)
+                    // $mensaje->to("jose.e@smartpyme.app", $usuario->name)
                     $mensaje->to($usuario->email, $usuario->name)
                         ->subject('Error en Pruebas Masivas MH: ' . $tipoTexto);
                 });

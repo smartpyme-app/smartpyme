@@ -31,10 +31,10 @@
                 </p>
 
                 <div class="d-flex justify-content-center">
-                    <a href="https://www.instagram.com/smartpyme.sv" target="_blank" class="btn btn-danger"><i class="fa fa-instagram"></i></a>
-                    <a href="https://www.facebook.com/smartpyme.sv" target="_blank" class="btn btn-primary mx-3"><i class="fa fa-facebook"></i></a>
+                    <a href="https://www.instagram.com/smartpyme.app" target="_blank" class="btn btn-danger"><i class="fa fa-instagram"></i></a>
+                    <a href="https://www.facebook.com/smartpyme.app" target="_blank" class="btn btn-primary mx-3"><i class="fa fa-facebook"></i></a>
                     <a href="https://api.whatsapp.com/send/?phone=50377325932" target="_blank" class="btn btn-success mr-3"><i class="fa fa-whatsapp"></i></a>
-                    <a href="https://www.smartpyme.sv/" target="_blank" class="btn btn-secondary"><i class="fa fa-globe"></i></a>
+                    <a href="https://www.smartpyme.app/" target="_blank" class="btn btn-secondary"><i class="fa fa-globe"></i></a>
                 </div>
             </div>
         </div>

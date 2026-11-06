@@ -91,7 +91,7 @@
 <body>
     <div class="container">
         <div style="text-align: center;">
-            <img width="200px" src="https://www.smartpyme.sv/wp-content/uploads/2022/09/logo-web-smartpyme-2022-new.png" alt="Logo SmartPyme">
+            <img width="200px" src="https://www.smartpyme.app/wp-content/uploads/2022/09/logo-web-smartpyme-2022-new.png" alt="Logo SmartPyme">
         </div>
         <div class="header">
            

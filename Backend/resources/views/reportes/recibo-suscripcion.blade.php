@@ -143,14 +143,14 @@
                 <br>
                 Tel.: +503 7732-5932
                 <br>
-                Email: contact@smartpyme.sv
+                Email: contact@smartpyme.app
             </p>
         </div>
     </div>
     <center>
         <div id="footer">
             <p>SmartPyme Technologies S.A DE S.V</p>
-            <a href="https://www.smartpyme.sv/">smartpyme.sv</a>
+            <a href="https://www.smartpyme.app/">smartpyme.app</a>
         </div>
     </center>
 </body>
