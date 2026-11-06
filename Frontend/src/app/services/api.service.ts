@@ -359,7 +359,8 @@ export class ApiService {
   }
 
   canEmitirFacturaElectronica(): boolean {
-    return this.hasPermission('ventas.facturacion_electronica.emitir');
+    // ponytail: emisión FE no va por permiso granular; la UI ya exige empresa.facturacion_electronica y jwt.
+    return true;
   }
 
   /** SPT-648: crear movimiento en «Otras entradas» (independiente de otros submódulos de inventario). */
