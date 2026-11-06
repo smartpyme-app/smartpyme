@@ -1,5 +1,12 @@
 import { bootstrapApplication } from '@angular/platform-browser';
+import { ErrorHandler, inject, provideAppInitializer } from '@angular/core';
+import { Router } from '@angular/router';
+import * as Sentry from '@sentry/angular';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
+
+import { initSentry } from './app/sentry.init';
+
+initSentry();
 
 // Register AG Grid Community modules
 ModuleRegistry.registerModules([ AllCommunityModule ]);
@@ -43,6 +50,17 @@ import { CountryI18nService } from './app/services/country-i18n.service';
 
 bootstrapApplication(AppComponent, {
   providers: [
+    {
+      provide: ErrorHandler,
+      useValue: Sentry.createErrorHandler({ logErrors: true }),
+    },
+    {
+      provide: Sentry.TraceService,
+      deps: [Router],
+    },
+    provideAppInitializer(() => {
+      inject(Sentry.TraceService);
+    }),
     provideTranslateService({
       fallbackLang: CountryI18nService.FALLBACK_LOCALE,
       lang: CountryI18nService.FALLBACK_LOCALE,
