@@ -1,4 +1,37 @@
 {
-    "_hash": "6142bfcb78f54dfbf5247ae5e463f25bdb8fff1890806e2e45aa81a59c211653",
-    "patches": []
+    "_hash": "c93174869981585fa4f0b264526f363d453f3722008f0f2f24b4ea1548b45b4e",
+    "patches": {
+        "dazza-dev/dgt-xml-generator": [
+            {
+                "package": "dazza-dev/dgt-xml-generator",
+                "description": "Receptor: omitir ubicacion, telefono y correo cuando no vienen del cliente",
+                "url": "patches/dgt-xml-generator-receptor-contacto-opcional.patch",
+                "sha256": "b8617b9e53852d29a8f633865ce98b48cda7a4126c9e6d974e37c94670f94fbf",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            },
+            {
+                "package": "dazza-dev/dgt-xml-generator",
+                "description": "Codigos de referencia 13 a 16 de anexos 4.4",
+                "url": "patches/dgt-xml-generator-codigos-referencia-13-16.patch",
+                "sha256": "ef15d287f15c929f3556a9992a9f3495741601c209c4c702bc1551e2e15340e0",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            },
+            {
+                "package": "dazza-dev/dgt-xml-generator",
+                "description": "Factura electronica de exportacion tipo 09",
+                "url": "patches/dgt-xml-generator-factura-electronica-exportacion.patch",
+                "sha256": "9c296ec6b129d758f253416879354a2debab3df8b23878fc0e0b0f2a4ad1e9a2",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            }
+        ]
+    }
 }
