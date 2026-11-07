@@ -262,6 +262,15 @@ export class GastosComponent implements OnInit {
         this.onSubmit();
     }
 
+    public cancelar(gasto:any){
+        if (gasto.tipo_documento == 'Sujeto excluido' && gasto.sello_mh && !gasto.dte_invalidacion) {
+            this.anularDTE(gasto);
+            return;
+        }
+        gasto.estado = 'Cancelado';
+        this.setEstado(gasto);
+    }
+
     public openAbono(template: TemplateRef<any>, gasto: any) {
         this.gasto = gasto;
         this.modalRef = this.modalService.show(template);
@@ -404,12 +413,12 @@ export class GastosComponent implements OnInit {
         }
     }
 
-    imprimirDTEPDF(gasto:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + gasto.id + '/14/' + '?tipo=gasto&token=' + this.apiService.auth_token(), 'hola', 'width=400');
+    imprimirDTEPDF(gasto:any, anulado = false){
+        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + gasto.id + '/14/' + '?tipo=gasto&token=' + this.apiService.auth_token() + (anulado ? '&documento=anulado' : ''), 'hola', 'width=400');
     }
 
-    imprimirDTEJSON(gasto:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + gasto.id + '/14/' + '?tipo=gasto&token=' + this.apiService.auth_token(), 'hola', 'width=400');
+    imprimirDTEJSON(gasto:any, anulado = false){
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + gasto.id + '/14/' + '?tipo=gasto&token=' + this.apiService.auth_token() + (anulado ? '&documento=anulado' : ''), 'hola', 'width=400');
     }
 
     emitirDTE(){
@@ -461,16 +470,16 @@ export class GastosComponent implements OnInit {
                                 this.gasto.dte_invalidacion.sello = dte.selloRecibido;
                                 this.gasto.estado = 'Anulada';
                                 this.apiService.store('gasto', this.gasto).subscribe(data => {
-                                    // this.alertService.success('Compra guardada.');
+                                    this.saving = false;
                                 },error => {this.alertService.error(error); this.saving = false; });
                             }
 
                             this.alertService.success(this.countryI18n.fe('annulSuccessTitle'), this.countryI18n.fe('annulSuccessBody'));
                         },error => {
-                            if(error.error.descripcionMsg){
+                            if(error.error?.descripcionMsg){
                                 this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
                             }
-                            if(error.error.observaciones.length > 0){
+                            if(error.error?.observaciones?.length > 0){
                                 this.alertService.warning('Hubo un problema', error.error.observaciones);
                             }
                             this.saving = false;
