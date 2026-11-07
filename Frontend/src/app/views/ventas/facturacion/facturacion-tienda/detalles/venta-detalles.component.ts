@@ -82,8 +82,6 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
   @Input() usuarios: any = {};
   /** Desde facturación: al activar, muestra en cada línea el input Cta. terceros junto a Precio. */
   @Input() habilitarCuentaTerceros = false;
-  @Input() customFields: any = {};
-  @Input() selectedCustomFields: number[] = [];
   @Input() cotizacion: number = 0;
   @Input() mode: "create" | "edit" | "show" = "create";
   /** Si no se pasa, se infiere del país FE de la empresa. */
@@ -756,8 +754,7 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
 
   getColumnCount(): number {
     let count = 5; // Base columns (Product, Quantity, Price, Discount, Total, Actions)
-    if (this.usuario.empresa.vendedor_detalle_venta) count++;
-    count += this.selectedCustomFields.length;
+    if (this.usuario?.empresa?.vendedor_detalle_venta) count++;
     return count;
   }
 

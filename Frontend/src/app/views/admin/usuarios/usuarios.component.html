@@ -66,8 +66,8 @@
             <select name="id_sucursal" (change)="loadAll()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default w-auto" style="max-width: 150px;">
                 <option value="">Sucursal</option>
                 @for (sucursal of sucursales; track sucursal.id) {
-                  <option [value]="sucursal.id" [title]="sucursal.nombre">
-                    {{sucursal.nombre}}
+                  <option [value]="sucursal.id" [title]="sucursal?.nombre">
+                    {{sucursal?.nombre}}
                   </option>
                 }
             </select>
@@ -257,7 +257,7 @@
                 <select [(ngModel)]="usuario.id_sucursal" (change)="selectSucursal()" class="form-control form-select" name="id_sucursal">
                     @for (sucursal of sucursales; track sucursal.id) {
                       <option [value]="sucursal.id">
-                        {{ sucursal.nombre }}
+                        {{ sucursal?.nombre }}
                       </option>
                     }
                 </select>
@@ -267,7 +267,7 @@
                 <select [(ngModel)]="usuario.id_bodega" class="form-control form-select" name="id_bodega">
                     @for (bodega of bodegas | filter:'id_sucursal':usuario.id_sucursal; track bodega.id) {
                       <option [value]="bodega.id">
-                        {{ bodega.nombre }}
+                        {{ bodega?.nombre }}
                       </option>
                     }
                 </select>
@@ -277,7 +277,7 @@
                 <select [(ngModel)]="usuario.id_canal" class="form-control form-select" name="id_canal">
                     <option value="">Predeterminado de la empresa</option>
                     <option *ngFor="let canal of canales" [value]="canal.id">
-                        {{ canal.nombre }}
+                        {{ canal?.nombre }}
                     </option>
                 </select>
             </div>
@@ -303,7 +303,7 @@
     <div class="modal-title text-center">
         <h2 class="text-center no-margin">Filtros</h2>
     </div>
-    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
+    <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef?.hide()">
       <span aria-hidden="true">&times;</span>
     </button>
   </div>
@@ -317,7 +317,7 @@
                     <option value="">Todos</option>
                     @for (sucursal of sucursales; track sucursal.id) {
                       <option [value]="sucursal.id">
-                        {{ sucursal.nombre }}
+                        {{ sucursal?.nombre }}
                       </option>
                     }
                 </select>
