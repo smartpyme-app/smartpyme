@@ -871,10 +871,10 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     // Para cotizaciones Pre-venta
     if (this.route.snapshot.queryParamMap.get('cotizacion')) {
       const esEdicion = !!this.route.snapshot.paramMap.get('id');
-      const puedeCrear = this.apiService.canCreateTest('ventas.cotizaciones.crear')
+      const puedeGuardar = this.apiService.canCreateTest(esEdicion ? 'ventas.cotizaciones.editar' : 'ventas.cotizaciones.crear')
         && !this.apiService.restriccionesCotizacionesVendedoresActivas();
-      if (this.apiService.isVentasLimitado() && (esEdicion || !puedeCrear)) {
-        this.alertService.error('No puede crear ni editar cotizaciones.');
+      if (this.apiService.isVentasLimitado() && !puedeGuardar) {
+        this.alertService.error(esEdicion ? 'No puede editar cotizaciones.' : 'No puede crear cotizaciones.');
         this.router.navigate(['/cotizaciones']);
         return;
       }

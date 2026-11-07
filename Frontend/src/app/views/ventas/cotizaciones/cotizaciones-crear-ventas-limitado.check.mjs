@@ -1,7 +1,8 @@
 /**
  * Run: node Frontend/src/app/views/ventas/cotizaciones/cotizaciones-crear-ventas-limitado.check.mjs
  *
- * Ventas limitada con ventas.cotizaciones.crear ve el botón. Sin permiso, o en edición, no entra.
+ * Ventas limitado crea con ventas.cotizaciones.crear y edita con ventas.cotizaciones.editar.
+ * Editar e Imprimir del listado dependen solo del permiso, no del tipo de usuario.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -10,31 +11,41 @@ import { fileURLToPath } from 'node:url';
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const html = fs.readFileSync(path.join(dir, 'cotizaciones.component.html'), 'utf8');
-const condicion = html.split('\n').find((line) => line.includes("ventas.cotizaciones.crear"));
+const lineas = html.split('\n');
+
+const condicion = lineas.find((line) => line.includes("ventas.cotizaciones.crear"));
 assert.ok(condicion, 'falta la condición del botón de cotización');
 assert.match(condicion, /restriccionesCotizacionesVendedoresActivas/);
 assert.doesNotMatch(condicion, /isVentasLimitado/);
 
-function puedeAbrirCrear({ esEdicion, esVentasLimitado, tienePermiso, restriccionEmpresa }) {
+const editar = lineas.find((line) => line.includes('puedeEditarCotizacion()'));
+assert.ok(editar, 'falta la condición de Editar');
+assert.doesNotMatch(editar, /isVentasLimitado/);
+
+const imprimir = lineas.find((line) => line.includes('puedeImprimirFilaCotizacion('));
+assert.ok(imprimir, 'falta la condición de Imprimir');
+assert.doesNotMatch(imprimir, /isVentasLimitado/);
+
+function puedeAbrir({ esEdicion, esVentasLimitado, permisos, restriccionEmpresa }) {
   if (!esVentasLimitado) return true;
-  const puedeCrear = tienePermiso && !restriccionEmpresa;
-  return !(esEdicion || !puedeCrear);
+  const permiso = esEdicion ? 'ventas.cotizaciones.editar' : 'ventas.cotizaciones.crear';
+  return permisos.includes(permiso) && !restriccionEmpresa;
 }
 
-assert.equal(puedeAbrirCrear({
-  esEdicion: false, esVentasLimitado: true, tienePermiso: true, restriccionEmpresa: false,
-}), true);
-assert.equal(puedeAbrirCrear({
-  esEdicion: false, esVentasLimitado: true, tienePermiso: false, restriccionEmpresa: false,
-}), false);
-assert.equal(puedeAbrirCrear({
-  esEdicion: true, esVentasLimitado: true, tienePermiso: true, restriccionEmpresa: false,
-}), false);
+const vl = { esVentasLimitado: true, restriccionEmpresa: false };
+assert.equal(puedeAbrir({ ...vl, esEdicion: false, permisos: ['ventas.cotizaciones.crear'] }), true);
+assert.equal(puedeAbrir({ ...vl, esEdicion: false, permisos: [] }), false);
+assert.equal(puedeAbrir({ ...vl, esEdicion: true, permisos: ['ventas.cotizaciones.crear'] }), false);
+assert.equal(puedeAbrir({ ...vl, esEdicion: true, permisos: ['ventas.cotizaciones.editar'] }), true);
+assert.equal(puedeAbrir({ ...vl, esEdicion: true, permisos: ['ventas.cotizaciones.editar'], restriccionEmpresa: true }), false);
 
-const v1 = fs.readFileSync(
-  path.join(dir, '../facturacion/facturacion-tienda/facturacion.component.ts'),
-  'utf8'
-);
-assert.match(v1, /isVentasLimitado\(\) && \(esEdicion \|\| !puedeCrear\)/);
+for (const rel of [
+  '../facturacion/facturacion-tienda/facturacion.component.ts',
+  '../facturacion/facturacion-tienda-v2/facturacion-v2.component.ts',
+]) {
+  const src = fs.readFileSync(path.join(dir, rel), 'utf8');
+  assert.match(src, /esEdicion \? 'ventas\.cotizaciones\.editar' : 'ventas\.cotizaciones\.crear'/, rel);
+  assert.match(src, /isVentasLimitado\(\) && !puedeGuardar/, rel);
+}
 
 console.log('cotizaciones-crear-ventas-limitado.check: ok');
