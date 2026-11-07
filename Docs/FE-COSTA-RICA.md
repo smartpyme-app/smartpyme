@@ -43,7 +43,7 @@ El backend expone un **proxy** a [api.hacienda.go.cr](https://api.hacienda.go.cr
 
 | Método | Ruta | Parámetros (query) |
 |--------|------|--------------------|
-| GET | `/api/fe-cr/cabys` | `codigo` (13 dígitos) **o** `q` (texto, mín. 3 caracteres); opcional `top` (1–50, default 15) con `q`. |
+| GET | `/api/fe-cr/cabys` | `codigo` (3–13 dígitos; con menos de 13 busca por prefijo) **o** `q` (texto, mín. 3 caracteres); opcional `top` (1–50, default 15). |
 | GET | `/api/fe-cr/contribuyente` | `identificacion` (9–12 dígitos). Equivale a `/fe/ae`. |
 | GET | `/api/fe-cr/exoneracion` | `autorizacion` formato `AL-XXXXXXXX-XX`. Equivale a `/fe/ex`. |
 | GET | `/api/fe-cr/tipo-cambio-dolar` | Sin parámetros. Equivale a `/indicadores/tc/dolar`. |
