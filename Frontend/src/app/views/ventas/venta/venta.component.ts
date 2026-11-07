@@ -53,12 +53,7 @@ export class VentaComponent implements OnInit {
     public abonoEdit:any = {};
 
     modalRef!: BsModalRef;
-    public filtros:any = {
-        bandera: true,
-    };
     public zoomImageUrl: string = '';
-
-    public customFields:any = [];
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
@@ -182,26 +177,7 @@ export class VentaComponent implements OnInit {
         this.loading = true;
         const endpoint = this.type === 'cotizacion' ? 'cotizacion/' : 'venta/';
 
-        // Cargar custom fields si es cotización
-        if (this.type === 'cotizacion') {
-            this.apiService.getAll('custom-fields', this.filtros)
-                .pipe(this.untilDestroyed())
-                .subscribe(
-                    customFields => {
-                        this.customFields = customFields;
-                        // Continuar con la carga de la cotización después de obtener los campos
-                        this.loadCotizacion();
-                        this.cdr.markForCheck();
-                    },
-                    error => {
-                        this.alertService.error(error);
-                        this.loading = false;
-                        this.cdr.markForCheck();
-                    }
-                );
-        } else {
-            this.loadCotizacion();
-        }
+        this.loadCotizacion();
     }
 
     private loadCotizacion() {
@@ -308,20 +284,6 @@ export class VentaComponent implements OnInit {
     public openAbono(template: TemplateRef<any>, venta:any){
         this.venta = venta;
         this.modalRef = this.modalService.show(template);
-    }
-
-    hasCustomField(fieldId: number): boolean {
-
-        return this.venta.detalles?.some((detalle: any) =>
-            detalle.custom_fields?.some((cf: any) => cf.custom_field?.id === fieldId)
-        ) || false;
-    }
-
-    getCustomFieldValue(detalle: any, fieldId: number): string {
-        const customField = detalle.custom_fields?.find(
-            (cf: any) => cf.custom_field?.id === fieldId
-        );
-        return customField ? customField.value : '';
     }
 
     public openModalEditAbono(template: TemplateRef<any>, abono: any) {

@@ -46,6 +46,7 @@ class AjustesController extends Controller
             ->when($request->id_producto, function($query) use ($request){
                 return $query->where('id_producto', $request->id_producto);
             })
+            ->with(['usuario:id,name', 'producto:id,nombre', 'bodega:id,nombre'])
             ->orderBy($request->orden, $request->direccion)
             ->paginate($request->paginate);
 

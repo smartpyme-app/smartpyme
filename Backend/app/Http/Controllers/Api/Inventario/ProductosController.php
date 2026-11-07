@@ -446,6 +446,10 @@ class ProductosController extends Controller
 
         // ── 1. Buscar productos base ──────────────────────────────────────────────
         $with = array_merge([
+            'categoria',
+            'imagenes' => static function ($q) {
+                $q->select('id', 'id_producto', 'img')->limit(1);
+            },
             'inventarios',
             'lotes',
             'composiciones.opciones',
@@ -2175,7 +2179,14 @@ class ProductosController extends Controller
         $productos = Producto::where('enable', true)
             ->where('id_empresa', $request->id_empresa)
             ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
-            ->with(['inventarios', 'precios'])
+            ->with([
+                'categoria',
+                'imagenes' => static function ($q) {
+                    $q->select('id', 'id_producto', 'img')->limit(1);
+                },
+                'inventarios',
+                'precios',
+            ])
             ->where(function ($q) use ($termino, $incluirComponenteQuimico, $incluirNombreComercial) {
                 $q->where('nombre', 'like', "%$termino%")
                     ->orWhere('codigo', 'like', "%$termino%")

@@ -28,14 +28,15 @@ class MHController extends Controller
 
     public function distritos() {
        
-        $distritos = Distrito::orderBy('nombre','asc')->get();
+        // ponytail: eager load appends (nombre_municipio / nombre_departamento) — was N+1 in Sentry
+        $distritos = Distrito::with(['municipio', 'departamento'])->orderBy('nombre','asc')->get();
         return Response()->json($distritos, 200);
 
     }
 
     public function municipios() {
        
-        $municipios = Municipio::orderBy('nombre','asc')->get();
+        $municipios = Municipio::with('departamento')->orderBy('nombre','asc')->get();
         return Response()->json($municipios, 200);
 
     }

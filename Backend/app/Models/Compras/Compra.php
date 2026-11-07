@@ -105,10 +105,10 @@ class Compra extends AuditableModel {
 
     public function getNombreSucursalAttribute()
     {
-        if ($this->sucursal()->first()) {
-            return $this->sucursal()->pluck('nombre')->first();
+        if ($this->relationLoaded('sucursal') && $this->sucursal) {
+            return $this->sucursal->nombre;
         }
-        return '';
+        return (string) ($this->sucursal()->value('nombre') ?? '');
     }
 
     public function getNombreProveedorAttribute()
@@ -136,7 +136,10 @@ class Compra extends AuditableModel {
 
     public function getNombreUsuarioAttribute()
     {
-        return $this->usuario()->pluck('name')->first();
+        if ($this->relationLoaded('usuario') && $this->usuario) {
+            return $this->usuario->name;
+        }
+        return $this->usuario()->value('name');
     }
 
     public function referenciaDocumentoContable(): string

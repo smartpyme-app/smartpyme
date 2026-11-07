@@ -45,17 +45,26 @@ class Ajuste extends AuditableModel {
 
     public function getNombreUsuarioAttribute()
     {
-        return $this->usuario()->pluck('name')->first();
+        if ($this->relationLoaded('usuario') && $this->usuario) {
+            return $this->usuario->name;
+        }
+        return $this->usuario()->value('name');
     }
 
     public function getNombreProductoAttribute()
     {
-        return  $this->producto()->first() ? $this->producto()->pluck('nombre')->first() : '';
+        if ($this->relationLoaded('producto') && $this->producto) {
+            return $this->producto->nombre;
+        }
+        return (string) ($this->producto()->value('nombre') ?? '');
     }
 
     public function getNombreBodegaAttribute()
     {
-        return  $this->bodega()->first() ? $this->bodega()->pluck('nombre')->first() : '';
+        if ($this->relationLoaded('bodega') && $this->bodega) {
+            return $this->bodega->nombre;
+        }
+        return (string) ($this->bodega()->value('nombre') ?? '');
     }
 
     public function bodega(){
