@@ -118,6 +118,10 @@ export class PermissionService {
   }
 
   hasPermission(permission: string): boolean {
+    if (this.verifyRoleAdmin()) {
+      return true;
+    }
+
     if (this.currentUserPermissions.effectivePermissions.length === 0) {
       const storedPermissions = localStorage.getItem('SP_user_permissions');
       if (storedPermissions) {
@@ -174,8 +178,12 @@ export class PermissionService {
   isAdmin(): boolean {
     const usuario = this.getAuthUser();
     if (!usuario) return false;
+    if (this.verifyRoleAdmin()) {
+      return true;
+    }
     if (
       usuario.tipo == 'Administrador' ||
+      usuario.tipo == 'Super Administrador' ||
       usuario.tipo == 'Contador' ||
       usuario.tipo == 'Supervisor' ||
       usuario.tipo == 'Supervisor Limitado'
@@ -258,21 +266,35 @@ export class PermissionService {
 
   // Métodos de verificación de roles basados en permisos
   verifyRoleAdmin(): boolean {
-    let user = localStorage.getItem('SP_user_permissions');
-    if (user) {
-      let role = JSON.parse(user).role;
-      return role === 'super_admin';
+    const stored = localStorage.getItem('SP_user_permissions');
+    if (stored) {
+      try {
+        if (JSON.parse(stored).role === 'super_admin') {
+          return true;
+        }
+      } catch {
+        /* ignore */
+      }
     }
+
+    const usuario = this.getAuthUser();
+    if (usuario?.tipo === 'Super Administrador') {
+      return true;
+    }
+
+    const roles = usuario?.roles;
+    if (Array.isArray(roles)) {
+      return roles.some((r: { name?: string } | string) => {
+        const name = typeof r === 'string' ? r : r?.name;
+        return name === 'super_admin';
+      });
+    }
+
     return false;
   }
 
   isNotSuperAdmin(): boolean {
-    let user = localStorage.getItem('SP_user_permissions');
-    if (user) {
-      let role = JSON.parse(user).role;
-      return role !== 'super_admin';
-    }
-    return true;
+    return !this.verifyRoleAdmin();
   }
 
   isAdminRole(): boolean {
