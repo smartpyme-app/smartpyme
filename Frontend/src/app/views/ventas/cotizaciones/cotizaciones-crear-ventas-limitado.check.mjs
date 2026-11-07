@@ -46,6 +46,10 @@ for (const rel of [
   const src = fs.readFileSync(path.join(dir, rel), 'utf8');
   assert.match(src, /esEdicion \? 'ventas\.cotizaciones\.editar' : 'ventas\.cotizaciones\.crear'/, rel);
   assert.match(src, /isVentasLimitado\(\) && !puedeGuardar/, rel);
+  for (const linea of src.split('\n').filter((l) => l.includes('isVentasLimitado()') && l.includes("router.url.includes('/cotizacion/')"))) {
+    const i = src.indexOf(linea);
+    assert.match(src.slice(i, i + 200), /ventas\.cotizaciones\.editar/, `${rel}: bloqueo de edición sin permiso`);
+  }
 }
 
 console.log('cotizaciones-crear-ventas-limitado.check: ok');

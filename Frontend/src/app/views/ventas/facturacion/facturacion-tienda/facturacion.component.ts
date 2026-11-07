@@ -957,7 +957,8 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
     // Para editar cotizaciones Pre-venta / ventas
     if (this.route.snapshot.paramMap.get('id')) {
-      if (this.apiService.isVentasLimitado() && this.router.url.includes('/cotizacion/')) {
+      if (this.apiService.isVentasLimitado() && this.router.url.includes('/cotizacion/')
+        && !this.apiService.canEditTest('ventas.cotizaciones.editar')) {
         this.alertService.error('No puede editar cotizaciones.');
         this.router.navigate(['/cotizaciones']);
         return;
