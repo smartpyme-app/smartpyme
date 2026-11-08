@@ -32,13 +32,15 @@ class DepreciacionController extends Controller
         $usuario = JWTAuth::parseToken()->authenticate();
         $data = $request->validate([
             'periodo' => ['required', 'date_format:Y-m'],
+            'generar_partida' => ['sometimes', 'boolean'],
         ]);
 
         try {
             $result = $this->depreciacionService->ejecutarCorrida(
                 $usuario->id_empresa,
                 $data['periodo'],
-                $usuario->id
+                $usuario->id,
+                (bool) ($data['generar_partida'] ?? false),
             );
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);

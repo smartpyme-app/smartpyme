@@ -14,6 +14,19 @@ use RuntimeException;
 
 class DepreciacionService
 {
+    public function __construct(
+        private GastosService $gastosService,
+    ) {}
+
+    public static function mesesOmitidosPorSaldoInicial(float $acumuladaInicial, float $cuotaMensual, int $mesesTotales): int
+    {
+        if ($acumuladaInicial <= 0 || $cuotaMensual <= 0 || $mesesTotales <= 0) {
+            return 0;
+        }
+
+        return (int) min(max(0, $mesesTotales - 1), floor($acumuladaInicial / $cuotaMensual));
+    }
+
     private function decimales(int $idEmpresa): int
     {
         return (int) (ActivoConfiguracion::forEmpresa($idEmpresa)->redondeo_decimales ?? 2);
@@ -98,12 +111,23 @@ class DepreciacionService
         $depreciable = max(0, $base - $residual);
         $inicio = Carbon::parse($activo->fecha_inicio_depreciacion ?? $activo->fecha_compra)->startOfMonth();
 
-        $lineas = collect();
-        $acumulada = 0.0;
+        $acumuladaInicial = (float) ($activo->depreciacion_acumulada ?? 0);
+        $skip = self::mesesOmitidosPorSaldoInicial($acumuladaInicial, $cuota, $meses);
+        $mesesGenerar = $meses - $skip;
+        $restante = max(0, $depreciable - $acumuladaInicial);
 
-        for ($i = 0; $i < $meses; $i++) {
-            $monto = ($i === $meses - 1)
-                ? round($depreciable - ($cuota * ($meses - 1)), $dec)
+        if ($mesesGenerar <= 0 || $restante <= 0) {
+            return collect();
+        }
+
+        $inicio = $inicio->copy()->addMonths($skip);
+
+        $lineas = collect();
+        $acumulada = $acumuladaInicial;
+
+        for ($i = 0; $i < $mesesGenerar; $i++) {
+            $monto = ($i === $mesesGenerar - 1)
+                ? round($restante - ($cuota * ($mesesGenerar - 1)), $dec)
                 : $cuota;
 
             $acumulada = round($acumulada + $monto, $dec);
@@ -121,6 +145,38 @@ class DepreciacionService
         }
 
         return $lineas;
+    }
+
+    private function categoriaDepreciaciones(int $idEmpresa): ?Categoria
+    {
+        return Categoria::withoutGlobalScopes()
+            ->where('id_empresa', $idEmpresa)
+            ->where('nombre', 'Depreciaciones')
+            ->first();
+    }
+
+    private function infoPartidaContable(int $idEmpresa): array
+    {
+        $categoria = $this->categoriaDepreciaciones($idEmpresa);
+
+        if (! $categoria) {
+            return [
+                'partida_contable_disponible' => false,
+                'partida_contable_motivo' => 'Configure la categoría de gasto «Depreciaciones».',
+            ];
+        }
+
+        if (empty($categoria->id_cuenta_contable)) {
+            return [
+                'partida_contable_disponible' => false,
+                'partida_contable_motivo' => 'Asigne una cuenta contable a la categoría «Depreciaciones».',
+            ];
+        }
+
+        return [
+            'partida_contable_disponible' => true,
+            'partida_contable_motivo' => null,
+        ];
     }
 
     public function previewCorrida(int $idEmpresa, string $periodo): array
@@ -141,18 +197,18 @@ class DepreciacionService
 
         $dec = $this->decimales($idEmpresa);
 
-        return [
+        return array_merge([
             'periodo' => $periodo,
             'total' => round((float) $lineas->sum('monto'), $dec),
             'cantidad' => $lineas->count(),
             'ya_aplicada' => $yaAplicada,
             'lineas' => $lineas,
-        ];
+        ], $this->infoPartidaContable($idEmpresa));
     }
 
-    public function ejecutarCorrida(int $idEmpresa, string $periodo, int $idUsuario): array
+    public function ejecutarCorrida(int $idEmpresa, string $periodo, int $idUsuario, bool $generarPartida = false): array
     {
-        return DB::transaction(function () use ($idEmpresa, $periodo, $idUsuario) {
+        $resultado = DB::transaction(function () use ($idEmpresa, $periodo, $idUsuario) {
             $preview = $this->previewCorrida($idEmpresa, $periodo);
 
             if ($preview['ya_aplicada']) {
@@ -163,10 +219,7 @@ class DepreciacionService
                 throw new RuntimeException("No hay depreciaciones pendientes para {$periodo}.");
             }
 
-            $categoria = Categoria::withoutGlobalScopes()
-                ->where('id_empresa', $idEmpresa)
-                ->where('nombre', 'Depreciaciones')
-                ->first();
+            $categoria = $this->categoriaDepreciaciones($idEmpresa);
 
             if (! $categoria) {
                 throw new RuntimeException('Configure la categoría de gasto "Depreciaciones" antes de ejecutar la corrida.');
@@ -220,5 +273,27 @@ class DepreciacionService
                 'id_egreso' => $egreso->id,
             ];
         });
+
+        $resultado['partida_generada'] = false;
+        $resultado['partida_id'] = null;
+        $resultado['partida_error'] = null;
+
+        if ($generarPartida) {
+            $info = $this->infoPartidaContable($idEmpresa);
+            if (! $info['partida_contable_disponible']) {
+                $resultado['partida_error'] = $info['partida_contable_motivo'];
+            } else {
+                try {
+                    $egreso = Gasto::withoutGlobalScopes()->findOrFail($resultado['id_egreso']);
+                    $partida = $this->gastosService->crearPartida($egreso);
+                    $resultado['partida_generada'] = true;
+                    $resultado['partida_id'] = $partida['partida_id'] ?? null;
+                } catch (\Throwable $e) {
+                    $resultado['partida_error'] = $e->getMessage();
+                }
+            }
+        }
+
+        return $resultado;
     }
 }
