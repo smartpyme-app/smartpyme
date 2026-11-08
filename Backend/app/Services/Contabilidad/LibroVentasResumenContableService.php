@@ -56,7 +56,32 @@ final class LibroVentasResumenContableService
     }
 
     /**
-     * @param  array<int, array{nombre: string, gravadas: float, exentas: float, no_sujetas: float, debito: float, iva_retenido: float}>  $porDocumento
+     * CR: mismo cuadro armado con las filas del libro de ventas (montos en colones, IVA devuelto restado),
+     * para que el débito coincida con el resumen fiscal.
+     *
+     * @param  array<int, array<string, mixed>>  $filasLibroCr  {@see \App\Services\Contabilidad\CostaRica\ReporteDetalleIvaCrService::filasVentas}
+     * @return array{filas: array<int, array<string, mixed>>}
+     */
+    public function buildDesdeLibroCr(array $filasLibroCr): array
+    {
+        $porDocumento = [];
+        foreach ($filasLibroCr as $f) {
+            $nombre = trim((string) ($f['tipo_doc'] ?? '')) ?: 'Sin documento';
+            $porDocumento[$nombre] ??= $this->vaciosDocumento($nombre);
+            foreach ([13, 8, 4, 2, 1] as $t) {
+                $porDocumento[$nombre]['gravadas'] += (float) ($f['subtotal_'.$t] ?? 0);
+                $porDocumento[$nombre]['debito'] += (float) ($f['iva_'.$t] ?? 0);
+            }
+            $porDocumento[$nombre]['debito'] -= (float) ($f['iva_devuelto'] ?? 0);
+            $porDocumento[$nombre]['exentas'] += (float) ($f['subtotal_exento'] ?? 0);
+            $porDocumento[$nombre]['iva_retenido'] += (float) ($f['retenciones'] ?? 0);
+        }
+
+        return ['filas' => $this->armarFilas($porDocumento)];
+    }
+
+    /**
+     * @param  array<int|string, array{nombre: string, gravadas: float, exentas: float, no_sujetas: float, debito: float, iva_retenido: float}>  $porDocumento
      * @return array<int, array<string, mixed>>
      */
     private function armarFilas(array $porDocumento): array
