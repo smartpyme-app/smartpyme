@@ -28,8 +28,9 @@ class Distrito extends Model {
 
     public function municipio()
     {
-        // Composite key: mismo cod de municipio puede repetirse en otro departamento
-        return $this->belongsTo(Municipio::class, ['cod_municipio', 'cod_departamento'], ['cod', 'cod_departamento']);
+        // ponytail: belongsTo no acepta array en foreignKey (qualifyColumn → str_contains); cruzar por departamento.
+        return $this->belongsTo(Municipio::class, 'cod_municipio', 'cod')
+            ->whereColumn('municipios.cod_departamento', 'distritos.cod_departamento');
     }
 
     public function departamento(){
