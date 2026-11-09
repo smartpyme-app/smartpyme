@@ -35,12 +35,14 @@ export class HaciendaCabysClientService {
     );
   }
 
-  getCabysByCodigo(codigo: string): Observable<unknown> {
+  /** Acepta código completo o prefijo (p. ej. `87152`); Hacienda exige `top` para prefijos. */
+  getCabysByCodigo(codigo: string, top: number = 20): Observable<unknown> {
     const digits = codigo.replace(/\D/g, '');
-    const filtros = { codigo: digits };
+    const topStr = String(top);
+    const filtros = { codigo: digits, top: topStr };
     return this.apiService.getAll('fe-cr/cabys', filtros).pipe(
       catchError(() => {
-        const params = new HttpParams().set('codigo', digits);
+        const params = new HttpParams().set('codigo', digits).set('top', topStr);
         return this.http.get<unknown>(`${this.baseUrl}/fe/cabys`, { params });
       }),
     );

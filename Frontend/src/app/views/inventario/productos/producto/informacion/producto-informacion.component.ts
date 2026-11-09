@@ -169,7 +169,11 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
           this.cabysLoading = true;
           this.cdr.markForCheck();
 
-          return this.haciendaCabys.getCabysByQuery(t, 20).pipe(
+          const busqueda$ = /^\d{3,13}$/.test(t)
+            ? this.haciendaCabys.getCabysByCodigo(t, 50)
+            : this.haciendaCabys.getCabysByQuery(t, 50);
+
+          return busqueda$.pipe(
             map((body) => mapCabysApiResponseToOptions(body)),
             catchError(() => of([])),
             finalize(() => {

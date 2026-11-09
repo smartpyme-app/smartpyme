@@ -117,7 +117,7 @@
                                           <i class="fa fa-fw fa-money-bill"></i> Facturar
                                       </a>
                                   }
-                                  @if (venta.estado == 'Pendiente' && puedeEditarCotizacion() && !apiService.restriccionesCotizacionesVendedoresActivas() && !apiService.isVentasLimitado()) {
+                                  @if (venta.estado == 'Pendiente' && puedeEditarCotizacion() && !apiService.restriccionesCotizacionesVendedoresActivas()) {
                                       <a routerLink="/cotizacion/editar/{{venta.id}}" [queryParams]="{ cotizacion:1 }" class="btn">
                                           <i class="fa fa-fw fa-edit"></i> Editar
                                       </a>
@@ -127,7 +127,7 @@
                                           <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                       </a>
                                   }
-                                  @if (puedeImprimirFilaCotizacion(venta.estado)) {
+                                  @if (puedeImprimirFilaCotizacion()) {
                                       <a (click)="imprimir(venta)" class="btn">
                                           <i class="fa fa-fw fa-print"></i> Imprimir
                                       </a>

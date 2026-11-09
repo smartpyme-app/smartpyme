@@ -12,6 +12,7 @@ use App\Models\Planilla\Planilla;
 use App\Models\Planilla\PlanillaDetalle;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
+use App\Services\Contabilidad\CostaRica\ReporteDetalleIvaCrService;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
 use App\Support\TotalesPorMonedaLibroIva;
 use Carbon\Carbon;
@@ -28,12 +29,16 @@ final class LibroIvaResumenFiscalService
 
     private LibroVentasResumenContableService $ventasResumenContable;
 
+    private ReporteDetalleIvaCrService $detalleIvaCr;
+
     public function __construct(
         FacturacionElectronicaHelperService $feHelper,
-        LibroVentasResumenContableService $ventasResumenContable
+        LibroVentasResumenContableService $ventasResumenContable,
+        ReporteDetalleIvaCrService $detalleIvaCr
     ) {
         $this->feHelper = $feHelper;
         $this->ventasResumenContable = $ventasResumenContable;
+        $this->detalleIvaCr = $detalleIvaCr;
     }
 
     public function build(BaseLibroIVARequest $request): array
@@ -50,7 +55,7 @@ final class LibroIvaResumenFiscalService
             $resumen = $this->buildHondurasYOtros($request, $pais);
         }
 
-        $resumen['ventas_resumen_contable'] = $this->ventasResumenContable->build($request);
+        $resumen['ventas_resumen_contable'] ??= $this->ventasResumenContable->build($request);
 
         if ($empresa && $empresa->tieneFuncionalidadMultimoneda()) {
             $resumen['totales_por_moneda'] = $this->totalesPorMoneda($request);
@@ -115,19 +120,14 @@ final class LibroIvaResumenFiscalService
             2
         );
 
-        $ivaDebito = round(
-            (float) $ventas->sum(fn (Venta $v) => $this->crcMontoLibroCr($v, 'iva'))
-            - (float) $ventas->sum(fn (Venta $v) => (float) ($v->iva_devuelto ?? 0) * $this->tasaCambioLibroCr($v))
-            + (float) $devoluciones->sum(function (DevolucionVenta $d) {
-                $iva = $this->crcMontoLibroCr($d, 'iva');
-
-                return $iva > 0 ? -$iva : $iva;
-            }),
-            2
+        $idSucursal = $request->id_sucursal ? (int) $request->id_sucursal : null;
+        $filasVentas = $this->detalleIvaCr->filasVentas($request->inicio, $request->fin, $idSucursal);
+        $fiscal = ReporteDetalleIvaCrService::resumenFiscal(
+            $filasVentas,
+            $this->detalleIvaCr->filasCompras($request->inicio, $request->fin, $idSucursal)
         );
 
         $comprasLibro = $this->comprasLibroFiscal($request);
-        $gastosLibro = $this->gastosLibroFiscal($request);
 
         return [
             'pais' => $paisNombre,
@@ -139,20 +139,10 @@ final class LibroIvaResumenFiscalService
                 'compras_sin_devoluciones' => round((float) $comprasLibro->sum(fn (Compra $c) => $this->crcMontoLibroCr($c, 'total')), 2),
                 'gastos' => $ctxCompras['total_gastos'],
             ],
-            'ventas_por_impuesto' => $this->ventasPorImpuestoDesdeVentaImpuestos(
-                $ventas,
-                $devoluciones,
-                true
-            ),
-            'compras_por_impuesto' => $this->comprasPorImpuestoDesdeComprasYGastos($comprasLibro, $gastosLibro, true),
-            'iva' => [
-                'iva_a_favor' => $ctxCompras['iva_credito'],
-                'credito_fiscal_compras' => $ctxCompras['credito_compras'],
-                'credito_fiscal_gastos' => $ctxCompras['credito_gastos'],
-                'credito_fiscal_devoluciones_compras' => $ctxCompras['credito_devoluciones'],
-                'iva_en_contra' => $ivaDebito,
-                'diferencia_estimada_pago_iva' => round($ivaDebito - $ctxCompras['iva_credito'], 2),
-            ],
+            'ventas_por_impuesto' => $fiscal['ventas_por_impuesto'],
+            'compras_por_impuesto' => $fiscal['compras_por_impuesto'],
+            'iva' => $fiscal['iva'],
+            'ventas_resumen_contable' => $this->ventasResumenContable->buildDesdeLibroCr($filasVentas),
             'pago_a_cuenta_iva' => [
                 'aplica' => false,
                 'monto' => null,
@@ -162,14 +152,11 @@ final class LibroIvaResumenFiscalService
     }
 
     /**
-     * Ventas del periodo (tabla ventas + venta_impuestos; sin leer DTE en S3).
-     *
      * @return Collection<int, Venta>
      */
     private function ventasLibroCr(BaseLibroIVARequest $request): Collection
     {
         return Venta::query()
-            ->with(['impuestos.impuesto', 'documento'])
             ->where('estado', '!=', 'Anulada')
             ->where('cotizacion', 0)
             ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
@@ -185,7 +172,6 @@ final class LibroIvaResumenFiscalService
     private function devolucionesLibroCr(BaseLibroIVARequest $request): Collection
     {
         return DevolucionVenta::query()
-            ->with(['venta.impuestos.impuesto'])
             ->where('enable', true)
             ->whereHas('venta', fn ($q) => $q->where('estado', '!=', 'Anulada'))
             ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
@@ -195,16 +181,7 @@ final class LibroIvaResumenFiscalService
     }
 
     /**
-     * Totales de compras, gastos e IVA crédito desde tablas (sin DTE/S3).
-     *
-     * @return array{
-     *   total_compras: float,
-     *   total_gastos: float,
-     *   credito_compras: float,
-     *   credito_gastos: float,
-     *   credito_devoluciones: float,
-     *   iva_credito: float
-     * }
+     * @return array{total_compras: float, total_gastos: float}
      */
     private function contextoLibrosComprasCr(BaseLibroIVARequest $request): array
     {
@@ -228,14 +205,6 @@ final class LibroIvaResumenFiscalService
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get();
 
-        $creditoCompras = round((float) $compras->sum(fn (Compra $c) => $this->crcMontoLibroCr($c, 'iva')), 2);
-        $creditoGastos = round((float) $gastos->sum(fn (Gasto $g) => $this->crcMontoLibroCr($g, 'iva')), 2);
-        $creditoDevoluciones = round((float) $devoluciones->sum(function (DevolucionCompra $d) {
-            $iva = $this->crcMontoLibroCr($d, 'iva');
-
-            return $iva > 0 ? -$iva : $iva;
-        }), 2);
-
         $totalCompras = round(
             (float) $compras->sum(fn (Compra $c) => $this->crcMontoLibroCr($c, 'total'))
             + (float) $devoluciones->sum(function (DevolucionCompra $d) {
@@ -246,16 +215,9 @@ final class LibroIvaResumenFiscalService
             2
         );
 
-        $totalGastos = round((float) $gastos->sum(fn (Gasto $g) => $this->crcMontoLibroCr($g, 'total')), 2);
-        $ivaCredito = round($creditoCompras + $creditoGastos + $creditoDevoluciones, 2);
-
         return [
             'total_compras' => $totalCompras,
-            'total_gastos' => $totalGastos,
-            'credito_compras' => $creditoCompras,
-            'credito_gastos' => $creditoGastos,
-            'credito_devoluciones' => $creditoDevoluciones,
-            'iva_credito' => $ivaCredito,
+            'total_gastos' => round((float) $gastos->sum(fn (Gasto $g) => $this->crcMontoLibroCr($g, 'total')), 2),
         ];
     }
 
@@ -493,7 +455,7 @@ final class LibroIvaResumenFiscalService
      * @param  Collection<int, DevolucionVenta>  $devoluciones
      * @return array<int, array{tarifa: string, etiqueta: string, impuesto: string, base: float, iva: float, documentos: int}>
      */
-    private function ventasPorImpuestoDesdeVentaImpuestos(Collection $ventas, Collection $devoluciones, bool $etiquetasCr = false): array
+    private function ventasPorImpuestoDesdeVentaImpuestos(Collection $ventas, Collection $devoluciones): array
     {
         /** @var array<string, array{nombre: string, porcentaje: float, base: float, iva: float, documentos: int}> */
         $buckets = [];
@@ -506,7 +468,7 @@ final class LibroIvaResumenFiscalService
             $this->aplicarDevolucionAlDesgloseImpuestos($devolucion, $buckets);
         }
 
-        return $this->formatearBucketsDesgloseImpuestos($buckets, $etiquetasCr);
+        return $this->formatearBucketsDesgloseImpuestos($buckets);
     }
 
     /**
@@ -730,20 +692,6 @@ final class LibroIvaResumenFiscalService
         }
     }
 
-    private function etiquetaImpuestoCr(string $nombre, float $porcentaje): string
-    {
-        $nombre = trim($nombre);
-        if ($porcentaje > 0.0001) {
-            $pctLabel = abs($porcentaje - round($porcentaje)) < 0.01
-                ? (string) (int) round($porcentaje)
-                : (string) round($porcentaje, 2);
-
-            return 'IVA '.$pctLabel;
-        }
-
-        return $nombre !== '' ? $nombre : 'Impuesto';
-    }
-
     private function porcentajeIvaEmpresa(): float
     {
         $empresa = $this->feHelper->obtenerEmpresa();
@@ -776,19 +724,7 @@ final class LibroIvaResumenFiscalService
      * @param  Collection<int, Compra>  $compras
      * @return array<int, array{tarifa: string, etiqueta: string, impuesto: string, base: float, iva: float, documentos: int}>
      */
-    private function comprasPorImpuestoDesdeCompraImpuestos(Collection $compras, bool $etiquetasCr = false): array
-    {
-        return $this->comprasPorImpuestoDesdeComprasYGastos($compras, collect(), $etiquetasCr);
-    }
-
-    /**
-     * CR: compras del libro + gastos (egresos), que aportan crédito fiscal pero no estaban en el desglose.
-     *
-     * @param  Collection<int, Compra>  $compras
-     * @param  Collection<int, Gasto>  $gastos
-     * @return array<int, array{tarifa: string, etiqueta: string, impuesto: string, base: float, iva: float, documentos: int}>
-     */
-    private function comprasPorImpuestoDesdeComprasYGastos(Collection $compras, Collection $gastos, bool $etiquetasCr = false): array
+    private function comprasPorImpuestoDesdeCompraImpuestos(Collection $compras): array
     {
         /** @var array<string, array{nombre: string, porcentaje: float, base: float, iva: float, documentos: int}> */
         $buckets = [];
@@ -797,26 +733,7 @@ final class LibroIvaResumenFiscalService
             $this->aplicarCompraAlDesgloseImpuestos($compra, $buckets, 1.0);
         }
 
-        foreach ($gastos as $gasto) {
-            $this->aplicarGastoAlDesgloseImpuestos($gasto, $buckets, 1.0);
-        }
-
-        return $this->formatearBucketsDesgloseImpuestos($buckets, $etiquetasCr);
-    }
-
-    /**
-     * @return Collection<int, Gasto>
-     */
-    private function gastosLibroFiscal(BaseLibroIVARequest $request): Collection
-    {
-        return Gasto::query()
-            ->where('estado', '!=', 'Cancelado')
-            ->where('estado', '!=', 'Anulada')
-            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
-            ->whereBetween('fecha', [$request->inicio, $request->fin])
-            ->orderBy('fecha')
-            ->orderBy('id')
-            ->get();
+        return $this->formatearBucketsDesgloseImpuestos($buckets);
     }
 
     /**
@@ -872,73 +789,6 @@ final class LibroIvaResumenFiscalService
         $this->contarDocumentosEnBuckets($buckets, $keysDocumento);
     }
 
-    private function aplicarGastoAlDesgloseImpuestos(Gasto $gasto, array &$buckets, float $signo): void
-    {
-        $keysDocumento = [];
-        $filaLibro = $this->filaLibroSinGastoImpuestos($gasto);
-        if ($filaLibro === null) {
-            return;
-        }
-        if (abs($filaLibro['iva']) > 0.00001) {
-            $this->acumularIvaDesglose(
-                $buckets,
-                $filaLibro['key'],
-                $filaLibro['etiqueta'],
-                $filaLibro['porcentaje'],
-                $signo * $filaLibro['iva'],
-                $keysDocumento
-            );
-        } else {
-            $this->acumularBaseDesglose(
-                $buckets,
-                $filaLibro['key'],
-                $filaLibro['etiqueta'],
-                $signo * $filaLibro['base'],
-                $keysDocumento
-            );
-        }
-        $this->contarDocumentosEnBuckets($buckets, $keysDocumento);
-    }
-
-    /**
-     * @return array{key: string, etiqueta: string, porcentaje: float, base: float, iva: float}|null
-     */
-    private function filaLibroSinGastoImpuestos(Gasto $gasto): ?array
-    {
-        $iva = $this->crcMontoLibroCr($gasto, 'iva');
-        $subBase = (float) ($gasto->sub_total ?? 0) * $this->tasaCambioLibroCr($gasto);
-
-        if ($iva > 0.00001) {
-            $pct = $subBase > 0.00001
-                ? round($iva / $subBase * 100, 2)
-                : $this->porcentajeIvaEmpresa();
-            if ($pct <= 0.0001) {
-                $pct = $this->porcentajeIvaEmpresa();
-            }
-            $base = $subBase > 0.00001 ? $subBase : ($pct > 0 ? $iva / ($pct / 100.0) : 0.0);
-
-            return [
-                'key' => 'gasto_i'.(int) round($pct * 100),
-                'etiqueta' => 'Gravadas (gastos)',
-                'porcentaje' => $pct,
-                'base' => $base,
-                'iva' => $iva,
-            ];
-        }
-
-        if (abs($subBase) < 0.00001) {
-            return null;
-        }
-
-        return [
-            'key' => 'gasto_ex',
-            'etiqueta' => 'Exentas (gastos)',
-            'porcentaje' => 0.0,
-            'base' => $subBase,
-            'iva' => 0.0,
-        ];
-    }
-
     /**
      * Gravado e IVA cuando la compra no tiene filas en compra_impuestos.
      *
@@ -977,7 +827,7 @@ final class LibroIvaResumenFiscalService
      * @param  array<string, array{nombre: string, porcentaje: float, base: float, iva: float, documentos: int}>  $buckets
      * @return array<int, array{tarifa: string, etiqueta: string, impuesto: string, base: float, iva: float, documentos: int}>
      */
-    private function formatearBucketsDesgloseImpuestos(array $buckets, bool $etiquetasCr = false): array
+    private function formatearBucketsDesgloseImpuestos(array $buckets): array
     {
         $out = [];
         foreach ($buckets as $key => $b) {
@@ -994,7 +844,7 @@ final class LibroIvaResumenFiscalService
             $out[] = [
                 'tarifa' => $tarifa,
                 'etiqueta' => $nombre,
-                'impuesto' => $etiquetasCr ? $this->etiquetaImpuestoCr($nombre, $pct) : $nombre,
+                'impuesto' => $nombre,
                 'base' => $base,
                 'iva' => $iva,
                 'documentos' => (int) ($b['documentos'] ?? 0),

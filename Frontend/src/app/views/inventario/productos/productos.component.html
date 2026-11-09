@@ -2,14 +2,14 @@
     <h2 class="page-heading">Inventario</h2>
 
     <div class="d-flex">
-        <button *ngIf="apiService.canCreate() && mostrarTransformacionProductos" routerLink="/transformacion" tooltip="Convertir productos"
+        <button *ngIf="apiService.canCreateTest('productos.crear') && mostrarTransformacionProductos" routerLink="/transformacion" tooltip="Convertir productos"
             class="btn btn-default font-weight-bold me-2"> <img src="/assets/icons/plus.png" class="icon me-2">
             Convertir Producto
         </button>
 
         <app-recalcular-precios-tc contexto="productos" (recalculado)="cargarProductos()"></app-recalcular-precios-tc>
 
-        <button *ngIf="apiService.canCreate()" routerLink="/producto/crear" tooltip="Crear producto (F4)"
+        <button *ngIf="apiService.canCreateTest('productos.crear')" routerLink="/producto/crear" tooltip="Crear producto (F4)"
             class="btn btn-default tcla-F4 font-weight-bold">
             <img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto
         </button>
@@ -129,7 +129,7 @@
                         <th (click)="setOrden('stock')"
                             [ngClass]="{'sorted-asc': filtros.orden == 'stock' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'stock' && filtros.direccion == 'desc'}"
                             class="click text-center">Stock</th>
-                        <th class="text-center" *ngIf="mostrarMenuAcciones()">Más</th>
+                        <th class="text-center">Más</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -278,13 +278,13 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="text-center" *ngIf="mostrarMenuAcciones()">
+                        <td class="text-center">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
                                 <i class="fa fa-ellipsis-vertical fa-fw"></i>
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="d-flex flex-column">
-                                    <button *ngIf="apiService.canEdit()" type="button"
+                                    <button *ngIf="apiService.canEditTest('productos.editar')" type="button"
                                         routerLink="/producto/editar/{{producto.id}}" class="btn text-start border-0">
                                         <img src="/assets/icons/edit.png" class="icon me-2">Editar
                                     </button>
@@ -302,7 +302,7 @@
                                         class="btn text-start border-0 text-black">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalle
                                     </button>
-                                    <button *ngIf="isShopifyActive() && apiService.canEdit()" type="button"
+                                    <button *ngIf="isShopifyActive() && apiService.canEditTest('productos.editar')" type="button"
                                         (click)="abrirModalShopifySync(producto)"
                                         class="btn text-start border-0">
                                         <i class="fa-brands fa-shopify me-2"></i>Sincronizar Shopify

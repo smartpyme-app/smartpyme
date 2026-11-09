@@ -121,11 +121,6 @@ export class ProductosComponent implements OnInit, OnDestroy {
         private funcionalidadesService: FuncionalidadesService
     ) { }
 
-    /** Ocultar acciones solo para supervisor limitado; cada ítem del menú sigue con su permiso/tipo. */
-    mostrarMenuAcciones(): boolean {
-        return !this.apiService.isSupervisorLimitado();
-    }
-
     ngOnInit() {
         this.funcionalidadesService.verificarAcceso('transformacion-productos').subscribe((tieneFuncionalidad) => {
             this.mostrarTransformacionProductos = tieneFuncionalidad

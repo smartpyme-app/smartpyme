@@ -75,7 +75,7 @@
                 [loading]="cabysLoading"
                 [clearable]="true"
                 notFoundText="Sin resultados"
-                placeholder="Escriba al menos 3 letras para buscar (catálogo Hacienda)">
+                placeholder="Escriba la descripción (mín. 3 letras) o el código CABYS (completo o primeros dígitos)">
                 <ng-option *ngFor="let opt of cabysItems" [value]="opt">{{ opt.label }}</ng-option>
             </ng-select>
             <small class="text-danger" *ngIf="cabysInvalido">Debe asignar un código CABYS para guardar.</small>
