@@ -284,14 +284,18 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
         return this.esFeCostaRica() ? '03' : '05';
     }
 
-    imprimirDTEPDF(venta: any) {
+    imprimirDTEPDF(venta: any, anulado = false) {
         const t = this.tipoDteDevolucion(venta);
-        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token() + (anulado ? '&documento=anulado' : ''), 'hola', 'width=400');
     }
 
-    imprimirDTEJSON(venta: any) {
+    imprimirDTEJSON(venta: any, anulado = false) {
         const t = this.tipoDteDevolucion(venta);
-        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token() + (anulado ? '&documento=anulado' : ''), 'hola', 'width=400');
+    }
+
+    tieneDteInvalidacion(venta: any): boolean {
+        return !!(venta?.tiene_dte_invalidacion || venta?.dte_invalidacion || venta?.dte_invalidacion_en_s3);
     }
 
     imprimirDTEXML(venta: any) {
