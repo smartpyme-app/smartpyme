@@ -497,12 +497,19 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
                                                         this.apiService.store('devolucion/venta', this.venta)
                                                             .pipe(this.untilDestroyed())
                                                             .subscribe({
-                                                                next: () => {
-                                                                    // this.alertService.success('Venta guardada.');
+                                                                next: (guardada: any) => {
+                                                                    // OnPush: reemplazar el ítem para que el listado muestre "Anulada" sin recargar.
+                                                                    const idx = this.ventas.data?.findIndex((v: any) => v.id === this.venta.id);
+                                                                    if (idx !== undefined && idx !== -1 && this.ventas.data) {
+                                                                        this.ventas.data[idx] = { ...this.venta, ...(guardada ?? {}) };
+                                                                    }
+                                                                    this.saving = false;
+                                                                    this.cdr.markForCheck();
                                                                 },
                                                                 error: (error) => {
                                                                     this.alertService.error(error);
                                                                     this.saving = false;
+                                                                    this.cdr.markForCheck();
                                                                 }
                                                             });
                                                     }
@@ -517,6 +524,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
                                                         this.alertService.warning('Hubo un problema', error.error.observaciones);
                                                     }
                                                     this.saving = false;
+                                                    this.cdr.markForCheck();
                                                 }
                                             });
                                     },
