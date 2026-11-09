@@ -147,6 +147,13 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
                 if (documento) {
                     this.asignarDocumento(documento);
                 }
+            } else if (tipoDoc === 'evento_retorno') {
+                const documento = this.documentos.find((x: any) => esNombreEventoRetorno(x.nombre));
+                if (documento) {
+                    this.asignarDocumento(documento);
+                } else {
+                    this.alertService.warning('Evento de retorno', 'Cree el documento "Evento de retorno" en la sucursal para poder emitirlo.');
+                }
             } else if (this.documentos.length === 1) {
                 this.asignarDocumento(this.documentos[0]);
             }

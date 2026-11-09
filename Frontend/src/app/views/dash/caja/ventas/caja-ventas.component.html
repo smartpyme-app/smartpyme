@@ -145,9 +145,14 @@
                                             <img src="https://wompi.sv/img/icon.png" width="15px" class="img-fluid" alt=""> Generar enlace de pago
                                         </a>
                                     }
-                                    @if (canDevolucionVenta()) {
+                                    @if (canDevolucionVenta() && !esFacturaConFeSv(venta)) {
                                     <a routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id }" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-right-left"></i> Hacer devolucion
+                                    </a>
+                                    }
+                                    @if (canDevolucionVenta() && esFacturaConFeSv(venta) && venta.sello_mh && venta.estado != 'Anulada') {
+                                    <a routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id, tipo_documento: 'evento_retorno' }" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-right-left"></i> Evento de retorno
                                     </a>
                                     }
                                 </div>

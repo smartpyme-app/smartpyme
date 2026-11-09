@@ -346,6 +346,13 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_SV;
   }
 
+  /** Con FE SV activa, la devolución de una factura/exportación se documenta con Evento de retorno (no devolución libre). */
+  esFacturaConFeSv(venta: any): boolean {
+    return !!this.apiService.auth_user()?.empresa?.facturacion_electronica
+      && this.esFacturacionElSalvador()
+      && ['Factura', 'Factura de exportación'].includes(venta?.nombre_documento);
+  }
+
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
     this.verificarAccesoContabilidad();
