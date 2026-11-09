@@ -2,8 +2,11 @@
 
 namespace App\Providers;
 
+use App\Http\Middleware\NormalizeIncomingTraceHeaders;
 use App\Services\AIService;
 use App\Services\ContextService;
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Foundation\Http\Kernel as HttpKernel;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use App\Models\Inventario\Inventario;
@@ -76,6 +79,14 @@ class AppServiceProvider extends ServiceProvider
         $lc = ['es_ES.UTF-8', 'es_ES.UTF8', 'es_SV.UTF-8', 'C.UTF-8', 'C'];
         @setlocale(LC_ALL, ...$lc);
         @setlocale(LC_TIME, ...$lc);
+
+        $this->app->booted(function () {
+            $kernel = $this->app->make(Kernel::class);
+            if ($kernel instanceof HttpKernel) {
+                // Después del prepend de Sentry: debe ejecutarse antes que Sentry\Laravel\Tracing\Middleware.
+                $kernel->prependMiddleware(NormalizeIncomingTraceHeaders::class);
+            }
+        });
     }
 
     /**
