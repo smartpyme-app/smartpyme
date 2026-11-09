@@ -1187,6 +1187,18 @@ class Empresa extends Model
         return (bool) $this->getCustomConfigValue('configuraciones', 'inventario_reporte_analisis_ventas_mensual', false);
     }
 
+    /**
+     * Reporte automático «Ventas por categoría y vendedor»: sumar IVA de línea (total + iva del detalle).
+     */
+    public function isReporteVentasCategoriaVendedorIncluirIvaHabilitado(): bool
+    {
+        return (bool) $this->getCustomConfigValue(
+            'configuraciones',
+            'reporte_ventas_categoria_vendedor_incluir_iva',
+            false
+        );
+    }
+
     public function isActualizacionMasivaProductosActiva(): bool
     {
         return (bool) $this->getCustomConfigValue('configuraciones', 'actualizacion_masiva_productos', false);
