@@ -976,8 +976,6 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
                             ? 'Revise el mensaje abajo. Abra «XML del comprobante» (recomendado) o «JSON interno» si necesita depurar.'
                             : 'Revise el mensaje en el recuadro de esta ventana.'
                     );
-                } else {
-                    this.alertService.warning('Comprobante electrónico', msg);
                 }
             }
             this.cdr.detectChanges();

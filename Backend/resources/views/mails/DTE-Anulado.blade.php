@@ -34,7 +34,7 @@
             </p>
             <p><b>Código de Generación:</b><br> {{ $DTE['identificacion']['codigoGeneracion'] }}</p>
             <p><b>Sello de Recepción:</b><br> {{ $DTE['sello'] }}</p>
-            <p><b>Fecha y Hora de Generación:</b><br> {{ \Carbon\Carbon::parse($DTE['identificacion']['fecAnula'] . ' ' . $DTE['identificacion']['horAnula'])->format('d/m/Y H:i:s') }}</p>
+            <p><b>Fecha y Hora de Generación:</b><br> {{ \Carbon\Carbon::parse(($DTE['identificacion']['fecEmi'] ?? $DTE['identificacion']['fecAnula']) . ' ' . ($DTE['identificacion']['horEmi'] ?? $DTE['identificacion']['horAnula']))->format('d/m/Y H:i:s') }}</p>
 
             <br><br>
             <p>Este correo electrónico ha sido enviado automáticamente por favor no responder a esta cuenta, de requerir cualquier aclaratoria o información adicional debe comunicarse directamente a la dirección de correo electrónico o teléfono de nuestra empresa.</p>

@@ -360,22 +360,20 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
                     ? mensajeErrorHttpFeCr(error)
                     : String(error?.message ?? error);
             }
+            this.venta = {
+                ...this.venta,
+                errores: msg,
+                ...(feCrIntento ? { fe_cr_intento_emision: feCrIntento } : {}),
+            };
+            const idx = this.ventas.data?.findIndex((v: any) => v.id === this.venta.id);
+            if (idx !== undefined && idx !== -1 && this.ventas.data) {
+                this.ventas.data[idx] = { ...this.venta };
+            }
             if (this.esFeCostaRica()) {
-                this.venta = {
-                    ...this.venta,
-                    errores: msg,
-                    ...(feCrIntento ? { fe_cr_intento_emision: feCrIntento } : {}),
-                };
-                const idx = this.ventas.data?.findIndex((v: any) => v.id === this.venta.id);
-                if (idx !== undefined && idx !== -1 && this.ventas.data) {
-                    this.ventas.data[idx] = { ...this.venta };
-                }
                 this.alertService.info(
                     'Comprobante no emitido',
                     'Revise los problemas indicados en esta ventana.'
                 );
-            } else {
-                this.alertService.warning('Comprobante electrónico', msg);
             }
             this.cdr.markForCheck();
         });

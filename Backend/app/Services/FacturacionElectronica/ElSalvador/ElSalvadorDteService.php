@@ -51,6 +51,20 @@ class ElSalvadorDteService
             return response()->json(['error' => 'Falta configurar los datos de la sucursal.'], 400);
         }
 
+        if ($venta->nombre_documento == 'Factura de exportación' && ! $venta->cliente) {
+            return response()->json(['error' => 'La factura de exportación requiere un cliente.'], 400);
+        }
+
+        if ($venta->nombre_documento == 'Factura de exportación'
+            && (int) $venta->tipo_item_export !== 2
+            && (empty($venta->recinto_fiscal) || empty($venta->regimen))) {
+            return response()->json(['error' => 'La exportación de bienes requiere recinto fiscal y régimen de exportación. Si exporta servicios, seleccione Tipo de Ítem: Servicios.'], 400);
+        }
+
+        if ($error = $this->faltaDistrito($venta->empresa, $venta->cliente, $venta->nombre_documento == 'Crédito fiscal')) {
+            return response()->json(['error' => $error], 400);
+        }
+
         if ($venta->nombre_documento == 'Crédito fiscal') {
             $mh = new MHCCF;
             $DTE = $mh->generarDTE($venta);
@@ -73,6 +87,10 @@ class ElSalvadorDteService
             return response()->json(['error' => 'La devolución no tiene una venta asignada.'], 400);
         }
 
+        if ($error = $this->faltaDistrito($devolucion->empresa, $devolucion->cliente, true)) {
+            return response()->json(['error' => $error], 400);
+        }
+
         if ($devolucion->nombre_documento == 'Nota de crédito') {
             $mh = new MHNotaCredito;
             $DTE = $mh->generarDTE($devolucion);
@@ -88,6 +106,10 @@ class ElSalvadorDteService
 
     public function generarDTESujetoExcluidoGasto(Gasto $gasto): JsonResponse
     {
+        if ($error = $this->faltaDistrito($gasto->empresa, $gasto->proveedor, true)) {
+            return response()->json(['error' => $error], 400);
+        }
+
         $mh = new MHSujetoExcluidoGasto;
         $DTE = $mh->generarDTE($gasto);
 
@@ -96,10 +118,27 @@ class ElSalvadorDteService
 
     public function generarDTESujetoExcluidoCompra(Compra $compra): JsonResponse
     {
+        if ($error = $this->faltaDistrito($compra->empresa, $compra->proveedor, true)) {
+            return response()->json(['error' => $error], 400);
+        }
+
         $mh = new MHSujetoExcluidoCompra;
         $DTE = $mh->generarDTE($compra);
 
         return response()->json($DTE, 200);
+    }
+
+    /** DTE v2+: la dirección exige distrito (CAT-008); se valida antes para no esperar el rechazo del MH. */
+    private function faltaDistrito($empresa, $receptor, bool $receptorObligatorio): ?string
+    {
+        if (empty($empresa?->cod_distrito)) {
+            return 'Falta el distrito en la dirección de la empresa; Hacienda lo exige desde la versión 2.0 del DTE.';
+        }
+        if ($receptorObligatorio && $receptor && empty($receptor->cod_distrito)) {
+            return 'Falta el distrito en la dirección de ' . ($receptor->nombre ?? $receptor->nombre_empresa ?? 'el cliente/proveedor') . '; Hacienda lo exige desde la versión 2.0 del DTE.';
+        }
+
+        return null;
     }
 
     public function generarContingencia(GenerarContingenciaRequest $request): JsonResponse
@@ -525,7 +564,7 @@ class ElSalvadorDteService
             $nombre = $DTE['receptor']['nombre'];
         }
         if ($DTE['identificacion']['tipoDte'] == '14') {
-            $nombre = $DTE['sujetoExcluido']['nombre'];
+            $nombre = ($DTE['receptor'] ?? $DTE['sujetoExcluido'])['nombre'];
         }
 
         $fromName = (string) ($DTE['emisor']['nombre'] ?? config('mail.from.name', 'SmartPyme'));

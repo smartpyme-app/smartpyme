@@ -96,7 +96,7 @@ class MhDteProxyController extends Controller
             ], 502);
         }
 
-        $httpStatus = $auth['status'] >= 400 ? $auth['status'] : 200;
+        $httpStatus = $auth['status'] >= 400 ? $this->statusHaciaCliente($auth['status']) : 200;
 
         return response()->json($decoded, $httpStatus);
     }
@@ -122,6 +122,14 @@ class MhDteProxyController extends Controller
             ], 503);
         }
 
-        return response()->json($result['body'], $result['status']);
+        return response()->json($result['body'], $this->statusHaciaCliente($result['status']));
+    }
+
+    /**
+     * 401/403 del MH no deben llegar como tal: el frontend los interpreta como sesión de SmartPyme expirada.
+     */
+    protected function statusHaciaCliente(int $status): int
+    {
+        return in_array($status, [401, 403], true) ? 502 : $status;
     }
 }

@@ -116,17 +116,18 @@
                         <br>
                     </td>
                     <td style="width: 50%; vertical-align: top;">
-                        @if ($DTE['sujetoExcluido'])
-                            <p><b>Nombre o razón social: </b>{{ \App\Support\NombreComercial::mostrar($DTE['sujetoExcluido']['nombre'] ?? '', $registro ?? ($venta ?? null)) }}</p>
-                            <p><b>Tipo de Documento:</b> {{ $DTE['sujetoExcluido']['tipoDocumento'] == '36' ? 'NIT' : 'DUI' }}</p>
-                            <p><b>Núm de Documento:</b> {{ $DTE['sujetoExcluido']['numDocumento'] }}</p>
-                            <p><b>Act. económica:</b> {{ $DTE['sujetoExcluido']['descActividad'] }}</p>
-                            <p><b>Dirección:</b> {{ $DTE['sujetoExcluido']['direccion']['complemento'] }}
+                        @php($sujeto = $DTE['receptor'] ?? $DTE['sujetoExcluido'] ?? null)
+                        @if ($sujeto)
+                            <p><b>Nombre o razón social: </b>{{ \App\Support\NombreComercial::mostrar($sujeto['nombre'] ?? '', $registro ?? ($venta ?? null)) }}</p>
+                            <p><b>Tipo de Documento:</b> {{ $sujeto['tipoDocumento'] == '36' ? 'NIT' : 'DUI' }}</p>
+                            <p><b>Núm de Documento:</b> {{ $sujeto['numDocumento'] }}</p>
+                            <p><b>Act. económica:</b> {{ $sujeto['descActividad'] }}</p>
+                            <p><b>Dirección:</b> {{ $sujeto['direccion']['complemento'] }}
                                 {{ $registro->proveedor()->pluck('municipio')->first(); }}
                                 {{ $registro->proveedor()->pluck('departamento')->first(); }}
                             </p>
-                            <p><b>Teléfono: </b>{{ $DTE['sujetoExcluido']['telefono'] }}</p>
-                            <p><b>Correo: </b>{{ $DTE['sujetoExcluido']['correo'] }}</p>
+                            <p><b>Teléfono: </b>{{ $sujeto['telefono'] }}</p>
+                            <p><b>Correo: </b>{{ $sujeto['correo'] }}</p>
                         @endif
                     </td>
                 </tr>
@@ -194,12 +195,12 @@
                 <tr>
                     <td colspan="4"></td>
                     <td colspan="2">IVA Retenido: (-) </td>
-                    <td class="text-right">${{ number_format($DTE['resumen']['ivaRete1'], 2) }}</td>
+                    <td class="text-right">${{ number_format($DTE['resumen']['ivaRete1'] ?? 0, 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="4"></td>
                     <td colspan="2">Retención de Renta: </td>
-                    <td class="text-right">${{ number_format($DTE['resumen']['reteRenta'], 2) }}</td>
+                    <td class="text-right">${{ number_format($DTE['resumen']['reteRenta'] ?? 0, 2) }}</td>
                 </tr>
                 @if(isset($registro->propina) && floatval($registro->propina) > 0)
                     <tr>

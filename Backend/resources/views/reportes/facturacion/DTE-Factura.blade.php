@@ -294,12 +294,12 @@
             <tr>
                 <td colspan="4"></td>
                 <td colspan="{{ $muestraColOtrosNoAfectos ? 5 : 4 }}">IVA Retenido: (-) </td>
-                <td class="text-right">${{ number_format($DTE['resumen']['ivaRete1'], 2) }}</td>
+                <td class="text-right">${{ number_format($DTE['resumen']['ivaRete'] ?? $DTE['resumen']['ivaRete1'] ?? 0, 2) }}</td>
             </tr>
             <tr>
                 <td colspan="4"></td>
                 <td colspan="{{ $muestraColOtrosNoAfectos ? 5 : 4 }}">Retención de Renta: </td>
-                <td class="text-right">${{ number_format($DTE['resumen']['reteRenta'], 2) }}</td>
+                <td class="text-right">${{ number_format($DTE['resumen']['reteRenta'] ?? 0, 2) }}</td>
             </tr>
             @if(isset($registro->propina) && floatval($registro->propina) > 0)
                 <tr>

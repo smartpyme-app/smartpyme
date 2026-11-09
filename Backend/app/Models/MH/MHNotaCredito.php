@@ -41,7 +41,7 @@ class MHNotaCredito extends Model
         $this->devolucion->tipoContingencia = NULL; // 1 No disponibilidad de sistema del MH 2 No disponibilidad de sistema del emisor 3 Falla en el suministro de servicio de Internet del Emisor 4 Falla en el suministro de servicio de energía eléctrica del emisor que impida la transmisión de los DTE 5 Otro (deberá digitar un máximo de 500 caracteres explicando el motivo)
         $this->devolucion->motivoContin = NULL;
         $this->devolucion->moneda = 'USD';
-        $this->devolucion->version = 3;
+        $this->devolucion->version = 4;
 
 
         // Condición
@@ -105,6 +105,7 @@ class MHNotaCredito extends Model
             "tipoOperacion" => $this->devolucion->tipoOperacion,
             "tipoContingencia" => $this->devolucion->tipoContingencia,
             "motivoContin" => $this->devolucion->motivoContin,
+            "fusion" => NULL,
             "fecEmi" => \Carbon\Carbon::parse($this->devolucion->fecha)->format('Y-m-d'),
             "horEmi" => \Carbon\Carbon::parse($this->devolucion->created_at)->format('H:i:s'),
             "tipoMoneda" => $this->devolucion->moneda,
@@ -120,10 +121,10 @@ class MHNotaCredito extends Model
             "codActividad" => ActividadEconomicaEmisor::resolver($this->empresa, $this->sucursal ?? null)['cod'],
             "descActividad" => ActividadEconomicaEmisor::resolver($this->empresa, $this->sucursal ?? null)['giro'],
             "nombreComercial" => $this->empresa->nombre_comercial,
-            "tipoEstablecimiento" => $this->sucursal->tipo_establecimiento,
             "direccion" => [
                 "departamento" => $this->empresa->cod_departamento,
                 "municipio" => $this->empresa->cod_municipio,
+                "distrito" => $this->empresa->cod_distrito,
                 "complemento" => $this->empresa->direccion,
             ],
             "telefono" => $this->empresa->telefono,
@@ -134,7 +135,8 @@ class MHNotaCredito extends Model
     protected function receptor(){
 
         return [
-              "nit" =>  $this->devolucion->cliente->nit ? str_replace('-', '', $this->devolucion->cliente->nit) : NULL,
+              "tipoDocumento" => "36",
+              "numDocumento" => str_replace('-', '', (string) ($this->devolucion->cliente->nit ?: $this->devolucion->cliente->dui)),
               "nombreComercial" =>  $this->devolucion->cliente->nombre_empresa,
               "nrc" => str_replace('-', '', $this->devolucion->cliente->ncr),
               "nombre" => $this->devolucion->nombreClienteFiscal(),
@@ -143,6 +145,7 @@ class MHNotaCredito extends Model
               "direccion" => [
                 "departamento" => $this->devolucion->cliente->cod_departamento,
                 "municipio" => $this->devolucion->cliente->cod_municipio,
+                "distrito" => $this->devolucion->cliente->cod_distrito,
                 "complemento" => $this->devolucion->cliente->empresa_direccion ?? $this->devolucion->cliente->direccion,
               ],
               "telefono" => $this->devolucion->cliente->telefono,
@@ -182,24 +185,15 @@ class MHNotaCredito extends Model
         }
 
         $tributos = $this->buildTributosResumen();
-        $cuerpoDocumento = $this->detalles();
+        $ivaPerci = floatval(number_format($this->devolucion->iva_percibido, 2, '.', ''));
+        $ivaRete = floatval(number_format($this->devolucion->iva_retenido, 2, '.', ''));
+        $cuerpoDocumento = $this->agregarRetencionesItemsNota($this->detalles(), $ivaPerci, $ivaRete);
         $bases = $this->resumenVentasDesdeCuerpoDocumento($cuerpoDocumento);
         $subTotal = $bases['subTotalVentas'];
         $totalDescu = floatval(number_format($this->devolucion->descuento, 2, '.', ''));
-        $ivaPerci1 = floatval(number_format($this->devolucion->iva_percibido, 2, '.', ''));
-        $ivaRete1 = floatval(number_format($this->devolucion->iva_retenido, 2, '.', ''));
-        $reteRenta = floatval(number_format($this->devolucion->renta_retenida ?? 0, 2, '.', ''));
-        // NC no tiene totalPagar: MH valida montoTotalOperacion como el neto
-        // (equivalente al totalPagar del CCF: +ivaPerci1 -ivaRete1 -reteRenta).
-        $montoTotalOperacion = floatval(number_format(
-            $this->montoTotalOperacionConTributos($subTotal, $tributos, $totalDescu)
-                + $ivaPerci1
-                - $ivaRete1
-                - $reteRenta,
-            2,
-            '.',
-            ''
-        ));
+        $montoTotalOperacion = $this->montoTotalOperacionConTributos($subTotal, $tributos, $totalDescu);
+        $totalPagar = floatval(number_format($montoTotalOperacion + $ivaPerci - $ivaRete, 2, '.', ''));
+        $this->devolucion->total_en_letras = $this->totalEnLetras($totalPagar);
 
         return 
             [
@@ -214,21 +208,19 @@ class MHNotaCredito extends Model
                   "totalExenta" => $bases['totalExenta'],
                   "totalGravada" => $bases['totalGravada'],
                   "subTotalVentas" => $subTotal,
-                  "descuNoSuj" => 0,
-                  "descuExenta" => 0,
-                  "descuGravada" => floatval(number_format($this->devolucion->descuento, 2, '.', '')),
                   "totalDescu" => $totalDescu,
                   "tributos" => $tributos,
-                  "subTotal" => $subTotal,
-                  "ivaPerci1" => $ivaPerci1,
-                  "ivaRete1" => $ivaRete1,
-                  "reteRenta" => $reteRenta,
                   "montoTotalOperacion" => $montoTotalOperacion,
+                  "ivaPerci" => $ivaPerci,
+                  "totalIva" => 0,
+                  "ivaRete" => $ivaRete,
+                  "totalNoGravado" => 0,
+                  "totalPagar" => $totalPagar,
                   "totalLetras" => $this->devolucion->total_en_letras,
-                  // "totalIva" => floatval(number_format($this->devolucion->iva, 2, '.', '')),
                   "condicionOperacion" => $this->devolucion->cod_condicion,
+                  "observaciones" => $this->devolucion->observaciones ?: NULL,
+                  "codigoRetencionMH" => $this->codigoRetencionMh($ivaRete, $bases['totalGravada']),
                 ],
-                "extension" => NULL,
                 "apendice" => [
                     [
                     "campo" => "empleado",

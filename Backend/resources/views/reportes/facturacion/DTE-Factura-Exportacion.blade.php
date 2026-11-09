@@ -113,19 +113,19 @@
                         
                         <p><b>Teléfono: </b>{{ $DTE['emisor']['telefono'] }}</p>
                         <p><b>Correo: </b>{{ $DTE['emisor']['correo'] }}</p>
-                        <p><b>Correo: </b>{{ $DTE['emisor']['recintoFiscal'] }}</p>
-                        <p><b>Correo: </b>{{ $DTE['emisor']['regimen'] }}</p>
+                        <p><b>Recinto Fiscal: </b>{{ $DTE['emisor']['recintoFiscal'] }}</p>
+                        <p><b>Régimen: </b>{{ $DTE['emisor']['regimen'] }}</p>
                         <br>
                     </td>
                     <td style="width: 50%; vertical-align: top;">
                         @if ($DTE['receptor'])
                             <p><b>Nombre o razón social: </b>{{ \App\Support\NombreComercial::mostrar($DTE['receptor']['nombre'] ?? '', $registro ?? ($venta ?? null)) }}</p>
                             <p><b>Tipo de Documento:</b>
-                                @if($DTE['receptor']['tipoDocumento'] == '13')>DUI @endif
-                                @if($DTE['receptor']['tipoDocumento'] == '36')>NIT @endif
-                                @if($DTE['receptor']['tipoDocumento'] == '03')>Pasaporte @endif
-                                @if($DTE['receptor']['tipoDocumento'] == '02')>Carnet @endif
-                                @if($DTE['receptor']['tipoDocumento'] == '37')>Otro @endif
+                                @if($DTE['receptor']['tipoDocumento'] == '13')DUI @endif
+                                @if($DTE['receptor']['tipoDocumento'] == '36')NIT @endif
+                                @if($DTE['receptor']['tipoDocumento'] == '03')Pasaporte @endif
+                                @if($DTE['receptor']['tipoDocumento'] == '02')Carnet @endif
+                                @if($DTE['receptor']['tipoDocumento'] == '37')Otro @endif
                             </p>
                             <p><b>Núm de Documento:</b> {{ $DTE['receptor']['numDocumento'] }}</p>
                             <p><b>Act. económica:</b> {{ $DTE['receptor']['descActividad'] }}</p>

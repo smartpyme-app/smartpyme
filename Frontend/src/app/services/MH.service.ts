@@ -212,7 +212,7 @@ export class MHService {
 
                     if(dteFirmado.status == 'ERROR'){
                         reject(dteFirmado.body.mensaje);
-                        // reject('No se pudo firmar el DTE, no se encontró el certificado.');
+                        return;
                     }
 
                     venta.dte.firmaElectronica = dteFirmado.body;
@@ -248,7 +248,7 @@ export class MHService {
 
                     if(dteFirmado.status == 'ERROR'){
                         reject(dteFirmado.body.mensaje);
-                        // reject('No se pudo firmar el DTE, no se encontró el certificado.');
+                        return;
                     }
 
                     venta.dte.firmaElectronica = dteFirmado.body;
@@ -283,7 +283,7 @@ export class MHService {
 
                     if(dteFirmado.status == 'ERROR'){
                         reject(dteFirmado.body.mensaje);
-                        // reject('No se pudo firmar el DTE, no se encontró el certificado.');
+                        return;
                     }
 
                     gasto.dte.firmaElectronica = dteFirmado.body;
@@ -318,7 +318,7 @@ export class MHService {
 
                     if(dteFirmado.status == 'ERROR'){
                         reject(dteFirmado.body.mensaje);
-                        // reject('No se pudo firmar el DTE, no se encontró el certificado.');
+                        return;
                     }
 
                     compra.dte.firmaElectronica = dteFirmado.body;
@@ -353,7 +353,7 @@ export class MHService {
 
                     if(dteFirmado.status == 'ERROR'){
                         reject(dteFirmado.body.mensaje);
-                        // reject('No se pudo firmar el DTE, no se encontró el certificado.');
+                        return;
                     }
 
                     venta.dte.firmaElectronica = dteFirmado.body;

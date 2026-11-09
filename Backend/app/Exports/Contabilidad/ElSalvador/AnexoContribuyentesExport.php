@@ -222,8 +222,9 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping, WithCust
     private function nitONrc($cliente, array $dte): string
     {
         $receptor = $dte['receptor'] ?? [];
-        if (!empty($receptor['nit'])) {
-            return str_replace('-', '', (string) $receptor['nit']);
+        $nit = $receptor['nit'] ?? $receptor['numDocumento'] ?? null;
+        if (!empty($nit)) {
+            return str_replace('-', '', (string) $nit);
         }
         if (!empty($receptor['nrc'])) {
             return str_replace('-', '', (string) $receptor['nrc']);

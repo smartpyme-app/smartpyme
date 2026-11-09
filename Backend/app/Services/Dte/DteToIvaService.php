@@ -203,7 +203,7 @@ class DteToIvaService
         $total = (float) ($resumen['totalPagar'] ?? $resumen['montoTotalOperacion'] ?? $document->total_amount ?? 0);
         $subTotal = (float) ($resumen['subTotal'] ?? $resumen['subTotalVentas'] ?? $resumen['totalGravada'] ?? $total);
         $iva = $this->extractIvaFromResumen($resumen);
-        $percepcion = (float) ($resumen['ivaPerci1'] ?? 0);
+        $percepcion = (float) ($resumen['ivaPerci'] ?? $resumen['ivaPerci1'] ?? 0);
         $selloMh = DteJsonHelper::extractSelloRecibido($jsonData);
 
         $formaPago = 'Efectivo';

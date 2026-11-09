@@ -43,7 +43,7 @@ class MHFactura extends Model
         $this->venta->tipoContingencia = NULL; // 1 No disponibilidad de sistema del MH 2 No disponibilidad de sistema del emisor 3 Falla en el suministro de servicio de Internet del Emisor 4 Falla en el suministro de servicio de energía eléctrica del emisor que impida la transmisión de los DTE 5 Otro (deberá digitar un máximo de 500 caracteres explicando el motivo)
         $this->venta->motivoContin = NULL;
         $this->venta->moneda = 'USD';
-        $this->venta->version = 1;
+        $this->venta->version = 2;
 
 
         // Condición
@@ -85,7 +85,7 @@ class MHFactura extends Model
         $partes = explode('.', strval( number_format($this->venta->total - $this->venta->cuenta_a_terceros, 2) ));
 
         $formatter = new NumeroALetras();
-        $n = explode(".", number_format($venta->total,2));
+        $n = explode(".", number_format($this->totalPagar(), 2));
         
         $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
         $centavos = $formatter->toWords($n[1]);
@@ -122,17 +122,15 @@ class MHFactura extends Model
             "codActividad" => ActividadEconomicaEmisor::resolver($this->empresa, $this->sucursal ?? null)['cod'],
             "descActividad" => ActividadEconomicaEmisor::resolver($this->empresa, $this->sucursal ?? null)['giro'],
             "nombreComercial" => $this->empresa->nombre_comercial,
-            "tipoEstablecimiento" => $this->sucursal->tipo_establecimiento,
             "direccion" => [
                 "departamento" => $this->empresa->cod_departamento,
                 "municipio" => $this->empresa->cod_municipio,
+                "distrito" => $this->empresa->cod_distrito,
                 "complemento" => $this->empresa->direccion,
             ],
             "telefono" => $this->empresa->telefono,
-            "codEstableMH" => $this->sucursal->cod_estable_mh ? $this->sucursal->cod_estable_mh : NULL,
-            "codEstable" => $this->empresa->cod_estable ? $this->empresa->cod_estable : NULL,
-            "codPuntoVentaMH" => $this->caja_codigo ? $this->caja_codigo : NULL,
-            "codPuntoVenta" => $this->caja_codigo ? $this->caja_codigo : NULL,
+            "codEstable" => $this->sucursal->cod_estable_mh ?: NULL,
+            "codPuntoVenta" => $this->caja_codigo ?: NULL,
             "correo" => $this->empresa->correo,
         ];
     }
@@ -172,7 +170,7 @@ class MHFactura extends Model
 
         return [
               "tipoDocumento" => $this->venta->cliente->tipo_documento, //36 NIT 13 DUI
-              "numDocumento" => $this->venta->cliente->num_documento,
+              "numDocumento" => str_replace('-', '', $this->venta->cliente->num_documento),
               "nrc" => NULL, // Factura 01: MH exige nrc null en receptor; el NCR del cliente solo aplica en CCF.
               "nombre" => $this->venta->nombreClienteFiscal(),
               "codActividad" => $this->venta->cliente->cod_giro ? $this->venta->cliente->cod_giro : NULL,
@@ -180,10 +178,12 @@ class MHFactura extends Model
               "direccion" => (
                   $this->venta->cliente->cod_departamento &&
                   $this->venta->cliente->cod_municipio &&
+                  $this->venta->cliente->cod_distrito &&
                   ($this->venta->cliente->direccion || $this->venta->cliente->empresa_direccion)
               ) ? [
                   "departamento" => $this->venta->cliente->cod_departamento,
                   "municipio" => $this->venta->cliente->cod_municipio,
+                  "distrito" => $this->venta->cliente->cod_distrito,
                   "complemento" => $this->venta->cliente->direccion ?? $this->venta->cliente->empresa_direccion,
               ] : null,
               "telefono" => $this->venta->cliente->telefono,
@@ -192,15 +192,6 @@ class MHFactura extends Model
     }
 
     public function generarFactura(){
-        $apendice = NULL;
-        
-        if ($this->venta->observaciones ) {
-            $apendice = collect();
-            if ($this->venta->observaciones) {
-                $apendice->push(['etiqueta' => 'Observaciones', 'campo' => 'Observaciones', 'valor'=> $this->venta->observaciones]);
-            }
-        }
-
         if ($this->documentoTieneIva()) {
             $this->venta->gravada = $this->venta->sub_total;
         } elseif (!$this->documentoTieneTributosNoIva()) {
@@ -253,11 +244,10 @@ class MHFactura extends Model
                   "totalDescu" => $totalDescu,
                   "tributos" => $tributosResumen,
                   "subTotal" => $subTotal,
-                  "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
-                  "reteRenta" => floatval(number_format($this->venta->renta_retenida ?? 0, 2, '.', '')),
+                  "ivaRete" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
                   "montoTotalOperacion" => $montoTotalOperacion,
                   "totalNoGravado" => floatval(number_format($this->venta->cuenta_a_terceros, 2, '.', '')),
-                  "totalPagar" => floatval(number_format($this->venta->total, 2, '.', '')),
+                  "totalPagar" => $this->totalPagar(),
                   "totalLetras" => $this->venta->total_en_letras,
                   "totalIva" => $totalIva,
                   "saldoFavor" => 0,
@@ -265,16 +255,16 @@ class MHFactura extends Model
                   "pagos" => [
                     [
                       "codigo" => $this->venta->cod_metodo_pago,
-                      "montoPago" => floatval(number_format($this->venta->total, 2, '.', '')),
+                      "montoPago" => $this->totalPagar(),
                       "referencia" => NULL,
                       "plazo" => $pagoCond['plazo'],
                       "periodo" => $pagoCond['periodo']
                     ]
                   ],
-                  "numPagoElectronico" => ""
+                  "numPagoElectronico" => "",
+                  "observaciones" => $this->venta->observaciones ?: NULL
                 ],
-                "extension" => NULL,
-                "apendice" => $apendice
+                "apendice" => NULL
             ];
     }
 
@@ -517,6 +507,12 @@ class MHFactura extends Model
             'plazo' => $this->obtenerPlazo($this->venta->dias_credito),
             'periodo' => $periodo,
         ];
+    }
+
+    /** DTE v2 ya no informa reteRenta: el total de la venta la descuenta, el DTE no. */
+    private function totalPagar(): float
+    {
+        return floatval(number_format((float) $this->venta->total + (float) ($this->venta->renta_retenida ?? 0), 2, '.', ''));
     }
 
     private function obtenerPlazo($dias_credito) {

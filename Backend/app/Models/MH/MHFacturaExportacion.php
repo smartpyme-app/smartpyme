@@ -41,7 +41,7 @@ class MHFacturaExportacion extends Model
         $this->venta->tipoContingencia = NULL; // 1 No disponibilidad de sistema del MH 2 No disponibilidad de sistema del emisor 3 Falla en el suministro de servicio de Internet del Emisor 4 Falla en el suministro de servicio de energía eléctrica del emisor que impida la transmisión de los DTE 5 Otro (deberá digitar un máximo de 500 caracteres explicando el motivo)
         $this->venta->motivoContin = NULL;
         $this->venta->moneda = 'USD';
-        $this->venta->version = 1;
+        $this->venta->version = 3;
 
 
         // Condición
@@ -93,7 +93,7 @@ class MHFacturaExportacion extends Model
             "tipoModelo" => $this->venta->tipoModelo,
             "tipoOperacion" => $this->venta->tipoOperacion,
             "tipoContingencia" => $this->venta->tipoContingencia,
-            "motivoContigencia" => NULL,
+            "motivoContin" => NULL,
             "fecEmi" => \Carbon\Carbon::parse($this->venta->fecha)->format('Y-m-d'),
             "horEmi" => \Carbon\Carbon::parse($this->venta->created_at)->format('H:i:s'),
             "tipoMoneda" => $this->venta->moneda,
@@ -116,22 +116,22 @@ class MHFacturaExportacion extends Model
             "codActividad" => ActividadEconomicaEmisor::resolver($this->empresa, $this->sucursal ?? null)['cod'],
             "descActividad" => ActividadEconomicaEmisor::resolver($this->empresa, $this->sucursal ?? null)['giro'],
             "nombreComercial" => $this->empresa->nombre_comercial,
-            "tipoEstablecimiento" => $this->sucursal->tipo_establecimiento,
             "direccion" => [
                 "departamento" => $this->empresa->cod_departamento,
                 "municipio" => $this->empresa->cod_municipio,
+                "distrito" => $this->empresa->cod_distrito,
                 "complemento" => $this->empresa->direccion,
             ],
             "telefono" => $this->empresa->telefono,
-            "codEstableMH" => $this->empresa->cod_estable_mh ? $this->empresa->cod_estable_mh : NULL,
-            "codEstable" => $this->empresa->cod_estable ? $this->empresa->cod_estable : NULL,
-            "codPuntoVentaMH" => $this->caja_codigo ? $this->caja_codigo : NULL,
-            "codPuntoVenta" => $this->caja_codigo ? $this->caja_codigo : NULL,
+            "codEstable" => $this->sucursal->cod_estable_mh ?: NULL,
+            "codPuntoVenta" => $this->caja_codigo ?: NULL,
             "correo" => $this->empresa->correo,
-            "tipoItemExpor" => $this->venta->detalles()->first()->producto()->pluck('tipo')->first() == 'Servicio' ? 2 : 1,
-            // "tipoItemExpor" => (int) $this->venta->tipo_item_export,
-            "recintoFiscal" => !empty($this->venta->recinto_fiscal) ? $this->venta->recinto_fiscal : NULL, //Punto de Aduana
-            "regimen" => !empty($this->venta->regimen) ? $this->venta->regimen : NULL,
+            "tipoItemExpor" => (int) $this->venta->tipo_item_export ?: 1,
+            // Servicios (2) no pasan por aduana: recinto y régimen van null aunque la venta los tenga.
+            "recintoFiscal" => $this->venta->tipo_item_export == 2 ? NULL : ($this->venta->recinto_fiscal ?: NULL),
+            // El régimen se guarda como "EX-1.1000.000": tipoRegimen (CAT-033) + "." + regimen (CAT-028).
+            "tipoRegimen" => $this->venta->tipo_item_export == 2 ? NULL : (strstr((string) $this->venta->regimen, '.', true) ?: NULL),
+            "regimen" => $this->venta->tipo_item_export == 2 ? NULL : (substr((string) strstr((string) $this->venta->regimen, '.'), 1) ?: NULL),
         ];
     }
 
@@ -155,7 +155,7 @@ class MHFacturaExportacion extends Model
 
         return [
               "tipoDocumento" => $this->venta->cliente->tipo_documento ?? '36', //36 NIT 13 DUI
-              "numDocumento" => $this->venta->cliente->dui ?? str_replace('-', '', $this->venta->cliente->nit),
+              "numDocumento" => str_replace('-', '', $this->venta->cliente->dui ?? $this->venta->cliente->nit),
               "nombre" => $this->venta->nombreClienteFiscal(),
               "nombreComercial" => $this->venta->cliente->nombre_empresa,
               "descActividad" => $this->venta->cliente->giro ? $this->venta->cliente->giro : NULL,
@@ -170,6 +170,17 @@ class MHFacturaExportacion extends Model
 
     public function generarFactura(){
         $tributos = NULL;
+
+        // C3 es CAT-015 sección 1: debe ir en el ítem y también en resumen.tributos.
+        if ((float) $this->venta->total > 0) {
+            $tributos = collect([
+                [
+                    'codigo' => 'C3',
+                    'descripcion' => 'Impuesto al Valor Agregado (exportaciones) 0%',
+                    'valor' => 0,
+                ],
+            ]);
+        }
 
         if ($this->venta->ambiente == '00') {
             $totalGravada = 0;
@@ -191,22 +202,27 @@ class MHFacturaExportacion extends Model
         return 
             [
                 "identificacion" => $this->identificador(),
+                "documentoRelacionado" => NULL,
                 "emisor" => $this->emisor(),
                 "receptor" => $this->receptor(),
                 "otrosDocumentos" => NULL,
                 "ventaTercero" => NULL,
+                "compraTercero" => NULL,
                 "cuerpoDocumento" => $this->detalles(),
                 "resumen" => [
                   "totalGravada" => $totalGravada,
-                  "descuento" => floatval(number_format(0, 2, '.', '')),
+                  "descuGravada" => floatval(number_format(0, 2, '.', '')),
                   "porcentajeDescuento" => 0,
                   "totalDescu" => floatval(number_format(0, 2, '.', '')),
                   "seguro" => $seguro,
                   "flete" => $flete,
+                  "tributos" => $tributos,
                   "montoTotalOperacion" => $montoTotalOperacion,
                   "totalNoGravado" => 0,
+                  "totalNoOnerosas" => 0,
                   "totalPagar" => $montoTotalOperacion,
                   "totalLetras" => $this->venta->total_en_letras,
+                  "saldoFavor" => 0,
                   "condicionOperacion" => $pagoCond['condicionOperacion'],
                   "pagos" => [
                     [
@@ -217,10 +233,10 @@ class MHFacturaExportacion extends Model
                       "periodo" => $pagoCond['periodo']
                     ]
                   ],
-                    "numPagoElectronico" => "",
+                    "numPagoElectronico" => NULL,
                     "codIncoterms" => $this->venta->cod_incoterm,
                     "descIncoterms" => $this->venta->incoterm,
-                    "observaciones" => NULL,
+                    "observaciones" => $this->venta->observaciones ?: NULL,
                 ],
                 "apendice" => [
                     [
@@ -251,8 +267,6 @@ class MHFacturaExportacion extends Model
                 $detalle->tipo_item = 1;
             }
 
-            $tributos = NULL;
-
             $detalle->codTributo = NULL;
 
             // if ($this->venta->iva > 0) {
@@ -263,8 +277,16 @@ class MHFacturaExportacion extends Model
                 $detalle->gravada = $detalle->total;
             // }
 
+            // FEX: si ventaGravada > 0, tributos debe ser arreglo CAT-015 (C3 = IVA exportaciones 0%).
+            // null solo cuando no hay gravada; [] también lo rechaza Hacienda.
+            $ventaGravada = floatval(number_format($detalle->gravada, 2, '.', ''));
+            $tributos = $ventaGravada > 0 ? ['C3'] : null;
+
             $detalles->push([
                 "numItem" => $index + 1,
+                "tipoItem" => $detalle->tipo_item,
+                "numeroDocumento" => NULL,
+                "codTributo" => NULL,
                 "codigo" => $detalle->codigo,
                 "descripcion" => $detalle->nombre_producto,
                 "cantidad" => floatval($detalle->cantidad),

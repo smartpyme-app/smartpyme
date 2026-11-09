@@ -36,7 +36,7 @@ class MHSujetoExcluidoGasto extends Model
         $this->gasto->tipoContingencia = NULL; // 1 No disponibilidad de sistema del MH 2 No disponibilidad de sistema del emisor 3 Falla en el suministro de servicio de Internet del Emisor 4 Falla en el suministro de servicio de energía eléctrica del emisor que impida la transmisión de los DTE 5 Otro (deberá digitar un máximo de 500 caracteres explicando el motivo)
         $this->gasto->motivoContin = NULL;
         $this->gasto->moneda = 'USD';
-        $this->gasto->version = 1;
+        $this->gasto->version = 2;
 
         // Condición
             if ($this->gasto->condicion == 'Crédito'){
@@ -116,13 +116,12 @@ class MHSujetoExcluidoGasto extends Model
             "direccion" => [
                 "departamento" => $this->empresa->cod_departamento,
                 "municipio" => $this->empresa->cod_municipio,
+                "distrito" => $this->empresa->cod_distrito,
                 "complemento" => $this->empresa->direccion,
             ],
             "telefono" => $this->empresa->telefono,
-            "codEstableMH" => $this->sucursal->cod_estable_mh ? $this->sucursal->cod_estable_mh : NULL,
-            "codEstable" => $this->sucursal->cod_estable_mh ? $this->sucursal->cod_estable_mh : NULL,
-            "codPuntoVentaMH" => NULL,
-            "codPuntoVenta" => NULL,
+            "codEstable" => $this->sucursal->cod_estable_mh ?: NULL,
+            "codPuntoVenta" => $this->caja_codigo ?: NULL,
             "correo" => $this->empresa->correo,
         ];
     }
@@ -133,30 +132,26 @@ class MHSujetoExcluidoGasto extends Model
         $apendice = NULL;
         $this->gasto->proveedor = $this->gasto->proveedor()->first();
 
-        // Sujeto excluido: NIT (36) y DUI (13) van sin guiones (el MH lo acepta así en ambiente 00 y 01).
-        // Pasaporte (03), carnet (02) y otro (37) se envían tal cual los guardó el usuario.
         $proveedor = $this->gasto->proveedor;
         $proveedor->tipo_documento = TipoIdentificacionReceptor::elSalvador($proveedor->tipo_documento, $proveedor->nit, $proveedor->dui);
         $proveedor->num_documento = $proveedor->tipo_documento
             ? TipoIdentificacionReceptor::numeroElSalvador($proveedor->tipo_documento, $proveedor->nit, $proveedor->dui)
             : NULL;
-        if (in_array($proveedor->tipo_documento, ['13', '36'], true) && $proveedor->num_documento) {
-            $proveedor->num_documento = str_replace('-', '', $proveedor->num_documento);
-        }
 
         return 
             [
                 "identificacion" => $this->identificacion(),
                 "emisor" => $this->emisor(),
-                "sujetoExcluido" =>  [
+                "receptor" =>  [
                     "tipoDocumento" => $this->gasto->proveedor->tipo_documento, //36 NIT 13 DUI
-                    "numDocumento" => $this->gasto->proveedor->num_documento,
+                    "numDocumento" => str_replace('-', '', $this->gasto->proveedor->num_documento),
                     "nombre" => $this->gasto->nombreProveedorFiscal(),
                     "codActividad" => $this->gasto->proveedor->cod_giro ? $this->gasto->proveedor->cod_giro : NULL,
                     "descActividad" => $this->gasto->proveedor->giro ? $this->gasto->proveedor->giro : NULL,
                     "direccion" => [
                         "departamento" => $this->gasto->proveedor->cod_departamento,
                         "municipio" => $this->gasto->proveedor->cod_municipio,
+                        "distrito" => $this->gasto->proveedor->cod_distrito,
                         "complemento" => $this->gasto->proveedor->direccion
                     ],
                     "telefono" => $this->gasto->proveedor->telefono,
@@ -168,7 +163,6 @@ class MHSujetoExcluidoGasto extends Model
                   "descu" => floatval(number_format($this->gasto->descuento, 2, '.', '')),
                   "totalDescu" => floatval(number_format($this->gasto->descuento, 2, '.', '')),
                   "subTotal" => floatval(number_format($this->gasto->sub_total + $this->gasto->iva, 2, '.', '')),
-                  "ivaRete1" => floatval(number_format($this->gasto->iva_retenido ?? 0, 2, '.', '')),
                   "reteRenta" => floatval(number_format($this->gasto->renta_retenida ?? 0, 2, '.', '')),
                   "totalPagar" => floatval(number_format($this->gasto->total, 2, '.', '')),
                   "totalLetras" => $this->gasto->total_en_letras,
@@ -182,7 +176,7 @@ class MHSujetoExcluidoGasto extends Model
                           "periodo" => NULL
                         ]
                     ],
-                  "observaciones" => null
+                  "observaciones" => $this->gasto->nota ?: NULL
                 ],
                 "apendice" => $apendice
             ];
