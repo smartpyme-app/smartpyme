@@ -90,7 +90,7 @@ class GenerarDTEAnuladoRequest extends FormRequest
     {
         return [
             'id' => ['required', 'integer'],
-            'tipo_dte' => ['required', 'string', 'in:01,03,05,06,11'],
+            'tipo_dte' => ['required', 'string', 'in:01,03,05,06,11,18'],
         ];
     }
 

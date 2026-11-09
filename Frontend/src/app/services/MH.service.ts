@@ -94,7 +94,8 @@ export class MHService {
         formData.ambiente = venta.dte.identificacion.ambiente;
         formData.idEnvio = venta.id;
         formData.version = venta.dte.identificacion.version;
-        formData.tipoDte = venta.dte.identificacion.tipoDte;
+        // El evento de retorno (18) trae tipoEvento en lugar de tipoDte.
+        formData.tipoDte = venta.dte.identificacion.tipoDte ?? venta.dte.identificacion.tipoEvento;
         formData.documento = dteFirmado;
         formData.codigoGeneracion = venta.dte.codigoGeneracion;
 
@@ -106,7 +107,7 @@ export class MHService {
 
         let formData:any = {};
         formData.nitEmisor = user.empresa.nit.replace(/-/g, '');
-        formData.tdte = venta.dte?.identificacion?.tipoDte ?? venta.tipo_dte;
+        formData.tdte = venta.dte?.identificacion?.tipoDte ?? venta.dte?.identificacion?.tipoEvento ?? venta.tipo_dte;
         formData.codigoGeneracion = venta.dte?.identificacion?.codigoGeneracion
             ?? venta.codigo_generacion
             ?? venta.dte?.codigoGeneracion;
@@ -258,7 +259,7 @@ export class MHService {
                             venta.dte.sello = dte.selloRecibido;
                             venta.dte.selloRecibido = dte.selloRecibido;
                             venta.sello_mh = dte.selloRecibido;
-                            venta.tipo_dte = venta.dte?.identificacion?.tipoDte ?? dte.tipo_dte ?? dte.tipoDte;
+                            venta.tipo_dte = venta.dte?.identificacion?.tipoDte ?? venta.dte?.identificacion?.tipoEvento ?? dte.tipo_dte ?? dte.tipoDte;
                             venta.numero_control = dte.numero_control;
                             // venta.estado = 'Emitido';
                             this.apiService.store('devolucion/venta', venta).subscribe(data => {

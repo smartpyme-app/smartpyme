@@ -98,7 +98,7 @@ class EnviarDTERequest extends FormRequest
     {
         return [
             'id' => ['required', 'integer'],
-            'tipo_dte' => ['required', 'string', 'in:01,02,03,04,05,06,08,09,11,14'],
+            'tipo_dte' => ['required', 'string', 'in:01,02,03,04,05,06,08,09,11,14,18'],
             // 'tipo' solo aplica a compra/gasto (FEC 14/08). Para el resto (NC 03, factura 01, etc.) el frontend
             // envía el objeto completo del registro con su propio 'tipo' (p. ej. devolucion): excluirlo evita el
             // falso error "El tipo debe ser compra o gasto".

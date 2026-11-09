@@ -351,6 +351,11 @@
                     @endif
                 </td>
             </tr>
+            @if (!empty($DTE['resumen']['observaciones']))
+                <tr>
+                    <td colspan="2"><b>Observaciones:</b> {{ $DTE['resumen']['observaciones'] }}</td>
+                </tr>
+            @endif
             @if (isset($DTE['apendice']))
                 @foreach ($DTE['apendice'] as $atributo)
                 <tr>

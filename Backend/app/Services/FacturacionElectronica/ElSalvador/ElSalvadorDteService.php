@@ -18,6 +18,7 @@ use App\Models\MH\MH;
 use App\Models\MH\MHAnulacion;
 use App\Models\MH\MHCCF;
 use App\Models\MH\MHContingencia;
+use App\Models\MH\MHEventoRetorno;
 use App\Models\MH\MHFactura;
 use App\Models\MH\MHFacturaExportacion;
 use App\Models\MH\MHNotaCredito;
@@ -85,6 +86,19 @@ class ElSalvadorDteService
     {
         if (! $devolucion->venta) {
             return response()->json(['error' => 'La devolución no tiene una venta asignada.'], 400);
+        }
+
+        if ($devolucion->nombre_documento == 'Evento de retorno') {
+            $original = $devolucion->venta->dte;
+            if (! $devolucion->venta->sello_mh || ! in_array($original['identificacion']['tipoDte'] ?? null, ['01', '11'], true)) {
+                return response()->json(['error' => 'El evento de retorno solo aplica a facturas o facturas de exportación con sello de Hacienda.'], 400);
+            }
+            // Plazo del MH: hasta 3 meses desde la fecha de generación del DTE.
+            if (\Carbon\Carbon::parse($devolucion->fecha)->gt(\Carbon\Carbon::parse($original['identificacion']['fecEmi'])->addMonthsNoOverflow(3))) {
+                return response()->json(['error' => 'El evento de retorno solo puede aplicarse dentro de los 3 meses siguientes a la fecha del documento.'], 400);
+            }
+
+            return response()->json((new MHEventoRetorno)->generarDTE($devolucion), 200);
         }
 
         if ($error = $this->faltaDistrito($devolucion->empresa, $devolucion->cliente, true)) {
@@ -180,7 +194,7 @@ class ElSalvadorDteService
 
     public function generarDTEAnulado(GenerarDTEAnuladoRequest $request): JsonResponse
     {
-        if ($request->tipo_dte == '05' || $request->tipo_dte == '06') {
+        if (in_array($request->tipo_dte, ['05', '06', '18'])) {
             $venta = DevolucionVenta::where('id', $request->id)->firstOrFail();
         } else {
             $venta = Venta::where('id', $request->id)->firstOrFail();
@@ -366,7 +380,7 @@ class ElSalvadorDteService
             $registro = Venta::findOrFail($id);
         }
 
-        if ($tipo == '05' || $tipo == '06') {
+        if (in_array($tipo, ['05', '06', '18'])) {
             $registro = DevolucionVenta::findOrFail($id);
         }
 
@@ -406,28 +420,33 @@ class ElSalvadorDteService
         $registro->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente=' . $DTE['identificacion']['ambiente'] . '&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
 
         $pdf = null;
-        if ($DTE['identificacion']['tipoDte'] == '01') {
+        $tipoDte = $DTE['identificacion']['tipoDte'] ?? $DTE['identificacion']['tipoEvento'] ?? null;
+        if ($tipoDte == '01') {
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
         }
-        if ($DTE['identificacion']['tipoDte'] == '14') {
+        if ($tipoDte == '14') {
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Sujeto-Excluido', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
         }
-        if ($DTE['identificacion']['tipoDte'] == '03') {
+        if ($tipoDte == '03') {
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-CCF', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
         }
-        if ($DTE['identificacion']['tipoDte'] == '11') {
+        if ($tipoDte == '11') {
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura-Exportacion', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
         }
-        if ($DTE['identificacion']['tipoDte'] == '05') {
+        if ($tipoDte == '05') {
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Nota-Credito', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
         }
-        if ($DTE['identificacion']['tipoDte'] == '06') {
+        if ($tipoDte == '06') {
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Nota-Debito', compact('registro', 'DTE'));
+            $pdf->setPaper('US Letter', 'portrait');
+        }
+        if ($tipoDte == '18') {
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Evento-Retorno', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
         }
 
@@ -442,7 +461,7 @@ class ElSalvadorDteService
             $registro = Venta::findOrFail($id);
         }
 
-        if ($tipo == '05' || $tipo == '06') {
+        if (in_array($tipo, ['05', '06', '18'])) {
             $registro = DevolucionVenta::findOrFail($id);
         }
 
@@ -478,7 +497,7 @@ class ElSalvadorDteService
             $correo = $registro->cliente ? $registro->cliente->correo : null;
         }
 
-        if ($request->tipo_dte == '05' || $request->tipo_dte == '06') {
+        if (in_array($request->tipo_dte, ['05', '06', '18'])) {
             $registro = DevolucionVenta::with('cliente')->where('id', $request->id)->firstOrFail();
             $correo = $registro->cliente ? $registro->cliente->correo : null;
         }
@@ -545,27 +564,23 @@ class ElSalvadorDteService
             return response()->json($DTE, 200);
         }
 
-        $pdf = null;
-        if ($DTE['identificacion']['tipoDte'] == '01') {
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura', compact('registro', 'DTE'));
-        } elseif ($DTE['identificacion']['tipoDte'] == '11') {
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura-Exportacion', compact('registro', 'DTE'));
-        } elseif ($DTE['identificacion']['tipoDte'] == '05') {
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Nota-Credito', compact('registro', 'DTE'));
-        } elseif ($DTE['identificacion']['tipoDte'] == '14') {
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Sujeto-Excluido', compact('registro', 'DTE'));
-        } elseif ($DTE['identificacion']['tipoDte'] == '03') {
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-CCF', compact('registro', 'DTE'));
+        $vistas = [
+            '01' => 'DTE-Factura',
+            '03' => 'DTE-CCF',
+            '05' => 'DTE-Nota-Credito',
+            '06' => 'DTE-Nota-Debito',
+            '11' => 'DTE-Factura-Exportacion',
+            '14' => 'DTE-Sujeto-Excluido',
+            '18' => 'DTE-Evento-Retorno',
+        ];
+        $tipoDte = $DTE['identificacion']['tipoDte'] ?? $DTE['identificacion']['tipoEvento'] ?? null;
+        if (! isset($vistas[$tipoDte])) {
+            return response()->json(['error' => 'Tipo de documento sin representación gráfica.'], 400);
         }
+        $pdfContent = app('dompdf.wrapper')->loadView('reportes.facturacion.' . $vistas[$tipoDte], compact('registro', 'DTE'))->output();
 
-        $pdfContent = $pdf->output();
-
-        if ($DTE['identificacion']['tipoDte'] == '01' || $DTE['identificacion']['tipoDte'] == '05' || $DTE['identificacion']['tipoDte'] == '03' || $DTE['identificacion']['tipoDte'] == '11') {
-            $nombre = $DTE['receptor']['nombre'];
-        }
-        if ($DTE['identificacion']['tipoDte'] == '14') {
-            $nombre = ($DTE['receptor'] ?? $DTE['sujetoExcluido'])['nombre'];
-        }
+        // Evento de retorno identifica al receptor en "documento"; FSE v1 en "sujetoExcluido".
+        $nombre = $DTE['receptor']['nombre'] ?? $DTE['sujetoExcluido']['nombre'] ?? $DTE['documento']['nombre'] ?? '';
 
         $fromName = (string) ($DTE['emisor']['nombre'] ?? config('mail.from.name', 'SmartPyme'));
 

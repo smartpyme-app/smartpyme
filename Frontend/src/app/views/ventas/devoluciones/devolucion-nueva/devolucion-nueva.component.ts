@@ -21,6 +21,7 @@ import {
 import { AlertsHaciendaComponent } from '@shared/parts/alerts-hacienda/alerts-hacienda.component';
 import { FeCrEmisionAvanzadoComponent } from '@shared/parts/fe-cr-emision-avanzado/fe-cr-emision-avanzado.component';
 import {
+    esNombreEventoRetorno,
     esNombreNotaCredito,
     esNombreNotaCreditoODebito,
     esNombreNotaDebito,
@@ -127,10 +128,12 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
         this.apiService.getAll('documentos/list')
             .pipe(this.untilDestroyed())
             .subscribe(documentos => {
+            // Evento de retorno solo sobre Factura (01) o Factura de exportación (11) ya selladas por Hacienda.
+            const permiteRetorno = ['01', '11'].includes(String(this.venta?.tipo_dte)) && !!this.venta?.sello_mh;
             this.documentos = (documentos ?? []).filter(
                 (doc: any) =>
                     doc.id_sucursal == idSucursal &&
-                    esNombreNotaCreditoODebito(doc.nombre)
+                    (esNombreNotaCreditoODebito(doc.nombre) || (permiteRetorno && esNombreEventoRetorno(doc.nombre)))
             );
 
             const tipoDoc = this.route.snapshot.queryParamMap.get('tipo_documento');
@@ -266,7 +269,8 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
                 .pipe(this.untilDestroyed())
                 .subscribe(devolucion => {
                 const empresa = this.apiService.auth_user()?.empresa;
-                const esNotaCreditoODebito = esNombreNotaCreditoODebito(devolucion.nombre_documento);
+                const esNotaCreditoODebito = esNombreNotaCreditoODebito(devolucion.nombre_documento)
+                    || esNombreEventoRetorno(devolucion.nombre_documento);
 
                 if (
                     isImpresionEnFacturacionActiva(empresa) &&
@@ -288,6 +292,9 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
     private tipoDteDevolucion(d: any): string {
         if (d?.tipo_dte) {
             return String(d.tipo_dte);
+        }
+        if (esNombreEventoRetorno(d?.nombre_documento)) {
+            return '18';
         }
         return this.esFeCostaRica()
             ? '03'
