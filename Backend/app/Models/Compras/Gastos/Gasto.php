@@ -165,7 +165,10 @@ class Gasto extends AuditableModel {
 
     public function getNombreProveedorAttribute()
     {
-        $proveedor = $this->relationLoaded('proveedor') ? $this->proveedor : $this->proveedor()->first();
+        if ($this->relationLoaded('proveedor') && $this->proveedor) {
+            return $this->proveedor->nombreParaDocumento();
+        }
+        $proveedor = $this->proveedor()->first();
         if ($proveedor) {
             return $proveedor->nombreParaDocumento();
         }
@@ -174,6 +177,9 @@ class Gasto extends AuditableModel {
 
     public function nombreProveedorFiscal(): string
     {
+        if ($this->relationLoaded('proveedor') && $this->proveedor) {
+            return $this->proveedor->nombreLegal();
+        }
         $proveedor = $this->proveedor()->first();
         if ($proveedor) {
             return $proveedor->nombreLegal();
