@@ -18,4 +18,16 @@ class NormalizeIncomingTraceHeadersTest extends TestCase
 
         $this->assertSame('a=1,b=2', $request->headers->get('baggage'));
     }
+
+    public function test_flattens_authorization_for_bearer_token_extraction(): void
+    {
+        $request = Request::create('/api/municipios', 'GET');
+        $request->headers->set('Authorization', ['Bearer eyJ.test.token'], false);
+
+        $middleware = new NormalizeIncomingTraceHeaders();
+        $middleware->handle($request, static fn (Request $r) => new \Symfony\Component\HttpFoundation\Response('ok'));
+
+        $this->assertSame('Bearer eyJ.test.token', $request->headers->get('Authorization'));
+        $this->assertSame('eyJ.test.token', $request->bearerToken());
+    }
 }

@@ -193,6 +193,15 @@ class Handler extends ExceptionHandler
                 );
             }
 
+            if ($exception instanceof \TypeError && str_contains($exception->getMessage(), 'str_contains()')) {
+                Log::error('TypeError str_contains en API', [
+                    'path' => $request->path(),
+                    'method' => $request->method(),
+                    'file' => $exception->getFile(),
+                    'line' => $exception->getLine(),
+                ]);
+            }
+
             Log::error('Unhandled API exception', ['exception' => $exception]);
 
             return $this->applyCorsToApi(

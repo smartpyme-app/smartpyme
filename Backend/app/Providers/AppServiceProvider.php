@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Http\Middleware\NormalizeIncomingTraceHeaders;
+use App\Http\Middleware\SentryTracingMiddleware;
 use App\Services\AIService;
+use Sentry\Laravel\Tracing\Middleware as SentryVendorTracingMiddleware;
 use App\Services\ContextService;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
@@ -40,6 +42,13 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(AIService::class, function ($app) {
             return new AIService();
         });
+
+        $this->app->extend(SentryVendorTracingMiddleware::class, function ($service, $app) {
+            $tracing = config('sentry.tracing', []);
+            $continueAfterResponse = ($tracing['continue_after_response'] ?? true) === true;
+
+            return new SentryTracingMiddleware($continueAfterResponse);
+        });
     }
 
     /**
@@ -74,19 +83,19 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Schema::defaultStringLength(191);
+        $this->app->booted(function () {
+            $kernel = $this->app->make(Kernel::class);
+            if ($kernel instanceof HttpKernel) {
+                // Después del prepend de Sentry: ejecutar antes que Tracing\Middleware.
+                $kernel->prependMiddleware(NormalizeIncomingTraceHeaders::class);
+            }
+        });
         \Carbon\Carbon::setLocale(config('app.locale'));
         // Evitar fallos raros en CLI (composer / package:discover) si el locale no existe en el SO.
         $lc = ['es_ES.UTF-8', 'es_ES.UTF8', 'es_SV.UTF-8', 'C.UTF-8', 'C'];
         @setlocale(LC_ALL, ...$lc);
         @setlocale(LC_TIME, ...$lc);
 
-        $this->app->booted(function () {
-            $kernel = $this->app->make(Kernel::class);
-            if ($kernel instanceof HttpKernel) {
-                // Después del prepend de Sentry: debe ejecutarse antes que Sentry\Laravel\Tracing\Middleware.
-                $kernel->prependMiddleware(NormalizeIncomingTraceHeaders::class);
-            }
-        });
     }
 
     /**

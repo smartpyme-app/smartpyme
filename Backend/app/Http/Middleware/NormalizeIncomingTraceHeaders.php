@@ -12,7 +12,8 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class NormalizeIncomingTraceHeaders
 {
-    private const TRACE_HEADERS = ['baggage', 'sentry-trace', 'traceparent'];
+    // ponytail: Authorization con valores anidados rompe bearerToken() → str_contains() en Laravel.
+    private const TRACE_HEADERS = ['baggage', 'sentry-trace', 'traceparent', 'authorization'];
 
     public function handle(Request $request, Closure $next): Response
     {
