@@ -1563,10 +1563,14 @@ export class GastoComponent implements OnInit {
           this.gasto.renta = true;
         }
 
-        // IVA retenido (resumen DTE: ivaRete1)
+        // DTE 2.0 renombró ivaRete1/ivaPerci1 a ivaRete/ivaPerci; se aceptan ambos.
+        const ivaRete = jsonData.resumen.ivaRete ?? jsonData.resumen.ivaRete1;
+        const ivaPerci = jsonData.resumen.ivaPerci ?? jsonData.resumen.ivaPerci1;
+
+        // IVA retenido
         if (
-          jsonData.resumen.ivaRete1 != null &&
-          parseFloat(jsonData.resumen.ivaRete1) > 0
+          ivaRete != null &&
+          parseFloat(ivaRete) > 0
         ) {
           this.gasto.retencion = true;
           if (this.varios_items && this.detalles.length) {
@@ -1578,16 +1582,16 @@ export class GastoComponent implements OnInit {
               this.recalcularDetalleLinea(idx)
             );
           } else {
-            this.gasto.iva_retenido = parseFloat(jsonData.resumen.ivaRete1);
+            this.gasto.iva_retenido = parseFloat(ivaRete);
           }
         }
 
         // Percepción
         if (
-          jsonData.resumen.ivaPerci1 &&
-          parseFloat(jsonData.resumen.ivaPerci1) > 0
+          ivaPerci &&
+          parseFloat(ivaPerci) > 0
         ) {
-          this.gasto.iva_percibido = parseFloat(jsonData.resumen.ivaPerci1);
+          this.gasto.iva_percibido = parseFloat(ivaPerci);
           this.gasto.percepcion = true;
         }
 

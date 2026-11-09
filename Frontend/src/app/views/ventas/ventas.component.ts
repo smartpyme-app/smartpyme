@@ -1712,7 +1712,8 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   openModalAnulacion(template: TemplateRef<any>, venta: any) {
     const configurarYAbrir = (v: any) => {
       this.venta = { ...v };
-      this.fechaAnulacion = this.apiService.date();
+      // El MH valida la fecha del evento contra la del documento; por defecto se propone la del DTE.
+      this.fechaAnulacion = String(v?.dte?.identificacion?.fecEmi ?? v?.fecha ?? '').substring(0, 10) || this.apiService.date();
       this.tipoAnulacion = 2;
       this.motivoAnulacion = '';
       this.codigoGeneracionRemplazo = '';
