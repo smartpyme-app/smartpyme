@@ -136,7 +136,7 @@ class MHDTEController extends Controller
 
     public function generarDTEAnulado(GenerarDTEAnuladoRequest $request)
     {
-        if ($request->tipo_dte == '05' || $request->tipo_dte == '06') {
+        if (in_array($request->tipo_dte, ['05', '06', '18'])) {
             $registro = DevolucionVenta::where('id', $request->id)->with('empresa')->firstOrFail();
         } else {
             $registro = Venta::where('id', $request->id)->with('empresa')->firstOrFail();
