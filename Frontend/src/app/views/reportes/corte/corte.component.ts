@@ -71,7 +71,7 @@ export class CorteComponent implements OnInit {
             .pipe(this.untilDestroyed())
             .subscribe(usuarios => {
                 this.usuarios = usuarios;
-                if((this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) && this.apiService.validateRole('usuario_supervisor', false) ){
+                if (!this.puedeVerCierresDeTodos()) {
                     this.usuarios = this.usuarios.filter((item:any) => item.id == this.apiService.auth_user().id );
                 }
                 this.cdr.markForCheck();
@@ -89,6 +89,16 @@ export class CorteComponent implements OnInit {
 
     public esUsuarioVentas(): boolean {
         return this.usuario.tipo == 'Ventas' || this.usuario.tipo == 'Ventas Limitado';
+    }
+
+    public puedeVerCierresDeTodos(): boolean {
+        const tipo = this.usuario?.tipo;
+        if (tipo === 'Administrador' || tipo === 'Super Administrador') {
+            return true;
+        }
+        return this.apiService.validateRole('admin')
+            || this.apiService.validateRole('super_admin')
+            || this.apiService.validateRole('usuario_supervisor');
     }
 
     public onCriterioChange(){
