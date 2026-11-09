@@ -43,7 +43,10 @@ class Documento extends Model {
     }
 
     public function getNombreSucursalAttribute(){
-        return $this->sucursal()->pluck('nombre')->first();
+        if ($this->relationLoaded('sucursal') && $this->sucursal) {
+            return $this->sucursal->nombre;
+        }
+        return $this->sucursal()->value('nombre');
     }
 
     public function sucursal(){

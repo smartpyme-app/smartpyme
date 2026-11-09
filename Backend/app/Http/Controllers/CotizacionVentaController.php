@@ -61,6 +61,9 @@ class CotizacionVentaController extends Controller
         $ordenes = CotizacionVenta::with(
             'cliente:id,nombre,apellido,tipo,nombre_empresa',
             'usuario:id,name',
+            'vendedor:id,name',
+            'documento:id,nombre',
+            'sucursal:id,nombre',
             'tieneOrdenProduccion'
         )->when($request->inicio, function ($query) use ($request) {
             return $query->whereBetween('fecha', [$request->inicio, $request->fin]);

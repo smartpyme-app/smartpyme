@@ -76,7 +76,7 @@ class CotizacionVenta extends AuditableModel
 
     public function getNombreClienteAttribute()
     {
-        $cliente = $this->cliente()->first();
+        $cliente = $this->relationLoaded('cliente') ? $this->cliente : $this->cliente()->first();
         if ($cliente) {
             return $cliente->nombreParaDocumento();
         }
@@ -95,22 +95,34 @@ class CotizacionVenta extends AuditableModel
 
     public function getNombreUsuarioAttribute()
     {
-        return $this->usuario()->pluck('name')->first();
+        if ($this->relationLoaded('usuario') && $this->usuario) {
+            return $this->usuario->name;
+        }
+        return $this->usuario()->value('name');
     }
 
     public function getNombreVendedorAttribute()
     {
-        return $this->usuario()->pluck('name')->first();
+        if ($this->relationLoaded('vendedor') && $this->vendedor) {
+            return $this->vendedor->name;
+        }
+        return $this->vendedor()->value('name');
     }
 
     public function getNombreSucursalAttribute()
     {
-        return $this->sucursal()->pluck('nombre')->first();
+        if ($this->relationLoaded('sucursal') && $this->sucursal) {
+            return $this->sucursal->nombre;
+        }
+        return $this->sucursal()->value('nombre');
     }
 
     public function getNombreDocumentoAttribute()
     {
-        return $this->documento()->pluck('nombre')->first();
+        if ($this->relationLoaded('documento') && $this->documento) {
+            return $this->documento->nombre;
+        }
+        return $this->documento()->value('nombre');
     }
 
    
