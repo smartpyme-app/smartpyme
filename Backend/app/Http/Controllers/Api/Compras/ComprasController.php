@@ -144,6 +144,10 @@ class ComprasController extends Controller
             return $bloqueado;
         }
 
+        $orden = $compra->num_orden_compra
+            ? \App\Models\OrdenCompra::where('id', $compra->num_orden_compra)->with('detalles')->first()
+            : null;
+
             // Ajustar stocks
             foreach ($compra->detalles as $detalle) {
 
@@ -176,6 +180,16 @@ class ComprasController extends Controller
                         $inventario->stock -= $cantidadBase;
                         $inventario->save();
                         $inventario->kardex($compra, $cantidadBase * -1);
+                    }
+
+                    if ($orden) {
+                        $detalleOrden = $orden->detalles->where('id_producto', $detalle->id_producto)->first();
+                        if ($detalleOrden) {
+                            $detalleOrden->cantidad_procesada = max(0, (float) $detalleOrden->cantidad_procesada - (float) $detalle->cantidad);
+                            $detalleOrden->save();
+                        }
+                        $orden->estado = 'Pendiente';
+                        $orden->save();
                     }
 
                     // Abonos
@@ -456,6 +470,10 @@ class ComprasController extends Controller
 
 
 
+            }
+
+            if ($compra->num_orden_compra) {
+                app(\App\Services\Compras\OrdenCompraService::class)->actualizarDesdeCompra($compra, $request->detalles);
             }
 
         // SE CAMBIO PARA IMPORTACIÓN MASIVA JSON: Correlativo en catálogo `documentos`: (1) flujo legado sin cambios, (2) importación masiva JSON (flag explícito).
@@ -1033,10 +1051,13 @@ class ComprasController extends Controller
                 }, 'cliente')
                 ->firstOrFail();
             
-            $orden_compra = Compra::withoutGlobalScope('empresa')->where('id', $request->num_orden)
-                ->where('cotizacion', 1)
+            $orden_compra = \App\Models\OrdenCompra::withoutGlobalScope('empresa')->where('id', $request->num_orden)
                 ->with('detalles', 'proveedor')
-                ->firstOrFail();
+                ->first()
+                ?? Compra::withoutGlobalScope('empresa')->where('id', $request->num_orden)
+                    ->where('cotizacion', 1)
+                    ->with('detalles', 'proveedor')
+                    ->firstOrFail();
 
             // Buscar si ya existe una compra con el mismo tipo de documento, proveedor y correlativo
             $compraExistente = Compra::withoutGlobalScope('empresa')->where('tipo_documento', $venta->nombre_documento)
