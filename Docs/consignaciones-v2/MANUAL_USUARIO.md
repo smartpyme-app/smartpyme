@@ -48,8 +48,12 @@ Si no está habilitado, **no verás cambios** respecto a SmartPyme estándar.
 
 ### 4.4 Consultar trazabilidad
 
-- Menú **Inventario → Kardex de consigna** (nombre final según UI).
-- Filtre por fechas; use **Exportar Excel** si su rol tiene permiso de exportación.
+- Menú **Kardex consigna**: movimientos del ledger (proveedor, ventas, liquidaciones).
+- **Custodia clientes**: mercadería en consigna salida aún no facturada al cliente; botón **Conteo** para ajustes físicos.
+
+### 4.5 Traslados entre bodegas
+
+Si parte del stock es consigna de proveedor, al editar una línea del traslado indique **Cantidad en consigna (proveedor)**. El inventario físico se traslada igual; el ledger registra el pool consigna en ambas bodegas.
 
 ## 5. Preguntas frecuentes (soporte)
 

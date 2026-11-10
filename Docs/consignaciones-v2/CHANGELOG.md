@@ -19,6 +19,13 @@
 - Mi cuenta: switch **Kardex de consignaciones** (`consignaciones_ledger_activo`).
 - Menú compras: enlace **Kardex consigna** (con permiso).
 
+### Fase 2
+
+- Tabla `consigna_custodias` sincronizada con entregas/liquidaciones/ajustes del ledger.
+- UI `/consigna-custodia` con conteo físico → movimiento `ajuste_consigna`.
+- Traslados: campo `cantidad_consigna` por línea → `traslado_consigna` en ledger.
+- Con ledger activo, compras consigna registran kardex clásico como `Compra` (sin duplicar “Compra a consigna”).
+
 ### Comandos
 
 - `php artisan consigna:ledger-backfill --empresa=ID [--dry-run]` — backfill histórico opcional.

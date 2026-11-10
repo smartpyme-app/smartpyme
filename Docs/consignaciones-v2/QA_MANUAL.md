@@ -52,6 +52,20 @@
 | 6.1 | Venta consigna + remisión | Movimiento entrega cliente; kardex físico como hoy | |
 | 6.2 | Facturar parcial consigna | `liquidacion_cliente`; sin segunda salida stock | |
 
+## 8. Fase 2 — Custodia y conteo
+
+| # | Paso | Resultado esperado | OK |
+|---|------|-------------------|-----|
+| 8.1 | Venta consigna salida a cliente (remisión) | Fila en **Custodia clientes** con cantidad | |
+| 8.2 | Liquidación parcial cliente | Custodia baja; ledger `liquidacion_cliente` | |
+| 8.3 | Conteo físico con cantidad distinta | Ajuste `ajuste_consigna`; saldo actualizado | |
+
+## 9. Fase 2 — Traslado con consigna
+
+| # | Paso | Resultado esperado | OK |
+|---|------|-------------------|-----|
+| 9.1 | Traslado confirmado con `cantidad_consigna` ≤ cantidad | 2 movimientos `traslado_consigna` en kardex consigna | |
+
 ## 7. Permisos
 
 | # | Paso | Resultado esperado | OK |

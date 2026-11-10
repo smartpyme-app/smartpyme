@@ -30,6 +30,7 @@ class StoreTrasladoRequest extends FormRequest
             'detalles' => ['required', 'array', 'min:1'],
             'detalles.*.id_producto' => ['required', 'integer', 'exists:productos,id'],
             'detalles.*.cantidad' => ['required', 'numeric', 'min:0.01'],
+            'detalles.*.cantidad_consigna' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 

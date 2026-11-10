@@ -8,6 +8,7 @@ use App\Models\Admin\Empresa;
 use App\Models\Inventario\ConsignaMovimiento;
 use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Models\Ventas\Venta;
+use App\Services\Inventario\ConsignaCustodiaService;
 use App\Services\Inventario\ConsignaMovimientoService;
 use Illuminate\Console\Command;
 
@@ -92,6 +93,11 @@ class ConsignaLedgerBackfillCommand extends Command
             });
 
         $this->info(($dryRun ? '[dry-run] ' : '') . "Entradas consigna: {$entradas}, líneas venta: {$ventas}");
+
+        if (! $dryRun) {
+            $filasCustodia = app(ConsignaCustodiaService::class)->reconstruirDesdeLedger((int) $empresaId);
+            $this->info("Custodias cliente reconstruidas: {$filasCustodia} filas.");
+        }
 
         return self::SUCCESS;
     }

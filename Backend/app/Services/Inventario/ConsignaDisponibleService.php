@@ -38,6 +38,12 @@ class ConsignaDisponibleService
 
     public function calcularDisponible(int $idProducto, int $idBodega, ?int $excluirVentaId = null): float
     {
+        $idEmpresa = (int) (Producto::query()->where('id', $idProducto)->value('id_empresa') ?? 0);
+        $empresa = $idEmpresa > 0 ? Empresa::query()->find($idEmpresa) : null;
+        if ($empresa?->isModuloConsignacionesLedgerActivo()) {
+            return $this->calcularDisponibleProveedorDesdeLedger($idEmpresa, $idProducto, $idBodega);
+        }
+
         $entrada = $this->sumEntradaComprasConsigna($idProducto, $idBodega);
         $salida = $this->sumSalidaVentasDesdeConsignaCompra($idProducto, $idBodega, $excluirVentaId);
         $liquidado = $this->sumLiquidadoComprasConsigna($idProducto, $idBodega);
@@ -381,7 +387,7 @@ class ConsignaDisponibleService
     }
 
     // ponytail: O(n) scan por producto/bodega; upgrade: agregados SQL por tipo en ConsignaMovimientoService
-    private function calcularDisponibleProveedorDesdeLedger(int $idEmpresa, int $idProducto, int $idBodega): float
+    public function calcularDisponibleProveedorDesdeLedger(int $idEmpresa, int $idProducto, int $idBodega): float
     {
         $entrada = 0.0;
         $ventasConsigna = 0.0;

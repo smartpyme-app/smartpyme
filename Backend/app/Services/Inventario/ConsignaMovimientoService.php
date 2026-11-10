@@ -89,7 +89,44 @@ class ConsignaMovimientoService
         $movimiento->id_usuario = $payload['id_usuario'] ?? auth()->id();
         $movimiento->save();
 
+        app(ConsignaCustodiaService::class)->aplicarDesdeMovimiento($movimiento);
+
         return $movimiento;
+    }
+
+    public function trasladoConsignaEntreBodegas(
+        int $idEmpresa,
+        int $idTraslado,
+        int $idProducto,
+        float $cantidadConsigna,
+        int $idBodegaOrigen,
+        int $idBodegaDestino,
+        ?string $fecha = null
+    ): void {
+        if ($cantidadConsigna <= 0 || ! $this->isLedgerActivo($idEmpresa)) {
+            return;
+        }
+
+        $base = [
+            'id_producto' => $idProducto,
+            'id_traslado' => $idTraslado,
+            'fecha' => $fecha,
+            'nota' => 'Traslado mercadería en consigna',
+        ];
+
+        $this->registrar($idEmpresa, array_merge($base, [
+            'tipo' => ConsignaMovimientoTipoConstants::TRASLADO_CONSIGNA,
+            'cantidad' => -$cantidadConsigna,
+            'id_bodega' => $idBodegaOrigen,
+            'idempotency_key' => 'traslado-' . $idTraslado . '-out-' . $idProducto,
+        ]));
+
+        $this->registrar($idEmpresa, array_merge($base, [
+            'tipo' => ConsignaMovimientoTipoConstants::TRASLADO_CONSIGNA,
+            'cantidad' => $cantidadConsigna,
+            'id_bodega' => $idBodegaDestino,
+            'idempotency_key' => 'traslado-' . $idTraslado . '-in-' . $idProducto,
+        ]));
     }
 
     public function entradaProveedorDesdeCompra(

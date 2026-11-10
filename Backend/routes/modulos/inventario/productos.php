@@ -112,6 +112,10 @@ Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, '
         ->middleware('permission:inventario.consigna_kardex.ver');
     Route::get('/productos/consigna-kardex/exportar', [\App\Http\Controllers\Api\Inventario\ConsignaKardexController::class, 'export'])
         ->middleware('permission:inventario.consigna_kardex.exportar');
+    Route::get('/productos/consigna-custodia', [\App\Http\Controllers\Api\Inventario\ConsignaCustodiaController::class, 'index'])
+        ->middleware('permission:inventario.consigna_kardex.ver');
+    Route::post('/productos/consigna-custodia/conteo', [\App\Http\Controllers\Api\Inventario\ConsignaCustodiaController::class, 'conteo'])
+        ->middleware('permission:inventario.consigna_kardex.ver');
 
 // Promociones
     Route::get('promociones',        [PromocionesController::class, 'index']);

@@ -63,7 +63,11 @@ class Inventario extends Model {
         else if ($clase == 'App\Models\Compras\Compra') {
             if ($cantidad > 0) {
                 $entradaCantidad =  $cantidad;
-                $clase = $modelo->estado == 'Consigna' ? 'Compra a consigna' : 'Compra';
+                $esConsignaCompra = $modelo->estado == 'Consigna';
+                // ponytail: consulta Empresa por línea de kardex; cache por request si hay ráfaga
+                $ledgerActivo = $esConsignaCompra
+                    && Empresa::query()->find($modelo->id_empresa)?->isModuloConsignacionesLedgerActivo();
+                $clase = ($esConsignaCompra && ! $ledgerActivo) ? 'Compra a consigna' : 'Compra';
             }else{
                 $salidaCantidad =  abs($cantidad);
                 $clase = 'Compra Anulada';

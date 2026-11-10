@@ -8,6 +8,7 @@
 |-------|---------|----------|----------|
 | 1 | `2026_11_11_100000_create_consigna_movimientos_table.php` | Crea tabla ledger consigna | `down` drop table |
 | 2 | `2026_11_11_110000_add_inventario_consigna_kardex_permissions.php` | Permisos API/UI kardex consigna (`inventario.consigna_kardex.ver`, exportar) | `down` elimina permisos por nombre |
+| 3 | `2026_11_12_100000_create_consigna_custodias_table.php` | Saldos en custodia de clientes (consigna salida) | `down` drop table |
 
 **Comando local/staging/prod (recomendado — solo migraciones de consigna v2):**
 
@@ -15,6 +16,7 @@
 cd Backend
 php artisan migrate --path=database/migrations/2026_11_11_100000_create_consigna_movimientos_table.php --force
 php artisan migrate --path=database/migrations/2026_11_11_110000_add_inventario_consigna_kardex_permissions.php --force
+php artisan migrate --path=database/migrations/2026_11_12_100000_create_consigna_custodias_table.php --force
 ```
 
 En local, `php artisan migrate` sin `--path` puede fallar si hay migraciones antiguas pendientes en una BD ya parcialmente migrada (p. ej. `suscripciones` ya existe). Usar `--path` evita ese problema.
