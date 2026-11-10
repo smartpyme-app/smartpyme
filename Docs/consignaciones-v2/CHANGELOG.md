@@ -19,6 +19,16 @@
 - Mi cuenta: switch **Kardex de consignaciones** (`consignaciones_ledger_activo`).
 - Menú compras: enlace **Kardex consigna** (con permiso).
 
+### Fase 2.1
+
+- Kardex clásico: ventas consigna salida con ledger on → detalle `Venta` (no “Venta a consigna”).
+- Ledger en devoluciones venta (cliente consigna / pool proveedor) y devolución compra consigna.
+- DTE MH 04: documento impreso “Factura de remisión” vigente; transmisión MH → epic **FE-SV-5B** (respuesta API explícita).
+
+### Lotes
+
+No requisito en spec SP-2344 ni texto extraíble del PDF ejecutivo; inventario por lote sigue en capa física.
+
 ### Fase 2
 
 - Tabla `consigna_custodias` sincronizada con entregas/liquidaciones/ajustes del ledger.

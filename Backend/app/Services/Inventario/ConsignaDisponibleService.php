@@ -411,6 +411,9 @@ class ConsignaDisponibleService
                 case ConsignaMovimientoTipoConstants::LIQUIDACION_PROVEEDOR:
                     $liquidado += $cantidad;
                     break;
+                case ConsignaMovimientoTipoConstants::DEVOLUCION_PROVEEDOR:
+                    $entrada += $cantidad;
+                    break;
                 default:
                     break;
             }

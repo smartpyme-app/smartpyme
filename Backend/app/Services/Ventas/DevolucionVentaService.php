@@ -8,6 +8,7 @@ use App\Models\Ventas\Devoluciones\DetalleCompuesto;
 use App\Models\Ventas\Venta;
 use App\Models\Admin\Documento;
 use App\Models\Inventario\Inventario;
+use App\Services\Inventario\ConsignaDevolucionLedgerService;
 use App\Models\Inventario\Paquete;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -124,6 +125,11 @@ class DevolucionVentaService
                     $inventario->stock += $det['cantidad'];
                     $inventario->save();
                     $inventario->kardex($devolucion, $det['cantidad']);
+                    app(ConsignaDevolucionLedgerService::class)->despuesEntradaFisicaDevolucionVenta(
+                        $devolucion,
+                        (int) $det['id_producto'],
+                        (float) $det['cantidad']
+                    );
                 }
 
                 // Inventario compuestos

@@ -60,6 +60,11 @@ class ElSalvadorDteService
         } elseif ($venta->nombre_documento == 'Factura de exportación') {
             $mh = new MHFacturaExportacion;
             $DTE = $mh->generarDTE($venta);
+        } elseif (strcasecmp((string) $venta->nombre_documento, 'Factura de remisión') === 0) {
+            return response()->json([
+                'error' => 'DTE 04 Nota de remisión (MH) está pendiente del epic FE-SV-5B. La consigna sigue usando el documento impreso interno.',
+                'code' => 'dte_04_not_implemented',
+            ], 422);
         } else {
             return response()->json(['error' => 'El tipo de documento no puede emitirse, debe ser uno de los permitidos.'], 400);
         }

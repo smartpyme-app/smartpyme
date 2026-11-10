@@ -54,7 +54,12 @@ class Inventario extends Model {
 
             if ($cantidad > 0) {
                 $salidaCantidad =  $cantidad;
-                $clase = $modelo->estado == 'Consigna' ? 'Venta a consigna' : ('Venta' . $sufijoShopify);
+                $esConsignaSalida = $modelo->estado == 'Consigna';
+                $ledgerActivo = $esConsignaSalida
+                    && Empresa::query()->find($modelo->id_empresa)?->isModuloConsignacionesLedgerActivo();
+                $clase = ($esConsignaSalida && ! $ledgerActivo)
+                    ? 'Venta a consigna'
+                    : ('Venta' . $sufijoShopify);
             }else{
                 $entradaCantidad =  abs($cantidad);
                 $clase = 'Venta Anulada' . $sufijoShopify;

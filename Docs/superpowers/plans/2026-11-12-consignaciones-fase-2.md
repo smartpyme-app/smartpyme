@@ -20,8 +20,13 @@ Ver `Docs/consignaciones-v2/MIGRATIONS_AND_SEEDERS.md` — migración `2026_11_1
 
 Tras backfill histórico, el comando reconstruye custodias automáticamente.
 
-## Fuera de alcance (posible Fase 3)
+## Fase 2.1 (hecho)
 
-- Dejar de escribir otras líneas “Venta a consigna” en kardex clásico (solo se ajustó compra consigna).
-- Devoluciones cliente automatizadas en ledger (`devolucion_cliente` hook).
-- DTE tipo remisión MH.
+- Kardex “Venta a consigna” → `Venta` con ledger on.
+- `ConsignaDevolucionLedgerService` en devoluciones compra/venta.
+- DTE 04 MH: **FE-SV-5B** (`MHNotaRemision`); consigna usa impreso hasta cablear MH.
+
+## Fuera de alcance
+
+- Ledger/custodia **por lote** (no figura en PDF/spec; pedirlo aparte).
+- Anulación de devolución reverso ledger (ponytail: idempotency manual si hace falta).
