@@ -9,17 +9,20 @@
 | 1 | `2026_11_11_100000_create_consigna_movimientos_table.php` | Crea tabla ledger consigna | `down` drop table |
 | 2 | `2026_11_11_110000_add_inventario_consigna_kardex_permissions.php` | Permisos API/UI kardex consigna (`inventario.consigna_kardex.ver`, exportar) | `down` elimina permisos por nombre |
 
-**Comando local/staging/prod:**
+**Comando local/staging/prod (recomendado — solo migraciones de consigna v2):**
 
 ```bash
 cd Backend
-php artisan migrate
+php artisan migrate --path=database/migrations/2026_11_11_100000_create_consigna_movimientos_table.php --force
+php artisan migrate --path=database/migrations/2026_11_11_110000_add_inventario_consigna_kardex_permissions.php --force
 ```
 
-Para una sola migración:
+En local, `php artisan migrate` sin `--path` puede fallar si hay migraciones antiguas pendientes en una BD ya parcialmente migrada (p. ej. `suscripciones` ya existe). Usar `--path` evita ese problema.
+
+Después del deploy de rutas nuevas:
 
 ```bash
-php artisan migrate --path=database/migrations/2026_11_11_100000_create_consigna_movimientos_table.php
+php artisan route:clear
 ```
 
 ## Seeders

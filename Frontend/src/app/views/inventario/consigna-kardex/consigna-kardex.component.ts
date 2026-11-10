@@ -14,6 +14,7 @@ import { FuncionalidadesService } from '@services/functionalities.service';
 export class ConsignaKardexComponent implements OnInit {
   public movimientos: any[] = [];
   public loading = false;
+  public downloading = false;
   public moduloActivo = false;
   public filtros: any = {
     fecha_ini: '',
@@ -51,6 +52,30 @@ export class ConsignaKardexComponent implements OnInit {
       error: (err) => {
         this.alertService.error(err);
         this.loading = false;
+      },
+    });
+  }
+
+  public exportar() {
+    this.downloading = true;
+    this.apiService.export('productos/consigna-kardex/exportar', this.filtros).subscribe({
+      next: (data: Blob) => {
+        const blob = new Blob([data], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'consigna-kardex.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        this.downloading = false;
+      },
+      error: (err) => {
+        this.alertService.error(err);
+        this.downloading = false;
       },
     });
   }

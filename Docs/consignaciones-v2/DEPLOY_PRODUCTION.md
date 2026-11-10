@@ -13,8 +13,10 @@
 ```bash
 cd Backend
 composer install --no-dev --optimize-autoloader
-php artisan migrate --force
+php artisan migrate --path=database/migrations/2026_11_11_100000_create_consigna_movimientos_table.php --force
+php artisan migrate --path=database/migrations/2026_11_11_110000_add_inventario_consigna_kardex_permissions.php --force
 php artisan db:seed --class=FuncionalidadesSeeder --force
+php artisan route:clear
 php artisan config:cache
 php artisan route:cache
 ```

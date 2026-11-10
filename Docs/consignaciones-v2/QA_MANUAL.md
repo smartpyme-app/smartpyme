@@ -57,6 +57,7 @@
 | # | Paso | Resultado esperado | OK |
 |---|------|-------------------|-----|
 | 7.1 | Usuario sin permiso kardex consigna | 403 en API | |
+| 7.2 | Exportar Excel con `inventario.consigna_kardex.exportar` | Descarga `.xlsx`; sin permiso no muestra botón / 403 API | |
 
 ## Firmas UAT
 

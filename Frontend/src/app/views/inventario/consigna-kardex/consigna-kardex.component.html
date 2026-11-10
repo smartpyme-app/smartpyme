@@ -16,8 +16,13 @@
             <label class="form-label">Hasta</label>
             <input type="date" class="form-control" [(ngModel)]="filtros.fecha_fin" name="fecha_fin" />
         </div>
-        <div class="col-md-3 d-flex align-items-end">
+        <div class="col-md-6 d-flex align-items-end gap-2">
             <button type="button" class="btn btn-primary" [disabled]="loading" (click)="loadAll()">Filtrar</button>
+            @if (apiService.hasPermission('inventario.consigna_kardex.exportar')) {
+                <button type="button" class="btn btn-outline-secondary" [disabled]="downloading" (click)="exportar()">
+                    {{ downloading ? 'Exportando…' : 'Exportar Excel' }}
+                </button>
+            }
         </div>
     </div>
 

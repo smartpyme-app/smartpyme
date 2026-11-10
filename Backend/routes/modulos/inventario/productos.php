@@ -110,6 +110,8 @@ Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, '
     Route::get('/productos/consigna-ventas',          [ConsignasController::class, 'ventasConsignaCompra']);
     Route::get('/productos/consigna-kardex',        [\App\Http\Controllers\Api\Inventario\ConsignaKardexController::class, 'index'])
         ->middleware('permission:inventario.consigna_kardex.ver');
+    Route::get('/productos/consigna-kardex/exportar', [\App\Http\Controllers\Api\Inventario\ConsignaKardexController::class, 'export'])
+        ->middleware('permission:inventario.consigna_kardex.exportar');
 
 // Promociones
     Route::get('promociones',        [PromocionesController::class, 'index']);

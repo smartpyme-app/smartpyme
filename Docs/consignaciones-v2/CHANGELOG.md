@@ -14,7 +14,13 @@
 
 ### Cambiado
 
-- (pendiente)
+- `FuncionalidadesSeeder`: nueva funcionalidad `modulo-consignaciones`.
+- Mi cuenta: switch **Kardex de consignaciones** (`consignaciones_ledger_activo`).
+- Menú compras: enlace **Kardex consigna** (con permiso).
+
+### Comandos
+
+- `php artisan consigna:ledger-backfill --empresa=ID [--dry-run]` — backfill histórico opcional.
 
 ### Sin cambios para clientes sin módulo
 
