@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class MarcarVentasPagadasCuentasCobrarCommand extends Command
@@ -61,18 +62,27 @@ class MarcarVentasPagadasCuentasCobrarCommand extends Command
             $this->warn('Dry-run: no se aplicarán cambios. Use --ejecutar para persistir.');
         }
 
-        $nombreHoja = self::nombreHojaMes($mes, $anio);
+        $nombreHojaPreferida = self::nombreHojaMes($mes, $anio);
         $reader = IOFactory::createReaderForFile($excelPath);
         $reader->setReadDataOnly(true);
         $workbook = $reader->load($excelPath);
 
-        if (! $workbook->sheetNameExists($nombreHoja)) {
-            $this->error(sprintf('La hoja "%s" no existe en el Excel. Hojas: %s', $nombreHoja, implode(', ', $workbook->getSheetNames())));
-
-            return self::FAILURE;
+        if ($workbook->sheetNameExists($nombreHojaPreferida)) {
+            $sheet = $workbook->getSheetByName($nombreHojaPreferida);
+            $hojaUsada = $nombreHojaPreferida;
+        } else {
+            $sheet = $workbook->getSheet(0);
+            $hojaUsada = $sheet->getTitle();
+            $this->line(sprintf(
+                'Hoja "%s" no encontrada; se usa "%s" y se filtran filas por FECHA (mes %d / %d).',
+                $nombreHojaPreferida,
+                $hojaUsada,
+                $mes,
+                $anio
+            ));
         }
 
-        $filasExcel = $this->leerFilasPendientesExcel($workbook->getSheetByName($nombreHoja));
+        $filasExcel = $this->leerFilasPendientesExcel($sheet, $mes, $anio);
 
         $inicio = Carbon::create($anio, $mes, 1)->startOfDay();
         $fin = (clone $inicio)->endOfMonth();
@@ -136,9 +146,10 @@ class MarcarVentasPagadasCuentasCobrarCommand extends Command
         $excluidas = $pendientes->filter(fn (Venta $v) => isset($exclusionIds[$v->id]))->values();
 
         $this->info(sprintf(
-            'Empresa %d | %s | Pendientes: %d | Quedan Pendiente (Excel): %d | Pasan a Pagada: %d',
+            'Empresa %d | Excel %s (%d filas) | Pendientes: %d | Quedan Pendiente (Excel): %d | Pasan a Pagada: %d',
             $empresaId,
-            $nombreHoja,
+            $hojaUsada,
+            count($filasExcel),
             $pendientes->count(),
             $excluidas->count(),
             $aPagar->count()
@@ -227,6 +238,25 @@ class MarcarVentasPagadasCuentasCobrarCommand extends Command
         return abs($a - $b) <= $tolerancia;
     }
 
+    public static function filaFechaEnMes(mixed $valorFecha, int $mes, int $anio): bool
+    {
+        if ($valorFecha === null || $valorFecha === '') {
+            return false;
+        }
+
+        try {
+            if (is_numeric($valorFecha)) {
+                $fecha = Carbon::instance(ExcelDate::excelToDateTimeObject((float) $valorFecha));
+            } else {
+                $fecha = Carbon::parse((string) $valorFecha);
+            }
+        } catch (\Throwable) {
+            return false;
+        }
+
+        return (int) $fecha->month === $mes && (int) $fecha->year === $anio;
+    }
+
     public static function correlativoCoincideConDoc(?int $correlativo, string $numeroDocExcel): bool
     {
         if ($correlativo === null || $correlativo <= 0) {
@@ -274,7 +304,7 @@ class MarcarVentasPagadasCuentasCobrarCommand extends Command
     /**
      * @return list<array{numero_doc: string, cliente: string, total: float}>
      */
-    private function leerFilasPendientesExcel(Worksheet $sheet): array
+    private function leerFilasPendientesExcel(Worksheet $sheet, int $mes, int $anio): array
     {
         $filas = [];
         $maxRow = (int) $sheet->getHighestDataRow();
@@ -282,6 +312,11 @@ class MarcarVentasPagadasCuentasCobrarCommand extends Command
         for ($row = 4; $row <= $maxRow; $row++) {
             $numeroDoc = trim((string) $sheet->getCellByColumnAndRow(3, $row)->getCalculatedValue());
             if ($numeroDoc === '') {
+                continue;
+            }
+
+            $valorFecha = $sheet->getCellByColumnAndRow(10, $row)->getCalculatedValue();
+            if (! self::filaFechaEnMes($valorFecha, $mes, $anio)) {
                 continue;
             }
 

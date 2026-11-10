@@ -25,6 +25,12 @@ final class MarcarVentasPagadasCuentasCobrarCommandTest extends TestCase
     $this->assertFalse(MarcarVentasPagadasCuentasCobrarCommand::correlativoCoincideConDoc(26, $corto));
   }
 
+  public function test_fila_fecha_en_mes_desde_serial_excel(): void
+  {
+    $this->assertTrue(MarcarVentasPagadasCuentasCobrarCommand::filaFechaEnMes(46090, 3, 2026));
+    $this->assertFalse(MarcarVentasPagadasCuentasCobrarCommand::filaFechaEnMes(46090, 1, 2026));
+  }
+
   public function test_normalizar_nombre_y_total(): void
   {
     $this->assertSame(
