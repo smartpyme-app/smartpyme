@@ -153,6 +153,11 @@ return [
             'ver' => 'productos.kardex.ver',
         ],
 
+        'consigna_kardex' => [
+            'ver' => 'inventario.consigna_kardex.ver',
+            'exportar' => 'inventario.consigna_kardex.exportar',
+        ],
+
         'actualizacion_masiva' => [
             'ejecutar' => 'productos.actualizacion_masiva.ejecutar',
         ],

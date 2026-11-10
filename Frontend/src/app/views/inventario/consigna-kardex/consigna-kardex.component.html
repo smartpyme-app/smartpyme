@@ -1,0 +1,58 @@
+<div class="row">
+    <div class="col-12">
+        <h3 class="mb-3">Kardex de consignaciones</h3>
+    </div>
+</div>
+
+@if (!moduloActivo) {
+    <p class="text-muted">El módulo de consignaciones no está habilitado para su empresa.</p>
+} @else {
+    <div class="row g-2 mb-3">
+        <div class="col-md-3">
+            <label class="form-label">Desde</label>
+            <input type="date" class="form-control" [(ngModel)]="filtros.fecha_ini" name="fecha_ini" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Hasta</label>
+            <input type="date" class="form-control" [(ngModel)]="filtros.fecha_fin" name="fecha_fin" />
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <button type="button" class="btn btn-primary" [disabled]="loading" (click)="loadAll()">Filtrar</button>
+        </div>
+    </div>
+
+    @if (loading) {
+        <p>Cargando…</p>
+    } @else if (!movimientos?.length) {
+        <p class="text-muted">No hay movimientos de consigna en el rango seleccionado.</p>
+    } @else {
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Producto</th>
+                        <th>Bodega</th>
+                        <th class="text-end">Cantidad</th>
+                        <th>Proveedor</th>
+                        <th>Cliente</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (m of movimientos; track m.id) {
+                        <tr>
+                            <td>{{ m.fecha | date:'short' }}</td>
+                            <td>{{ m.tipo }}</td>
+                            <td>{{ m.producto?.nombre || m.id_producto }}</td>
+                            <td>{{ m.bodega?.nombre || m.id_bodega }}</td>
+                            <td class="text-end">{{ m.cantidad }}</td>
+                            <td>{{ m.proveedor?.nombre || '—' }}</td>
+                            <td>{{ m.cliente?.nombre || '—' }}</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}

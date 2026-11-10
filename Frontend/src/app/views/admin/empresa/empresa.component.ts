@@ -108,6 +108,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
     public tieneMultimoneda: boolean = false;
     public tieneAccesoModuloRestaurantePedidos: boolean = false;
     public tieneAccesoTransformacionProductos: boolean = false;
+    public tieneAccesoModuloConsignaciones: boolean = false;
     public tieneAccesoModuloPresentacionesProductos: boolean = false;
     public tieneAccesoBoxFul: boolean = false;
     public tieneAccesoFidelizacionGlobal: boolean = false;
@@ -204,6 +205,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
         this.verificarAccesoModuloRestaurantePedidos();
         this.verificarAccesoTransformacionProductos();
         this.verificarAccesoModuloPresentacionesProductos();
+        this.verificarAccesoModuloConsignaciones();
         this.verificarAccesoBoxFul();
         
         this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
@@ -1927,6 +1929,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
                 inventario_sumar_stock_busquedas: false, // Total de stock en listado de inventario según filtros
                 actualizacion_masiva_productos: false, // Plantilla para actualizar productos existentes
                 transformacion_productos_activo: false, // Módulo de transformación/conversión de productos en inventario
+                consignaciones_ledger_activo: false, // Ledger/kardex de consigna (requiere funcionalidad Super Admin)
                 inventario_reporte_analisis_ventas_mensual: false, // Botón Excel: ventas ene→mes actual + inventario
                 cotizacion_mostrar_descripcion: true, // Mostrar descripción en PDF/vista de cotizaciones
                 cotizacion_mostrar_imagenes_productos: false, // Mostrar imágenes de productos en cotizaciones
@@ -2851,6 +2854,38 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
                 this.tieneAccesoModuloPresentacionesProductos = false;
             }
         });
+    }
+
+    public verificarAccesoModuloConsignaciones() {
+        this.funcionalidadesService.verificarAcceso('modulo-consignaciones').subscribe({
+            next: (acceso) => {
+                this.tieneAccesoModuloConsignaciones = acceso;
+            },
+            error: () => {
+                this.tieneAccesoModuloConsignaciones = false;
+            },
+        });
+    }
+
+    public isConsignacionesLedgerActivo(): boolean {
+        return this.getCustomConfig('configuraciones', 'consignaciones_ledger_activo', false);
+    }
+
+    public toggleConsignacionesLedgerActivo() {
+        if (!this.tieneAccesoModuloConsignaciones) {
+            return;
+        }
+        this.updateConsignacionesLedgerActivo(!this.isConsignacionesLedgerActivo());
+    }
+
+    public updateConsignacionesLedgerActivo(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'consignaciones_ledger_activo', activo);
+        this.onSubmit();
+        this.alertService.success(
+            activo
+                ? 'Kardex de consignaciones activado'
+                : 'Kardex de consignaciones desactivado'
+        );
     }
 
     public verificarAccesoBoxFul() {

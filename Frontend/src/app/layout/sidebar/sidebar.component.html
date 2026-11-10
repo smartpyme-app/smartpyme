@@ -185,6 +185,9 @@
                             @if (apiService.canAccederOperacionesInventario() && apiService.hasPermission('compras.consignas.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/consignas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/package.png" class="icon me-2">Consignas</a></li>
                             }
+                            @if (apiService.canAccederOperacionesInventario() && apiService.hasPermission('inventario.consigna_kardex.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/consigna-kardex']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/book-open.png" class="icon me-2">Kardex consigna</a></li>
+                            }
                         </ul>
                     </div>
                 </li>

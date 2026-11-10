@@ -37,6 +37,7 @@ use App\Services\Ventas\AbonoService;
 use App\Services\Ventas\DocumentoService;
 use App\Services\Ventas\ReporteService;
 use App\Services\Ventas\FacturacionConsignaService;
+use App\Services\Inventario\ConsignaMovimientoService;
 use App\Services\Ventas\FacturacionService;
 use App\Support\FacturacionElectronica\CostaRica\DocumentoMoneda;
 use App\Services\Ventas\LibroIvaService;
@@ -830,6 +831,11 @@ class VentasController extends Controller
                         $det->descuento = 0;
                         $det->id_venta = $venta->id;
                         $det->save();
+                        app(ConsignaMovimientoService::class)->liquidacionClienteDesdeVenta(
+                            $venta,
+                            $det,
+                            (float) $detalle['cantidad']
+                        );
                     }
                 }
 

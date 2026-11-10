@@ -25,6 +25,7 @@ use App\Services\Ventas\VentaDescuentoAutorizacion;
 use App\Services\FidelizacionCliente\ConsumoPuntosService as FidelizacionConsumoPuntosService;
 use App\Services\Inventario\ConversionInventarioService;
 use App\Services\Inventario\LoteAsignacionService;
+use App\Services\Inventario\ConsignaMovimientoService;
 use App\Services\Inventario\StockDisponibleService;
 use App\Services\Restaurante\PedidoCanalInventarioService;
 use App\Services\CreditosClientes\CorrelativoVenta;
@@ -526,6 +527,13 @@ class FacturacionService
                                     }
                                 }
                             }
+                        }
+                    }
+
+                    if ($request->cotizacion == 0 && ! $saltarActualizarInventario) {
+                        $productoLedger = Producto::find($det['id_producto']);
+                        if ($productoLedger && $productoLedger->tipo !== 'Servicio') {
+                            app(ConsignaMovimientoService::class)->desdeVentaDetalle($venta, $detalle);
                         }
                     }
                 }

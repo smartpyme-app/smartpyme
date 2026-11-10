@@ -40,6 +40,7 @@ use Illuminate\Support\Facades\Log;
 use App\Constants\DocumentoConstants;
 use App\Exceptions\Compras\DocumentoImportException;
 use App\Services\Compras\CodigoGeneracionDuplicadoFinder;
+use App\Services\Inventario\ConsignaMovimientoService;
 
 class ComprasController extends Controller
 {
@@ -452,6 +453,15 @@ class ComprasController extends Controller
                         $inventario->kardex($compra, $cantidadBaseInv);
                     }
 
+                    // ponytail: solo en alta de compra consigna; ediciones no re-disparan entrada ledger
+                    if (! $request->id && $compra->estado === 'Consigna') {
+                        app(ConsignaMovimientoService::class)->entradaProveedorDesdeCompra(
+                            $compra,
+                            $detalle,
+                            (float) $cantidadBaseInv
+                        );
+                    }
+
                 }
 
 
@@ -645,6 +655,11 @@ class ComprasController extends Controller
                         $det->descuento = 0;
                         $det->id_compra = $compra->id;
                         $det->save();
+                        app(ConsignaMovimientoService::class)->liquidacionProveedorDesdeCompra(
+                            $compra,
+                            $det,
+                            (float) $detalle['cantidad']
+                        );
                     }
                 }
             }
