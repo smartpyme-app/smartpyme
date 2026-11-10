@@ -3,7 +3,7 @@
 namespace Tests\Unit\Services\Inventario;
 
 use App\Services\Inventario\ConsignaDisponibleService;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class ConsignaDisponibleServiceTest extends TestCase
 {
@@ -37,5 +37,16 @@ class ConsignaDisponibleServiceTest extends TestCase
     {
         $disponible = ConsignaDisponibleService::calcularDisponibleDesdeComponentes(10, 0, 0, 3);
         $this->assertEquals(3.0, $disponible);
+    }
+
+    public function test_assert_consistente_con_ledger_no_op_sin_debug(): void
+    {
+        $prev = config('app.debug');
+        config(['app.debug' => false]);
+
+        $service = new ConsignaDisponibleService();
+        $this->assertTrue($service->assertConsistenteConLedger(1, 1, 1));
+
+        config(['app.debug' => $prev]);
     }
 }

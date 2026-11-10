@@ -1,6 +1,6 @@
 # Manual de usuario — Módulo de consignaciones (SmartPyme)
 
-> Borrador para soporte y ventas. Completar capturas y textos finales al cerrar desarrollo.
+Manual para soporte y ventas (capturas de pantalla pendientes de UAT).
 
 ## 1. ¿Para qué sirve?
 
@@ -49,7 +49,7 @@ Si no está habilitado, **no verás cambios** respecto a SmartPyme estándar.
 ### 4.4 Consultar trazabilidad
 
 - Menú **Inventario → Kardex de consigna** (nombre final según UI).
-- Filtre por producto, proveedor, cliente, fechas.
+- Filtre por fechas; use **Exportar Excel** si su rol tiene permiso de exportación.
 
 ## 5. Preguntas frecuentes (soporte)
 

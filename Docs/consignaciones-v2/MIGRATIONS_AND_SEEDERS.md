@@ -40,7 +40,7 @@ php artisan consigna:ledger-backfill --empresa=ID --dry-run
 php artisan consigna:ledger-backfill --empresa=ID
 ```
 
-(Implementación en Task 17 del plan.)
+Solo para empresas piloto con ledger activo; no modifica `kardexs` ni `inventarios`.
 
 ## Activación manual tras migrate
 

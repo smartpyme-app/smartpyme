@@ -2,7 +2,10 @@
 
 namespace App\Services\Inventario;
 
+use App\Constants\ConsignaMovimientoTipoConstants;
 use App\Constants\OrigenStockVentaConstants;
+use App\Models\Admin\Empresa;
+use App\Models\Inventario\ConsignaMovimiento;
 use App\Models\Compras\Detalle as DetalleCompra;
 use App\Models\Compras\Compra;
 use App\Models\Inventario\Inventario;
@@ -12,6 +15,7 @@ use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Services\Inventario\ConversionInventarioService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 
 class ConsignaDisponibleService
 {
@@ -342,5 +346,72 @@ class ConsignaDisponibleService
             ->first();
 
         return $inventario ? (float) $inventario->stock : 0;
+    }
+
+    /**
+     * Fase 1: solo diagnóstico en debug; no altera el pool usado en facturación.
+     */
+    public function assertConsistenteConLedger(int $idEmpresa, int $idProducto, int $idBodega, float $tolerance = 0.01): bool
+    {
+        if (! config('app.debug')) {
+            return true;
+        }
+
+        $empresa = Empresa::query()->find($idEmpresa);
+        if (! $empresa?->isModuloConsignacionesLedgerActivo()) {
+            return true;
+        }
+
+        $legacy = $this->calcularDisponible($idProducto, $idBodega);
+        $desdeLedger = $this->calcularDisponibleProveedorDesdeLedger($idEmpresa, $idProducto, $idBodega);
+
+        if (abs($legacy - $desdeLedger) <= $tolerance) {
+            return true;
+        }
+
+        Log::warning('ConsignaDisponible diverge from consigna_movimientos ledger', [
+            'id_empresa' => $idEmpresa,
+            'id_producto' => $idProducto,
+            'id_bodega' => $idBodega,
+            'legacy' => $legacy,
+            'ledger' => $desdeLedger,
+        ]);
+
+        return false;
+    }
+
+    // ponytail: O(n) scan por producto/bodega; upgrade: agregados SQL por tipo en ConsignaMovimientoService
+    private function calcularDisponibleProveedorDesdeLedger(int $idEmpresa, int $idProducto, int $idBodega): float
+    {
+        $entrada = 0.0;
+        $ventasConsigna = 0.0;
+        $liquidado = 0.0;
+
+        $movimientos = ConsignaMovimiento::query()
+            ->where('id_empresa', $idEmpresa)
+            ->where('id_producto', $idProducto)
+            ->where('id_bodega', $idBodega)
+            ->get(['tipo', 'cantidad']);
+
+        foreach ($movimientos as $movimiento) {
+            $cantidad = (float) $movimiento->cantidad;
+            switch ($movimiento->tipo) {
+                case ConsignaMovimientoTipoConstants::ENTRADA_PROVEEDOR:
+                    $entrada += $cantidad;
+                    break;
+                case ConsignaMovimientoTipoConstants::VENTA_REGULAR_CONSIGNA_PROVEEDOR:
+                    $ventasConsigna += $cantidad;
+                    break;
+                case ConsignaMovimientoTipoConstants::LIQUIDACION_PROVEEDOR:
+                    $liquidado += $cantidad;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        $stockFisico = $this->obtenerStockFisico($idProducto, $idBodega);
+
+        return self::calcularDisponibleDesdeComponentes($entrada, $ventasConsigna, $liquidado, $stockFisico);
     }
 }

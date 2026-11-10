@@ -10,7 +10,8 @@
 - Funcionalidad Super Admin `modulo-consignaciones`; preferencia Mi cuenta `consignaciones_ledger_activo`.
 - Permisos `inventario.consigna_kardex.ver` / `exportar`.
 - Hooks compra/venta/liquidación consigna (solo si ledger activo).
-- API `GET /productos/consigna-kardex`, UI `/consigna-kardex`.
+- API `GET /productos/consigna-kardex`, export Excel, UI `/consigna-kardex`.
+- `ConsignaDisponibleService::assertConsistenteConLedger` (solo `APP_DEBUG`, Fase 1 diagnóstico).
 
 ### Cambiado
 

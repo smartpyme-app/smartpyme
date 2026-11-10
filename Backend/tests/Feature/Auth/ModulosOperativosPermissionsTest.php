@@ -18,6 +18,7 @@ final class ModulosOperativosPermissionsTest extends TestCase
         $this->assertRouteHasPermission('api/productos/consignas', 'GET', 'permission:ventas.consignas.ver');
         $this->assertRouteHasPermission('api/productos/consignas-compras', 'GET', 'permission:compras.consignas.ver');
         $this->assertRouteHasPermission('api/productos/consigna-kardex', 'GET', 'permission:inventario.consigna_kardex.ver');
+        $this->assertRouteHasPermission('api/productos/consigna-kardex/exportar', 'GET', 'permission:inventario.consigna_kardex.exportar');
     }
 
     public function test_planillas_registros_empleados_y_configuracion_tienen_permisos(): void
