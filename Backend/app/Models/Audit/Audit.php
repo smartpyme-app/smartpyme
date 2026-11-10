@@ -12,11 +12,12 @@ class Audit extends BaseAudit
 {
     protected static function booted(): void
     {
-        if (Auth::check()) {
-            static::addGlobalScope('empresa', function (Builder $builder) {
+        // ponytail: mismo patrón que Venta; el scope se registra siempre y Auth se evalúa al consultar.
+        static::addGlobalScope('empresa', function (Builder $builder) {
+            if (Auth::check()) {
                 $builder->where('id_empresa', Auth::user()->id_empresa);
-            });
-        }
+            }
+        });
     }
 
     public function empresa()

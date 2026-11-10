@@ -875,6 +875,19 @@
                             </div>
                             <div class="empresa-pref-row">
                                 <div class="empresa-pref-row-text">
+                                    <label class="empresa-pref-row-label" for="reporte_ventas_categoria_vendedor_incluir_iva">Incluir IVA en reporte de ventas por categoría y vendedor</label>
+                                    <p class="empresa-pref-row-help text-muted small mb-0">Solo afecta el reporte automático «Ventas por categoría y vendedor» (Excel y PDF). Por defecto suma el total de línea sin IVA. Si activa esta opción, suma total + IVA del detalle en productos y servicios gravados.</p>
+                                </div>
+                                <div class="form-switch m-0">
+                                    <input class="form-check-input" type="checkbox" role="switch"
+                                        id="reporte_ventas_categoria_vendedor_incluir_iva"
+                                        [checked]="isReporteVentasCategoriaVendedorIncluirIva()"
+                                        (change)="toggleReporteVentasCategoriaVendedorIncluirIva()"
+                                        name="reporte_ventas_categoria_vendedor_incluir_iva">
+                                </div>
+                            </div>
+                            <div class="empresa-pref-row">
+                                <div class="empresa-pref-row-text">
                                     <label class="empresa-pref-row-label" for="cambiar_tipo_impuesto_venta">Cambiar tipo de impuesto en venta</label>
                                     <p class="empresa-pref-row-help text-muted small mb-0">Permitir cambiar el tipo de impuesto
                                         (Gravada, Exenta, No sujeta) de productos.</p>
