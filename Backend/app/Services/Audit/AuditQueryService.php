@@ -99,8 +99,9 @@ class AuditQueryService
 
         /** @var class-string<Model> $type */
         return match ($type) {
-            Venta::class, Compra::class, CotizacionVenta::class, Partida::class
+            Venta::class, CotizacionVenta::class, Partida::class
                 => $this->pluckColumn($type, $ids, 'correlativo'),
+            Compra::class => $this->pluckFirstColumn($type, $ids, ['referencia', 'numero_control', 'tipo_documento']),
             Gasto::class => $this->pluckFirstColumn($type, $ids, ['referencia', 'concepto', 'num_identificacion']),
             OrdenCompra::class, OrdenProduccion::class, Planilla::class
                 => $this->pluckFirstColumn($type, $ids, ['correlativo', 'codigo']),
