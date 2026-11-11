@@ -85,6 +85,7 @@ class LoteAsignacionService
 
             $inventario->kardex($venta, $cantidad, $precio, null, null, [
                 'lote_id' => $asig['lote_id'],
+                'origen_stock' => $detalle->origen_stock,
             ]);
 
             $cantidadTotal += $cantidad;

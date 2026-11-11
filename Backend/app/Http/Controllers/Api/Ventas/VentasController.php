@@ -842,6 +842,33 @@ class VentasController extends Controller
                 $venta->total = $request->total;
                 $venta->iva = $request->iva;
                 $venta->sub_total = $request->sub_total;
+            } elseif ($venta->estado === 'Consigna' && round($venta->total, 2) <= round($request->total, 2)) {
+                $movimientoService = app(ConsignaMovimientoService::class);
+                $venta->detalles()->delete();
+
+                foreach ($request->detalles as $detalle) {
+                    if ((float) ($detalle['cantidad'] ?? 0) <= 0) {
+                        continue;
+                    }
+                    $det = new Detalle();
+                    $det->id_producto = $detalle['id_producto'];
+                    $det->cantidad = $detalle['cantidad'];
+                    $det->precio = $detalle['precio'];
+                    $det->total = $detalle['cantidad'] * $detalle['precio'];
+                    $det->descuento = 0;
+                    $det->id_venta = $venta->id;
+                    $det->save();
+                    $movimientoService->liquidacionClienteDesdeVenta(
+                        $venta,
+                        $det,
+                        (float) $detalle['cantidad']
+                    );
+                }
+
+                $venta->total = $request->total;
+                $venta->iva = $request->iva;
+                $venta->sub_total = $request->sub_total;
+                $venta->total_costo = $request->total_costo;
             }
 
 

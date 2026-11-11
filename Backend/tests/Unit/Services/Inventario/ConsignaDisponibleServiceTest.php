@@ -7,11 +7,11 @@ use Tests\TestCase;
 
 class ConsignaDisponibleServiceTest extends TestCase
 {
-    public function test_tras_vender_4_y_pagar_4_de_10_disponible_es_6(): void
+    public function test_tras_vender_4_y_pagar_4_disponible_queda_en_2(): void
     {
-        // entrada abierta 6, ventas 4, liquidado 4, físico 6
+        // entrada 6, vendidas 4 (liquidado no restaura pool)
         $disponible = ConsignaDisponibleService::calcularDisponibleDesdeComponentes(6, 4, 4, 6);
-        $this->assertEquals(6.0, $disponible);
+        $this->assertEquals(2.0, $disponible);
     }
 
     public function test_vende_4_sin_pagar_disponible_es_6(): void
@@ -26,17 +26,22 @@ class ConsignaDisponibleServiceTest extends TestCase
         $this->assertEquals(6.0, $disponible);
     }
 
-    public function test_formula_legacy_doble_resta_fallaria_aqui(): void
+    public function test_50_vendidas_11_liquidadas_11_disponible_39(): void
     {
-        // Si alguien restara ventas sin liquidado: max(0, 6-4)=2 — no debe pasar
-        $disponible = ConsignaDisponibleService::calcularDisponibleDesdeComponentes(6, 4, 4, 6);
-        $this->assertNotEquals(2.0, $disponible);
+        $disponible = ConsignaDisponibleService::calcularDisponibleDesdeComponentes(50, 11, 11, 124);
+        $this->assertEquals(39.0, $disponible);
     }
 
     public function test_tope_por_stock_fisico(): void
     {
         $disponible = ConsignaDisponibleService::calcularDisponibleDesdeComponentes(10, 0, 0, 3);
         $this->assertEquals(3.0, $disponible);
+    }
+
+    public function test_entrada_50_vende_1_liquida_1_fisico_49_disponible_49(): void
+    {
+        $disponible = ConsignaDisponibleService::calcularDisponibleDesdeComponentes(50, 1, 1, 49);
+        $this->assertEquals(49.0, $disponible);
     }
 
     public function test_assert_consistente_con_ledger_no_op_sin_debug(): void

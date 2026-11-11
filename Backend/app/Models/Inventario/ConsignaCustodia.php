@@ -2,7 +2,7 @@
 
 namespace App\Models\Inventario;
 
-use App\Models\Ventas\Cliente;
+use App\Models\Ventas\Clientes\Cliente;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 

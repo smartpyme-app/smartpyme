@@ -79,6 +79,51 @@ class ConsignaMovimientoServiceTest extends TestCase
         $this->addToAssertionCount(1);
     }
 
+    public function test_desde_venta_stock_propio_no_registra_en_ledger(): void
+    {
+        $service = Mockery::mock(ConsignaMovimientoService::class)->makePartial();
+        $service->shouldReceive('registrar')->never();
+
+        $venta = new Venta();
+        $venta->id = 10;
+        $venta->id_empresa = 1;
+        $venta->estado = 'Pagada';
+
+        $detalle = new DetalleVenta();
+        $detalle->origen_stock = OrigenStockVentaConstants::NORMAL;
+
+        $this->assertNull($service->desdeVentaDetalle($venta, $detalle));
+    }
+
+    public function test_desde_venta_consigna_stock_propio_registra_entrega_custodia(): void
+    {
+        $service = Mockery::mock(ConsignaMovimientoService::class)->makePartial();
+        $service->shouldReceive('registrar')
+            ->once()
+            ->with(1, Mockery::on(function (array $payload) {
+                return $payload['tipo'] === ConsignaMovimientoTipoConstants::ENTREGA_CONSIGNA_PROPIO
+                    && $payload['cantidad'] === -4.0;
+            }))
+            ->andReturn(null);
+
+        $venta = new Venta();
+        $venta->id = 11;
+        $venta->id_empresa = 1;
+        $venta->id_bodega = 2;
+        $venta->id_cliente = 99;
+        $venta->estado = 'Consigna';
+        $venta->fecha = '2026-01-01';
+
+        $detalle = new DetalleVenta();
+        $detalle->id = 7;
+        $detalle->id_producto = 9;
+        $detalle->cantidad = 4;
+        $detalle->origen_stock = OrigenStockVentaConstants::NORMAL;
+
+        $service->desdeVentaDetalle($venta, $detalle);
+        $this->addToAssertionCount(1);
+    }
+
     public function test_entrada_proveedor_ignora_compra_no_consigna(): void
     {
         $service = new ConsignaMovimientoService();

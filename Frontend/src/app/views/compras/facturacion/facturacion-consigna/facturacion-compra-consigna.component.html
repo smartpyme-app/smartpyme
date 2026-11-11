@@ -345,7 +345,7 @@
     </div>
     <div class="modal-body">
         <p class="mb-3">
-            Cantidad vendida desde consigna de compra:
+            Pendiente de liquidar al proveedor (vendido desde consigna, sin facturar):
             <strong>{{ cantidadVendidaDetalle }}</strong>
         </p>
         @if (ventasConsignaDetalle?.length) {
@@ -372,12 +372,12 @@
             </table>
           </div>
         } @else {
-          <p class="text-muted mb-0">No hay ventas registradas desde consigna para este producto.</p>
+          <p class="text-muted mb-0">No hay unidades pendientes de liquidar (ya fueron facturadas al proveedor).</p>
         }
     </div>
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="closeModal()">Cerrar</button>
-        <button type="button" class="btn btn-primary" (click)="ajustarCantidadVendida()">
+        <button type="button" class="btn btn-primary" [disabled]="!cantidadVendidaDetalle" (click)="ajustarCantidadVendida()">
             Ajustar cantidad
         </button>
     </div>

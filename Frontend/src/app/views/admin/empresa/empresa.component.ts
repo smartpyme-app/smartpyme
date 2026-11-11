@@ -2882,6 +2882,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
         this.addCustomConfig('configuraciones', 'consignaciones_ledger_activo', activo);
         this.onSubmit();
         this.alertService.success(
+            'Consignaciones',
             activo
                 ? 'Kardex de consignaciones activado'
                 : 'Kardex de consignaciones desactivado'

@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Requests\Inventario\Kardex\StoreKardexRequest;
 use App\Http\Requests\Inventario\Kardex\SolicitarMasivoKardexRequest;
 use App\Http\Requests\Inventario\Kardex\EstadoColaKardexRequest;
+use App\Services\Inventario\KardexInventarioNormalService;
 
 class KardexController extends Controller
 {
@@ -62,6 +63,12 @@ class KardexController extends Controller
             }
         }
 
+        $empresa = auth()->user()?->empresa()->first();
+        $kardex = app(KardexInventarioNormalService::class)->paraKardexFisico(
+            $kardex,
+            (int) $producto->id,
+            $empresa
+        );
 
         $producto->movimientos = $kardex;
 

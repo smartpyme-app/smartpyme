@@ -6,7 +6,7 @@ use App\Models\Admin\Empresa;
 use App\Models\User;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Detalle as DetalleCompra;
-use App\Models\Ventas\Cliente;
+use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Models\Ventas\Venta;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +23,7 @@ class ConsignaMovimiento extends Model
         'cantidad',
         'id_producto',
         'id_bodega',
+        'lote_id',
         'id_proveedor',
         'id_cliente',
         'costo_unitario',
@@ -55,6 +56,11 @@ class ConsignaMovimiento extends Model
     public function bodega()
     {
         return $this->belongsTo(Bodega::class, 'id_bodega');
+    }
+
+    public function lote()
+    {
+        return $this->belongsTo(Lote::class, 'lote_id');
     }
 
     public function proveedor()

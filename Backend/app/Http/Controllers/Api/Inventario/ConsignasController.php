@@ -22,12 +22,13 @@ class ConsignasController extends Controller
 
     public function index() {
 
-        $detallesDeVenta = DetalleVenta::whereHas('venta', function($query){
-                                $query->where('estado', 'Consigna');
-                            })
-                            ->with('producto.categoria', 'venta')
-                            ->get()
-                            ->groupBy('id_producto');
+        $detallesDeVenta = DetalleVenta::whereHas('venta', function ($query) {
+            $query->where('estado', 'Consigna')
+                ->where('cotizacion', 0);
+        })
+            ->with('producto.categoria', 'venta')
+            ->get()
+            ->groupBy('id_producto');
 
 
         $detalles = collect();
@@ -63,7 +64,7 @@ class ConsignasController extends Controller
             }
         }
 
-        return Response()->json($detalles, 200);
+        return Response()->json(['data' => $detalles->values()], 200);
     
     }
 

@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
@@ -8,7 +9,7 @@ import { FuncionalidadesService } from '@services/functionalities.service';
 @Component({
   selector: 'app-consigna-custodia',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './consigna-custodia.component.html',
 })
 export class ConsignaCustodiaComponent implements OnInit {
@@ -70,7 +71,7 @@ export class ConsignaCustodiaComponent implements OnInit {
       id_bodega: fila.id_bodega,
       cantidad_fisica: fila.cantidad,
       nota: '',
-      _label: `${fila.cliente?.nombre ?? 'Cliente'} — ${fila.producto?.nombre ?? 'Producto'}`,
+      _label: `${this.nombreCliente(fila)} — ${fila.producto?.nombre ?? 'Producto'}`,
     };
   }
 
@@ -96,9 +97,22 @@ export class ConsignaCustodiaComponent implements OnInit {
       return this.filas;
     }
     return this.filas.filter((f) => {
-      const cliente = (f.cliente?.nombre ?? '').toLowerCase();
+      const cliente = this.nombreCliente(f).toLowerCase();
       const producto = (f.producto?.nombre ?? '').toLowerCase();
-      return cliente.includes(q) || producto.includes(q);
+      const codigo = (f.producto?.codigo ?? '').toLowerCase();
+      return cliente.includes(q) || producto.includes(q) || codigo.includes(q);
     });
+  }
+
+  public nombreCliente(fila: any): string {
+    const c = fila?.cliente;
+    if (!c) {
+      return '—';
+    }
+    const partes = [c.nombre, c.apellido, c.nombre_comercial || c.nombre_empresa].filter(
+      (x) => x && String(x).trim() !== ''
+    );
+
+    return partes.length ? partes.join(' ') : '—';
   }
 }

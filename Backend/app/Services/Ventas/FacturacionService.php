@@ -433,7 +433,9 @@ class FacturacionService
                             if ($inventario) {
                                 $inventario->stock -= $cantidadBaseDet;
                                 $inventario->save();
-                                $inventario->kardex($venta, $cantidadBaseDet, $det['precio']);
+                                $inventario->kardex($venta, $cantidadBaseDet, $det['precio'], null, null, [
+                                    'origen_stock' => $detalle->origen_stock ?? $det['origen_stock'] ?? null,
+                                ]);
                             }
                         }
 

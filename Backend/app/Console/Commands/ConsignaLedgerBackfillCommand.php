@@ -92,7 +92,42 @@ class ConsignaLedgerBackfillCommand extends Command
                 }
             });
 
-        $this->info(($dryRun ? '[dry-run] ' : '') . "Entradas consigna: {$entradas}, líneas venta: {$ventas}");
+        $liquidaciones = 0;
+        Venta::query()
+            ->where('id_empresa', $empresaId)
+            ->where('estado', 'Pagada')
+            ->where('cotizacion', 0)
+            ->with('detalles')
+            ->orderBy('id')
+            ->chunk(50, function ($ventas) use ($service, $dryRun, &$liquidaciones) {
+                /** @var Venta $venta */
+                foreach ($ventas as $venta) {
+                    foreach ($venta->detalles as $detalle) {
+                        $entregaKey = 'venta-' . $venta->id . '-det-' . $detalle->id;
+                        $liqKey = 'venta-liq-' . $venta->id . '-det-' . $detalle->id;
+                        $tieneEntrega = ConsignaMovimiento::query()
+                            ->where('id_empresa', $venta->id_empresa)
+                            ->where('idempotency_key', $entregaKey)
+                            ->exists();
+                        if (! $tieneEntrega) {
+                            continue;
+                        }
+                        if (ConsignaMovimiento::query()
+                            ->where('id_empresa', $venta->id_empresa)
+                            ->where('idempotency_key', $liqKey)
+                            ->exists()) {
+                            continue;
+                        }
+                        $liquidaciones++;
+                        if (! $dryRun) {
+                            $service->liquidacionClienteDesdeVenta($venta, $detalle, (float) $detalle->cantidad);
+                        }
+                    }
+                }
+            });
+
+        $this->info(($dryRun ? '[dry-run] ' : '')
+            . "Entradas consigna: {$entradas}, líneas venta: {$ventas}, liquidaciones cliente: {$liquidaciones}");
 
         if (! $dryRun) {
             $filasCustodia = app(ConsignaCustodiaService::class)->reconstruirDesdeLedger((int) $empresaId);

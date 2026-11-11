@@ -93,7 +93,7 @@ export class ProductosConsignasComponent extends BaseCrudComponent<any> implemen
           .pipe(this.untilDestroyed())
           .subscribe({
             next: (productos) => {
-              this.productos = productos;
+              this.productos = Array.isArray(productos) ? { data: productos } : productos;
               this.loading = false;
               this.cdr.markForCheck();
             },

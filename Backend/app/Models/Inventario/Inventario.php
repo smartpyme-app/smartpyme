@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Inventario\Kardex;
 use App\Models\Inventario\Lote;
 use App\Models\Admin\Empresa;
+use App\Constants\OrigenStockVentaConstants;
+use App\Services\Inventario\KardexInventarioNormalService;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 
@@ -44,6 +46,14 @@ class Inventario extends Model {
 
         $clase = get_class($modelo);
 
+        // ponytail: con ledger on, la entrada consigna vive en consigna_movimientos; no duplicar en kardex físico
+        if ($clase === 'App\Models\Compras\Compra'
+            && $cantidad > 0
+            && $modelo->estado === 'Consigna'
+            && Empresa::query()->find($modelo->id_empresa)?->isModuloConsignacionesLedgerActivo()) {
+            return;
+        }
+
         $entradaCantidad =  null;
         $salidaCantidad =  null;
 
@@ -53,10 +63,18 @@ class Inventario extends Model {
             $sufijoShopify = $esShopify ? ' desde Shopify' : '';
 
             if ($cantidad > 0) {
+                $origenStock = $opciones['origen_stock'] ?? null;
+                if (OrigenStockVentaConstants::esConsignaCompra($origenStock)
+                    && Empresa::query()->find($modelo->id_empresa)?->isModuloConsignacionesLedgerActivo()) {
+                    return;
+                }
                 $salidaCantidad =  $cantidad;
                 $esConsignaSalida = $modelo->estado == 'Consigna';
                 $ledgerActivo = $esConsignaSalida
                     && Empresa::query()->find($modelo->id_empresa)?->isModuloConsignacionesLedgerActivo();
+                if ($esConsignaSalida && $ledgerActivo) {
+                    return;
+                }
                 $clase = ($esConsignaSalida && ! $ledgerActivo)
                     ? 'Venta a consigna'
                     : ('Venta' . $sufijoShopify);
@@ -227,8 +245,20 @@ class Inventario extends Model {
             }
         }
 
-        // Calcular el stock total según si el producto usa lotes o no
-        $totalCantidad = $this->calcularStockParaKardex($producto, $modelo, $clase, $opciones);
+        $empresaKardex = $producto->empresa
+            ?? (Auth::user()?->empresa)
+            ?? Empresa::query()->find($producto->id_empresa);
+        if ($empresaKardex?->isModuloConsignacionesLedgerActivo()) {
+            $totalCantidad = $this->calcularExistenciaPropiaTrasMovimiento(
+                $producto,
+                (float) ($entradaCantidad ?? 0),
+                (float) ($salidaCantidad ?? 0),
+                $opciones,
+                $empresaKardex
+            );
+        } else {
+            $totalCantidad = $this->calcularStockParaKardex($producto, $modelo, $clase, $opciones);
+        }
 
         $fechaKardex = $fecha ? (is_string($fecha) ? $fecha : $fecha->format('Y-m-d')) : date('Y-m-d');
 
@@ -270,6 +300,31 @@ class Inventario extends Model {
 
     public function kardexs(){
         return $this->hasMany('App\Models\Inventario\Kardex', 'id_inventario');
+    }
+
+    private function calcularExistenciaPropiaTrasMovimiento(
+        Producto $producto,
+        float $entrada,
+        float $salida,
+        array $opciones,
+        Empresa $empresa
+    ): float {
+        $query = Kardex::query()
+            ->where('id_producto', $this->id_producto)
+            ->where('id_inventario', $this->id_bodega);
+        if (! empty($opciones['lote_id'])) {
+            $query->where('lote_id', (int) $opciones['lote_id']);
+        }
+
+        $historial = app(KardexInventarioNormalService::class)->paraKardexFisico(
+            $query->orderBy('fecha')->orderBy('id')->get(),
+            (int) $this->id_producto,
+            $empresa
+        );
+
+        $base = $historial->isEmpty() ? 0.0 : (float) $historial->last()->total_cantidad;
+
+        return $base + $entrada - $salida;
     }
 
     /**

@@ -37,4 +37,12 @@ class ConsignaMovimientoTipoConstantsTest extends TestCase
         $this->assertFalse(ConsignaMovimientoTipoConstants::esValido('compra'));
         $this->assertTrue(ConsignaMovimientoTipoConstants::esValido('entrada_proveedor'));
     }
+
+    public function test_etiqueta_humaniza_tipo(): void
+    {
+        $this->assertSame(
+            'Entrada consigna (proveedor)',
+            ConsignaMovimientoTipoConstants::etiqueta(ConsignaMovimientoTipoConstants::ENTRADA_PROVEEDOR)
+        );
+    }
 }

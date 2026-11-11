@@ -110,7 +110,7 @@ class ConsignaCustodiaService
             ->forEmpresa($idEmpresa)
             ->with([
                 'producto:id,nombre,codigo',
-                'cliente:id,nombre',
+                'cliente' => fn ($q) => $q->withoutGlobalScopes()->select('id', 'nombre', 'apellido', 'nombre_comercial', 'nombre_empresa'),
                 'bodega:id,nombre',
             ])
             ->where('cantidad', '>', 0)

@@ -1,76 +1,107 @@
-<div class="row">
-    <div class="col-12">
-        <h3 class="mb-3">Custodia en consigna (clientes)</h3>
-        <p class="text-muted small">Saldo teórico en poder del cliente según ventas consigna. Use conteo físico para ajustar diferencias.</p>
-    </div>
-</div>
+<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
+  <h2 class="page-heading">Stock consigna</h2>
+  <div class="d-flex gap-2 align-items-center">
+    <a routerLink="/consignas/ventas" class="btn btn-light btn-sm">Consignas ventas</a>
+    <a routerLink="/consigna-kardex" class="btn btn-outline-secondary btn-sm">Kardex consigna</a>
+  </div>
+</section>
 
 @if (!moduloActivo) {
-    <p class="text-muted">El módulo de consignaciones no está habilitado para su empresa.</p>
+  <section class="bg-white p-4 rounded mb-3">
+    <span class="badge bg-primary">El módulo de consignaciones no está habilitado</span>
+  </section>
 } @else {
-    <div class="row g-2 mb-3">
-        <div class="col-md-4">
-            <label class="form-label">Buscar</label>
-            <input type="text" class="form-control" [(ngModel)]="filtros.buscador" name="buscador" placeholder="Cliente o producto" />
+  <section class="bg-white p-4 rounded mb-3">
+    <div class="row mb-3">
+      <div class="col">
+        @if (filasFiltradas()?.length) {
+          <span class="text-muted">Mostrando {{ filasFiltradas().length }} registros</span>
+        }
+      </div>
+      <div class="col">
+        <div class="d-flex gap-2">
+          <input
+            type="text"
+            name="buscador"
+            class="form-control"
+            placeholder="Buscar cliente o producto..."
+            [(ngModel)]="filtros.buscador" />
+          <button type="button" class="btn btn-default tcla-F6" [disabled]="loading" (click)="loadAll()" tooltip="Actualizar (F6)">
+            <i *ngIf="!loading" class="fa fa-filter"></i>
+            <i *ngIf="loading" class="fa fa-ellipsis-h"></i>
+          </button>
         </div>
-        <div class="col-md-2 d-flex align-items-end">
-            <button type="button" class="btn btn-primary" [disabled]="loading" (click)="loadAll()">Actualizar</button>
-        </div>
+      </div>
     </div>
 
-  @if (conteo.id_cliente) {
-        <div class="card mb-3 border-primary">
-            <div class="card-body">
-                <h5 class="card-title">Conteo físico</h5>
-                <p class="mb-2">{{ conteo._label }}</p>
-                <div class="row g-2">
-                    <div class="col-md-3">
-                        <label class="form-label">Cantidad contada</label>
-                        <input type="number" min="0" step="0.0001" class="form-control" [(ngModel)]="conteo.cantidad_fisica" name="cantidad_fisica" />
-                    </div>
-                    <div class="col-md-5">
-                        <label class="form-label">Nota (opcional)</label>
-                        <input type="text" class="form-control" [(ngModel)]="conteo.nota" name="nota" />
-                    </div>
-                    <div class="col-md-4 d-flex align-items-end gap-2">
-                        <button type="button" class="btn btn-success" [disabled]="guardandoConteo" (click)="enviarConteo()">Registrar conteo</button>
-                        <button type="button" class="btn btn-outline-secondary" (click)="conteo = {}">Cancelar</button>
-                    </div>
-                </div>
+    @if (conteo.id_cliente) {
+      <div class="card mb-3 border-primary">
+        <div class="card-body">
+          <h5 class="card-title">Conteo físico</h5>
+          <p class="mb-2 text-muted small">{{ conteo._label }}</p>
+          <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+              <label class="form-label">Cantidad contada</label>
+              <input type="number" min="0" step="0.0001" class="form-control" [(ngModel)]="conteo.cantidad_fisica" name="cantidad_fisica" />
             </div>
+            <div class="col-md-5">
+              <label class="form-label">Nota (opcional)</label>
+              <input type="text" class="form-control" [(ngModel)]="conteo.nota" name="nota" />
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+              <button type="button" class="btn btn-success" [disabled]="guardandoConteo" (click)="enviarConteo()">Registrar conteo</button>
+              <button type="button" class="btn btn-outline-secondary" (click)="conteo = {}">Cancelar</button>
+            </div>
+          </div>
         </div>
+      </div>
     }
 
-    @if (loading) {
-        <p>Cargando…</p>
-    } @else if (!filasFiltradas()?.length) {
-        <p class="text-muted">No hay saldos en custodia de clientes.</p>
-    } @else {
-        <div class="table-responsive">
-            <table class="table table-sm table-striped">
-                <thead>
-                    <tr>
-                        <th>Cliente</th>
-                        <th>Producto</th>
-                        <th>Bodega origen</th>
-                        <th class="text-end">Cantidad sistema</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @for (f of filasFiltradas(); track f.id) {
-                        <tr>
-                            <td>{{ f.cliente?.nombre || f.id_cliente }}</td>
-                            <td>{{ f.producto?.nombre || f.id_producto }}</td>
-                            <td>{{ f.bodega?.nombre || f.id_bodega }}</td>
-                            <td class="text-end">{{ f.cantidad }}</td>
-                            <td class="text-end">
-                                <button type="button" class="btn btn-sm btn-outline-primary" (click)="prepararConteo(f)">Conteo</button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
+    <div class="row">
+      <div class="col-12 table-responsive">
+        <table class="table table-borderless table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th class="d-none d-md-table-cell">Producto</th>
+              <th class="d-none d-md-table-cell">Código</th>
+              <th>Bodega</th>
+              <th class="text-end">Stock en custodia</th>
+              <th class="text-center">Más</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (filasFiltradas()?.length < 1 && !loading) {
+              <tr>
+                <td colspan="6" class="text-center">
+                  <span class="badge bg-primary">No hay saldos en custodia de clientes</span>
+                </td>
+              </tr>
+            }
+            @if (loading) {
+              <tr>
+                <td colspan="6" class="text-center">
+                  <span class="badge bg-primary">Cargando...</span>
+                </td>
+              </tr>
+            }
+            @for (f of filasFiltradas(); track f.id_cliente + '-' + f.id_producto + '-' + f.id_bodega) {
+              <tr>
+                <td>{{ nombreCliente(f) }}</td>
+                <td class="d-none d-md-table-cell">{{ f.producto?.nombre || '—' }}</td>
+                <td class="d-none d-md-table-cell">{{ f.producto?.codigo || '—' }}</td>
+                <td>{{ f.bodega?.nombre || f.id_bodega }}</td>
+                <td class="text-end">{{ f.cantidad | number:'1.0-4' }}</td>
+                <td class="text-center">
+                  <button type="button" class="btn btn-sm btn-default" (click)="prepararConteo(f)" tooltip="Registrar conteo físico">
+                    <img src="/assets/icons/edit.png" class="icon" alt="">
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
 }
