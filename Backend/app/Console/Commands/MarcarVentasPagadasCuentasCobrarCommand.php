@@ -7,6 +7,8 @@ use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class MarcarVentasPagadasCuentasCobrarCommand extends Command
@@ -32,6 +34,7 @@ class MarcarVentasPagadasCuentasCobrarCommand extends Command
                             {--mes= : Mes 1-12 (obligatorio)}
                             {--anio= : Año (obligatorio)}
                             {--excel= : Ruta al Excel de cuentas por cobrar}
+                            {--hoja= : Nombre de hoja del Excel (si no, busca MES.AÑO o la primera)}
                             {--detalle-excel : Lista filas del Excel sin venta en el sistema}
                             {--ejecutar : Persiste cambios; sin esto solo muestra el plan}';
 
@@ -61,18 +64,27 @@ class MarcarVentasPagadasCuentasCobrarCommand extends Command
             $this->warn('Dry-run: no se aplicarán cambios. Use --ejecutar para persistir.');
         }
 
-        $nombreHoja = self::nombreHojaMes($mes, $anio);
         $reader = IOFactory::createReaderForFile($excelPath);
         $reader->setReadDataOnly(true);
         $workbook = $reader->load($excelPath);
 
-        if (! $workbook->sheetNameExists($nombreHoja)) {
-            $this->error(sprintf('La hoja "%s" no existe en el Excel. Hojas: %s', $nombreHoja, implode(', ', $workbook->getSheetNames())));
+        try {
+            $hojaUsada = $this->resolverHojaExcel($workbook, $mes, $anio);
+        } catch (\InvalidArgumentException $e) {
+            $this->error($e->getMessage());
 
             return self::FAILURE;
         }
+        $sheet = $workbook->getSheetByName($hojaUsada);
 
-        $filasExcel = $this->leerFilasPendientesExcel($workbook->getSheetByName($nombreHoja));
+        $this->line(sprintf(
+            'Cuentas por cobrar: hoja del libro «%s». Filas con FECHA en %s/%d (no importa que la hoja diga ENE u otro mes).',
+            $hojaUsada,
+            str_pad((string) $mes, 2, '0', STR_PAD_LEFT),
+            $anio
+        ));
+
+        $filasExcel = $this->leerFilasPendientesExcel($sheet, $mes, $anio);
 
         $inicio = Carbon::create($anio, $mes, 1)->startOfDay();
         $fin = (clone $inicio)->endOfMonth();
@@ -121,9 +133,11 @@ class MarcarVentasPagadasCuentasCobrarCommand extends Command
                 $exclusionIds[$venta->id] = $venta->id;
                 $paresExcel[] = [
                     $venta->id,
+                    $fila['fecha'],
                     $fila['numero_doc'],
                     $fila['cliente'],
                     $fila['total'],
+                    $venta->fecha,
                 ];
             }
         }
@@ -136,9 +150,11 @@ class MarcarVentasPagadasCuentasCobrarCommand extends Command
         $excluidas = $pendientes->filter(fn (Venta $v) => isset($exclusionIds[$v->id]))->values();
 
         $this->info(sprintf(
-            'Empresa %d | %s | Pendientes: %d | Quedan Pendiente (Excel): %d | Pasan a Pagada: %d',
+            'Empresa %d | Mes %02d/%d | Filas Excel en ese mes: %d | Ventas pendientes en BD: %d | Quedan Pendiente: %d | Pasan a Pagada: %d',
             $empresaId,
-            $nombreHoja,
+            $mes,
+            $anio,
+            count($filasExcel),
             $pendientes->count(),
             $excluidas->count(),
             $aPagar->count()
@@ -146,7 +162,7 @@ class MarcarVentasPagadasCuentasCobrarCommand extends Command
 
         if ($paresExcel !== []) {
             $this->table(
-                ['ID venta', 'N° DOC Excel', 'Cliente', 'Total'],
+                ['ID venta', 'Fecha Excel', 'N° DOC', 'Cliente', 'Total', 'Fecha venta BD'],
                 $paresExcel
             );
         }
@@ -227,6 +243,33 @@ class MarcarVentasPagadasCuentasCobrarCommand extends Command
         return abs($a - $b) <= $tolerancia;
     }
 
+    public static function parsearFechaExcel(mixed $valorFecha): ?Carbon
+    {
+        if ($valorFecha === null || $valorFecha === '') {
+            return null;
+        }
+
+        try {
+            if (is_numeric($valorFecha)) {
+                return Carbon::instance(ExcelDate::excelToDateTimeObject((float) $valorFecha))->startOfDay();
+            }
+
+            return Carbon::parse((string) $valorFecha)->startOfDay();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    public static function filaFechaEnMes(mixed $valorFecha, int $mes, int $anio): bool
+    {
+        $fecha = self::parsearFechaExcel($valorFecha);
+        if ($fecha === null) {
+            return false;
+        }
+
+        return (int) $fecha->month === $mes && (int) $fecha->year === $anio;
+    }
+
     public static function correlativoCoincideConDoc(?int $correlativo, string $numeroDocExcel): bool
     {
         if ($correlativo === null || $correlativo <= 0) {
@@ -271,10 +314,33 @@ class MarcarVentasPagadasCuentasCobrarCommand extends Command
         return dirname(base_path()).'/Cuentas por Cobrar 2026 . SISTEMA.xlsx';
     }
 
+    private function resolverHojaExcel(Spreadsheet $workbook, int $mes, int $anio): string
+    {
+        $hojaForzada = trim((string) $this->option('hoja'));
+        if ($hojaForzada !== '') {
+            if (! $workbook->sheetNameExists($hojaForzada)) {
+                throw new \InvalidArgumentException(sprintf(
+                    'La hoja "%s" no existe. Disponibles: %s',
+                    $hojaForzada,
+                    implode(', ', $workbook->getSheetNames())
+                ));
+            }
+
+            return $hojaForzada;
+        }
+
+        $nombreHojaPreferida = self::nombreHojaMes($mes, $anio);
+        if ($workbook->sheetNameExists($nombreHojaPreferida)) {
+            return $nombreHojaPreferida;
+        }
+
+        return $workbook->getSheet(0)->getTitle();
+    }
+
     /**
-     * @return list<array{numero_doc: string, cliente: string, total: float}>
+     * @return list<array{numero_doc: string, cliente: string, total: float, fecha: string}>
      */
-    private function leerFilasPendientesExcel(Worksheet $sheet): array
+    private function leerFilasPendientesExcel(Worksheet $sheet, int $mes, int $anio): array
     {
         $filas = [];
         $maxRow = (int) $sheet->getHighestDataRow();
@@ -285,13 +351,20 @@ class MarcarVentasPagadasCuentasCobrarCommand extends Command
                 continue;
             }
 
+            $valorFecha = $sheet->getCellByColumnAndRow(10, $row)->getCalculatedValue();
+            if (! self::filaFechaEnMes($valorFecha, $mes, $anio)) {
+                continue;
+            }
+
             $cliente = trim((string) $sheet->getCellByColumnAndRow(5, $row)->getCalculatedValue());
             $total = (float) $sheet->getCellByColumnAndRow(6, $row)->getCalculatedValue();
+            $fecha = self::parsearFechaExcel($valorFecha);
 
             $filas[] = [
                 'numero_doc' => $numeroDoc,
                 'cliente' => $cliente,
                 'total' => round($total, 2),
+                'fecha' => $fecha?->toDateString() ?? '',
             ];
         }
 

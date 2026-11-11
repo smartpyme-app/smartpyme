@@ -40,7 +40,7 @@ class Kardex extends Model {
     public function getModeloDetalleattribute(){
         $detalle = [];
         $info = '';
-        if (str_starts_with($this->detalle, 'Venta') || $this->detalle == 'Venta a consigna') {
+        if (str_starts_with($this->detalle, 'Venta') || $this->detalle == 'Venta a consigna' || str_starts_with($this->detalle, 'Remisión consigna')) {
             $detalle = \App\Models\Ventas\Venta::find($this->referencia);
             if ($detalle) {
                 $nombre = $detalle->nombre_documento ?? 'Venta';
@@ -90,7 +90,7 @@ class Kardex extends Model {
     }
 
     public function getModeloattribute(){
-        if (str_starts_with($this->detalle, 'Venta') || $this->detalle == 'Venta a consigna') {
+        if (str_starts_with($this->detalle, 'Venta') || $this->detalle == 'Venta a consigna' || str_starts_with($this->detalle, 'Remisión consigna')) {
             return 'venta';
         }
         if ($this->detalle == 'Devolución Venta' || $this->detalle == 'Devolución Venta Anulada') {
@@ -167,7 +167,7 @@ class Kardex extends Model {
         }
         
         // Si es una venta, obtener el lote desde kardex, detalle o detalle_venta_lotes
-        if (str_starts_with($this->detalle, 'Venta') || $this->detalle == 'Venta a consigna') {
+        if (str_starts_with($this->detalle, 'Venta') || $this->detalle == 'Venta a consigna' || str_starts_with($this->detalle, 'Remisión consigna')) {
             $venta = \App\Models\Ventas\Venta::find($this->referencia);
             if ($venta) {
                 $detalleVenta = \App\Models\Ventas\Detalle::where('id_venta', $venta->id)
@@ -297,7 +297,7 @@ class Kardex extends Model {
                 return $devolucion->proveedor->tipo == 'Empresa' ? ($devolucion->proveedor->nombre_empresa ?? '') : trim(($devolucion->proveedor->nombre ?? '') . ' ' . ($devolucion->proveedor->apellido ?? ''));
             }
         }
-        if (str_starts_with($this->detalle, 'Venta') || $this->detalle == 'Venta a consigna' || str_contains($this->detalle, 'Devolución Venta')) {
+        if (str_starts_with($this->detalle, 'Venta') || $this->detalle == 'Venta a consigna' || str_starts_with($this->detalle, 'Remisión consigna') || str_contains($this->detalle, 'Devolución Venta')) {
             $venta = \App\Models\Ventas\Venta::find($this->referencia);
             if ($venta && $venta->cliente) {
                 return $venta->cliente->nombre ?? '';

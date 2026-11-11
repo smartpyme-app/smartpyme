@@ -34,7 +34,7 @@ class KardexInventarioNormalServiceTest extends TestCase
         $m2->id = 2;
         $m2->fecha = '2026-01-02';
         $m2->detalle = 'Venta';
-        $m2->referencia = '99';
+        $m2->referencia = null;
         $m2->entrada_cantidad = 0;
         $m2->salida_cantidad = 10;
         $m2->costo_unitario = 1;
@@ -53,5 +53,26 @@ class KardexInventarioNormalServiceTest extends TestCase
         $mov->detalle = 'Venta';
         $out = $service->paraKardexFisico(new Collection([$mov]), 1, null);
         $this->assertCount(1, $out);
+    }
+
+    public function test_muestra_remision_consigna_con_ledger(): void
+    {
+        $empresa = Mockery::mock(Empresa::class);
+        $empresa->shouldReceive('isModuloConsignacionesLedgerActivo')->andReturn(true);
+
+        $mov = new Kardex();
+        $mov->id = 3;
+        $mov->fecha = '2026-01-03';
+        $mov->detalle = 'Remisión consigna';
+        $mov->referencia = '500';
+        $mov->entrada_cantidad = 0;
+        $mov->salida_cantidad = 15;
+        $mov->costo_unitario = 2;
+
+        $service = new KardexInventarioNormalService();
+        $out = $service->paraKardexFisico(collect([$mov]), 999999, $empresa);
+
+        $this->assertCount(1, $out);
+        $this->assertSame('Remisión consigna', $out->first()->detalle);
     }
 }

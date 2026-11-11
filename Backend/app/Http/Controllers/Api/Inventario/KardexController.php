@@ -258,7 +258,7 @@ class KardexController extends Controller
         }
         
         // Si es una venta
-        if (in_array($movimiento->detalle, ['Venta', 'Venta a consigna', 'Venta Anulada'])) {
+        if (in_array($movimiento->detalle, ['Venta', 'Venta a consigna', 'Remisión consigna', 'Venta Anulada'])) {
             $detalleVenta = \App\Models\Ventas\Detalle::where('id_venta', $movimiento->referencia)
                 ->where('id_producto', $idProducto)
                 ->first();

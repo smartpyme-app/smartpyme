@@ -34,12 +34,13 @@ class ConsignaMovimientoTipoConstants
         ];
     }
 
-    /** Tipos del kardex consigna compra (pool proveedor); excluye ventas/remisiones con stock propio y custodia cliente. */
+    /** Tipos del kardex consigna compra (pool proveedor); excluye entrega stock propio (custodia clientes). */
     public static function tiposKardexPoolProveedor(): array
     {
         return [
             self::ENTRADA_PROVEEDOR,
             self::VENTA_REGULAR_CONSIGNA_PROVEEDOR,
+            self::ENTREGA_CONSIGNA_PROVEEDOR,
             self::LIQUIDACION_PROVEEDOR,
             self::DEVOLUCION_PROVEEDOR,
             self::TRASLADO_CONSIGNA,

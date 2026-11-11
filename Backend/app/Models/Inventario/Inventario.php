@@ -73,11 +73,12 @@ class Inventario extends Model {
                 $ledgerActivo = $esConsignaSalida
                     && Empresa::query()->find($modelo->id_empresa)?->isModuloConsignacionesLedgerActivo();
                 if ($esConsignaSalida && $ledgerActivo) {
-                    return;
+                    $clase = 'Remisión consigna' . $sufijoShopify;
+                } elseif ($esConsignaSalida) {
+                    $clase = 'Venta a consigna';
+                } else {
+                    $clase = 'Venta' . $sufijoShopify;
                 }
-                $clase = ($esConsignaSalida && ! $ledgerActivo)
-                    ? 'Venta a consigna'
-                    : ('Venta' . $sufijoShopify);
             }else{
                 $entradaCantidad =  abs($cantidad);
                 $clase = 'Venta Anulada' . $sufijoShopify;
@@ -387,7 +388,7 @@ class Inventario extends Model {
         }
 
         // Si es una venta
-        if (str_starts_with($clase, 'Venta') || $clase == 'Venta a consigna') {
+        if (str_starts_with($clase, 'Venta') || $clase === 'Venta a consigna' || str_starts_with($clase, 'Remisión consigna')) {
             $detalleVenta = \App\Models\Ventas\Detalle::where('id_venta', $modelo->id)
                 ->where('id_producto', $idProducto)
                 ->whereNotNull('lote_id')

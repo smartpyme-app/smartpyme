@@ -9,7 +9,7 @@ use App\Models\Ventas\Detalle as DetalleVenta;
 use Illuminate\Support\Collection;
 
 /**
- * ponytail: vista kardex físico = solo stock propio; consigna compra vive en consigna_movimientos.
+ * ponytail: kardex físico = stock propio (+ remisión consigna propio); pool consigna compra en consigna_movimientos.
  */
 class KardexInventarioNormalService
 {
@@ -26,9 +26,6 @@ class KardexInventarioNormalService
         $excluirVentas = $this->idsVentasConConsignaCompra($movimientos, $idProducto);
         $filtrados = $movimientos->filter(function (Kardex $mov) use ($excluirVentas) {
             if ($mov->detalle === 'Compra a consigna') {
-                return false;
-            }
-            if ($mov->detalle === 'Venta a consigna') {
                 return false;
             }
             if (str_starts_with((string) $mov->detalle, 'Venta')) {

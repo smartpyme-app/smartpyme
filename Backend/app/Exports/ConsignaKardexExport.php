@@ -86,7 +86,10 @@ class ConsignaKardexExport implements FromCollection, WithHeadings, WithMapping
         }
         if ($this->request->filled('lote_id')) {
             $loteId = (int) $this->request->lote_id;
-            $query->where(function ($q) use ($loteId) {
+            $idProductoFiltro = $this->request->filled('id_producto')
+                ? (int) $this->request->id_producto
+                : null;
+            $query->where(function ($q) use ($loteId, $idProductoFiltro) {
                 $q->where('lote_id', $loteId)
                     ->orWhere(function ($q2) use ($loteId) {
                         $q2->whereNull('lote_id')
@@ -98,6 +101,15 @@ class ConsignaKardexExport implements FromCollection, WithHeadings, WithMapping
                                     'detalleVenta',
                                     fn ($d) => $d->where('lote_id', $loteId)
                                 );
+                            });
+                    })
+                    ->orWhere(function ($q2) use ($loteId, $idProductoFiltro) {
+                        $q2->where('tipo', ConsignaMovimientoTipoConstants::LIQUIDACION_PROVEEDOR)
+                            ->whereHas('compra.detalles', function ($d) use ($loteId, $idProductoFiltro) {
+                                $d->where('lote_id', $loteId);
+                                if ($idProductoFiltro) {
+                                    $d->where('id_producto', $idProductoFiltro);
+                                }
                             });
                     });
             });

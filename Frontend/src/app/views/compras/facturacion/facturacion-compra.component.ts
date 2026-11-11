@@ -1,4 +1,4 @@
-﻿import { Component, ElementRef,OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, ElementRef,OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -568,32 +568,50 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         // Facturar cotizacion
         if (this.route.snapshot.queryParamMap.get('facturar_cotizacion')! && this.route.snapshot.queryParamMap.get('id_compra')!) {
             this.facturarCotizacion = true;
-            this.apiService.read('compra/', +this.route.snapshot.queryParamMap.get('id_compra')!).subscribe(compra => {
-                this.compra = compra;
+            this.apiService.read('orden-de-compra/', +this.route.snapshot.queryParamMap.get('id_compra')!)
+              .pipe(this.untilDestroyed())
+              .subscribe(compra => {
+                this.compra = {
+                    ...this.compra,
+                    ...compra,
+                    id_sucursal: compra.id_sucursal || this.compra.id_sucursal || this.apiService.auth_user().id_sucursal,
+                };
                 this.normalizarDetallesLotes();
                 if (!this.compra.impuestos || !Array.isArray(this.compra.impuestos) || this.compra.impuestos.length === 0) {
                     this.compra.impuestos = this.impuestos?.length ? this.impuestos : [];
                 }
-                const ivaNumFc = Number(this.compra.iva);
+                const ivaNumFc = Number(compra.iva);
                 const empresaCobraIvaFc = this.apiService.auth_user().empresa.cobra_iva == 'Si';
-                this.compra.cobrar_impuestos = ivaNumFc > 0
-                    || (empresaCobraIvaFc && this.compra.tipo_operacion === 'Gravada');
-                this.compra.cobrar_percepcion = Number(this.compra.percepcion) > 0;
+                this.compra.cobrar_impuestos = compra.cobrar_impuestos != null
+                    ? Boolean(compra.cobrar_impuestos)
+                    : (ivaNumFc > 0 || (empresaCobraIvaFc && this.compra.tipo_operacion === 'Gravada'));
+                this.compra.cobrar_percepcion = compra.cobrar_percepcion != null
+                    ? Boolean(compra.cobrar_percepcion)
+                    : Number(compra.percepcion) > 0;
                 this.compra.fecha = this.apiService.date();
                 this.compra.fecha_pago = this.apiService.date();
                 this.compra.tipo_documento = null;
                 this.compra.referencia = null;
                 this.compra.estado = 'Pagada';
                 this.compra.cotizacion = 0;
-                this.compra.num_orden_compra = this.compra.id;
+                this.compra.num_orden_compra = compra.id;
                 this.compra.id = null;
                 this.compra.dte = null;
-                this.compra.detalles.forEach((detalle:any) => {
+                (this.compra.detalles || []).forEach((detalle: any) => {
                     detalle.id = null;
+                    detalle.inventario_por_lotes = Boolean(detalle.inventario_por_lotes ?? detalle.producto?.inventario_por_lotes);
+                    if (detalle.porcentaje_impuesto == null && detalle.producto?.porcentaje_impuesto != null) {
+                        detalle.porcentaje_impuesto = detalle.producto.porcentaje_impuesto;
+                    }
+                    if (!detalle.codigo && detalle.producto?.codigo) {
+                        detalle.codigo = detalle.producto.codigo;
+                    }
                 });
+                this.cargarDocumentos();
                 this.sumTotal();
                 this.sincronizarPreviewMonedaCompra();
-            }, error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
         }
 
         this.cargarDocumentos();
@@ -923,27 +941,17 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                 }else{
                     this.router.navigate(['/compras']);
                     this.alertService.success('Compra creada', 'La compra fue añadida exitosamente.');
+
+                    // Generar partida contable solo para compras aprobadas
+                    if (this.apiService.auth_user().empresa.generar_partidas == 'Auto') {
+                        this.apiService.store('contabilidad/partida/compra', compra)
+                            .pipe(this.untilDestroyed())
+                            .subscribe(
+                                compra => { this.cdr.markForCheck(); },
+                                error => { this.alertService.error(error); this.cdr.markForCheck(); }
+                            );
+                    }
                 }
-
-                // Si es cotización
-                if(this.facturarCotizacion){
-                    this.apiService.read('compra/', +this.route.snapshot.queryParamMap.get('id_compra')!).subscribe(compra => {
-                        compra.estado = 'Aceptada';
-                        this.apiService.store('compra', compra).subscribe(compra => {
-
-                        },error => {this.alertService.error(error); this.saving = false; });
-                    },error => {this.alertService.error(error); this.saving = false; });
-
-          // Generar partida contable solo para compras aprobadas
-          if (this.apiService.auth_user().empresa.generar_partidas == 'Auto') {
-            this.apiService.store('contabilidad/partida/compra', compra)
-              .pipe(this.untilDestroyed())
-              .subscribe(
-              compra => { this.cdr.markForCheck(); },
-              error => { this.alertService.error(error); this.cdr.markForCheck(); }
-            );
-          }
-        }
       },
       error => {
         this.saving = false;

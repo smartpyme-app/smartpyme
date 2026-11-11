@@ -318,7 +318,8 @@ class ConsignaMovimientoService
         }
         if ($request->filled('lote_id')) {
             $loteId = (int) $request->lote_id;
-            $query->where(function ($q) use ($loteId) {
+            $idProductoFiltro = $request->filled('id_producto') ? (int) $request->id_producto : null;
+            $query->where(function ($q) use ($loteId, $idProductoFiltro) {
                 $q->where('lote_id', $loteId)
                     ->orWhere(function ($q2) use ($loteId) {
                         $q2->whereNull('lote_id')
@@ -330,6 +331,15 @@ class ConsignaMovimientoService
                                     'detalleVenta',
                                     fn ($d) => $d->where('lote_id', $loteId)
                                 );
+                            });
+                    })
+                    ->orWhere(function ($q2) use ($loteId, $idProductoFiltro) {
+                        $q2->where('tipo', ConsignaMovimientoTipoConstants::LIQUIDACION_PROVEEDOR)
+                            ->whereHas('compra.detalles', function ($d) use ($loteId, $idProductoFiltro) {
+                                $d->where('lote_id', $loteId);
+                                if ($idProductoFiltro) {
+                                    $d->where('id_producto', $idProductoFiltro);
+                                }
                             });
                     });
             });

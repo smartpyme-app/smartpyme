@@ -472,6 +472,7 @@ class ConsignaDisponibleService
                     $entrada += $cantidad;
                     break;
                 case ConsignaMovimientoTipoConstants::VENTA_REGULAR_CONSIGNA_PROVEEDOR:
+                case ConsignaMovimientoTipoConstants::ENTREGA_CONSIGNA_PROVEEDOR:
                     $ventasConsigna += abs($cantidad);
                     break;
                 case ConsignaMovimientoTipoConstants::LIQUIDACION_PROVEEDOR:

@@ -6,6 +6,7 @@ use App\Models\Admin\Sucursal;
 use Illuminate\Support\Facades\DB;
 use App\Exports\Support\DevolucionesEnReporteQuery;
 use App\Exports\Support\RangoFecha;
+use App\Exports\Support\MontoLineaVentasEnReporte;
 use App\Services\Ventas\VentaMontosPorVendedorService;
 use Illuminate\Support\Facades\Log;
 
@@ -17,6 +18,7 @@ class VentasPorCategoriaVendedorPdfExport
     public $configuracion;
     public $sucursalesData;
     public $sucursales;
+    public bool $incluirIva;
 
     public function __construct($fechaInicio = null, $fechaFin = null, $id_empresa = null, $configuracion = null, $sucursales = null)
     {
@@ -25,6 +27,7 @@ class VentasPorCategoriaVendedorPdfExport
         $this->id_empresa = $id_empresa;
         $this->configuracion = $configuracion;
         $this->sucursales = $sucursales;
+        $this->incluirIva = MontoLineaVentasEnReporte::empresaIncluyeIva($id_empresa ? (int) $id_empresa : null);
 
         if ($configuracion && isset($configuracion->sucursales) && !empty($configuracion->sucursales)) {
             $this->sucursalesData = Sucursal::whereIn('id', $configuracion->sucursales)->get()->keyBy('id');
@@ -108,8 +111,7 @@ class VentasPorCategoriaVendedorPdfExport
                 'cat.nombre as nombre_categoria',
                 'us.name as nombre_vendedor',
                 'us.id as id_vendedor',
-                // DB::raw('SUM(dv.total - COALESCE(dv.descuento, 0)) as total_ventas')
-                DB::raw('SUM(dv.total) as total_ventas')
+                DB::raw(MontoLineaVentasEnReporte::sqlSumDetalleVenta('dv', $this->incluirIva) . ' as total_ventas')
             )
                 ->groupBy('cat.id', 'cat.nombre', 'us.name', 'us.id')
                 ->orderBy('us.name')
@@ -119,7 +121,8 @@ class VentasPorCategoriaVendedorPdfExport
                     $this->fechaInicio,
                     $this->fechaFin,
                     $this->sucursales,
-                    $categoriasIds
+                    $categoriasIds,
+                    $this->incluirIva
                 ));
     
             // Obtener categorías y vendedores por ID (no usar unique() sobre valores: elimina IDs distintos con el mismo nombre)
