@@ -2,6 +2,7 @@
 
 namespace App\Services\Contabilidad;
 
+use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Ventas\Venta;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
@@ -27,6 +28,34 @@ class LibroConsumidoresFilas
                 'ventas.sub_total',
                 'ventas.no_sujeta',
                 'ventas.iva',
+                'documentos.nombre as documento_nombre',
+            ])
+            ->toBase();
+    }
+
+    /**
+     * Eventos de retorno (tipo 18) sellados sobre Factura / Factura de exportación: restan de las ventas del día del retorno.
+     */
+    public static function consultaRetornos(object $request): Builder
+    {
+        return DevolucionVenta::query()
+            ->join('ventas', 'ventas.id', '=', 'devoluciones_venta.id_venta')
+            ->join('documentos', 'documentos.id', '=', 'ventas.id_documento')
+            ->where('devoluciones_venta.enable', true)
+            ->where('devoluciones_venta.tipo_dte', '18')
+            ->whereNotNull('devoluciones_venta.sello_mh')
+            ->where('ventas.estado', '!=', 'Anulada')
+            ->whereIn('documentos.nombre', ['Factura', 'Factura de exportación'])
+            ->when($request->id_sucursal, fn ($q) => $q->where('devoluciones_venta.id_sucursal', $request->id_sucursal))
+            ->whereBetween('devoluciones_venta.fecha', [$request->inicio, $request->fin])
+            ->select([
+                'devoluciones_venta.fecha',
+                'devoluciones_venta.total',
+                'devoluciones_venta.cuenta_a_terceros',
+                'devoluciones_venta.exenta',
+                'devoluciones_venta.sub_total',
+                'devoluciones_venta.no_sujeta',
+                'devoluciones_venta.iva',
                 'documentos.nombre as documento_nombre',
             ])
             ->toBase();
@@ -117,13 +146,21 @@ class LibroConsumidoresFilas
         return trim((string) ($venta->correlativo ?? ''));
     }
 
-    public static function filas(iterable $ventas, bool $facturacionElectronica): array
+    /**
+     * @param  iterable  $retornos  Eventos de retorno del período (ver consultaRetornos): se restan del día en que se emitieron.
+     */
+    public static function filas(iterable $ventas, bool $facturacionElectronica, iterable $retornos = []): array
     {
-        return collect($ventas)
-            ->groupBy(function ($venta) {
-                return Carbon::parse($venta->fecha)->format('Y-m-d');
-            })
-            ->map(function ($ventasDia, $fecha) use ($facturacionElectronica) {
+        $retornosPorDia = collect($retornos)->groupBy(fn ($r) => Carbon::parse($r->fecha)->format('Y-m-d'));
+        $ventasPorDia = collect($ventas)->groupBy(fn ($venta) => Carbon::parse($venta->fecha)->format('Y-m-d'));
+
+        return $ventasPorDia->keys()->merge($retornosPorDia->keys())->unique()
+            ->mapWithKeys(fn ($fecha) => [$fecha => $ventasPorDia->get($fecha, collect())])
+            ->map(function ($ventasDia, $fecha) use ($facturacionElectronica, $retornosPorDia) {
+                $retornosDia = $retornosPorDia->get($fecha, collect());
+                // Ventas del día menos eventos de retorno del día.
+                $neto = fn (callable $monto) => $ventasDia->sum($monto) - $retornosDia->sum($monto);
+
                 $ventasOrdenadasPorCorrelativo = $ventasDia->sortBy(function ($venta) {
                     return trim((string) $venta->correlativo);
                 });
@@ -132,13 +169,13 @@ class LibroConsumidoresFilas
                     return self::codigo($venta, $facturacionElectronica);
                 });
 
-                $exportaciones = $ventasDia->sum(function ($venta) {
+                $exportaciones = $neto(function ($venta) {
                     return self::esExportacion($venta)
                         ? LibroIvaMontosHelper::montoVentaPropioSinCuentaTerceros($venta)
                         : 0;
                 });
 
-                $ventasExentas = $ventasDia->sum(function ($venta) {
+                $ventasExentas = $neto(function ($venta) {
                     if (self::esExportacion($venta)) {
                         return 0;
                     }
@@ -146,7 +183,7 @@ class LibroConsumidoresFilas
                     return LibroIvaMontosHelper::ventasExentas($venta);
                 });
 
-                $ventasGravadas = $ventasDia->sum(function ($venta) {
+                $ventasGravadas = $neto(function ($venta) {
                     if (self::esExportacion($venta)) {
                         return 0;
                     }
@@ -154,11 +191,11 @@ class LibroConsumidoresFilas
                     return LibroIvaMontosHelper::ventasGravadas($venta);
                 });
 
-                $ventasTerceros = $ventasDia->sum(function ($venta) {
+                $ventasTerceros = $neto(function ($venta) {
                     return (float) $venta->cuenta_a_terceros;
                 });
 
-                $totalDiario = $ventasDia->sum(function ($venta) {
+                $totalDiario = $neto(function ($venta) {
                     return LibroIvaMontosHelper::montoVentaPropioSinCuentaTerceros($venta);
                 });
 

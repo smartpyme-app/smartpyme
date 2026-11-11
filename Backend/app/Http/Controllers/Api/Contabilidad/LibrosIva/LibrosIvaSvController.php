@@ -71,7 +71,7 @@ class LibrosIvaSvController extends Controller
 
         $facturacionElectronica = $this->facturacionElectronicaHelper->tieneFacturacionElectronica();
         $ventas = LibroConsumidoresFilas::consulta($request, $facturacionElectronica)->get();
-        $libroconsumidores = LibroConsumidoresFilas::filas($ventas, $facturacionElectronica);
+        $libroconsumidores = LibroConsumidoresFilas::filas($ventas, $facturacionElectronica, LibroConsumidoresFilas::consultaRetornos($request)->get());
 
         $totalesConsumidores = collect($libroconsumidores)->reduce(function ($carry, $item) {
             $carry['ventas_exentas'] += $item['ventas_exentas'];
