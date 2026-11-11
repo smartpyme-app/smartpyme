@@ -96,6 +96,13 @@ export class FacturacionElectronicaService {
       : this.rejectNoSoportado();
   }
 
+  /** Solo SV: evento de retorno sobre compra de sujeto excluido. */
+  emitirDTEEventoRetornoCompra(devolucion: any): Promise<any> {
+    return this.esElSalvador()
+      ? this.elSalvador.emitirDTEEventoRetornoCompra(devolucion)
+      : this.rejectNoSoportado();
+  }
+
   emitirDTEContingencia(venta: any): Promise<any> {
     return this.esElSalvador()
       ? this.elSalvador.emitirDTEContingencia(venta)

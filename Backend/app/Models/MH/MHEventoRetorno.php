@@ -23,7 +23,7 @@ class MHEventoRetorno extends Model
     {
         $this->devolucion = $devolucion;
         $this->empresa = $this->devolucion->empresa()->first();
-        $this->dteOriginal = $this->devolucion->venta->dte;
+        $this->dteOriginal = $this->documentoOriginal();
 
         $this->devolucion->tipo_dte = '18';
         $this->devolucion->numero_control = NULL;
@@ -90,6 +90,12 @@ class MHEventoRetorno extends Model
         ];
     }
 
+    /** DTE al que se aplica el retorno. */
+    protected function documentoOriginal(): array
+    {
+        return $this->devolucion->venta->dte;
+    }
+
     /** El emisor del evento debe coincidir con el del DTE original (establecimiento, punto de venta y datos de aduana). */
     protected function emisor(): array
     {
@@ -115,7 +121,7 @@ class MHEventoRetorno extends Model
     /** Receptor tal como quedó en el DTE original. */
     protected function receptor(): array
     {
-        $r = $this->dteOriginal['receptor'] ?? [];
+        $r = $this->dteOriginal['receptor'] ?? $this->dteOriginal['sujetoExcluido'] ?? [];
 
         return [
             "tipoDocumento" => $r['tipoDocumento'] ?? NULL,
@@ -203,13 +209,14 @@ class MHEventoRetorno extends Model
     protected function prorratearRetenciones($cuerpo, float $ivaRete, float $reteRenta)
     {
         $items = collect($cuerpo)->values();
-        $base = (float) $items->sum(fn ($i) => $i['ventaGravada'] + $i['ventaExenta']);
+        $monto = fn ($i) => $i['ventaGravada'] + $i['ventaExenta'] + $i['compra'];
+        $base = (float) $items->sum($monto);
         $ultimo = $items->count() - 1;
         $acumRete = 0.0;
         $acumRenta = 0.0;
 
-        return $items->map(function ($item, $i) use ($base, $ultimo, $ivaRete, $reteRenta, &$acumRete, &$acumRenta) {
-            $peso = $base > 0 ? ($item['ventaGravada'] + $item['ventaExenta']) / $base : ($i === 0 ? 1.0 : 0.0);
+        return $items->map(function ($item, $i) use ($base, $monto, $ultimo, $ivaRete, $reteRenta, &$acumRete, &$acumRenta) {
+            $peso = $base > 0 ? $monto($item) / $base : ($i === 0 ? 1.0 : 0.0);
             $rete = $i === $ultimo ? round($ivaRete - $acumRete, 2) : round($ivaRete * $peso, 2);
             $renta = $i === $ultimo ? round($reteRenta - $acumRenta, 2) : round($reteRenta * $peso, 2);
             $acumRete += $rete;

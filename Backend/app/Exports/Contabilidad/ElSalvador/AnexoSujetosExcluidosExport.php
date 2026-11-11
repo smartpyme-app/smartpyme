@@ -60,7 +60,10 @@ class AnexoSujetosExcluidosExport implements FromCollection, WithMapping, WithCu
             });
 
 
-        $libroCompras = $compras->merge($gastos)->sortBy(function ($item) {
+        $libroCompras = $compras->merge($gastos)
+            ->toBase() // merge de Eloquent agrupa por id: el retorno pisaría a la compra con el mismo id
+            ->merge(SujetosExcluidosDteHelper::retornosCompra($request)->all())
+            ->sortBy(function ($item) {
             return $item->fecha;
         });
 

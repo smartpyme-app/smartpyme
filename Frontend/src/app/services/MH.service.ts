@@ -274,6 +274,32 @@ export class MHService {
         });
     }
 
+    /** Evento de retorno (18) sobre una compra de sujeto excluido: genera, firma, envía y guarda en la devolución de compra. */
+    emitirDTEEventoRetornoCompra(devolucion: any): Promise<any> {
+        return new Promise((resolve, reject) => {
+            this.apiService.store('generarDTEEventoRetornoCompra', { id: devolucion.id }).subscribe(dte => {
+                devolucion.dte = dte;
+                this.firmarDTE(dte).subscribe(dteFirmado => {
+                    if (dteFirmado.status == 'ERROR') {
+                        reject(dteFirmado.body.mensaje);
+                        return;
+                    }
+                    devolucion.dte.firmaElectronica = dteFirmado.body;
+                    this.enviarDTE(devolucion, dteFirmado.body).subscribe(res => {
+                        if ((res.estado == 'PROCESADO') && res.selloRecibido) {
+                            devolucion.dte.sello = res.selloRecibido;
+                            devolucion.dte.selloRecibido = res.selloRecibido;
+                            devolucion.sello_mh = res.selloRecibido;
+                            devolucion.tipo_dte = '18';
+                            devolucion.codigo_generacion = devolucion.dte.identificacion.codigoGeneracion;
+                            this.apiService.store('devolucion/compra', devolucion).subscribe(data => resolve(data), error => reject(error));
+                        }
+                    }, error => { reject(this.obtenerMensajeErrorEmision(error)); });
+                }, error => { reject(error); });
+            }, error => { reject(error); });
+        });
+    }
+
     emitirDTESujetoExcluidoGasto(gasto:any): Promise<any> {
 
         return new Promise((resolve, reject) => {

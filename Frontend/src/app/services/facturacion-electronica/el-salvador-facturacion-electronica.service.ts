@@ -17,6 +17,10 @@ export class ElSalvadorFacturacionElectronicaService {
     return this.mh.emitirDTENotaCredito(venta);
   }
 
+  emitirDTEEventoRetornoCompra(devolucion: any): Promise<any> {
+    return this.mh.emitirDTEEventoRetornoCompra(devolucion);
+  }
+
   emitirDTESujetoExcluidoGasto(gasto: any): Promise<any> {
     return this.mh.emitirDTESujetoExcluidoGasto(gasto);
   }

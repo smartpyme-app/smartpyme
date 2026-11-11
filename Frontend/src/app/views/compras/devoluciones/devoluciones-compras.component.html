@@ -119,7 +119,38 @@
                                     <a routerLink="/devolucion/compra/{{compra.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                                     </a>
-                                    @if (compra.enable == '1' && apiService.canEditTest('compras.devoluciones.editar')) {
+                                    @if (esEventoRetorno(compra)) {
+                                        @if (compra.enable == '1' && !compra.sello_mh) {
+                                            <a (click)="emitirEventoRetorno(compra)" [class.disabled]="saving" class="list-group-item list-group-item-action border-0 click">
+                                                <i class="fa fa-fw fa-file-invoice"></i> Emitir evento de retorno
+                                            </a>
+                                        }
+                                        @if (compra.sello_mh) {
+                                            <a (click)="verDteEventoRetorno(compra, 'pdf')" class="list-group-item list-group-item-action border-0 click">
+                                                <i class="fa fa-fw fa-file-pdf"></i> Ver PDF
+                                            </a>
+                                            <a (click)="verDteEventoRetorno(compra, 'json')" class="list-group-item list-group-item-action border-0 click">
+                                                <i class="fa fa-fw fa-file-code"></i> Ver JSON
+                                            </a>
+                                            <a (click)="enviarCorreoEventoRetorno(compra)" class="list-group-item list-group-item-action border-0 click">
+                                                <i class="fa fa-fw fa-envelope"></i> Enviar por correo
+                                            </a>
+                                        }
+                                        @if (tieneDteInvalidacion(compra)) {
+                                            <a (click)="verDteEventoRetorno(compra, 'pdf', true)" class="list-group-item list-group-item-action border-0 click text-danger">
+                                                <i class="fa fa-fw fa-file-pdf"></i> Ver PDF anulado
+                                            </a>
+                                            <a (click)="verDteEventoRetorno(compra, 'json', true)" class="list-group-item list-group-item-action border-0 click text-danger">
+                                                <i class="fa fa-fw fa-file-code"></i> Ver JSON anulado
+                                            </a>
+                                        }
+                                        @if (compra.enable == '1' && compra.sello_mh && apiService.canEditTest('compras.devoluciones.editar')) {
+                                            <a (click)="anularEventoRetorno(compra)" [class.disabled]="saving" class="list-group-item list-group-item-action border-0 click">
+                                                <i class="fa fa-fw fa-ban"></i> Invalidar en Hacienda
+                                            </a>
+                                        }
+                                    }
+                                    @if (compra.enable == '1' && apiService.canEditTest('compras.devoluciones.editar') && !(esEventoRetorno(compra) && compra.sello_mh)) {
                                         <a (click)="setEstado(compra, 0)" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-ban"></i> Anular devolución
                                         </a>

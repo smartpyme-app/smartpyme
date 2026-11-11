@@ -16,6 +16,8 @@ use App\Models\MH\MHAnulacion;
 use App\Models\MH\MHCCF;
 use App\Models\MH\MHContingencia;
 use App\Models\MH\MHEventoRetorno;
+use App\Models\MH\MHEventoRetornoCompra;
+use App\Models\Compras\Devoluciones\Devolucion as DevolucionCompra;
 use App\Models\MH\MHFactura;
 use App\Models\MH\MHFacturaExportacion;
 use App\Models\MH\MHNotaCredito;
@@ -113,6 +115,37 @@ class ElSalvadorDteService
         }
 
         return response()->json($DTE, 200);
+    }
+
+    /** Evento de retorno (18) sobre la Factura de sujeto excluido (14) de una compra. */
+    public function generarDTEEventoRetornoCompra(DevolucionCompra $devolucion): JsonResponse
+    {
+        $compra = $devolucion->compra;
+        $original = $compra ? $compra->dte : null;
+        if (! $compra || ! $compra->sello_mh || ($original['identificacion']['tipoDte'] ?? null) !== '14') {
+            return response()->json(['error' => 'El evento de retorno solo aplica a compras de sujeto excluido con sello de Hacienda.'], 400);
+        }
+        if (\Carbon\Carbon::parse($devolucion->fecha)->gt(\Carbon\Carbon::parse($original['identificacion']['fecEmi'])->addMonthsNoOverflow(3))) {
+            return response()->json(['error' => 'El evento de retorno solo puede aplicarse dentro de los 3 meses siguientes a la fecha del documento.'], 400);
+        }
+        $totalRetornos = DevolucionCompra::where('id_compra', $compra->id)
+            ->where('enable', '1')
+            ->where('tipo_documento', 'Evento de retorno')
+            ->sum('total');
+        if ($totalRetornos > (float) $compra->total + 0.01) {
+            return response()->json(['error' => 'La suma de los eventos de retorno supera el total de la compra.'], 400);
+        }
+
+        return response()->json((new MHEventoRetornoCompra)->generarDTE($devolucion), 200);
+    }
+
+    public function generarDTEAnuladoEventoRetornoCompra(DevolucionCompra $devolucion): JsonResponse
+    {
+        if (! $devolucion->dte || ! $devolucion->sello_mh) {
+            return response()->json(['error' => ['La devolución no tiene un evento de retorno emitido.']], 422);
+        }
+
+        return response()->json((new MHAnulacion)->generarDTE($devolucion, $devolucion->dte), 200);
     }
 
     public function generarDTESujetoExcluidoGasto(Gasto $gasto): JsonResponse
@@ -277,7 +310,9 @@ class ElSalvadorDteService
             $registro = Venta::findOrFail($id);
         }
 
-        if (in_array($tipo, ['05', '06', '18'])) {
+        if ($tipo == '18' && $request->input('origen') === 'compra') {
+            $registro = DevolucionCompra::findOrFail($id);
+        } elseif (in_array($tipo, ['05', '06', '18'])) {
             $registro = DevolucionVenta::findOrFail($id);
         }
 
@@ -358,7 +393,9 @@ class ElSalvadorDteService
             $registro = Venta::findOrFail($id);
         }
 
-        if (in_array($tipo, ['05', '06', '18'])) {
+        if ($tipo == '18' && $request->input('origen') === 'compra') {
+            $registro = DevolucionCompra::findOrFail($id);
+        } elseif (in_array($tipo, ['05', '06', '18'])) {
             $registro = DevolucionVenta::findOrFail($id);
         }
 
@@ -394,7 +431,10 @@ class ElSalvadorDteService
             $correo = $registro->cliente ? $registro->cliente->correo : null;
         }
 
-        if (in_array($request->tipo_dte, ['05', '06', '18'])) {
+        if ($request->tipo_dte == '18' && $request->input('origen') === 'compra') {
+            $registro = DevolucionCompra::with('proveedor')->where('id', $request->id)->firstOrFail();
+            $correo = $registro->proveedor ? $registro->proveedor->correo : null;
+        } elseif (in_array($request->tipo_dte, ['05', '06', '18'])) {
             $registro = DevolucionVenta::with('cliente')->where('id', $request->id)->firstOrFail();
             $correo = $registro->cliente ? $registro->cliente->correo : null;
         }

@@ -25,6 +25,8 @@
         $documento = $DTE['documento'] ?? [];
         $emisor = $DTE['emisor'];
         $resumen = $DTE['resumen'];
+        // Retorno sobre sujeto excluido (14): los ítems informan "compra" en lugar de ventas.
+        $esCompra = ($DTE['documentoRelacionado'][0]['tipoDocumento'] ?? null) === '14';
     @endphp
     <table class="table">
         <tbody>
@@ -117,8 +119,13 @@
                 <th>Descripción</th>
                 <th width="10%" class="text-right">Precio Unitario</th>
                 <th width="10%" class="text-right">Descuento por ítem</th>
-                <th width="10%" class="text-right">Ventas Exentas</th>
-                <th width="10%" class="text-right">Ventas Gravadas</th>
+                @if ($esCompra)
+                    <th width="10%" class="text-right"></th>
+                    <th width="10%" class="text-right">Compra</th>
+                @else
+                    <th width="10%" class="text-right">Ventas Exentas</th>
+                    <th width="10%" class="text-right">Ventas Gravadas</th>
+                @endif
             </tr>
         </thead>
         <tbody>
@@ -130,16 +137,26 @@
                 <td>{{ $detalle['descripcion'] }}</td>
                 <td class="text-right">${{ number_format($detalle['precioUni'], 2) }}</td>
                 <td class="text-right">${{ number_format($detalle['montoDescu'], 2) }}</td>
-                <td class="text-right">${{ number_format($detalle['ventaExenta'], 2) }}</td>
-                <td class="text-right">${{ number_format($detalle['ventaGravada'], 2) }}</td>
+                @if ($esCompra)
+                    <td></td>
+                    <td class="text-right">${{ number_format($detalle['compra'], 2) }}</td>
+                @else
+                    <td class="text-right">${{ number_format($detalle['ventaExenta'], 2) }}</td>
+                    <td class="text-right">${{ number_format($detalle['ventaGravada'], 2) }}</td>
+                @endif
             </tr>
             @endforeach
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="6" class="bg-light"><b>Suma de ventas:</b></td>
-                <td class="bg-light text-right">${{ number_format($resumen['totalExenta'], 2) }}</td>
-                <td class="bg-light text-right">${{ number_format($resumen['totalGravada'], 2) }}</td>
+                @if ($esCompra)
+                    <td colspan="7" class="bg-light"><b>Total compra:</b></td>
+                    <td class="bg-light text-right">${{ number_format($resumen['totalCompraExcluidos'], 2) }}</td>
+                @else
+                    <td colspan="6" class="bg-light"><b>Suma de ventas:</b></td>
+                    <td class="bg-light text-right">${{ number_format($resumen['totalExenta'], 2) }}</td>
+                    <td class="bg-light text-right">${{ number_format($resumen['totalGravada'], 2) }}</td>
+                @endif
             </tr>
             <tr>
                 <td colspan="7">Monto Total de la Operación:</td>

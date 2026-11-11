@@ -11,7 +11,12 @@
                 <label for="fecha">Fecha</label><br>
                 <input type="date" class="form-control" [(ngModel)]="compra.fecha" name="fecha" id="fecha" required>
             </div>
-            @if (devolucion.tipo_documento) {
+            @if (devolucion.tipo_documento == 'Evento de retorno') {
+              <div class="form-group col-md-4 col-lg-2">
+                <label>Documento</label>
+                <input type="text" class="form-control" value="Evento de retorno" readonly>
+              </div>
+            } @else if (devolucion.tipo_documento) {
               <div class="form-group col-md-4 col-lg-2">
                 <label for="tipo_documento">Documento</label>
                 <select name="tipo_documento" [(ngModel)]="devolucion.tipo_documento" class="form-select">
@@ -21,7 +26,7 @@
                 </select>
               </div>
             }
-            @if (devolucion.tipo_documento) {
+            @if (devolucion.tipo_documento && devolucion.tipo_documento != 'Evento de retorno') {
               <div class="form-group col-md-4 col-lg-2">
                 <label for="referencia">Correlativo</label>
                 <input type="number" class="form-control" [(ngModel)]="devolucion.referencia" name="referencia" id="referencia">

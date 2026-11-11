@@ -14,6 +14,7 @@ use App\Http\Requests\MH\GenerarDTESujetoExcluidoGastoRequest;
 use App\Http\Requests\MH\GenerarDTEJSONRequest;
 use App\Http\Requests\MH\GenerarDTEPDFRequest;
 use App\Models\Compras\Compra;
+use App\Models\Compras\Devoluciones\Devolucion as DevolucionCompra;
 use App\Models\Compras\Gastos\Gasto;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Ventas\Venta;
@@ -167,6 +168,32 @@ class MHDTEController extends Controller
         }
 
         return $this->elSalvadorDte->generarDTEAnuladoSujetoExcluidoGasto($gasto);
+    }
+
+    public function generarDTEEventoRetornoCompra(Request $request)
+    {
+        $request->validate(['id' => ['required', 'integer']]);
+        $devolucion = DevolucionCompra::where('id', $request->id)
+            ->with('detalles.producto', 'compra', 'empresa')
+            ->firstOrFail();
+
+        if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($devolucion->empresa)) {
+            return $guard;
+        }
+
+        return $this->elSalvadorDte->generarDTEEventoRetornoCompra($devolucion);
+    }
+
+    public function generarDTEAnuladoEventoRetornoCompra(Request $request)
+    {
+        $request->validate(['id' => ['required', 'integer']]);
+        $devolucion = DevolucionCompra::where('id', $request->id)->with('empresa')->firstOrFail();
+
+        if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($devolucion->empresa)) {
+            return $guard;
+        }
+
+        return $this->elSalvadorDte->generarDTEAnuladoEventoRetornoCompra($devolucion);
     }
 
     public function generarTicket($id)

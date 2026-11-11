@@ -98,7 +98,10 @@ class LibroSujetosExcluidosExport implements FromCollection, WithMapping, WithHe
                 return $gasto;
             });
 
-        $libroCompras = $compras->merge($gastos)->sortBy('fecha');
+        $libroCompras = $compras->merge($gastos)
+            ->toBase() // merge de Eloquent agrupa por id: el retorno pisaría a la compra con el mismo id
+            ->merge(SujetosExcluidosDteHelper::retornosCompra($request)->all())
+            ->sortBy('fecha');
 
         return $libroCompras;
     }

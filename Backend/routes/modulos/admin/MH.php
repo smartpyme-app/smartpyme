@@ -22,6 +22,8 @@ use App\Http\Controllers\Api\Admin\MHDTEController;
     Route::post('/generarDTEAnuladoSujetoExcluidoCompra',    [MHDTEController::class, 'generarDTEAnuladoSujetoExcluidoCompra']);
     Route::post('/generarContingencia',    [MHDTEController::class, 'generarContingencia']);
     Route::post('/generarDTEAnulado',    [MHDTEController::class, 'generarDTEAnulado']);
+    Route::post('/generarDTEEventoRetornoCompra',    [MHDTEController::class, 'generarDTEEventoRetornoCompra']);
+    Route::post('/generarDTEAnuladoEventoRetornoCompra',    [MHDTEController::class, 'generarDTEAnuladoEventoRetornoCompra']);
 
     Route::post('/consultarDTE',    [MHDTEController::class, 'consultarDTE']);
 

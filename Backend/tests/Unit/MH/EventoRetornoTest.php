@@ -121,6 +121,52 @@ class EventoRetornoTest extends TestCase
         $this->assertSame(29.5, (float) $dte['resumen']['totalPagar']);
     }
 
+    public function test_retorno_de_compra_sujeto_excluido_usa_compra_y_renta_proporcional(): void
+    {
+        $original = [
+            'identificacion' => ['tipoDte' => '14', 'codigoGeneracion' => 'AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE', 'fecEmi' => '2026-12-01', 'numeroControl' => 'DTE-14-M001P001-000000000000001'],
+            'emisor' => [],
+            'receptor' => ['tipoDocumento' => '13', 'numDocumento' => '012345678', 'nombre' => 'Proveedor SE', 'telefono' => null, 'correo' => null],
+            'resumen' => ['totalCompra' => 100.0, 'reteRenta' => 10.0],
+        ];
+        $empresa = (object) ['nit' => '06140101011011', 'nombre' => 'Empresa Demo', 'fe_ambiente' => '00'];
+        $devolucion = new class($empresa, $original) {
+            public $tipo_dte;
+            public $codigo_generacion;
+            public $fecha = '2026-12-05';
+            public $created_at = '2026-12-05 10:00:00';
+            public $compra;
+            public $detalles;
+
+            public function __construct(private $empresaObj, array $dte)
+            {
+                $this->compra = (object) ['dte' => $dte, 'iva' => 0];
+                $this->detalles = [(object) ['costo' => 25, 'cantidad' => 2, 'descuento' => 0, 'nombre_producto' => 'Insumo', 'producto' => (object) ['tipo' => 'Producto']]];
+            }
+
+            public function empresa()
+            {
+                return new class($this->empresaObj) {
+                    public function __construct(private $e) {}
+                    public function first() { return $this->e; }
+                };
+            }
+
+            public function save() {}
+        };
+
+        $dte = json_decode(json_encode((new \App\Models\MH\MHEventoRetornoCompra)->generarDTE($devolucion)), true);
+
+        $this->assertCumpleEsquema($this->esquema(), $dte);
+        $this->assertSame('14', $dte['documentoRelacionado'][0]['tipoDocumento']);
+        $this->assertSame(50.0, (float) $dte['cuerpoDocumento'][0]['compra']);
+        $this->assertSame(50.0, (float) $dte['resumen']['totalCompraExcluidos']);
+        // Mitad de la compra: mitad de la renta retenida original.
+        $this->assertSame(5.0, (float) $dte['resumen']['reteRenta']);
+        $this->assertSame(45.0, (float) $dte['resumen']['totalPagar']);
+        $this->assertSame('Proveedor SE', $dte['documento']['nombre']);
+    }
+
     public function test_retorno_de_exportacion_no_lleva_iva_y_copia_datos_de_aduana(): void
     {
         $original = [

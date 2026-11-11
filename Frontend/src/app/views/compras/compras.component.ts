@@ -830,6 +830,13 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
         return empresaEsElSalvador(this.apiService.auth_user()?.empresa);
     }
 
+    /** Con FE SV activa, la devolución de una compra de sujeto excluido se documenta con Evento de retorno. */
+    esSujetoExcluidoConFe(compra: any): boolean {
+        return !!this.apiService.auth_user()?.empresa?.facturacion_electronica
+            && this.esElSalvadorFe()
+            && compra?.tipo_documento === 'Sujeto excluido';
+    }
+
     private esPayloadErrorEmisionFeCr(e: unknown): e is FeCrErrorEmisionPayload {
         return (
             typeof e === 'object' &&
