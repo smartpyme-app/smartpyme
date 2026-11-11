@@ -30,8 +30,6 @@ use App\Http\Controllers\Api\Admin\MHDTEController;
 
     // Enviar DTE
     Route::post('/enviarDTE',           [MHDTEController::class, 'enviarDTE']);
-    // Anular DTE
-    Route::post('/anularDTE',           [MHDTEController::class, 'anularDTE']);
     Route::get('/reporte/dte/{id}/{tipo}',     [MHDTEController::class, 'generarDTEPDF']);
     Route::get('/reporte/dte-json/{id}/{tipo}',    [MHDTEController::class, 'generarDTEJSON']);
     Route::get('/reporte/dte-xml/{id}/{tipo}',    [MHDTEController::class, 'generarDteXmlCostaRica']);

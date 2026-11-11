@@ -3,8 +3,6 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\MH\AnularDTERequest;
-use App\Http\Requests\MH\AnularDTESujetoExcluidoRequest;
 use App\Http\Requests\MH\ConsultarDTERequest;
 use App\Http\Requests\MH\EnviarDTERequest;
 use App\Http\Requests\MH\GenerarContingenciaRequest;
@@ -180,28 +178,6 @@ class MHDTEController extends Controller
         }
 
         return $this->elSalvadorDte->generarTicket($venta);
-    }
-
-    public function anularDTE(AnularDTERequest $request)
-    {
-        $venta = Venta::where('id', $request->id)->with('empresa')->firstOrFail();
-
-        if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($venta->empresa)) {
-            return $guard;
-        }
-
-        return $this->elSalvadorDte->anularDTE($request);
-    }
-
-    public function anularDTESujetoExcluido(AnularDTESujetoExcluidoRequest $request)
-    {
-        $gasto = Gasto::where('id', $request->id)->with('empresa')->firstOrFail();
-
-        if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($gasto->empresa)) {
-            return $guard;
-        }
-
-        return $this->elSalvadorDte->anularDTESujetoExcluido($request);
     }
 
     public function generarDTEPDF($id, $tipo, GenerarDTEPDFRequest $request)

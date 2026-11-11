@@ -3,8 +3,6 @@
 namespace App\Services\FacturacionElectronica\ElSalvador;
 
 use App\Http\Controllers\Api\Admin\MHDTEController;
-use App\Http\Requests\MH\AnularDTERequest;
-use App\Http\Requests\MH\AnularDTESujetoExcluidoRequest;
 use App\Http\Requests\MH\ConsultarDTERequest;
 use App\Http\Requests\MH\EnviarDTERequest;
 use App\Http\Requests\MH\GenerarContingenciaRequest;
@@ -14,7 +12,6 @@ use App\Http\Requests\MH\GenerarDTEPDFRequest;
 use App\Models\Admin\Empresa;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Gastos\Gasto;
-use App\Models\MH\MH;
 use App\Models\MH\MHAnulacion;
 use App\Models\MH\MHCCF;
 use App\Models\MH\MHContingencia;
@@ -263,106 +260,6 @@ class ElSalvadorDteService
         $venta->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente=' . $DTE['identificacion']['ambiente'] . '&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
 
         return view('reportes.DTE-Ticket', compact('venta', 'DTE'));
-    }
-
-    public function anularDTE(AnularDTERequest $request): JsonResponse
-    {
-        $venta = Venta::where('id', $request->id)->firstOrFail();
-        $DTE = json_decode($venta->dte, true);
-
-        $mh = new MH;
-
-        $auth = $mh->auth($venta->empresa);
-
-        if ($auth['status'] == 'ERROR') {
-            return response()->json(['error' => [$auth['body']['descripcionMsg']]], 422);
-        }
-
-        $mh->venta = $venta;
-
-        $DTEAnular = $mh->generarDTEAnulado($DTE);
-
-        if (isset($DTEAnular['status']) == 'ERROR') {
-            return response()->json($DTEAnular, 500);
-        }
-
-        $DTEFirmado = $mh->firmarDTE($DTEAnular);
-
-        if ($DTEFirmado['status'] == 'ERROR') {
-            return response()->json($DTEFirmado, 500);
-        }
-
-        $DTEEnviado = $mh->anularDTE($auth, $DTE, $DTEFirmado);
-
-        if (isset($DTEEnviado['estado']) == 'PROCESADO' && isset($DTEEnviado['selloRecibido'])) {
-            $DTEAnular['sello'] = $DTEEnviado['selloRecibido'];
-            $DTEAnular['firmaElectronica'] = $DTEFirmado['body'];
-
-            $v = Venta::findOrFail($venta->id);
-            $v->estado = 'Anulada';
-            $v->dte_invalidacion = $DTEAnular;
-            if ($request->has('fecha_anulacion')) {
-                $v->fecha_anulacion = $request->fecha_anulacion;
-            }
-            if ($request->has('tipo_anulacion')) {
-                $v->tipo_anulacion = $request->tipo_anulacion;
-            }
-            if ($request->has('motivo_anulacion')) {
-                $v->motivo_anulacion = $request->motivo_anulacion;
-            }
-            if ($request->has('codigo_generacion_remplazo')) {
-                $v->codigo_generacion_remplazo = $request->codigo_generacion_remplazo;
-            }
-            $v->save();
-
-            return response()->json($DTEEnviado, 200);
-        }
-
-        return response()->json($DTEEnviado, 500);
-    }
-
-    public function anularDTESujetoExcluido(AnularDTESujetoExcluidoRequest $request): JsonResponse
-    {
-        $gasto = Gasto::where('id', $request->id)->firstOrFail();
-        $DTE = json_decode($gasto->dte, true);
-
-        $mh = new MH;
-
-        $auth = $mh->auth($gasto->empresa);
-
-        if ($auth['status'] == 'ERROR') {
-            return response()->json(['error' => [$auth['body']['descripcionMsg']]], 422);
-        }
-
-        $mh->gasto = $gasto;
-
-        $DTEAnular = $mh->generarDTEAnulado($DTE);
-
-        if (isset($DTEAnular['status']) == 'ERROR') {
-            return response()->json($DTEAnular, 500);
-        }
-
-        $DTEFirmado = $mh->firmarDTE($DTEAnular);
-
-        if ($DTEFirmado['status'] == 'ERROR') {
-            return response()->json($DTEFirmado, 500);
-        }
-
-        $DTEEnviado = $mh->anularDTE($auth, $DTE, $DTEFirmado);
-
-        if (isset($DTEEnviado['estado']) == 'PROCESADO' && isset($DTEEnviado['selloRecibido'])) {
-            $DTEAnular['sello'] = $DTEEnviado['selloRecibido'];
-            $DTEAnular['firmaElectronica'] = $DTEFirmado['body'];
-
-            $c = Gasto::findOrFail($gasto->id);
-            $c->estado = 'Anulada';
-            $c->dte_invalidacion = $DTEAnular;
-            $c->save();
-
-            return response()->json($DTEEnviado, 200);
-        }
-
-        return response()->json($DTEEnviado, 500);
     }
 
     public function generarDTEPDF(int|string $id, string $tipo, GenerarDTEPDFRequest $request): JsonResponse|Response
