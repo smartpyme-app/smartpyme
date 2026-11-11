@@ -38,7 +38,9 @@ class MHEventoRetorno extends Model
         $ivaRete = floatval(number_format($this->devolucion->iva_retenido ?? 0, 2, '.', ''));
         $reteRenta = floatval(number_format($this->devolucion->renta_retenida ?? 0, 2, '.', ''));
         $cuerpo = $this->prorratearRetenciones($cuerpo, $ivaRete, $reteRenta);
-        $totalPagar = floatval(number_format($bases['subTotalVentas'] - $ivaRete - $reteRenta, 2, '.', ''));
+        $tributos = $this->tributosProporcionales($cuerpo, $bases['subTotalVentas']);
+        $montoTotalOperacion = floatval(number_format($bases['subTotalVentas'] + $this->sumaValoresTributosResumen($tributos), 2, '.', ''));
+        $totalPagar = floatval(number_format($montoTotalOperacion - $ivaRete - $reteRenta, 2, '.', ''));
 
         return [
             "identificacion" => [
@@ -71,10 +73,10 @@ class MHEventoRetorno extends Model
                 "totalGravada" => $bases['totalGravada'],
                 "totalCompraExcluidos" => 0,
                 "subTotalVentas" => $bases['subTotalVentas'],
-                "tributos" => NULL,
+                "tributos" => $tributos,
                 "totalSeguro" => 0,
                 "totalFlete" => 0,
-                "montoTotalOperacion" => $bases['subTotalVentas'],
+                "montoTotalOperacion" => $montoTotalOperacion,
                 "ivaRete" => $ivaRete,
                 "reteRenta" => $reteRenta,
                 "totalNoGravado" => 0,
@@ -130,8 +132,10 @@ class MHEventoRetorno extends Model
     {
         $codigoGeneracion = $this->dteOriginal['identificacion']['codigoGeneracion'];
         $factorIva = (!$esExportacion && (float) $this->devolucion->iva > 0) ? 1.13 : 1;
+        // Tributos no-IVA (p. ej. turismo) por ítem: los mismos códigos que tenía el ítem en el DTE original.
+        $tributosOriginales = collect($this->dteOriginal['cuerpoDocumento'] ?? [])->pluck('tributos', 'descripcion');
 
-        return collect($this->devolucion->detalles)->values()->map(function ($detalle, $index) use ($codigoGeneracion, $factorIva, $esExportacion) {
+        return collect($this->devolucion->detalles)->values()->map(function ($detalle, $index) use ($codigoGeneracion, $factorIva, $esExportacion, $tributosOriginales) {
             $cod = $this->codigoUnidad($detalle->unidad);
             $tipoItem = optional($detalle->producto)->tipo == 'Servicio' ? 2 : 1;
             $precioUni = round(floatval($detalle->precio) * $factorIva, 4);
@@ -155,7 +159,7 @@ class MHEventoRetorno extends Model
                 "ventaExenta" => $gravada ? 0 : $ventaItem,
                 "ventaGravada" => $gravada ? $ventaItem : 0,
                 "compra" => 0,
-                "tributos" => NULL,
+                "tributos" => $tributosOriginales->get($detalle->nombre_producto) ?: NULL,
                 "psv" => 0,
                 "ivaItem" => $factorIva > 1 ? round($ventaItem * 13 / 113, 4) : 0,
                 "noGravado" => 0,
@@ -163,6 +167,31 @@ class MHEventoRetorno extends Model
                 "flete" => 0,
             ];
         });
+    }
+
+    /**
+     * resumen.tributos del DTE original escalados por la proporción devuelta (subtotal del retorno / subtotal original),
+     * solo para los códigos que llevan los ítems devueltos.
+     */
+    protected function tributosProporcionales($cuerpo, float $subTotalRetorno)
+    {
+        $codigos = collect($cuerpo)->pluck('tributos')->filter()->flatten()->unique();
+        $subTotalOriginal = (float) ($this->dteOriginal['resumen']['subTotalVentas'] ?? 0);
+        if ($codigos->isEmpty() || $subTotalOriginal <= 0) {
+            return NULL;
+        }
+        $proporcion = $subTotalRetorno / $subTotalOriginal;
+
+        $tributos = collect($this->dteOriginal['resumen']['tributos'] ?? [])
+            ->filter(fn ($t) => $codigos->contains($t['codigo']))
+            ->map(fn ($t) => [
+                'codigo' => $t['codigo'],
+                'descripcion' => $t['descripcion'],
+                'valor' => round((float) $t['valor'] * $proporcion, 2),
+            ])
+            ->values();
+
+        return $tributos->isEmpty() ? NULL : $tributos;
     }
 
     protected function codigoUnidad($unidad)

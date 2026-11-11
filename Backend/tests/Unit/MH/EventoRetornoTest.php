@@ -100,6 +100,27 @@ class EventoRetornoTest extends TestCase
         $this->assertSame(28.0, (float) $dte['resumen']['totalPagar']);
     }
 
+    public function test_retorno_lleva_tributos_no_iva_proporcionales_al_original(): void
+    {
+        $original = [
+            'identificacion' => ['tipoDte' => '01', 'codigoGeneracion' => 'AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE', 'fecEmi' => '2026-12-01', 'numeroControl' => 'DTE-01-M001P001-000000000000001'],
+            'emisor' => [],
+            'receptor' => ['tipoDocumento' => null, 'numDocumento' => null, 'nombre' => 'Clientes Varios', 'telefono' => null, 'correo' => null],
+            'cuerpoDocumento' => [['descripcion' => 'Producto 1', 'tributos' => ['59']], ['descripcion' => 'Servicio 1', 'tributos' => null]],
+            'resumen' => ['subTotalVentas' => 56.50, 'tributos' => [['codigo' => '59', 'descripcion' => 'Turismo 5%', 'valor' => 2.50]]],
+        ];
+
+        $dte = json_decode(json_encode($this->generar($this->devolucion($original, 3.25))), true);
+
+        $this->assertCumpleEsquema($this->esquema(), $dte);
+        $this->assertSame(['59'], $dte['cuerpoDocumento'][0]['tributos']);
+        $this->assertNull($dte['cuerpoDocumento'][1]['tributos']);
+        // Retorno de 28.25 sobre 56.50 = mitad del tributo original.
+        $this->assertSame(1.25, (float) $dte['resumen']['tributos'][0]['valor']);
+        $this->assertSame(29.5, (float) $dte['resumen']['montoTotalOperacion']);
+        $this->assertSame(29.5, (float) $dte['resumen']['totalPagar']);
+    }
+
     public function test_retorno_de_exportacion_no_lleva_iva_y_copia_datos_de_aduana(): void
     {
         $original = [
