@@ -10,6 +10,10 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { BaseComponent } from '@shared/base/base.component';
+import {
+  descuentoImplicitoLinea,
+  lineaGastoTieneDesglose,
+} from '@services/compras/compra-detalle-desde-dte.util';
 import { CrearAbonoGastoComponent } from '@shared/modals/crear-abono-gasto/crear-abono-gasto.component';
 import { EditarAbonoComponent } from '@shared/modals/editar-abono/editar-abono.component';
 
@@ -41,6 +45,15 @@ export class GastoDetallesComponent extends BaseComponent implements OnInit {
 
 	ngOnInit() {
         this.loadAll();
+    }
+
+    mostrarLineas(): boolean {
+        const lineas = this.gasto?.detalles ?? [];
+        return lineas.length > 1 || (lineas.length === 1 && lineaGastoTieneDesglose(lineas[0]));
+    }
+
+    descuentoDe(d: any): number {
+        return descuentoImplicitoLinea(d?.cantidad, d?.precio_unitario, d?.sub_total);
     }
 
     public loadAll(){
