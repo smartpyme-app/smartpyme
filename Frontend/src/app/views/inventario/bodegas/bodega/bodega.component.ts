@@ -66,8 +66,43 @@ export class BodegaComponent extends BasePaginatedModalComponent implements OnIn
     }
 
     override openModal(template: TemplateRef<any>, producto:any) {
-        this.producto = producto;
-        super.openModal(template, {class: 'modal-md'});
+        this.producto = { ...producto };
+        this.producto.ubicaciones = (producto?.ubicaciones || []).map((u: any) => ({ ...u }));
+        if (!this.producto.ubicaciones.length) {
+            this.producto.ubicaciones.push({ ubicacion: null, ubicacion_especifica: null, detalle: null, activa: true });
+        }
+        super.openModal(template, {class: 'modal-lg'});
+    }
+
+    public agregarUbicacion(): void {
+        if (!this.producto.ubicaciones) {
+            this.producto.ubicaciones = [];
+        }
+        this.producto.ubicaciones.push({ ubicacion: null, ubicacion_especifica: null, detalle: null, activa: true });
+        this.cdr.markForCheck();
+    }
+
+    public quitarUbicacion(index: number): void {
+        this.producto.ubicaciones.splice(index, 1);
+        this.cdr.markForCheck();
+    }
+
+    public formatoUbicaciones(ubicaciones: any[] | null | undefined): string {
+        if (!ubicaciones || !ubicaciones.length) {
+            return '—';
+        }
+        return ubicaciones.map((u) => {
+            const partes = [
+                u?.ubicacion ? u.ubicacion : '—',
+                u?.ubicacion_especifica ? u.ubicacion_especifica : '—',
+                u?.detalle ? u.detalle : '—',
+            ];
+            let texto = partes.join(' / ');
+            if (u?.activa === false) {
+                texto += ' (sin existencias)';
+            }
+            return texto;
+        }).join('\n');
     }
 
     public async onSubmit() {
@@ -90,7 +125,7 @@ export class BodegaComponent extends BasePaginatedModalComponent implements OnIn
     }
 
     public search(){
-        if(this.buscador && this.buscador.length > 2) {
+        if(this.buscador && this.buscador.length >= 1) {
             this.apiService.getAll('bodega/productos/buscar/' + this.id + '/' + this.buscador)
               .pipe(this.untilDestroyed())
               .subscribe(productos => { 

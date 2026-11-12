@@ -1,0 +1,132 @@
+<div class="row">
+    <h6 class="my-3 font-weight-bold">
+        Ubicaciones
+        @if (inventariosDisponibles.length > 0) {
+            <a class="btn btn-default float-end" (click)="openModal(mubicacion, null)" tooltip="Agregar ubicación">
+                <i class="fa fa-plus"></i> Agregar ubicación
+            </a>
+        }
+    </h6>
+
+    <div class="table-responsive">
+        <table class="table table-borderless table-hover">
+            <thead>
+                <tr>
+                    <th>Bodega</th>
+                    <th>Ubicación</th>
+                    <th>Ubicación específica</th>
+                    <th>Detalle</th>
+                    <th class="text-center" style="width: 100px;"><i class="fa fa-cog"></i></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (loading) {
+                    <tr>
+                        <td colspan="5" class="text-center">
+                            <span class="badge bg-primary">Guardando...</span>
+                        </td>
+                    </tr>
+                }
+                @if (!loading && inventariosDisponibles.length === 0) {
+                    <tr>
+                        <td colspan="5" class="text-center">
+                            <span class="text-muted">Configure primero el inventario en una bodega para poder agregar ubicaciones.</span>
+                        </td>
+                    </tr>
+                }
+                @if (!loading && inventariosDisponibles.length > 0 && filas.length === 0) {
+                    <tr>
+                        <td colspan="5" class="text-center">
+                            <span class="text-muted">No tiene ubicaciones configuradas</span>
+                        </td>
+                    </tr>
+                }
+                @for (fila of filas; track fila.ubicacion.id || $index) {
+                    <tr [class.text-muted]="fila.ubicacion.activa === false">
+                        <td>{{ fila.nombre_bodega }}</td>
+                        <td>{{ fila.ubicacion.ubicacion || '—' }}</td>
+                        <td>{{ fila.ubicacion.ubicacion_especifica || '—' }}</td>
+                        <td style="white-space: pre-line;">{{ fila.ubicacion.detalle || '—' }}@if (fila.ubicacion.activa === false) { <small class="text-muted">(sin existencias)</small> }</td>
+                        <td class="text-center">
+                            <div class="d-flex gap-2 justify-content-center">
+                                <a class="btn btn-light" (click)="openModal(mubicacion, fila)" tooltip="Editar" href="javascript:void(0)">
+                                    <i class="fa fa-pencil-alt"></i>
+                                </a>
+                                <a class="btn btn-light" (click)="delete(fila)" tooltip="Eliminar" href="javascript:void(0)">
+                                    <i class="fa fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<ng-template #mubicacion>
+    <div class="modal-header">
+        <h3 class="modal-title text-center w-100">
+            @if (form.id || editIndex !== null) {
+                <span>Editar ubicación</span>
+            } @else {
+                <span>Agregar ubicación</span>
+            }
+            <br>
+            <small class="text-muted fw-normal">{{ producto.nombre }}</small>
+        </h3>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <form autocomplete="off" (ngSubmit)="onSubmit()">
+            <app-notificaciones-container></app-notificaciones-container>
+            <div class="alert alert-info mb-3">
+                <i class="fa fa-info-circle me-1"></i>
+                Ubicación del producto en bodega.
+                <strong>Sin existencias</strong> mantiene el registro del lugar aunque no haya existencias.
+            </div>
+            <div class="row">
+                <div class="form-group col-md-12 mb-3">
+                    <label for="id_inventario">Bodega</label>
+                    <select class="form-select" name="id_inventario" [(ngModel)]="form.id_inventario" [disabled]="!!form.id || editIndex !== null">
+                        <option [ngValue]="null">Seleccione aquí</option>
+                        @for (inv of inventariosDisponibles; track inv.id) {
+                            <option [ngValue]="inv.id">{{ inv.nombre_bodega }}</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group col-md-6 mb-3">
+                    <label for="ubicacion">Ubicación</label>
+                    <input type="text" class="form-control" name="ubicacion" [(ngModel)]="form.ubicacion" maxlength="100" placeholder="Ej. Pasillo A">
+                </div>
+                <div class="form-group col-md-6 mb-3">
+                    <label for="ubicacion_especifica">Ubicación específica</label>
+                    <input type="text" class="form-control" name="ubicacion_especifica" [(ngModel)]="form.ubicacion_especifica" maxlength="100" placeholder="Ej. Estante 3">
+                </div>
+                <div class="form-group col-md-12 mb-3">
+                    <label for="detalle">Detalle</label>
+                    <textarea class="form-control" name="detalle" [(ngModel)]="form.detalle" rows="2" placeholder="Ej. Nivel 2, detrás de la puerta"></textarea>
+                </div>
+                <div class="form-group col-md-12 mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="sin_existencias"
+                            [ngModel]="form.activa === false"
+                            (ngModelChange)="form.activa = !$event"
+                            name="sin_existencias">
+                        <label class="form-check-label" for="sin_existencias">Sin existencias</label>
+                    </div>
+                </div>
+            </div>
+            <div class="d-grid mt-2">
+                <button type="submit" class="btn btn-primary btn-block" [disabled]="loading || !form.id_inventario">
+                    @if (!loading) {
+                        <span>Guardar</span>
+                    }
+                    @if (loading) {
+                        <span>Guardando...</span>
+                    }
+                </button>
+            </div>
+        </form>
+    </div>
+</ng-template>

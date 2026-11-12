@@ -14,6 +14,7 @@ import { ProductoLotesComponent } from './lotes/producto-lotes.component';
 import { ProductoPreciosComponent } from './precios/producto-precios.component';
 import { ProductoProveedoresComponent } from './proveedores/producto-proveedores.component';
 import { ProductoImagenesComponent } from './imagenes/producto-imagenes.component';
+import { ProductoUbicacionesComponent } from './ubicaciones/producto-ubicaciones.component';
 import { resolverPorcentajeImpuestoCompra } from '@utils/impuestos-compra.util';
 
 @Component({
@@ -24,6 +25,7 @@ import { resolverPorcentajeImpuestoCompra } from '@utils/impuestos-compra.util';
     CommonModule,
     RouterModule,
     ProductoInformacionComponent,
+    ProductoUbicacionesComponent,
     ProductoComposicionComponent,
     ProductoPresentacionesComponent,
     ProductoInventariosComponent,

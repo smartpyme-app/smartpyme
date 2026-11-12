@@ -47,6 +47,7 @@
                 <th class="text-center">N°</th>
                 <th>Producto</th>
                 <th class="text-center">Categoria</th>
+                <th class="text-center">Ubicación</th>
                 <th class="text-center">Stock</th>
                 <th class="text-center">Costo</th>
                 <th class="text-center">Total</th>
@@ -60,6 +61,7 @@
                 <td class="text-center">{{ $key + 1}}</td>
                 <td>{{ $producto['nombre'] }}</td>
                 <td class="text-center">{{ $producto['categoria'] }} / {{ $producto['subcategoria'] }}</td>
+                <td class="text-center" style="white-space: pre-line;">{{ $producto['ubicacion'] }}</td>
                 <td class="text-center">{{ $producto['stock'] }}</td>
                 <td class="text-center">${{ number_format($producto['costo'], 2) }}</td>
                 <td class="text-center">${{ number_format($producto['costoTotal'], 2) }}</td>

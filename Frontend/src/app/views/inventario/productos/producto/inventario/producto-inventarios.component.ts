@@ -78,7 +78,8 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
     }
 
     override openModal(template: TemplateRef<any>, inventario:any) {
-        this.inventario = inventario;
+        this.inventario = { ...inventario };
+        this.inventario.ubicaciones = (inventario?.ubicaciones || []).map((u: any) => ({ ...u }));
 
         this.actualizarBodegasDisponibles(inventario?.id_bodega);
         this.loading = false;
@@ -89,8 +90,44 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
             this.inventario.stock = 0;
             this.inventario.stock_minimo = this.inventario.stock_minimo ?? 0;
             this.inventario.stock_maximo = this.inventario.stock_maximo ?? 0;
+            this.inventario.ubicaciones = [];
         }
-        super.openModal(template, {class: 'modal-md'});
+        // Una fila vacía para que los campos se vean al abrir, sin un clic extra.
+        if (!this.inventario.ubicaciones.length) {
+            this.inventario.ubicaciones.push({ ubicacion: null, ubicacion_especifica: null, detalle: null, activa: true });
+        }
+        super.openModal(template, {class: 'modal-lg'});
+    }
+
+    public agregarUbicacion(): void {
+        if (!this.inventario.ubicaciones) {
+            this.inventario.ubicaciones = [];
+        }
+        this.inventario.ubicaciones.push({ ubicacion: null, ubicacion_especifica: null, detalle: null, activa: true });
+        this.cdr.markForCheck();
+    }
+
+    public quitarUbicacion(index: number): void {
+        this.inventario.ubicaciones.splice(index, 1);
+        this.cdr.markForCheck();
+    }
+
+    public formatoUbicaciones(ubicaciones: any[] | null | undefined): string {
+        if (!ubicaciones || !ubicaciones.length) {
+            return '—';
+        }
+        return ubicaciones.map((u) => {
+            const partes = [
+                u?.ubicacion ? u.ubicacion : '—',
+                u?.ubicacion_especifica ? u.ubicacion_especifica : '—',
+                u?.detalle ? u.detalle : '—',
+            ];
+            let texto = partes.join(' / ');
+            if (u?.activa === false) {
+                texto += ' (sin existencias)';
+            }
+            return texto;
+        }).join('\n');
     }
 
     public onSubmit() {

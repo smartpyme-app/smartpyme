@@ -29,17 +29,25 @@ class InventariosController extends Controller
 
     public function productos($id) {
 
-            $productos = Inventario::where('id_bodega', $id)->with('producto')->paginate(50);
+            $productos = Inventario::where('id_bodega', $id)->with(['producto', 'ubicaciones'])->paginate(50);
 
             return Response()->json($productos, 200);
     }
 
     public function search($id_bodega, $txt) {
 
-        $productos = Inventario::where('id_bodega', $id_bodega)->with('producto')
-                                    ->whereHas('producto', function($query) use ($txt){
-                                        return $query->where('nombre', 'like' ,'%' . $txt . '%');
-                                    })->paginate(30);
+        $productos = Inventario::where('id_bodega', $id_bodega)
+            ->with(['producto', 'ubicaciones'])
+            ->where(function ($query) use ($txt) {
+                $query->whereHas('producto', function ($q) use ($txt) {
+                    $q->where('nombre', 'like', '%' . $txt . '%');
+                })->orWhereHas('ubicaciones', function ($q) use ($txt) {
+                    $q->where('ubicacion', 'like', '%' . $txt . '%')
+                        ->orWhere('ubicacion_especifica', 'like', '%' . $txt . '%')
+                        ->orWhere('detalle', 'like', '%' . $txt . '%');
+                });
+            })
+            ->paginate(30);
 
         return Response()->json($productos, 200);
 
@@ -79,8 +87,14 @@ class InventariosController extends Controller
             $inventario = new Inventario;
         }
 
-        $inventario->fill($request->all());
+        $inventario->fill($request->except('ubicaciones'));
         $inventario->save();
+
+        if ($request->has('ubicaciones')) {
+            $inventario->syncUbicaciones($request->input('ubicaciones', []));
+        }
+
+        $inventario->load('ubicaciones');
 
         return Response()->json($inventario, 200);
 

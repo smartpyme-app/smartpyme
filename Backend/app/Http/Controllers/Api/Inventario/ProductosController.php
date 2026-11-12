@@ -157,6 +157,15 @@ class ProductosController extends Controller
                     }
                 },
             ]);
+
+            // Flag booleano vía EXISTS (no carga filas de ubicaciones).
+            if (Schema::hasTable('inventario_ubicaciones')) {
+                $query->withExists([
+                    'inventarios as tiene_ubicaciones' => function ($q) {
+                        $q->whereHas('ubicaciones');
+                    },
+                ]);
+            }
         }
 
         $query->when($request->id_categoria, function ($q) use ($request) {
@@ -679,7 +688,7 @@ class ProductosController extends Controller
         $empresa = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
 
         $with = [
-            'inventarios',
+            'inventarios.ubicaciones',
             'composiciones.compuesto',
             'composiciones.opciones',
             'precios.usuarios',

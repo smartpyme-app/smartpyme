@@ -53,6 +53,23 @@ export class VerProductoComponent {
       },error => {this.alertService.error(error);this.loading = false; this.cdr.markForCheck();});
     }
   }
-  
+
+  formatoUbicaciones(ubicaciones: any[] | null | undefined): string {
+    if (!ubicaciones || !ubicaciones.length) {
+      return '—';
+    }
+    return ubicaciones.map((u) => {
+      const partes = [
+        u?.ubicacion ? u.ubicacion : '—',
+        u?.ubicacion_especifica ? u.ubicacion_especifica : '—',
+        u?.detalle ? u.detalle : '—',
+      ];
+      let texto = partes.join(' / ');
+      if (u?.activa === false) {
+        texto += ' (sin existencias)';
+      }
+      return texto;
+    }).join('\n');
+  }
 
 }

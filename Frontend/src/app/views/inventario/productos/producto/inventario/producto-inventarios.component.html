@@ -14,6 +14,7 @@
                     <th>Sucursal</th>
                     <th class="text-center d-none d-lg-table-cell">Stock mínino</th>
                     <th class="text-center d-none d-lg-table-cell">Stock máximo</th>
+                    <th>Ubicación</th>
                     <th class="text-center">Stock</th>
                     <th class="text-center" style="width: 100px;"><i class="fa fa-cog"></i></th>
                 </tr>
@@ -21,14 +22,14 @@
             <tbody>
                 @if (loading) {
                     <tr>
-                        <td colspan="6" class="text-center">
+                        <td colspan="7" class="text-center">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
                 }
                 @if (!loading && producto?.inventarios.length == 0) {
                     <tr>
-                        <td colspan="6" class="text-center">
+                        <td colspan="7" class="text-center">
                             <span class="text-muted">No tiene inventarios configurados</span>
                         </td>
                     </tr>
@@ -39,6 +40,7 @@
                         <td>{{ bodega.nombre_sucursal }}</td>
                         <td class="text-center d-none d-lg-table-cell">{{ bodega.stock_minimo }}</td>
                         <td class="text-center d-none d-lg-table-cell">{{ bodega.stock_maximo }}</td>
+                        <td style="white-space: pre-line;">{{ formatoUbicaciones(bodega.ubicaciones) }}</td>
                         <td class="text-center">{{ bodega.stock | number:'1.2' }}</td>
                         <td class="text-center">
                             <div class="d-flex gap-2 justify-content-center align-items-center">
@@ -94,6 +96,52 @@
                 <label for="stock_maximo">Stock máximo:</label>
                 <input type="number" [(ngModel)]="inventario.stock_maximo" class="form-control" name="stock_maximo" min="0" step="0.01">
             </div>
+        </div>
+
+        <div class="mt-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                    <label class="mb-0">Ubicaciones en esta bodega</label>
+                    <small class="text-muted d-block">Ubicación, ubicación específica y detalle. Puede agregar más de una.</small>
+                </div>
+                <button type="button" class="btn btn-default btn-sm" (click)="agregarUbicacion()">
+                    <i class="fa fa-plus"></i> Agregar ubicación
+                </button>
+            </div>
+            @for (ubicacion of inventario.ubicaciones; track $index) {
+                <div class="border rounded p-2 mb-2">
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label [for]="'ubicacion_' + $index">Ubicación</label>
+                            <input type="text" class="form-control" [(ngModel)]="ubicacion.ubicacion" [name]="'ubicacion_' + $index" maxlength="100" placeholder="Ej. Pasillo A">
+                        </div>
+                        <div class="col-md-4">
+                            <label [for]="'ubicacion_especifica_' + $index">Ubicación específica</label>
+                            <input type="text" class="form-control" [(ngModel)]="ubicacion.ubicacion_especifica" [name]="'ubicacion_especifica_' + $index" maxlength="100" placeholder="Ej. Estante 3">
+                        </div>
+                        <div class="col-md-12">
+                            <label [for]="'detalle_' + $index">Detalle</label>
+                            <textarea class="form-control" [(ngModel)]="ubicacion.detalle" [name]="'detalle_' + $index" rows="2" placeholder="Ej. Nivel 2, fondo de la puerta"></textarea>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox"
+                                [id]="'sin_existencias_' + $index"
+                                [ngModel]="ubicacion.activa === false"
+                                (ngModelChange)="ubicacion.activa = !$event"
+                                [name]="'sin_existencias_' + $index">
+                            <label class="form-check-label" [for]="'sin_existencias_' + $index">Sin existencias</label>
+                        </div>
+                        <button type="button" class="btn btn-light btn-sm" (click)="quitarUbicacion($index)" tooltip="Quitar ubicación">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+            @if (!inventario.ubicaciones?.length) {
+                <p class="text-muted small mb-0">Sin ubicaciones. Puede agregar una o dejar vacío.</p>
+            }
         </div>
 
         <div class="d-grid mt-3">

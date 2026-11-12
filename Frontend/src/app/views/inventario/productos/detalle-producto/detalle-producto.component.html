@@ -45,6 +45,38 @@
     </div>
 </div>
 
+<div class="card border-0 mb-3" *ngIf="!loading && producto?.id && producto.tipo != 'Servicio'">
+    <div class="card-body py-3 px-3">
+        <h5 class="mb-3">Ubicaciones</h5>
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Bodega</th>
+                        <th>Ubicación</th>
+                        <th>Ubicación específica</th>
+                        <th>Detalle</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngIf="filasUbicaciones.length === 0">
+                        <td colspan="4" class="text-center text-muted">No tiene ubicaciones configuradas</td>
+                    </tr>
+                    <tr *ngFor="let fila of filasUbicaciones" [class.text-muted]="!fila.activa">
+                        <td>{{ fila.nombre_bodega }}</td>
+                        <td>{{ fila.ubicacion }}</td>
+                        <td>{{ fila.ubicacion_especifica }}</td>
+                        <td style="white-space: pre-line;">
+                            {{ fila.detalle }}
+                            <small class="text-muted" *ngIf="!fila.activa"> (sin existencias)</small>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <div class="card border-0" id="historial-precio-costo" *ngIf="!loading && producto?.id && !apiService.isVentasLimitado() && (apiService.canVerCostosInventario() || apiService.hasPermission('productos.inventario.ver'))">
     <div class="card-body">
         <h5 class="mb-1">Historial de precio y costo</h5>

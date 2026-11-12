@@ -255,6 +255,70 @@ class Inventario extends Model {
         return $this->belongsTo('App\Models\Inventario\Bodega', 'id_bodega');
     }
 
+    public function ubicaciones()
+    {
+        return $this->hasMany(InventarioUbicacion::class, 'id_inventario');
+    }
+
+    /**
+     * Sincroniza la lista de ubicaciones enviada desde el front.
+     * Omite filas con los tres textos vacíos. No escribe cantidad.
+     */
+    public function syncUbicaciones(array $ubicaciones): void
+    {
+        $keptIds = [];
+
+        foreach ($ubicaciones as $row) {
+            $ubicacion = $this->nullIfBlank($row['ubicacion'] ?? null);
+            $ubicacionEspecifica = $this->nullIfBlank($row['ubicacion_especifica'] ?? null);
+            $detalle = $this->nullIfBlank($row['detalle'] ?? null);
+
+            if ($ubicacion === null && $ubicacionEspecifica === null && $detalle === null) {
+                continue;
+            }
+
+            $activa = array_key_exists('activa', $row) && $row['activa'] !== null && $row['activa'] !== ''
+                ? (bool) $row['activa']
+                : true;
+
+            $attrs = [
+                'ubicacion' => $ubicacion,
+                'ubicacion_especifica' => $ubicacionEspecifica,
+                'detalle' => $detalle,
+                'activa' => $activa,
+            ];
+
+            $id = isset($row['id']) ? (int) $row['id'] : 0;
+            if ($id > 0) {
+                $existente = $this->ubicaciones()->where('id', $id)->first();
+                if ($existente) {
+                    $existente->fill($attrs);
+                    $existente->save();
+                    $keptIds[] = $existente->id;
+                    continue;
+                }
+            }
+
+            $nueva = $this->ubicaciones()->create($attrs);
+            $keptIds[] = $nueva->id;
+        }
+
+        $this->ubicaciones()
+            ->when(count($keptIds) > 0, function ($q) use ($keptIds) {
+                $q->whereNotIn('id', $keptIds);
+            })
+            ->delete();
+    }
+
+    private function nullIfBlank($value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        $trimmed = trim((string) $value);
+        return $trimmed === '' ? null : $trimmed;
+    }
+
     public function sucursal(){
         return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal');
     }

@@ -161,7 +161,7 @@ class BodegasController extends Controller
             $subcategorias = null;
         }
 
-        $productos = $bodega->productos()->with('producto')
+        $productos = $bodega->productos()->with(['producto', 'ubicaciones'])
             ->when($subcategorias, function ($query) use ($subcategorias) {
                 $query->whereHas('producto', function ($query) use ($subcategorias) {
                     return $query->whereIn('subcategoria_id', $subcategorias);
@@ -178,11 +178,27 @@ class BodegasController extends Controller
         foreach ($productos as $producto) {
             $prod = $producto->producto()->first();
             $stock = $prod->inventarios()->where('bodega_id', $id)->pluck('stock')->first();
+            $ubicaciones = $producto->ubicaciones->map(function ($u) {
+                $partes = [
+                    $u->ubicacion !== null && $u->ubicacion !== '' ? $u->ubicacion : '—',
+                    $u->ubicacion_especifica !== null && $u->ubicacion_especifica !== '' ? $u->ubicacion_especifica : '—',
+                    $u->detalle !== null && $u->detalle !== '' ? $u->detalle : '—',
+                ];
+                $texto = implode(' / ', $partes);
+                if (!$u->activa) {
+                    $texto .= ' (sin existencias)';
+                }
+                return $texto;
+            })->implode("\n");
+            if ($ubicaciones === '') {
+                $ubicaciones = '—';
+            }
             $p->push([
                 'nombre'     => $prod->nombre,
                 'categoria'     => $prod->nombre_categoria,
                 'subcategoria'  => $prod->nombre_subcategoria,
                 'stock'         => $stock,
+                'ubicacion'     => $ubicaciones,
                 'costo'         => $prod->costo,
                 'costoTotal'    => $prod->costo * $stock,
                 'precio'        => $prod->precio,
