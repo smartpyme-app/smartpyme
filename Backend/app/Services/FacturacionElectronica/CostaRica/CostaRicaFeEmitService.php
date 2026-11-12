@@ -743,6 +743,7 @@ final class CostaRicaFeEmitService
                     $data,
                     function (string $clave, array $estado) use ($client, $venta, $tipoDte): array {
                         $venta->codigo_generacion = $clave;
+                        $venta->numero_control = self::consecutivoDesdeClave($clave);
                         $venta->tipo_dte = $tipoDte;
                         $venta->sello_mh = $clave;
                         $venta->dte = $this->persistirDteCrAceptado($client, $estado);
@@ -787,6 +788,7 @@ final class CostaRicaFeEmitService
         }
 
         $venta->codigo_generacion = $clave;
+        $venta->numero_control = self::consecutivoDesdeClave($clave);
         $venta->tipo_dte = $tipoDte;
         /** Igual criterio práctico que FE SV: sello_mh informado para listados/UI; valor = clave DGT (50 caracteres). */
         $venta->sello_mh = $clave;
@@ -1642,6 +1644,12 @@ final class CostaRicaFeEmitService
         ];
     }
 
+    /** Clave DGT (50): 506 + DDMMAA + cédula (12) + consecutivo (20) + situación (1) + seguridad (8). */
+    public static function consecutivoDesdeClave(string $clave): ?string
+    {
+        return strlen($clave) === 50 ? substr($clave, 21, 20) : null;
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -1662,6 +1670,7 @@ final class CostaRicaFeEmitService
         if ($status === 'rechazado') {
             if ($model instanceof Venta) {
                 $this->guardarClaveRechazada($model, $clave);
+                $model->numero_control = null;
             }
             $model->codigo_generacion = null;
             $model->sello_mh = null;
@@ -1677,6 +1686,9 @@ final class CostaRicaFeEmitService
         }
 
         $model->sello_mh = $clave;
+        if ($model instanceof Venta) {
+            $model->numero_control = self::consecutivoDesdeClave($clave);
+        }
         $model->save();
 
         return [

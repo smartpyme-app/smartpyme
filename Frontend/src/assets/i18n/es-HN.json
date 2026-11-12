@@ -138,6 +138,8 @@
         "emitFailedViewAttemptXml": "Ver XML del comprobante (intento)",
         "emitFailedViewAttemptJson": "Ver JSON interno (payload)",
         "detailSectionTitle": "Detalles del comprobante fiscal",
+        "detailDocumentTypeLabel": "Tipo de comprobante",
+        "detailControlNumberLabel": "Número de control",
         "emittingProgress": "Emitiendo comprobante fiscal...",
         "mhUserLabel": "Usuario:",
         "mhPasswordLabel": "Contraseña de la API:",
