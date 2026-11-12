@@ -24,7 +24,7 @@ class EjecutarPruebasMasivasRequest extends FormRequest
             'tipo' => [
                 'required',
                 'string',
-                Rule::in(['facturas', 'creditosFiscales', 'notasCredito', 'notasDebito', 'facturasExportacion', 'sujetoExcluido'])
+                Rule::in(['facturas', 'creditosFiscales', 'notasCredito', 'notasDebito', 'facturasExportacion', 'sujetoExcluido', 'eventosRetorno'])
             ],
             'cantidad' => ['required', 'integer', 'min:1', 'max:100'],
             'id_documento_base' => ['nullable', 'integer', 'exists:ventas,id'],

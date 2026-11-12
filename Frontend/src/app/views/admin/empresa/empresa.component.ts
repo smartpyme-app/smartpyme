@@ -1085,7 +1085,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
             'notasCredito': 'Notas Crédito',
             'notasDebito': 'Notas Débito',
             'facturasExportacion': 'Exportación',
-            'sujetoExcluido': 'Sujeto Excluido'
+            'sujetoExcluido': 'Sujeto Excluido',
+            'eventosRetorno': 'Eventos de Retorno'
         };
 
         return labels[tipo] || tipo;

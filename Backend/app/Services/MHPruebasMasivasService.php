@@ -176,6 +176,14 @@ class MHPruebasMasivasService
                     ->count(),
                 'requeridas' => 25
             ],
+            'eventosRetorno' => [
+                'emitidas' => \App\Models\Ventas\Devoluciones\Devolucion::where('tipo_dte', '18')
+                    ->where('sello_mh', '!=', null)
+                    ->where('dte', '!=', null)
+                    ->where('id_empresa', $this->empresa->id)
+                    ->count(),
+                'requeridas' => 5
+            ],
         ];
 
         return $stats;
@@ -244,7 +252,7 @@ class MHPruebasMasivasService
                         ];
                     }
                 } else {
-                    $tipoBase = ($tipo === '05' || $tipo === '06') ? '03' : $tipo;
+                    $tipoBase = $this->tipoDocumentoBase($tipo);
 
                     $baseVentaExiste = Venta::where('tipo_dte', $tipoBase)
                         ->where('sello_mh', '!=', null)
@@ -266,7 +274,8 @@ class MHPruebasMasivasService
                 '05' => 'Notas de Crédito',
                 '06' => 'Notas de Débito',
                 '11' => 'Facturas de Exportación',
-                '14' => 'Facturas de Sujeto Excluido'
+                '14' => 'Facturas de Sujeto Excluido',
+                '18' => 'Eventos de Retorno'
             ];
 
             $descripcionTipo = $tiposDescriptivos[$tipo] ?? "documentos tipo $tipo";
@@ -330,7 +339,7 @@ class MHPruebasMasivasService
                         ->latest()
                         ->first();
                 } else {
-                    $tipoBase = ($tipo === '05' || $tipo === '06') ? '03' : $tipo;
+                    $tipoBase = $this->tipoDocumentoBase($tipo);
 
                     $this->baseVenta = Venta::with(['detalles', 'cliente', 'empresa', 'sucursal', 'documento'])
                         ->where('tipo_dte', $tipoBase)
@@ -389,6 +398,9 @@ class MHPruebasMasivasService
             } elseif ($tipo === '14') {
                 // Sujeto Excluido: genera gastos de sujeto excluido
                 $resultados = $this->procesarSujetoExcluido($cantidad, $correlativoInicial, $resultados);
+            } elseif ($tipo === '18') {
+                // Evento de retorno: genera Factura + evento de retorno sobre ella
+                $resultados = $this->procesarEventosRetorno($cantidad, $correlativoInicial, $resultados);
             } else {
                 // Otros documentos (facturas, exportación)
                 $resultados = $this->procesarDocumentosNormales($tipo, $cantidad, $correlativoInicial, $resultados);
@@ -759,6 +771,123 @@ class MHPruebasMasivasService
             return $resultados;
         } catch (\Exception $e) {
             throw $e;
+        }
+    }
+
+    /** Documento base de ventas: notas usan CCF (03); evento de retorno usa Factura (01). */
+    protected function tipoDocumentoBase(string $tipo): string
+    {
+        return match ($tipo) {
+            '05', '06' => '03',
+            '18' => '01',
+            default => $tipo,
+        };
+    }
+
+    /**
+     * Evento de retorno (18): por cada prueba emite una Factura y aplica sobre ella el retorno total
+     * (el MH exige una FE sellada dentro de los 3 meses y sin superar su monto).
+     */
+    protected function procesarEventosRetorno($cantidad, $correlativoInicial, $resultados)
+    {
+        $documento = $this->baseVenta->documento;
+        $ultimoCorrelativo = Venta::where('tipo_dte', '01')
+            ->where('id_empresa', $this->empresa->id)
+            ->where('id_documento', $this->baseVenta->id_documento)
+            ->max('correlativo');
+        $inicio = $correlativoInicial ?? max($documento->correlativo, $ultimoCorrelativo + 1);
+        $token = null;
+
+        for ($i = 0; $i < $cantidad; $i++) {
+            if ($this->abortarPorErrorEmisor) {
+                break;
+            }
+            $correlativo = $inicio + $i;
+
+            try {
+                $factura = $this->generarYEmitirDocumento('01', $correlativo, $token);
+                $token = $factura['token'] ?? $token;
+                if (! $factura['success']) {
+                    $resultados['fallidos']++;
+                    $resultados['detalles'][] = ['correlativo' => $correlativo, 'tipo' => 'Factura', 'status' => 'Error', 'message' => $factura['message']];
+                    continue;
+                }
+
+                $retorno = $this->generarEventoRetorno($factura['venta'], $token);
+                $resultados[$retorno['success'] ? 'exitosos' : 'fallidos']++;
+                $resultados['detalles'][] = [
+                    'correlativo' => 'ER-' . $correlativo,
+                    'tipo' => 'Evento de retorno',
+                    'status' => $retorno['success'] ? 'Éxito' : 'Error',
+                    'message' => $retorno['success'] ? 'Evento de retorno emitido sobre la factura ' . $correlativo : $retorno['message'],
+                ];
+            } catch (\Exception $e) {
+                Log::error('Error en evento de retorno: ' . $e->getMessage());
+                $resultados['fallidos']++;
+                $resultados['detalles'][] = ['correlativo' => $correlativo, 'tipo' => 'FE+ER', 'status' => 'Error', 'message' => 'Excepción: ' . $e->getMessage()];
+            }
+            gc_collect_cycles();
+        }
+
+        return $resultados;
+    }
+
+    protected function generarEventoRetorno($venta, &$token)
+    {
+        try {
+            $devolucion = new \App\Models\Ventas\Devoluciones\Devolucion();
+            $devolucion->fill([
+                'tipo_dte' => '18',
+                'fecha' => Carbon::now()->format('Y-m-d'),
+                'observaciones' => 'Evento de retorno de prueba generado automáticamente',
+                'sub_total' => $venta->sub_total,
+                'iva' => $venta->iva,
+                'iva_retenido' => $venta->iva_retenido,
+                'exenta' => $venta->exenta,
+                'no_sujeta' => $venta->no_sujeta,
+                'total' => $venta->total,
+                'id_venta' => $venta->id,
+                'id_cliente' => $venta->id_cliente,
+                'id_usuario' => $venta->id_usuario,
+                'id_empresa' => $this->empresa->id,
+                'id_sucursal' => $venta->id_sucursal,
+                'id_bodega' => $venta->id_bodega,
+                'enable' => true,
+            ]);
+            $devolucion->save();
+
+            foreach ($venta->detalles as $detalleOriginal) {
+                $devolucion->detalles()->create([
+                    'id_producto' => $detalleOriginal->id_producto,
+                    'cantidad' => $detalleOriginal->cantidad,
+                    'precio' => $detalleOriginal->precio,
+                    'costo' => $detalleOriginal->costo,
+                    'descuento' => $detalleOriginal->descuento,
+                    'total' => $detalleOriginal->total,
+                    'descripcion' => $detalleOriginal->descripcion ?? 'Producto',
+                ]);
+            }
+
+            $devolucion = \App\Models\Ventas\Devoluciones\Devolucion::with(['detalles', 'empresa', 'venta'])->find($devolucion->id);
+            $dte = (new \App\Models\MH\MHEventoRetorno)->generarDTE($devolucion);
+            $resultado = $this->firmarYEmitirDTE($devolucion, $dte, $token);
+
+            if ($resultado['success']) {
+                \App\Models\Ventas\Devoluciones\Devolucion::where('id', $devolucion->id)->update([
+                    'dte' => json_encode($dte, JSON_UNESCAPED_UNICODE),
+                    'sello_mh' => $resultado['selloRecibido'] ?? null,
+                    'prueba_masiva' => true,
+                ]);
+            } else {
+                $this->marcarAbortoSiCorresponde($resultado['message'] ?? '');
+            }
+
+            return $resultado;
+        } catch (\Exception $e) {
+            Log::error('Error generando evento de retorno: ' . $e->getMessage());
+            $this->marcarAbortoSiCorresponde($e->getMessage());
+
+            return ['success' => false, 'message' => 'Error generando evento de retorno: ' . $e->getMessage()];
         }
     }
 
@@ -1525,7 +1654,8 @@ class MHPruebasMasivasService
             '05' => 'Notas de Crédito',
             '06' => 'Notas de Débito',
             '11' => 'Facturas de Exportación',
-            '14' => 'Facturas de Sujeto Excluido'
+            '14' => 'Facturas de Sujeto Excluido',
+            '18' => 'Eventos de Retorno'
         ];
 
         return $tipos[$tipo] ?? 'Documento Tipo ' . $tipo;
@@ -1866,6 +1996,11 @@ class MHPruebasMasivasService
 
     protected function registrarDocumentoExitoso($venta, $dte, $dteFirmado, $respuestaMH)
     {
+        // Devoluciones (NC/ND/retorno) guardan su DTE en su propia tabla; actualizar Venta con su id pisaría otra venta.
+        if (! $venta instanceof Venta) {
+            return true;
+        }
+
         try {
             // Guardar solo los campos necesarios para evitar problemas
             $venta->dte = $dte;

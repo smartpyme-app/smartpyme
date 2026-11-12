@@ -2501,7 +2501,7 @@
         }
 
         <!-- ACTUALIZADO: Documento base con filtrado -->
-        @if (tipoSeleccionado === 'facturas' || tipoSeleccionado === 'creditosFiscales' || tipoSeleccionado === 'facturasExportacion' || tipoSeleccionado === 'notasCredito' || tipoSeleccionado === 'notasDebito') {
+        @if (tipoSeleccionado === 'facturas' || tipoSeleccionado === 'creditosFiscales' || tipoSeleccionado === 'facturasExportacion' || tipoSeleccionado === 'notasCredito' || tipoSeleccionado === 'notasDebito' || tipoSeleccionado === 'eventosRetorno') {
           <div class="form-group mb-3">
             <label for="documentoBase">Documento base (opcional):</label>
             <select class="form-select" id="documentoBase" [(ngModel)]="documentoBaseSeleccionado">
