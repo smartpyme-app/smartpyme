@@ -1178,8 +1178,10 @@ class ComprasController extends Controller
 
     public function generarDoc($id){
         $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'empresa', 'impuestos.impuesto')->firstOrFail();
+        $empresa = $compra->empresa ?? Empresa::find(Auth::user()->id_empresa);
+        $mostrar_lotes_impresion = \App\Support\Inventario\ImpresionLoteEnDocumento::prepararCompra($compra, $empresa);
 
-        $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.compra', compact('compra'));
+        $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.compra', compact('compra', 'mostrar_lotes_impresion'));
         $pdf->setPaper('US Letter', 'portrait');
         return $pdf->stream('compra-' . $compra->id . '.pdf');
 

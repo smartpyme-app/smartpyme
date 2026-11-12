@@ -120,7 +120,13 @@
             <tbody>
                 @foreach($compra->detalles as $detalle)
                 <tr>
-                    <td class="border-bottom">   {{ $detalle->nombre_producto  }}</td>
+                    <td class="border-bottom">
+                        {{ $detalle->nombre_producto }}
+                        @include('reportes.facturacion.partials.detalle-lote-impresion', [
+                            'detalle' => $detalle,
+                            'mostrar_lotes_impresion' => $mostrar_lotes_impresion ?? false,
+                        ])
+                    </td>
                     <td class="border-bottom">   {{ $detalle->codigo }}</td>
                     <td class="border-bottom text-right">   {{ number_format($detalle->cantidad, 0) }}</td>
                     <td class="border-bottom text-right">   {{ $compra->empresa->currency->currency_symbol }}{{number_format($detalle->costo , 2) }}</td>

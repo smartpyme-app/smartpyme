@@ -93,7 +93,7 @@
                         <p>Teléfono:{{ $venta->cliente()->pluck('telefono')->first() }}</p>
                     </td>
                     <td>
-                        <p class="text-right">Nota de crédito #{{ $venta->correlativo }}</p>
+                        <p class="text-right">{{ $venta->nombre_documento ?? 'Nota de crédito' }} #{{ $venta->correlativo }}</p>
                         <p class="text-right">Fecha: {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
                     </td>
                 </tr>
@@ -114,7 +114,13 @@
             <tbody>
                 @foreach($venta->detalles as $detalle)
                 <tr>
-                    <td class="border-bottom">   {{ $detalle->nombre_producto  }}</td>
+                    <td class="border-bottom">
+                        {{ $detalle->nombre_producto }}
+                        @include('reportes.facturacion.partials.detalle-lote-impresion', [
+                            'detalle' => $detalle,
+                            'mostrar_lotes_impresion' => $mostrar_lotes_impresion ?? false,
+                        ])
+                    </td>
                     <td class="border-bottom text-right">   {{ number_format($detalle->cantidad, 0) }}</td>
                     <td class="border-bottom text-right">   {{ $simbolo_moneda }}{{ number_format($detalle->precio , 2) }}</td>
                     <td class="border-bottom text-right">   {{ $simbolo_moneda }}{{ number_format($detalle->total, 2) }}</th>

@@ -528,12 +528,16 @@ class DevolucionVentasController extends Controller
         $venta = Devolucion::where('id', $id)
             ->with([
                 'detalles.producto',
+                'detalles.lote',
                 'cliente',
                 'empresa.currency',
                 'venta.vendedor',
                 'documento',
             ])
             ->firstOrFail();
+
+        $empresaDev = Empresa::find(Auth::user()->id_empresa);
+        $mostrar_lotes_impresion = \App\Support\Inventario\ImpresionLoteEnDocumento::prepararDevolucion($venta, $empresaDev);
 
         if(Auth::user()->id_empresa == 187 && $venta->nombre_documento == "Nota de crédito"){//187  OK V2
 
@@ -607,7 +611,10 @@ class DevolucionVentasController extends Controller
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.ND-Inversiones-Andre', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
             $pdf->setPaper('US Letter', 'portrait');
         }else{
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.nota-credito', compact('venta'));
+            $pdf = app('dompdf.wrapper')->loadView(
+                'reportes.facturacion.nota-credito',
+                compact('venta', 'mostrar_lotes_impresion')
+            );
             $pdf->setPaper('US Letter', 'portrait');
         }
 

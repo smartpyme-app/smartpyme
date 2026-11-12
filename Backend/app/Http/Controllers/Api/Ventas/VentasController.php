@@ -1040,12 +1040,17 @@ class VentasController extends Controller
         $venta = Venta::where('id', $id)->with('detalles', 'empresa')->firstOrFail();
         $documento = Documento::findOrfail($venta->id_documento);
         $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
+        $mostrar_lotes_impresion = \App\Support\Inventario\ImpresionLoteEnDocumento::prepararVenta($venta, $empresa);
 
         if (Ticket80mm::aplica($empresa, $documento)) {
             return Ticket80mm::imprimir($venta, $empresa, $documento);
         }
 
-        if ($documento->nombre == 'Ticket' || $documento->nombre == 'Recibo') {
+        if (
+            $documento->nombre == 'Ticket'
+            || $documento->nombre == 'Recibo'
+            || strcasecmp((string) $documento->nombre, \App\Constants\DocumentoConstants::FACTURA_REMISION) === 0
+        ) {
             $documento = Documento::findOrfail($venta->id_documento);
 
             // SANTRÉ S de RL (818) — Ticket/Recibo
@@ -1081,10 +1086,14 @@ class VentasController extends Controller
                 );
             }
 
-            return view('reportes.facturacion.ticket', compact('venta', 'empresa', 'documento'));
+            return view('reportes.facturacion.ticket', compact('venta', 'empresa', 'documento', 'mostrar_lotes_impresion'));
         }
 
-        if ($documento->nombre == 'Factura' || DocumentoImpresionHn::aplica($empresa, $documento)) {
+        if (
+            $documento->nombre == 'Factura'
+            || strcasecmp((string) $documento->nombre, \App\Constants\DocumentoConstants::FACTURA_REMISION) === 0
+            || DocumentoImpresionHn::aplica($empresa, $documento)
+        ) {
             $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
 
             // SANTRÉ S de RL (818) — Factura usa el mismo ticket
