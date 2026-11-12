@@ -31,6 +31,8 @@ use App\Http\Requests\Ventas\Devoluciones\UpdateDevolucionRequest;
 use App\Support\FacturacionElectronica\CostaRica\DocumentoMoneda;
 use App\Http\Requests\Ventas\Devoluciones\FacturacionDevolucionRequest;
 use App\Services\Ventas\DevolucionVentaService;
+use App\Services\Ventas\DevolucionConsignaVentaService;
+use App\Services\Inventario\ConsignaDevolucionLedgerService;
 use Illuminate\Support\Facades\Log;
 use App\Services\FidelizacionCliente\DevolucionPuntosService;
 use App\Services\Comisiones\ComisionService;
@@ -321,13 +323,19 @@ class DevolucionVentasController extends Controller
     public function facturacion(FacturacionDevolucionRequest $request)
     {
         try {
-            // Validar que la diferencia entre notas de crédito y notas de débito no supere el total de la venta
-            $this->devolucionVentaService->validarLimitesDevolucion(
-                $request->id_venta,
-                $request->id,
-                $request->id_documento,
-                $request->total
-            );
+            if ($this->devolucionVentaService->esDocumentoDevolucionConsigna($request->id_documento)) {
+                $this->devolucionVentaService->validarCantidadesDevolucionConsigna(
+                    (int) $request->id_venta,
+                    $request->detalles
+                );
+            } else {
+                $this->devolucionVentaService->validarLimitesDevolucion(
+                    $request->id_venta,
+                    $request->id,
+                    $request->id_documento,
+                    $request->total
+                );
+            }
         } catch (\Exception $e) {
             return Response()->json(['error' => $e->getMessage()], 400);
         }
@@ -397,6 +405,13 @@ class DevolucionVentasController extends Controller
                         $inventario->stock += $det['cantidad'];
                         $inventario->save();
                         $inventario->kardex($devolucion, $det['cantidad']);
+                        app(ConsignaDevolucionLedgerService::class)->despuesEntradaFisicaDevolucionVenta(
+                            $devolucion,
+                            (int) $det['id_producto'],
+                            (float) $det['cantidad'],
+                            isset($det['lote_id']) ? (int) $det['lote_id'] : null,
+                            isset($det['id']) ? (int) $det['id'] : null
+                        );
                     }
 
                     // Inventario compuestos
@@ -448,6 +463,17 @@ class DevolucionVentasController extends Controller
                     $paquete->save();
                 }
 
+            }
+
+            if (
+                $this->devolucionVentaService->esDocumentoDevolucionConsigna($devolucion->id_documento)
+                && $request->tipo !== 'descuento_ajuste'
+            ) {
+                $ventaConsigna = Venta::query()->findOrFail($request->id_venta);
+                app(DevolucionConsignaVentaService::class)->reducirRemanenteDesdeDevolucion(
+                    $ventaConsigna,
+                    $request->detalles
+                );
             }
 
         // Incrementar el correlarivo

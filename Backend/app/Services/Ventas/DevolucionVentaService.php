@@ -2,6 +2,7 @@
 
 namespace App\Services\Ventas;
 
+use App\Constants\DocumentoConstants;
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Devoluciones\Detalle;
 use App\Models\Ventas\Devoluciones\DetalleCompuesto;
@@ -16,6 +17,55 @@ use Exception;
 
 class DevolucionVentaService
 {
+    public function esDocumentoDevolucionConsigna(?int $idDocumento): bool
+    {
+        if (! $idDocumento) {
+            return false;
+        }
+
+        $documento = Documento::query()->find($idDocumento);
+
+        return DocumentoConstants::esDevolucionConsigna($documento?->nombre);
+    }
+
+    /**
+     * Cantidades devueltas no pueden superar saldo en consigna por línea.
+     *
+     * @param  array<int, array{id?: int, id_producto: int, cantidad: float|int|string}>  $detalles
+     */
+    public function validarCantidadesDevolucionConsigna(int $idVenta, array $detalles): void
+    {
+        $venta = Venta::query()->with('detalles')->findOrFail($idVenta);
+        if ($venta->estado !== 'Consigna') {
+            throw new Exception('La devolución de consigna solo aplica a ventas en estado Consigna.');
+        }
+
+        foreach ($detalles as $det) {
+            $cantidad = (float) ($det['cantidad'] ?? 0);
+            if ($cantidad <= 0) {
+                continue;
+            }
+
+            $detalleVenta = null;
+            if (! empty($det['id'])) {
+                $detalleVenta = $venta->detalles->firstWhere('id', (int) $det['id']);
+            }
+            if (! $detalleVenta && ! empty($det['id_producto'])) {
+                $detalleVenta = $venta->detalles->firstWhere('id_producto', (int) $det['id_producto']);
+            }
+
+            if (! $detalleVenta) {
+                throw new Exception('Producto no encontrado en la remisión en consigna.');
+            }
+
+            if ($cantidad > (float) $detalleVenta->cantidad + 0.0001) {
+                throw new Exception(
+                    'La cantidad a devolver supera el saldo en consigna del producto #' . $detalleVenta->id_producto . '.'
+                );
+            }
+        }
+    }
+
     /**
      * Valida que la diferencia entre notas de crédito y notas de débito
      * no supere el total de la venta
@@ -128,7 +178,9 @@ class DevolucionVentaService
                     app(ConsignaDevolucionLedgerService::class)->despuesEntradaFisicaDevolucionVenta(
                         $devolucion,
                         (int) $det['id_producto'],
-                        (float) $det['cantidad']
+                        (float) $det['cantidad'],
+                        isset($det['lote_id']) ? (int) $det['lote_id'] : null,
+                        isset($det['id']) ? (int) $det['id'] : null
                     );
                 }
 

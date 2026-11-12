@@ -916,6 +916,17 @@ class EmpresasController extends Controller
             $request->input('value')
         );
 
+        if (
+            $request->input('section') === 'configuraciones'
+            && $request->input('key') === 'consignaciones_ledger_activo'
+            && filter_var($request->input('value'), FILTER_VALIDATE_BOOLEAN)
+        ) {
+            $empresa = $empresa->fresh();
+            if ($empresa && $empresa->isModuloConsignacionesLedgerActivo()) {
+                app(\App\Services\Inventario\ConsignaDocumentosService::class)->asegurarDocumentosLedger($empresa);
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Configuración actualizada correctamente',

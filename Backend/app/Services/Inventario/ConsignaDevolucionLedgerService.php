@@ -22,7 +22,9 @@ class ConsignaDevolucionLedgerService
     public function despuesEntradaFisicaDevolucionVenta(
         DevolucionVenta $devolucion,
         int $idProducto,
-        float $cantidad
+        float $cantidad,
+        ?int $loteId = null,
+        ?int $idDetalleVenta = null
     ): void {
         if ($cantidad <= 0 || ! $devolucion->id_venta) {
             return;
@@ -42,16 +44,31 @@ class ConsignaDevolucionLedgerService
         $cliente = $venta->id_cliente;
 
         if ($venta->estado === 'Consigna' && $cliente) {
+            if ($loteId === null && $idDetalleVenta) {
+                $loteId = DetalleVenta::query()->whereKey($idDetalleVenta)->value('lote_id');
+            }
+            if ($loteId === null) {
+                $loteId = DetalleVenta::query()
+                    ->where('id_venta', $venta->id)
+                    ->where('id_producto', $idProducto)
+                    ->whereNotNull('lote_id')
+                    ->orderByDesc('id')
+                    ->value('lote_id');
+            }
+
             $this->movimientoService->registrar($idEmpresa, [
                 'tipo' => ConsignaMovimientoTipoConstants::DEVOLUCION_CLIENTE,
                 'cantidad' => -$cantidad,
                 'id_producto' => $idProducto,
                 'id_bodega' => $idBodega,
+                'lote_id' => $loteId ? (int) $loteId : null,
                 'id_cliente' => $cliente,
                 'id_venta' => $venta->id,
+                'id_detalle_venta' => $idDetalleVenta,
                 'fecha' => $devolucion->fecha,
                 'nota' => 'Devolución venta #' . $devolucion->id,
-                'idempotency_key' => 'dev-venta-cli-' . $devolucion->id . '-p-' . $idProducto,
+                'idempotency_key' => 'dev-venta-cli-' . $devolucion->id . '-p-' . $idProducto
+                    . ($loteId ? '-l-' . $loteId : ''),
             ]);
 
             return;

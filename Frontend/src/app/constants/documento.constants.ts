@@ -1,4 +1,5 @@
 export const FACTURA_REMISION = 'Factura de remisión';
+export const DEVOLUCION_CONSIGNA = 'Devolución de consigna';
 
 export const TIPOS_DOCUMENTO_COMPRA_SIN_IVA_FISCAL = [FACTURA_REMISION] as const;
 
