@@ -61,6 +61,33 @@ class LibroConsumidoresFilas
             ->toBase();
     }
 
+    /**
+     * Eventos de retorno para el anexo CSV: una fila tipo 18 con montos positivos (igual que NC 05 en contribuyentes).
+     */
+    public static function retornosAnexo(object $request): \Illuminate\Support\Collection
+    {
+        return DevolucionVenta::with(['venta.documento', 'detalles.producto'])
+            ->where('enable', true)
+            ->where('tipo_dte', '18')
+            ->whereNotNull('sello_mh')
+            ->whereHas('venta', fn ($q) => $q->where('estado', '!=', 'Anulada')
+                ->whereHas('documento', fn ($d) => $d->whereIn('nombre', ['Factura', 'Factura de exportación'])))
+            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->get()
+            ->map(function ($retorno) {
+                $retorno->tipo_anexo = '18';
+                $retorno->documento_nombre = optional(optional($retorno->venta)->documento)->nombre;
+                $retorno->codigo_generacion = $retorno->dte['identificacion']['codigoGeneracion'] ?? $retorno->codigo_generacion;
+                $retorno->numero_control = null;
+                $retorno->correlativo = '';
+                $retorno->tipo_operacion = optional($retorno->venta)->tipo_operacion;
+                $retorno->tipo_renta = optional($retorno->venta)->tipo_renta;
+
+                return $retorno;
+            });
+    }
+
     /** Ventas del anexo CSV (sin columna dte / S3). */
     public static function consultaAnexo(object $request, bool $facturacionElectronica): EloquentBuilder
     {
