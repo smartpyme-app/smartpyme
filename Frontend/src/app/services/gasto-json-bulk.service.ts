@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from '@services/api.service';
 import { DocumentoImportService } from '@services/compras/documento-import.service';
+import { montosLineaGastoDesdeDte } from '@services/compras/compra-detalle-desde-dte.util';
+import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 
 export interface GastoBulkPrepResult {
   gasto: any;
@@ -140,43 +142,29 @@ export class GastoJsonBulkService {
     const ivaRate = (this.apiService.auth_user()?.empresa?.iva || 13) / 100;
     const tipoDte = String(dte?.identificacion?.tipoDte || '01');
     const tipoLinea = gasto.tipo || 'Gastos varios';
+    const precioSinImpuesto =
+      resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
 
     const detalles = items.map((item: any) => {
-      const cant = parseFloat(item.cantidad) || 1;
-      const precio = parseFloat(item.precioUni) || 0;
-      const montoItem =
-        parseFloat(item.ventaGravada) ||
-        parseFloat(item.compra) ||
-        cant * precio;
-
-      let sub = 0;
-      let iva = 0;
-      let total = 0;
-
-      if (tipoDte === '03') {
-        sub = montoItem;
-        iva = sub * ivaRate;
-        total = sub + iva;
-      } else {
-        total = montoItem;
-        sub = ivaRate > 0 ? total / (1 + ivaRate) : total;
-        iva = total - sub;
-      }
-
-      const esGravada = iva > 0;
+      const montos = montosLineaGastoDesdeDte(item, {
+        ivaRate,
+        precioSinImpuesto,
+        tipoDte,
+      });
       return {
         concepto: item.descripcion || '',
         tipo: tipoLinea,
-        tipo_gravado: esGravada ? 'gravada' : 'no_sujeta',
-        cantidad: cant,
-        precio_unitario: precio,
-        sub_total: parseFloat(sub.toFixed(2)),
-        iva: parseFloat(iva.toFixed(2)),
+        tipo_gravado: montos.tipo_gravado,
+        cantidad: montos.cantidad,
+        precio_unitario: montos.precio_unitario,
+        descuento: montos.descuento,
+        sub_total: montos.sub_total,
+        iva: montos.iva,
         renta_retenida: 0,
         iva_retenido: 0,
         iva_percibido: 0,
-        total: parseFloat(total.toFixed(2)),
-        aplica_iva: esGravada,
+        total: montos.total,
+        aplica_iva: montos.tipo_gravado === 'gravada',
         aplica_renta: false,
         aplica_retencion_iva: false,
         aplica_percepcion: false,

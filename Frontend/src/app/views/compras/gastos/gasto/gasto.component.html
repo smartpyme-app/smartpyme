@@ -188,6 +188,10 @@
                         <label>Precio unit.:</label>
                         <input type="number" step="0.01" class="form-control" [(ngModel)]="d.precio_unitario" (change)="recalcularDesdePrecio(i)" [name]="'det_precio_'+i">
                     </div>
+                    <div class="form-group col-md-3 col-lg-2">
+                        <label>Descuento:</label>
+                        <input type="number" min="0" step="0.01" class="form-control" [(ngModel)]="d.descuento" (change)="recalcularDesdePrecio(i)" [name]="'det_desc_'+i">
+                    </div>
                     <div class="form-group col-md-4 col-lg-2">
                         <label>Sub total:</label>
                         <input type="number" step="0.01" class="form-control" [(ngModel)]="d.sub_total" (change)="recalcularDetalleLinea(i)" [name]="'det_sub_'+i">
