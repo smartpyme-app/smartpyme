@@ -41,6 +41,15 @@ export class ProductosConsignasComprasComponent implements OnInit {
     this.loadAll();
   }
 
+  public mostrarColumnasLote(): boolean {
+    const empresa = this.apiService.auth_user()?.empresa;
+    const cfg = empresa?.custom_empresa?.configuraciones;
+    if (!cfg) {
+      return false;
+    }
+    return !!cfg.consignaciones_ledger_activo && !!cfg.lotes_activo;
+  }
+
   public loadAll() {
     this.loading = true;
     this.apiService.getAll('productos/consignas-compras').subscribe(

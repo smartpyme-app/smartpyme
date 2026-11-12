@@ -26,9 +26,9 @@
 
 ---
 
-## P2 — Productos en consigna (producto + lote, vencimiento)
+## P2 — Productos en consigna (producto + lote, vencimiento) — HECHO
 
-- `ConsignasController` / export / UI productos consigna.
+- `ConsignaProductosVentaListadoService`, `ConsignasExport`, UI + export compras detalle lote.
 
 ## P3 — Tab devoluciones custodia + export por cliente
 

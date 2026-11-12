@@ -169,13 +169,26 @@ export class ProductosConsignasComponent extends BaseCrudComponent<any> implemen
           });
     }
 
+    public mostrarColumnasLote(): boolean {
+        const empresa = this.apiService.auth_user()?.empresa;
+        if (!empresa?.custom_empresa?.configuraciones) {
+            return false;
+        }
+        const cfg = empresa.custom_empresa.configuraciones;
+        return !!cfg.consignaciones_ledger_activo && !!cfg.lotes_activo;
+    }
+
     public abrirModalConsigna(template: TemplateRef<any>, fila: any) {
         if (!fila?.id) {
             return;
         }
         this.modalConsigna = { ...fila, ventas: [...(fila.ventas ?? [])] };
         this.modalRef = this.modalManager.openModal(template, { class: 'modal-xl', backdrop: 'static' });
-        this.apiService.getAll(`productos/consignas/${fila.id}/ventas`, this.filtros).subscribe({
+        const params = { ...this.filtros };
+        if (fila.lote_id != null && fila.lote_id !== '') {
+            params.lote_id = fila.lote_id;
+        }
+        this.apiService.getAll(`productos/consignas/${fila.id}/ventas`, params).subscribe({
             next: (res: any) => {
                 this.modalConsigna = {
                     ...this.modalConsigna,

@@ -57,6 +57,10 @@
                         <th>Producto</th>
                         <th class="d-none d-md-table-cell">Categoria</th>
                         <th class="d-none d-md-table-cell">Código</th>
+                        @if (mostrarColumnasLote()) {
+                            <th class="d-none d-md-table-cell">Lote</th>
+                            <th class="d-none d-md-table-cell">Vencimiento</th>
+                        }
                         <th class="d-none d-md-table-cell text-end">Precio</th>
                         <th class="text-center">Cantidad en consigna</th>
                         <th class="text-center">Más</th>
@@ -65,19 +69,19 @@
                 <tbody>
                     @if (productos?.data?.length < 1 && !loading) {
                         <tr>
-                            <td colspan="6" class="text-center">
+                            <td [attr.colspan]="mostrarColumnasLote() ? 8 : 6" class="text-center">
                                 <span class="badge bg-primary">No tiene productos en consigna</span>
                             </td>
                         </tr>
                     }
                     @if (loading) {
                         <tr>
-                            <td colspan="6" class="text-center">
+                            <td [attr.colspan]="mostrarColumnasLote() ? 8 : 6" class="text-center">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
                         </tr>
                     }
-                    @for (producto of productos?.data; track producto.id) {
+                    @for (producto of productos?.data; track producto.row_key || producto.id) {
                         <tr>
                         <td>
                             <img [appLazyImage]="apiService.baseUrl + '/img/productos/default.jpg'" class="rounded-circle" width="50px">
@@ -89,6 +93,18 @@
                         </td>
                         <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
                         <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
+                        @if (mostrarColumnasLote()) {
+                            <td class="d-none d-md-table-cell">
+                                {{ producto.lote_numero || '—' }}
+                            </td>
+                            <td class="d-none d-md-table-cell">
+                                @if (producto.lote_vencimiento) {
+                                    {{ producto.lote_vencimiento | date:'dd/MM/yyyy' }}
+                                } @else {
+                                    —
+                                }
+                            </td>
+                        }
                         <td class="d-none d-md-table-cell text-end">{{ producto.precio | currency }}</td>
                         <td class="text-center"> {{ producto.stock }} </td>
                         <td class="text-center">
@@ -125,6 +141,9 @@
     <div class="modal-title w-100 text-center">
         <h2 class="text-center no-margin">
             {{ modalConsigna?.nombre }}
+            @if (modalConsigna?.lote_numero) {
+                <span class="badge bg-light text-dark fs-6 ms-1">Lote {{ modalConsigna.lote_numero }}</span>
+            }
             <span class="badge bg-default text-dark fs-6">{{ modalConsigna?.stock ?? (modalConsigna?.ventas | sum:'cantidad') }} unidades en consigna</span>
         </h2>
         <p class="text-muted small mb-0">Facturas / remisiones con este producto pendientes de liquidar</p>

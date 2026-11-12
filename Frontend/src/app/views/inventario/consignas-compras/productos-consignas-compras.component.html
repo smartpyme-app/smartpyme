@@ -91,6 +91,8 @@
                 <tr>
                     <th>Producto</th>
                     <th>Código</th>
+                    <th *ngIf="mostrarColumnasLote()">Lote</th>
+                    <th *ngIf="mostrarColumnasLote()">Vencimiento</th>
                     <th class="text-end">Cantidad</th>
                     <th class="text-end" *ngIf="apiService.canVerCostosInventario()">Costo</th>
                     <th class="text-end">Total</th>
@@ -100,6 +102,8 @@
                 <tr *ngFor="let detalle of compra?.detalles">
                     <td>{{ detalle.producto }}</td>
                     <td>{{ detalle.codigo }}</td>
+                    <td *ngIf="mostrarColumnasLote()">{{ detalle.lote_numero || '—' }}</td>
+                    <td *ngIf="mostrarColumnasLote()">{{ detalle.lote_vencimiento ? (detalle.lote_vencimiento | date:'dd/MM/yyyy') : '—' }}</td>
                     <td class="text-end">{{ detalle.cantidad }}</td>
                     <td class="text-end" *ngIf="apiService.canVerCostosInventario()">{{ detalle.costo | currency }}</td>
                     <td class="text-end">{{ detalle.total | currency }}</td>

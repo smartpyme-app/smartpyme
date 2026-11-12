@@ -24,6 +24,7 @@
 - Kardex clásico: ventas consigna salida con ledger on → detalle `Venta` (no “Venta a consigna”).
 - Ledger en devoluciones venta (cliente consigna / pool proveedor) y devolución compra consigna.
 - **P1:** Documento «Devolución de consigna» (auto al activar ledger), devolución parcial reduce remisión `Consigna`, UI solo mercancía, movimiento ledger con `lote_id` cuando aplica.
+- **P2:** Productos en consigna (ventas) agrupados por producto+lote si ledger y lotes activos; columnas lote/vencimiento en UI y Excel; detalle compras muestra lote/vencimiento.
 - DTE MH 04: documento impreso “Factura de remisión” vigente; transmisión MH → epic **FE-SV-5B** (respuesta API explícita).
 
 ### Lotes

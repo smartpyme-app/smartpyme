@@ -15,6 +15,9 @@ use App\Exports\ConsignasExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\Inventario\Consignas\StoreAjusteRequest;
 use App\Services\Inventario\ConsignaDisponibleService;
+use App\Services\Inventario\ConsignaProductosVentaListadoService;
+use App\Models\Admin\Empresa;
+use Illuminate\Support\Facades\Auth;
 
 class ConsignasController extends Controller
 {
@@ -42,74 +45,9 @@ class ConsignasController extends Controller
     /** @return \Illuminate\Support\Collection<int, array<string, mixed>> */
     private function coleccionProductosEnConsigna(Request $request)
     {
-        $detallesDeVenta = DetalleVenta::query()
-            ->whereHas('venta', fn ($q) => $q->where('estado', 'Consigna')->where('cotizacion', 0))
-            ->when($request->filled('buscador'), function ($query) use ($request) {
-                $t = trim((string) $request->buscador);
-                $query->where(function ($w) use ($t) {
-                    $w->whereHas('venta', function ($v) use ($t) {
-                        $v->where(function ($vq) use ($t) {
-                            $vq->where('correlativo', 'like', '%' . $t . '%');
-                            if (ctype_digit($t)) {
-                                $vq->orWhere('correlativo', (int) $t);
-                            }
-                            $vq->orWhere('nombre_cliente', 'like', '%' . $t . '%')
-                                ->orWhereHas('documento', fn ($d) => $d->where('nombre', 'like', '%' . $t . '%'));
-                        });
-                    })->orWhereHas('producto', function ($p) use ($t) {
-                        $p->where('nombre', 'like', '%' . $t . '%')
-                            ->orWhere('codigo', 'like', '%' . $t . '%');
-                    });
-                });
-            })
-            ->when($request->filled('categoria'), function ($query) use ($request) {
-                $cat = trim((string) $request->categoria);
-                if ($cat !== '') {
-                    $query->whereHas('producto.categoria', fn ($q) => $q->where('nombre', $cat));
-                }
-            })
-            ->with(['producto.categoria', 'venta.documento'])
-            ->get()
-            ->groupBy('id_producto');
+        $empresa = Empresa::query()->find(Auth::user()->id_empresa);
 
-        $detalles = collect();
-
-        foreach ($detallesDeVenta as $detallesGroup) {
-            $ventas = collect();
-
-            foreach ($detallesGroup as $detalle) {
-                $v = $detalle->venta;
-                $doc = $v->documento?->nombre ?? $v->nombre_documento ?? 'Documento';
-                $factura = $v->correlativo ? $doc . ' #' . $v->correlativo : $doc;
-                $ventas->push([
-                    'fecha' => $v->fecha,
-                    'cliente' => $v->nombre_cliente,
-                    'cantidad' => $detalle->cantidad,
-                    'id' => $v->id,
-                    'nombre_documento' => $doc,
-                    'correlativo' => $v->correlativo,
-                    'factura' => $factura,
-                    'fecha_pago' => $v->fecha_pago,
-                    'uuid' => Crypt::encrypt($v->id),
-                ]);
-            }
-
-            $producto = $detallesGroup[0]->producto;
-            if ($producto) {
-                $detalles->push([
-                    'id' => $producto->id,
-                    'nombre' => $producto->nombre,
-                    'img' => $producto->img,
-                    'nombre_categoria' => $producto->nombre_categoria,
-                    'precio' => $detallesGroup[0]->precio,
-                    'codigo' => $producto->codigo,
-                    'stock' => $detallesGroup->sum('cantidad'),
-                    'ventas' => $ventas->values(),
-                ]);
-            }
-        }
-
-        return $detalles->sortBy('nombre')->values();
+        return app(ConsignaProductosVentaListadoService::class)->coleccion($request, $empresa);
     }
 
 
@@ -201,8 +139,18 @@ class ConsignasController extends Controller
     public function ventasPorProducto(int $idProducto)
     {
         $request = request();
-        $rows = $this->coleccionProductosEnConsigna($request)
-            ->firstWhere('id', $idProducto);
+        $loteId = $request->filled('lote_id') ? (int) $request->lote_id : null;
+
+        $rows = $this->coleccionProductosEnConsigna($request)->first(function (array $row) use ($idProducto, $loteId) {
+            if ((int) ($row['id'] ?? 0) !== $idProducto) {
+                return false;
+            }
+            if (! empty($row['agrupar_por_lote'])) {
+                return (int) ($row['lote_id'] ?? 0) === (int) ($loteId ?? 0);
+            }
+
+            return true;
+        });
 
         if (! $rows) {
             return response()->json(['ventas' => [], 'stock' => 0], 200);
@@ -212,6 +160,9 @@ class ConsignasController extends Controller
             'id' => $rows['id'],
             'nombre' => $rows['nombre'],
             'stock' => $rows['stock'],
+            'lote_id' => $rows['lote_id'] ?? null,
+            'lote_numero' => $rows['lote_numero'] ?? null,
+            'lote_vencimiento' => $rows['lote_vencimiento'] ?? null,
             'ventas' => $rows['ventas'] ?? [],
         ], 200);
     }
@@ -226,6 +177,7 @@ class ConsignasController extends Controller
                 'bodega:id,nombre',
                 'sucursal:id,nombre',
                 'detalles.producto:id,nombre,codigo',
+                'detalles.lote:id,numero_lote,fecha_vencimiento',
             ])
             ->orderByDesc('fecha')
             ->orderByDesc('id')
@@ -254,6 +206,9 @@ class ConsignasController extends Controller
                         'cantidad' => $detalle->cantidad,
                         'costo' => $detalle->costo,
                         'total' => $detalle->total,
+                        'lote_id' => $detalle->lote_id,
+                        'lote_numero' => $detalle->lote?->numero_lote,
+                        'lote_vencimiento' => $detalle->lote?->fecha_vencimiento?->format('Y-m-d'),
                     ];
                 })->values(),
             ];
