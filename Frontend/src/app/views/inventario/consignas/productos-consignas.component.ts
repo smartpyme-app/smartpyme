@@ -5,7 +5,6 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { NgSelectModule } from '@ng-select/ng-select';
-import { FilterPipe } from '@pipes/filter.pipe';
 import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -18,7 +17,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     selector: 'app-productos-consignas',
     templateUrl: './productos-consignas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PopoverModule, FilterPipe, SumPipe, PaginationComponent, LazyImageDirective, CurrencyPipe],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PopoverModule, SumPipe, PaginationComponent, LazyImageDirective, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProductosConsignasComponent extends BaseCrudComponent<any> implements OnInit {

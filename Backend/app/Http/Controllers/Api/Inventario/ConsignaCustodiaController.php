@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Inventario;
 use App\Constants\ConsignaMovimientoTipoConstants;
 use App\Http\Controllers\Controller;
 use App\Models\Inventario\ConsignaCustodia;
+use App\Exports\ConsignaCustodiaComprasDevolucionesExport;
 use App\Exports\ConsignaCustodiaDevolucionesExport;
 use App\Exports\ConsignaCustodiaVentasExport;
 use App\Services\Inventario\ConsignaCustodiaService;
@@ -34,6 +35,15 @@ class ConsignaCustodiaController extends Controller
     {
         if (! $request->filled('id_cliente')) {
             return response()->json(['error' => 'Debe seleccionar un cliente para exportar.'], 422);
+        }
+
+        return null;
+    }
+
+    private function validarProveedorParaExport(Request $request): ?\Illuminate\Http\JsonResponse
+    {
+        if (! $request->filled('id_proveedor')) {
+            return response()->json(['error' => 'Debe seleccionar un proveedor para exportar.'], 422);
         }
 
         return null;
@@ -95,6 +105,35 @@ class ConsignaCustodiaController extends Controller
             $custodiaService->listarDevolucionesConsigna($request, $ctx['id_empresa']),
             200
         );
+    }
+
+    public function devolucionesCompra(Request $request, ConsignaCustodiaService $custodiaService)
+    {
+        $ctx = $this->empresaLedgerActiva();
+        if (isset($ctx['error'])) {
+            return $ctx['error'];
+        }
+
+        return response()->json(
+            $custodiaService->listarDevolucionesCompraConsigna($request, $ctx['id_empresa']),
+            200
+        );
+    }
+
+    public function exportarDevolucionesCompra(Request $request)
+    {
+        $ctx = $this->empresaLedgerActiva();
+        if (isset($ctx['error'])) {
+            return $ctx['error'];
+        }
+        if ($rechazo = $this->validarProveedorParaExport($request)) {
+            return $rechazo;
+        }
+
+        $export = new ConsignaCustodiaComprasDevolucionesExport();
+        $export->filter($request);
+
+        return Excel::download($export, 'reporte-devoluciones-consigna-compra.xlsx');
     }
 
     public function index(Request $request, ConsignaCustodiaService $custodiaService)

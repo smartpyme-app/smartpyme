@@ -1,11 +1,5 @@
-<section class="d-flex flex-wrap justify-content-between align-items-center gap-2 bg-white p-2 p-md-4 rounded mb-3">
-  <h2 class="page-heading mb-0">Custodia consigna (ventas)</h2>
-  <a
-    class="btn btn-light btn-sm"
-    [routerLink]="['/consigna-historial']"
-    [queryParams]="filtros.id_cliente ? { alcance: 'ventas', id_cliente: filtros.id_cliente } : { alcance: 'ventas' }">
-    Historial por cliente
-  </a>
+<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
+  <h2 class="page-heading">Ventas en consigna</h2>
 </section>
 
 @if (!moduloActivo) {
@@ -14,30 +8,9 @@
   </section>
 } @else {
   <section class="bg-white p-4 rounded mb-3">
-    <ul class="nav nav-tabs mb-3">
-      <li class="nav-item">
-        <button
-          type="button"
-          class="nav-link"
-          [class.active]="tabActiva === 'ventas'"
-          (click)="cambiarTab('ventas')">
-          Ventas en consigna
-        </button>
-      </li>
-      <li class="nav-item">
-        <button
-          type="button"
-          class="nav-link"
-          [class.active]="tabActiva === 'devoluciones'"
-          (click)="cambiarTab('devoluciones')">
-          Devoluciones de consigna
-        </button>
-      </li>
-    </ul>
-
     <div class="row mb-3">
-      <div class="col-md-6 mb-2">
-        @if (etiquetaPaginacion()) {
+      <div class="col-md-6 mb-3">
+        @if (tabActiva !== 'historial' && etiquetaPaginacion()) {
           <span class="text-muted d-flex align-items-center gap-2 flex-wrap">
             Mostrando
             <select
@@ -53,55 +26,71 @@
           </span>
         }
       </div>
-      <div class="col-md-6 mb-2">
-        <div class="d-flex gap-2 flex-wrap">
-          <button
-            [disabled]="downloading"
-            [tooltip]="tabActiva === 'ventas' ? 'Descargar ventas en consigna del cliente' : 'Descargar devoluciones del cliente'"
-            (click)="descargar()"
-            class="btn btn-default tcla-F6">
-            <img appLazyImage="/assets/icons/download.png" class="icon">
-          </button>
-          <input
-            type="text"
-            name="buscador"
-            class="form-control"
-            style="min-width: 160px; flex: 1"
-            placeholder="Buscar cliente, documento o Nº..."
-            [(ngModel)]="filtros.buscador"
-            (keyup.enter)="buscar()" />
-          <button
-            type="button"
-            class="btn btn-default tcla-F6"
-            [disabled]="loading"
-            (click)="buscar()"
-            tooltip="Buscar (F6)">
-            @if (!loading) {
-              <i class="fa fa-search"></i>
-            } @else {
-              <i class="fa fa-ellipsis-h"></i>
-            }
+      <div class="col-md-6 mb-3">
+        <div class="d-flex gap-2 flex-grow-1 justify-content-md-end">
+          @if (tabActiva === 'historial') {
+            <ng-select
+              name="id_cliente_historial"
+              class="form-select p-0 flex-grow-1"
+              [items]="clientes"
+              bindValue="id"
+              [(ngModel)]="filtros.id_cliente"
+              placeholder="Buscar cliente…"
+              [searchable]="true"
+              [clearable]="true"
+              (change)="onHistorialClienteChange()"
+              (clear)="onHistorialClienteChange()">
+              <ng-template ng-label-tmp let-item="item">
+                {{ item ? etiquetaCliente(item) : etiquetaClienteSeleccionado() }}
+              </ng-template>
+              <ng-template ng-option-tmp let-item="item">
+                {{ etiquetaCliente(item) }}
+              </ng-template>
+            </ng-select>
+          } @else {
+            <button
+              [disabled]="downloading"
+              tooltip="Descargar reporte"
+              (click)="descargar()"
+              class="btn btn-default tcla-F6">
+              <img appLazyImage="/assets/icons/download.png" class="icon">
+            </button>
+            <form class="d-flex input-group flex-grow-1" (ngSubmit)="buscar()" autocomplete="off">
+              <input
+                type="text"
+                name="buscador"
+                class="form-control"
+                placeholder="Buscar cliente, documento o Nº..."
+                [(ngModel)]="filtros.buscador" />
+            </form>
+            <button type="button" class="btn btn-default tcla-F6" [disabled]="loading" (click)="buscar()" tooltip="Buscar (F6)">
+              @if (!loading) {
+                <i class="fa fa-search"></i>
+              } @else {
+                <i class="fa fa-ellipsis-h"></i>
+              }
+            </button>
+          }
+          <button type="button" tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3">
+            <img appLazyImage="/assets/icons/filter.png" class="icon">
           </button>
         </div>
       </div>
     </div>
 
-  <div class="row mb-3">
-    <div class="col-md-6 col-lg-4">
-      <label class="form-label small text-muted mb-1">Cliente</label>
-      <ng-select
-        [items]="clientes"
-        bindLabel="nombre_completo"
-        bindValue="id"
-        [(ngModel)]="filtros.id_cliente"
-        (change)="onFiltroCliente()"
-        placeholder="Todos los clientes"
-        [clearable]="true"
-        class="form-select p-0 border-0 bg-default">
-      </ng-select>
-      <p class="small text-muted mb-0 mt-1">La descarga Excel requiere cliente seleccionado.</p>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <div class="d-flex gap-2 flex-wrap">
+        <button type="button" class="btn" [class.btn-primary]="tabActiva === 'ventas'" (click)="cambiarTab('ventas')">
+          Ventas en consigna
+        </button>
+        <button type="button" class="btn" [class.btn-primary]="tabActiva === 'devoluciones'" (click)="cambiarTab('devoluciones')">
+          Devoluciones
+        </button>
+        <button type="button" class="btn" [class.btn-primary]="tabActiva === 'historial'" (click)="cambiarTab('historial')">
+          Historial
+        </button>
+      </div>
     </div>
-  </div>
 
     @if (tabActiva === 'ventas') {
       <div class="row">
@@ -149,14 +138,10 @@
                     </span>
                     <ng-template #accionesVenta>
                       <div class="list-group border-0">
-                        <a
-                          routerLink="/venta/consigna/revisar/{{ venta.id }}"
-                          class="list-group-item list-group-item-action border-0 click">
+                        <a routerLink="/venta/consigna/revisar/{{ venta.id }}" class="list-group-item list-group-item-action border-0 click">
                           <i class="fas fa-fw fa-hand-holding-usd"></i> Revisar consigna
                         </a>
-                        <a
-                          routerLink="/venta/{{ venta.id }}"
-                          class="list-group-item list-group-item-action border-0 click">
+                        <a routerLink="/venta/{{ venta.id }}" class="list-group-item list-group-item-action border-0 click">
                           <i class="fa fa-fw fa-magnifying-glass"></i> Ver venta
                         </a>
                       </div>
@@ -217,15 +202,11 @@
                     </span>
                     <ng-template #accionesDev>
                       <div class="list-group border-0">
-                        <a
-                          routerLink="/devolucion/venta/{{ dev.id }}"
-                          class="list-group-item list-group-item-action border-0 click">
+                        <a routerLink="/devolucion/venta/{{ dev.id }}" class="list-group-item list-group-item-action border-0 click">
                           <i class="fa fa-fw fa-magnifying-glass"></i> Ver devolución
                         </a>
                         @if (dev.id_venta) {
-                          <a
-                            routerLink="/venta/{{ dev.id_venta }}"
-                            class="list-group-item list-group-item-action border-0 click">
+                          <a routerLink="/venta/{{ dev.id_venta }}" class="list-group-item list-group-item-action border-0 click">
                             <i class="fa fa-fw fa-file-invoice"></i> Ver remisión
                           </a>
                         }
@@ -244,5 +225,48 @@
         }
       </div>
     }
+
+    @if (tabActiva === 'historial') {
+      <app-consigna-historial-panel
+        alcance="ventas"
+        [idCliente]="idClienteHistorial()"
+        [nombreCliente]="etiquetaClienteSeleccionado()"></app-consigna-historial-panel>
+    }
   </section>
 }
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+      <h2 class="text-center mb-0">Filtrar</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalManager.closeModal(modalRef)" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="form-group col-12">
+        <label for="filtros.id_cliente">Cliente:</label>
+        <ng-select
+          name="id_cliente"
+          [(ngModel)]="filtros.id_cliente"
+          class="form-select p-0"
+          [items]="clientes"
+          bindValue="id"
+          placeholder="Buscar cliente…"
+          [searchable]="true"
+          [clearable]="true">
+          <ng-template ng-option-tmp let-item="item">
+            {{ etiquetaCliente(item) }}
+          </ng-template>
+          <ng-template ng-label-tmp let-item="item">
+            {{ item ? etiquetaCliente(item) : '' }}
+          </ng-template>
+        </ng-select>
+        <small class="text-muted">La descarga Excel y el historial requieren un cliente.</small>
+      </div>
+    </div>
+    <div class="d-grid mt-3">
+      <button type="button" class="btn btn-primary" (click)="aplicarFiltrosModal()">Filtrar</button>
+    </div>
+  </div>
+</ng-template>

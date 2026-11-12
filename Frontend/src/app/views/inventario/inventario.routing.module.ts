@@ -15,7 +15,6 @@ import { ProductosConsignasComponent } from '@views/inventario/consignas/product
 import { ProductosConsignasComprasComponent } from '@views/inventario/consignas-compras/productos-consignas-compras.component';
 import { ConsignaKardexComponent } from '@views/inventario/consigna-kardex/consigna-kardex.component';
 import { ConsignaCustodiaComponent } from '@views/inventario/consigna-custodia/consigna-custodia.component';
-import { ConsignaHistorialComponent } from '@views/inventario/consigna-historial/consigna-historial.component';
 
 import { MateriasPrimaComponent } from '@views/inventario/materias-prima/materias-prima.component';
 import { MateriaPrimaComponent } from '@views/inventario/materias-prima/materia-prima/materia-prima.component';
@@ -58,10 +57,10 @@ const routes: Routes = [
         { path: 'producto/editar/:id', component: ProductoComponent, title: 'Producto' },
 
 
-        { path: 'consignas', canActivate: [InventarioOperacionesAdminGuard, PermissionGuard], data: { permission: 'compras.consignas.ver' }, component: ProductosConsignasComprasComponent, title: 'Consignas' },
+        { path: 'consignas', canActivate: [InventarioOperacionesAdminGuard, PermissionGuard], data: { permission: 'compras.consignas.ver' }, component: ProductosConsignasComprasComponent, title: 'Compras en consigna' },
         { path: 'consigna-kardex', canActivate: [InventarioOperacionesAdminGuard, PermissionGuard], data: { permission: 'inventario.consigna_kardex.ver' }, component: ConsignaKardexComponent, title: 'Kardex consigna' },
         { path: 'consigna-custodia', canActivate: [InventarioOperacionesAdminGuard, PermissionGuard], data: { permission: 'inventario.consigna_kardex.ver' }, component: ConsignaCustodiaComponent, title: 'Ventas en consigna' },
-        { path: 'consigna-historial', canActivate: [InventarioOperacionesAdminGuard, PermissionGuard], data: { permission: 'inventario.consigna_kardex.ver' }, component: ConsignaHistorialComponent, title: 'Historial consigna' },
+        { path: 'consigna-historial', redirectTo: 'consigna-custodia', pathMatch: 'full' },
         { path: 'consignas/custodia', redirectTo: 'consigna-custodia', pathMatch: 'full' },
         { path: 'consignas/ventas', canActivate: [InventarioOperacionesAdminGuard, PermissionGuard], data: { permission: 'ventas.consignas.ver' }, component: ProductosConsignasComponent, title: 'Productos en consigna' },
         { path: 'consignas-compras', redirectTo: 'consignas', pathMatch: 'full' },

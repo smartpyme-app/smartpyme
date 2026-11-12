@@ -55,6 +55,32 @@ class ConsignaHistorialController extends Controller
         );
     }
 
+    public function exportarPdf(Request $request)
+    {
+        $ctx = $this->empresaLedgerActiva();
+        if (isset($ctx['error'])) {
+            return $ctx['error'];
+        }
+
+        $alcance = $this->historialService->alcanceDesdeRequest($request);
+        if ($rechazo = $this->validarTercero($request, $alcance, false)) {
+            return $rechazo;
+        }
+
+        $payload = $this->historialService->reporte($request, $ctx['id_empresa'], $ctx['empresa']);
+        $nombre = $alcance === 'compras'
+            ? 'historial-consigna-compras.pdf'
+            : 'historial-consigna-ventas.pdf';
+
+        $pdf = app('dompdf.wrapper')->loadView('reportes.inventario.consigna-historial', [
+            'payload' => $payload,
+            'alcance' => $alcance,
+            'empresa' => $ctx['empresa'],
+        ]);
+
+        return $pdf->download($nombre);
+    }
+
     private function validarTercero(Request $request, string $alcance, bool $listarSinFiltro): ?\Illuminate\Http\JsonResponse
     {
         if ($alcance === 'ventas') {

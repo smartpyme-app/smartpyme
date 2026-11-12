@@ -190,7 +190,6 @@
                             }
                             @if (apiService.canAccederOperacionesInventario() && apiService.hasPermission('inventario.consigna_kardex.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/consigna-kardex']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/book-open.png" class="icon me-2">Kardex consigna</a></li>
-                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/consigna-historial']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/book-open.png" class="icon me-2">Historial consigna</a></li>
                             }
                         </ul>
                     </div>

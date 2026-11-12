@@ -1,19 +1,20 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { ConsignaHistorialPanelComponent } from '../consigna-historial/consigna-historial-panel.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
-
-type TabCustodia = 'ventas' | 'devoluciones';
+type TabCustodia = 'ventas' | 'devoluciones' | 'historial';
 
 @Component({
   selector: 'app-consigna-custodia',
@@ -29,10 +30,14 @@ type TabCustodia = 'ventas' | 'devoluciones';
     TooltipModule,
     NgSelectModule,
     LazyImageDirective,
+    ConsignaHistorialPanelComponent,
   ],
   templateUrl: './consigna-custodia.component.html',
 })
 export class ConsignaCustodiaComponent implements OnInit {
+  @ViewChild('mfilter') mfilter?: TemplateRef<unknown>;
+  @ViewChild(ConsignaHistorialPanelComponent) historialPanel?: ConsignaHistorialPanelComponent;
+
   public ventasConsigna: any = { data: [] };
   public devolucionesConsigna: any = { data: [] };
   public clientes: any[] = [];
@@ -43,23 +48,31 @@ export class ConsignaCustodiaComponent implements OnInit {
   public filtros: any = {
     buscador: '',
     paginate: 25,
-    id_cliente: null as number | null,
+    id_cliente: null as number | null | '',
     page: 1,
   };
 
   constructor(
     public apiService: ApiService,
     private alertService: AlertService,
-    private funcionalidadesService: FuncionalidadesService
+    private funcionalidadesService: FuncionalidadesService,
+    public modalManager: ModalManagerService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit() {
+    const tab = this.route.snapshot.queryParamMap.get('tab');
+    if (tab === 'devoluciones' || tab === 'historial') {
+      this.tabActiva = tab;
+    }
     this.funcionalidadesService.verificarAcceso('modulo-consignaciones').subscribe({
       next: (acceso) => {
         this.moduloActivo = acceso;
         if (acceso) {
           this.loadClientes();
-          this.loadAll();
+          if (this.tabActiva !== 'historial') {
+            this.loadAll();
+          }
         }
       },
       error: () => {
@@ -77,19 +90,84 @@ export class ConsignaCustodiaComponent implements OnInit {
     });
   }
 
+  public etiquetaCliente(cliente: any): string {
+    const base =
+      cliente?.tipo === 'Empresa' ? cliente?.nombre_empresa : cliente?.nombre_completo;
+    const comercial = cliente?.nombre_comercial ? ` (${cliente.nombre_comercial})` : '';
+    return (base ?? '') + comercial;
+  }
+
+  public etiquetaClienteSeleccionado(): string {
+    const id = this.filtros.id_cliente;
+    if (id == null || id === '') {
+      return '';
+    }
+    const cliente = this.clientes.find((c) => Number(c.id) === Number(id));
+    return cliente ? this.etiquetaCliente(cliente) : '';
+  }
+
+  public modalRef?: import('ngx-bootstrap/modal').BsModalRef;
+
+  public openFilter(template: TemplateRef<unknown>) {
+    this.modalRef = this.modalManager.openModal(template);
+  }
+
+  public aplicarFiltrosModal() {
+    this.filtros.page = 1;
+    this.modalManager.closeModal(this.modalRef);
+    if (this.tabActiva === 'historial') {
+      this.normalizarIdClienteHistorial();
+      queueMicrotask(() => this.historialPanel?.cargar());
+      return;
+    }
+    this.loadAll();
+  }
+
+  public onHistorialClienteChange(): void {
+    this.normalizarIdClienteHistorial();
+    queueMicrotask(() => this.historialPanel?.cargar());
+  }
+
+  private normalizarIdClienteHistorial(): void {
+    const id = this.filtros.id_cliente;
+    if (id != null && id !== '') {
+      this.filtros.id_cliente = Number(id);
+    }
+  }
+
+  public clienteHistorialPorId(): any | null {
+    const id = this.filtros.id_cliente;
+    if (id == null || id === '') {
+      return null;
+    }
+    return this.clientes.find((c) => Number(c.id) === Number(id)) ?? null;
+  }
+
   public cambiarTab(tab: TabCustodia) {
     if (this.tabActiva === tab) {
       return;
     }
     this.tabActiva = tab;
     this.filtros.page = 1;
+    if (tab === 'historial') {
+      if (!this.clientes.length) {
+        this.loadClientes();
+      }
+      this.normalizarIdClienteHistorial();
+      queueMicrotask(() => {
+        if (this.idClienteHistorial()) {
+          this.historialPanel?.cargar();
+        }
+      });
+      return;
+    }
     this.loadAll();
   }
 
   public loadAll() {
     if (this.tabActiva === 'ventas') {
       this.loadVentas();
-    } else {
+    } else if (this.tabActiva === 'devoluciones') {
       this.loadDevoluciones();
     }
   }
@@ -130,11 +208,6 @@ export class ConsignaCustodiaComponent implements OnInit {
     return params;
   }
 
-  public onFiltroCliente() {
-    this.filtros.page = 1;
-    this.loadAll();
-  }
-
   public buscar() {
     this.filtros.page = 1;
     this.loadAll();
@@ -151,8 +224,11 @@ export class ConsignaCustodiaComponent implements OnInit {
   }
 
   public descargar() {
+    if (this.tabActiva === 'historial') {
+      return;
+    }
     if (!this.filtros.id_cliente) {
-      this.alertService.warning('Exportar', 'Seleccione un cliente antes de descargar el reporte.');
+      this.alertService.warning('Exportar', 'Seleccione un cliente en Filtros antes de descargar.');
       return;
     }
     const endpoint =
@@ -183,6 +259,14 @@ export class ConsignaCustodiaComponent implements OnInit {
         this.downloading = false;
       },
     });
+  }
+
+  public idClienteHistorial(): number | null {
+    const id = this.filtros.id_cliente;
+    if (id == null || id === '') {
+      return null;
+    }
+    return Number(id);
   }
 
   public nombreClienteVenta(venta: any): string {
@@ -233,12 +317,12 @@ export class ConsignaCustodiaComponent implements OnInit {
   }
 
   public etiquetaPaginacion(): number {
-    return this.tabActiva === 'ventas'
-      ? this.ventasConsigna?.total ?? 0
-      : this.devolucionesConsigna?.total ?? 0;
-  }
-
-  public itemsPaginados(): any {
-    return this.tabActiva === 'ventas' ? this.ventasConsigna : this.devolucionesConsigna;
+    if (this.tabActiva === 'ventas') {
+      return this.ventasConsigna?.total ?? 0;
+    }
+    if (this.tabActiva === 'devoluciones') {
+      return this.devolucionesConsigna?.total ?? 0;
+    }
+    return 0;
   }
 }

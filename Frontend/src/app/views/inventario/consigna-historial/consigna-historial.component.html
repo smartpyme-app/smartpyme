@@ -9,7 +9,7 @@
       <small class="text-muted">Resumen por producto{{ incluirLote ? ' y lote' : '' }} + movimientos (según reporte cliente/proveedor).</small>
     </div>
     <div class="d-flex gap-2">
-      @if (apiService.hasPermission('inventario.consigna_kardex.exportar')) {
+      @if (apiService.hasPermission('inventario.consigna_kardex.ver')) {
         <button type="button" class="btn btn-default" [disabled]="downloading" (click)="exportar()" tooltip="Descargar Excel">
           <img appLazyImage="/assets/icons/download.png" class="icon" alt="">
         </button>
@@ -41,11 +41,18 @@
             [(ngModel)]="filtros.id_cliente"
             name="id_cliente"
             [items]="clientes"
-            bindLabel="nombre"
             bindValue="id"
-            placeholder="Seleccione cliente"
+            placeholder="Buscar cliente…"
             class="form-select p-0"
+            [searchable]="true"
+            [clearable]="true"
             (change)="cargar()">
+            <ng-template ng-option-tmp let-item="item">
+              {{ etiquetaCliente(item) }}
+            </ng-template>
+            <ng-template ng-label-tmp let-item="item">
+              {{ item ? etiquetaCliente(item) : '' }}
+            </ng-template>
           </ng-select>
         </div>
       } @else {
@@ -55,11 +62,18 @@
             [(ngModel)]="filtros.id_proveedor"
             name="id_proveedor"
             [items]="proveedores"
-            bindLabel="nombre"
             bindValue="id"
-            placeholder="Seleccione proveedor"
+            placeholder="Buscar proveedor…"
             class="form-select p-0"
+            [searchable]="true"
+            [clearable]="true"
             (change)="cargar()">
+            <ng-template ng-option-tmp let-item="item">
+              {{ etiquetaProveedor(item) }}
+            </ng-template>
+            <ng-template ng-label-tmp let-item="item">
+              {{ item ? etiquetaProveedor(item) : '' }}
+            </ng-template>
           </ng-select>
         </div>
       }
@@ -111,7 +125,7 @@
             <tr>
               <td [attr.colspan]="incluirLote ? 10 : 8" class="text-muted text-center py-3">
                 @if (terceroSeleccionado()) {
-                  Sin productos en el período.
+                  Sin productos en consigna con saldo disponible.
                 } @else {
                   Seleccione cliente o proveedor.
                 }
@@ -131,7 +145,7 @@
                 <td class="text-end">{{ fila.facturadas }}</td>
                 <td class="text-end">{{ fila.devueltas }}</td>
                 <td class="text-end fw-semibold">{{ fila.disponible }}</td>
-                <td class="text-end">{{ fila.precio_unitario | currencyFormat }}</td>
+                <td class="text-end">{{ fila.precio_unitario | currency }}</td>
               </tr>
             }
           }

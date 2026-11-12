@@ -130,7 +130,13 @@ Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, '
     Route::get('/productos/consigna-historial', [\App\Http\Controllers\Api\Inventario\ConsignaHistorialController::class, 'index'])
         ->middleware('permission:inventario.consigna_kardex.ver');
     Route::get('/productos/consigna-historial/exportar', [\App\Http\Controllers\Api\Inventario\ConsignaHistorialController::class, 'exportar'])
-        ->middleware('permission:inventario.consigna_kardex.exportar');
+        ->middleware('permission:inventario.consigna_kardex.ver');
+    Route::get('/productos/consigna-historial/exportar-pdf', [\App\Http\Controllers\Api\Inventario\ConsignaHistorialController::class, 'exportarPdf'])
+        ->middleware('permission:inventario.consigna_kardex.ver');
+    Route::get('/productos/consigna-compras/devoluciones', [\App\Http\Controllers\Api\Inventario\ConsignaCustodiaController::class, 'devolucionesCompra'])
+        ->middleware('permission:inventario.consigna_kardex.ver');
+    Route::get('/productos/consigna-compras/devoluciones/exportar', [\App\Http\Controllers\Api\Inventario\ConsignaCustodiaController::class, 'exportarDevolucionesCompra'])
+        ->middleware('permission:inventario.consigna_kardex.ver');
 
 // Promociones
     Route::get('promociones',        [PromocionesController::class, 'index']);

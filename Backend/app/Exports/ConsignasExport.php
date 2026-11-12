@@ -33,6 +33,7 @@ class ConsignasExport implements FromCollection, WithHeadings, WithMapping
             'Categoria',
             'Precio',
             'Codigo',
+            'Cliente',
         ];
         if ($this->incluirLote) {
             $headings[] = 'Lote';
@@ -50,6 +51,7 @@ class ConsignasExport implements FromCollection, WithHeadings, WithMapping
             $row['nombre_categoria'],
             $row['precio'],
             $row['codigo'],
+            $row['clientes_texto'] ?? '',
         ];
         if ($this->incluirLote) {
             $fields[] = $row['lote_numero'] ?? '';

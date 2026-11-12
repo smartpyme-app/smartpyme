@@ -81,6 +81,12 @@ class ConsignaProductosVentaListadoService
             $loteId = $agruparPorLote ? ($detallesGroup[0]->lote_id ? (int) $detallesGroup[0]->lote_id : null) : null;
             $lote = $agruparPorLote ? $detallesGroup[0]->lote : null;
 
+            $clientes = $ventas
+                ->map(fn ($v) => $v['cliente'] ?? null)
+                ->filter()
+                ->unique()
+                ->values();
+
             $fila = [
                 'id' => $producto->id,
                 'nombre' => $producto->nombre,
@@ -89,6 +95,8 @@ class ConsignaProductosVentaListadoService
                 'precio' => $detallesGroup[0]->precio,
                 'codigo' => $producto->codigo,
                 'stock' => $detallesGroup->sum('cantidad'),
+                'clientes' => $clientes->all(),
+                'clientes_texto' => $clientes->implode('; '),
                 'ventas' => $ventas->values()->all(),
                 'agrupar_por_lote' => $agruparPorLote,
                 'row_key' => $agruparPorLote
@@ -109,6 +117,51 @@ class ConsignaProductosVentaListadoService
         return $filas->sortBy(fn ($row) => ($row['nombre'] ?? '') . ($row['lote_numero'] ?? ''))->values();
     }
 
+    /**
+     * Filas resumen historial: lo que el cliente tiene hoy en remisiones abiertas (estado Consigna).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function resumenFilasCliente(int $idCliente, ?Empresa $empresa): array
+    {
+        $agruparPorLote = $this->agruparPorProductoYLote($empresa);
+        $request = Request::create('/', 'GET');
+
+        $resumen = [];
+
+        foreach ($this->coleccion($request, $empresa) as $fila) {
+            $ventasCliente = collect($fila['ventas'] ?? [])->filter(
+                fn (array $v) => (int) ($v['id_cliente'] ?? 0) === $idCliente
+            );
+            if ($ventasCliente->isEmpty()) {
+                continue;
+            }
+
+            $disponible = (float) $ventasCliente->sum('cantidad');
+            if ($disponible <= 0.0001) {
+                continue;
+            }
+
+            $resumen[] = [
+                'id_producto' => (int) ($fila['id'] ?? 0),
+                'id_bodega' => 0,
+                'codigo' => $fila['codigo'] ?? null,
+                'producto' => $fila['nombre'] ?? null,
+                'lote_id' => $agruparPorLote ? ($fila['lote_id'] ?? null) : null,
+                'lote' => $agruparPorLote ? ($fila['lote_numero'] ?? null) : null,
+                'vence' => $agruparPorLote ? ($fila['lote_vencimiento'] ?? null) : null,
+                'bodega' => null,
+                'enviadas' => $disponible,
+                'facturadas' => 0.0,
+                'devueltas' => 0.0,
+                'disponible' => round($disponible, 4),
+                'precio_unitario' => (float) ($fila['precio'] ?? 0),
+            ];
+        }
+
+        return $resumen;
+    }
+
     /** @return array<string, mixed> */
     private function lineaVentaConsigna(DetalleVenta $detalle, bool $incluirLoteDetalle): array
     {
@@ -118,6 +171,7 @@ class ConsignaProductosVentaListadoService
 
         $linea = [
             'fecha' => $v->fecha,
+            'id_cliente' => $v->id_cliente ? (int) $v->id_cliente : null,
             'cliente' => $v->nombre_cliente,
             'cantidad' => $detalle->cantidad,
             'id' => $v->id,

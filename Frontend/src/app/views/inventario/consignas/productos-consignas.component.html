@@ -1,6 +1,5 @@
 <section class="d-flex flex-wrap justify-content-between align-items-center gap-2 bg-white p-2 p-md-4 rounded mb-3">
     <h2 class="page-heading mb-0">Productos en consigna</h2>
-    <a routerLink="/consigna-historial" [queryParams]="{ alcance: 'ventas' }" class="btn btn-light btn-sm">Historial consigna</a>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -56,6 +55,7 @@
                 <thead>
                     <tr>
                         <th>Producto</th>
+                        <th class="d-none d-md-table-cell">Cliente</th>
                         <th class="d-none d-md-table-cell">Categoria</th>
                         <th class="d-none d-md-table-cell">Código</th>
                         @if (mostrarColumnasLote()) {
@@ -70,14 +70,14 @@
                 <tbody>
                     @if (productos?.data?.length < 1 && !loading) {
                         <tr>
-                            <td [attr.colspan]="mostrarColumnasLote() ? 8 : 6" class="text-center">
+                            <td [attr.colspan]="mostrarColumnasLote() ? 9 : 7" class="text-center">
                                 <span class="badge bg-primary">No tiene productos en consigna</span>
                             </td>
                         </tr>
                     }
                     @if (loading) {
                         <tr>
-                            <td [attr.colspan]="mostrarColumnasLote() ? 8 : 6" class="text-center">
+                            <td [attr.colspan]="mostrarColumnasLote() ? 9 : 7" class="text-center">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
                         </tr>
@@ -92,6 +92,7 @@
                                 <span>{{ producto.nombre }}</span>
                             }
                         </td>
+                        <td class="d-none d-md-table-cell">{{ producto.clientes_texto || '—' }}</td>
                         <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
                         <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
                         @if (mostrarColumnasLote()) {

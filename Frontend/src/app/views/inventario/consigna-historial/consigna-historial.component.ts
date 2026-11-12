@@ -49,9 +49,7 @@ export class ConsignaHistorialComponent implements OnInit {
     if (alcance === 'compras') {
       this.alcance = 'compras';
     }
-    const hace90 = new Date();
-    hace90.setDate(hace90.getDate() - 90);
-    this.filtros.fecha_ini = hace90.toISOString().slice(0, 10);
+    this.filtros.fecha_ini = '';
     this.filtros.fecha_fin = this.apiService.date();
 
     const idCliente = this.route.snapshot.queryParamMap.get('id_cliente');
@@ -114,14 +112,31 @@ export class ConsignaHistorialComponent implements OnInit {
       : !!this.filtros.id_proveedor;
   }
 
+  public etiquetaCliente(cliente: any): string {
+    const base =
+      cliente?.tipo === 'Empresa' ? cliente?.nombre_empresa : cliente?.nombre_completo;
+    const comercial = cliente?.nombre_comercial ? ` (${cliente.nombre_comercial})` : '';
+    return (base ?? cliente?.nombre ?? '') + comercial;
+  }
+
+  public etiquetaProveedor(proveedor: any): string {
+    if (proveedor?.nombre_comercial) {
+      return proveedor.nombre_comercial;
+    }
+    if (proveedor?.nombre_empresa) {
+      return proveedor.nombre_empresa;
+    }
+    return [proveedor?.nombre, proveedor?.apellido].filter(Boolean).join(' ');
+  }
+
   public nombreTerceroSeleccionado(): string {
     if (this.alcance === 'ventas' && this.filtros.id_cliente) {
-      const c = this.clientes.find((x) => x.id === this.filtros.id_cliente);
-      return c?.nombre ?? '';
+      const c = this.clientes.find((x) => Number(x.id) === Number(this.filtros.id_cliente));
+      return c ? this.etiquetaCliente(c) : '';
     }
     if (this.alcance === 'compras' && this.filtros.id_proveedor) {
-      const p = this.proveedores.find((x) => x.id === this.filtros.id_proveedor);
-      return p?.nombre ?? '';
+      const p = this.proveedores.find((x) => Number(x.id) === Number(this.filtros.id_proveedor));
+      return p ? this.etiquetaProveedor(p) : '';
     }
     return '';
   }
@@ -132,16 +147,24 @@ export class ConsignaHistorialComponent implements OnInit {
       return;
     }
     this.loading = true;
-    const params = {
-      ...this.filtros,
+    const params: Record<string, unknown> = {
       alcance: this.alcance,
+      id_cliente: this.filtros.id_cliente,
+      id_proveedor: this.filtros.id_proveedor,
     };
+    if (this.filtros.fecha_ini) {
+      params['fecha_ini'] = this.filtros.fecha_ini;
+    }
+    if (this.filtros.fecha_fin) {
+      params['fecha_fin'] = this.filtros.fecha_fin;
+    }
     this.apiService.getAll('productos/consigna-historial', params).subscribe({
       next: (data) => {
-        this.resumen = data?.resumen ?? [];
-        this.movimientos = data?.movimientos ?? [];
-        this.incluirLote = !!data?.incluir_lote;
-        this.terceroNombre = data?.tercero?.nombre ?? this.nombreTerceroSeleccionado();
+        const payload = data?.resumen !== undefined ? data : (data?.data ?? data);
+        this.resumen = Array.isArray(payload?.resumen) ? payload.resumen : [];
+        this.movimientos = Array.isArray(payload?.movimientos) ? payload.movimientos : [];
+        this.incluirLote = !!payload?.incluir_lote;
+        this.terceroNombre = payload?.tercero?.nombre ?? this.nombreTerceroSeleccionado();
         this.loading = false;
       },
       error: (err) => {
@@ -166,14 +189,11 @@ export class ConsignaHistorialComponent implements OnInit {
       ...this.filtros,
       alcance: this.alcance,
     };
-    this.apiService.export('productos/consigna-historial/exportar', params).subscribe({
+    this.apiService.export('productos/consigna-historial/exportar-pdf', params).subscribe({
       next: (blob) => {
-        const a = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        a.href = url;
-        a.download = this.alcance === 'compras' ? 'historial-consigna-compras.xlsx' : 'historial-consigna-ventas.xlsx';
-        a.click();
-        URL.revokeObjectURL(url);
+        const nombre =
+          this.alcance === 'compras' ? 'historial-consigna-compras.pdf' : 'historial-consigna-ventas.pdf';
+        this.apiService.downloadFile(blob, nombre);
         this.downloading = false;
       },
       error: (err) => {
