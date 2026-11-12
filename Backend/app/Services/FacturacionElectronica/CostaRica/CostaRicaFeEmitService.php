@@ -251,15 +251,14 @@ final class CostaRicaFeEmitService
     }
 
     /**
-     * Código de referencia de la nota de débito. Motivo fijo: corrige monto.
-     * Mismo mes → 02. Mes anterior → 14.
+     * Código de referencia de la nota de débito: corrige monto (02) o corrige monto por error material (14).
      */
-    public static function codigoReferenciaNotaDebito(\DateTimeInterface $fechaFactura, \DateTimeInterface $fechaNota): string
+    public static function codigoReferenciaNotaDebito(bool $errorMaterial): string
     {
         return ReferenciaComprobanteCr::codigoNota(
-            ReferenciaComprobanteCr::MOTIVO_CORRIGE_MONTO,
-            $fechaFactura,
-            $fechaNota,
+            $errorMaterial
+                ? ReferenciaComprobanteCr::MOTIVO_CORRIGE_MONTO_ERROR_MATERIAL
+                : ReferenciaComprobanteCr::MOTIVO_CORRIGE_MONTO
         );
     }
 
@@ -269,7 +268,7 @@ final class CostaRicaFeEmitService
      *
      * @return array{clave: string, aceptada: bool, detalle_estado: array, venta: Venta, devolucion?: Devolucion}
      */
-    public function emitirNotaDebitoDesdeVenta(int $ventaFacturaId, string $motivo, float $montoLinea): array
+    public function emitirNotaDebitoDesdeVenta(int $ventaFacturaId, string $motivo, float $montoLinea, bool $errorMaterial = false): array
     {
         $venta = $this->cargarVenta($ventaFacturaId);
         $empresa = $venta->empresa;
@@ -386,10 +385,7 @@ final class CostaRicaFeEmitService
                 'document_type' => $referenciaNd['document_type'],
                 'document_number' => $referenciaNd['document_number'],
                 'emission_date' => $fechaFactura,
-                'referenced_code' => self::codigoReferenciaNotaDebito(
-                    \Carbon\Carbon::parse($venta->fecha)->timezone('America/Costa_Rica'),
-                    \Carbon\Carbon::now('America/Costa_Rica'),
-                ),
+                'referenced_code' => self::codigoReferenciaNotaDebito($errorMaterial),
                 'reason' => mb_substr(strip_tags($motivo ?: 'Corrección de montos'), 0, 180),
             ]],
         ]);

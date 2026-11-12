@@ -41,8 +41,11 @@
                 <label for="motivo_fe_cr">Motivo de la nota</label>
                 <select name="motivo_fe_cr" id="motivo_fe_cr" [(ngModel)]="devolucion.motivo_fe_cr" class="form-select" required>
                     <option value="devolucion">Devolución de mercancía</option>
-                    <option value="anula">Anula el documento por error</option>
-                    <option value="exoneracion_posterior">Exoneración de impuesto local posterior a la factura</option>
+                    <option value="anula">Anula el documento</option>
+                    <option value="anula_error_material">Anula el documento por error material</option>
+                    <option value="corrige_monto">Corrige monto</option>
+                    <option value="corrige_monto_error_material">Corrige monto por error material</option>
+                    <option value="exoneracion_posterior">Exoneración posterior a la factura</option>
                 </select>
             </div>
             }

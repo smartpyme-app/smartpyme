@@ -109,7 +109,8 @@ class CostaRicaFeController extends Controller
             $resultado = $emitService->emitirNotaDebitoDesdeVenta(
                 (int) $request->id,
                 (string) ($request->motivo ?? ''),
-                (float) $request->monto_linea
+                (float) $request->monto_linea,
+                $request->boolean('error_material')
             );
 
             return response()->json($resultado, 200);

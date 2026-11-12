@@ -8,47 +8,27 @@ use PHPUnit\Framework\TestCase;
 
 final class ReferenciaComprobanteCrTest extends TestCase
 {
-    public function test_devolucion_es_06_aunque_la_factura_sea_de_otro_mes(): void
+    public function test_cada_motivo_tiene_su_codigo_de_referencia(): void
     {
-        $codigo = ReferenciaComprobanteCr::codigoNota(
-            ReferenciaComprobanteCr::MOTIVO_DEVOLUCION,
-            new \DateTimeImmutable('2026-08-15 10:00:00', new \DateTimeZone('America/Costa_Rica')),
-            new \DateTimeImmutable('2026-09-02 10:00:00', new \DateTimeZone('America/Costa_Rica')),
-        );
+        $esperados = [
+            ReferenciaComprobanteCr::MOTIVO_ANULA => '01',
+            ReferenciaComprobanteCr::MOTIVO_CORRIGE_MONTO => '02',
+            ReferenciaComprobanteCr::MOTIVO_DEVOLUCION => '06',
+            ReferenciaComprobanteCr::MOTIVO_EXONERACION_POSTERIOR => '12',
+            ReferenciaComprobanteCr::MOTIVO_ANULA_ERROR_MATERIAL => '13',
+            ReferenciaComprobanteCr::MOTIVO_CORRIGE_MONTO_ERROR_MATERIAL => '14',
+        ];
 
-        self::assertSame('06', $codigo);
+        foreach ($esperados as $motivo => $codigo) {
+            self::assertSame($codigo, ReferenciaComprobanteCr::codigoNota($motivo), $motivo);
+        }
+        self::assertEqualsCanonicalizing(array_keys($esperados), ReferenciaComprobanteCr::MOTIVOS_NOTA_CREDITO);
     }
 
-    public function test_anula_y_corrige_del_mismo_mes_siguen_en_01_y_02(): void
+    public function test_motivo_desconocido_falla(): void
     {
-        $agosto = new \DateTimeImmutable('2026-08-10 10:00:00', new \DateTimeZone('America/Costa_Rica'));
-        $mismo = new \DateTimeImmutable('2026-08-28 10:00:00', new \DateTimeZone('America/Costa_Rica'));
-
-        self::assertSame('01', ReferenciaComprobanteCr::codigoNota(ReferenciaComprobanteCr::MOTIVO_ANULA, $agosto, $mismo));
-        self::assertSame('02', ReferenciaComprobanteCr::codigoNota(ReferenciaComprobanteCr::MOTIVO_CORRIGE_MONTO, $agosto, $mismo));
-        self::assertSame('07', ReferenciaComprobanteCr::codigoSustitucion('01'));
-    }
-
-    public function test_error_material_de_otro_mes_usa_13_14_y_15(): void
-    {
-        $agosto = new \DateTimeImmutable('2026-08-31 22:00:00', new \DateTimeZone('America/Costa_Rica'));
-        $setiembre = new \DateTimeImmutable('2026-09-01 08:00:00', new \DateTimeZone('America/Costa_Rica'));
-
-        self::assertTrue(ReferenciaComprobanteCr::esPeriodoAnterior($agosto, $setiembre));
-        self::assertSame('13', ReferenciaComprobanteCr::codigoNota(ReferenciaComprobanteCr::MOTIVO_ANULA, $agosto, $setiembre));
-        self::assertSame('14', ReferenciaComprobanteCr::codigoNota(ReferenciaComprobanteCr::MOTIVO_CORRIGE_MONTO, $agosto, $setiembre));
-        self::assertSame('15', ReferenciaComprobanteCr::codigoSustitucion('13'));
-    }
-
-    public function test_exoneracion_posterior_es_12_sin_mirar_el_mes(): void
-    {
-        $codigo = ReferenciaComprobanteCr::codigoNota(
-            ReferenciaComprobanteCr::MOTIVO_EXONERACION_POSTERIOR,
-            new \DateTimeImmutable('2026-01-01', new \DateTimeZone('America/Costa_Rica')),
-            new \DateTimeImmutable('2026-11-02', new \DateTimeZone('America/Costa_Rica')),
-        );
-
-        self::assertSame('12', $codigo);
+        $this->expectException(InvalidArgumentException::class);
+        ReferenciaComprobanteCr::codigoNota('otro');
     }
 
     public function test_despues_de_anular_con_13_el_comprobante_nuevo_usa_15(): void
