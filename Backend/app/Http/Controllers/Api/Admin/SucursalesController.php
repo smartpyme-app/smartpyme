@@ -8,6 +8,7 @@ use App\Models\Admin\Sucursal;
 use App\Models\Inventario\Bodega;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use App\Http\Requests\Admin\Sucursales\StoreSucursalRequest;
@@ -87,11 +88,14 @@ class SucursalesController extends Controller
     public function listaMarcas()
     {
 
-        $marcas = Producto::select('marca as nombre')
+        // ponytail: distinct marcas only — was loading Producto rows + appends (N+1 in Sentry)
+        $marcas = Producto::query()
             ->where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
             ->whereNotNull('marca')
             ->where('marca', '!=', '')
-            ->groupBy('marca')
+            ->select(DB::raw('marca as nombre'))
+            ->distinct()
+            ->orderBy('marca', 'asc')
             ->get();
 
         return Response()->json($marcas, 200);

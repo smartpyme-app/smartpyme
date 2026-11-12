@@ -41,6 +41,7 @@ use App\Exports\ActualizacionMasivaProductosExport;
 use App\Exports\PlantillaProductosImportExport;
 use App\Imports\ActualizacionMasivaProductosImport;
 use App\Support\Inventario\ActualizacionMasivaProductos;
+use App\Support\Inventario\SincronizarPrecioCatalogo;
 use Maatwebsite\Excel\HeadingRowImport;
 use App\Exports\TrasladoLineasUiExport;
 use App\Exports\ShopifyExport;
@@ -446,6 +447,10 @@ class ProductosController extends Controller
 
         // ── 1. Buscar productos base ──────────────────────────────────────────────
         $with = array_merge([
+            'categoria',
+            'imagenes' => static function ($q) {
+                $q->select('id', 'id_producto', 'img')->limit(1);
+            },
             'inventarios',
             'lotes',
             'composiciones.opciones',
@@ -808,11 +813,19 @@ class ProductosController extends Controller
         }
 
 
-        $producto->fill($request->all());
+        $datos = $request->all();
+        if (! Schema::hasColumn($producto->getTable(), 'partida_arancelaria')) {
+            unset($datos['partida_arancelaria']);
+        }
+
+        $producto->fill($datos);
+        $this->sincronizarPrecioCatalogo($producto);
         $producto->save();
 
         if ($request->has('id_impuestos') && Schema::hasTable('producto_impuestos')) {
             $this->syncProductoImpuestos($producto, $request->input('id_impuestos', []));
+            $this->sincronizarPrecioCatalogo($producto);
+            $producto->save();
         }
 
         $migracionLotes = null;
@@ -878,6 +891,16 @@ class ProductosController extends Controller
         }
 
         return Response()->json($payload, 200);
+    }
+
+    protected function sincronizarPrecioCatalogo(Producto $producto): void
+    {
+        $empresa = Empresa::withoutGlobalScopes()->find($producto->id_empresa);
+        $pct = SincronizarPrecioCatalogo::porcentajeIvaEfectivo(
+            $producto->porcentaje_impuesto !== null ? (float) $producto->porcentaje_impuesto : null,
+            $empresa?->iva !== null ? (float) $empresa->iva : null
+        );
+        SincronizarPrecioCatalogo::aplicar($producto, $pct);
     }
 
     /**
@@ -2175,7 +2198,14 @@ class ProductosController extends Controller
         $productos = Producto::where('enable', true)
             ->where('id_empresa', $request->id_empresa)
             ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
-            ->with(['inventarios', 'precios'])
+            ->with([
+                'categoria',
+                'imagenes' => static function ($q) {
+                    $q->select('id', 'id_producto', 'img')->limit(1);
+                },
+                'inventarios',
+                'precios',
+            ])
             ->where(function ($q) use ($termino, $incluirComponenteQuimico, $incluirNombreComercial) {
                 $q->where('nombre', 'like', "%$termino%")
                     ->orWhere('codigo', 'like', "%$termino%")

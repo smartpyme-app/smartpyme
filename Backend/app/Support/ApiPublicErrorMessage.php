@@ -34,6 +34,10 @@ final class ApiPublicErrorMessage
             return self::fromQueryException($e);
         }
 
+        if ($e instanceof \TypeError && str_contains($e->getMessage(), 'str_contains()')) {
+            return 'Ocurrió un error inesperado. Intente de nuevo o contacte a soporte.';
+        }
+
         $msg = trim($e->getMessage());
         if ($msg === '' || self::looksLikeTechnicalLeak($msg)) {
             return 'Ocurrió un error inesperado. Intente de nuevo o contacte a soporte.';

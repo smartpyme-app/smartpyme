@@ -18,6 +18,7 @@ use Illuminate\Cache\Lock;
 use Illuminate\Support\Facades\DB;
 use App\Exports\Support\DevolucionesEnReporteQuery;
 use App\Exports\Support\RangoFecha;
+use App\Exports\Support\MontoLineaVentasEnReporte;
 use App\Services\Ventas\VentaMontosPorVendedorService;
 use Illuminate\Support\Facades\Log;
 
@@ -33,6 +34,7 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
     public $configuracion;
     public $sucursalesData;
     public $sucursales;
+    public bool $incluirIva;
 
     public function __construct($fechaInicio = null, $fechaFin = null, $id_empresa = null, $configuracion = null, $sucursales = null)
     {
@@ -41,6 +43,7 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
         $this->id_empresa = $id_empresa;
         $this->configuracion = $configuracion;
         $this->sucursales = $sucursales;
+        $this->incluirIva = MontoLineaVentasEnReporte::empresaIncluyeIva($id_empresa ? (int) $id_empresa : null);
         // $this->sucursalesData = collect();
 
 
@@ -104,7 +107,7 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
                 'cat.nombre as nombre_categoria',
                 'us.name as nombre_vendedor',
                 'us.id as id_vendedor',
-                DB::raw('SUM(dv.total) as total_ventas')
+                DB::raw(MontoLineaVentasEnReporte::sqlSumDetalleVenta('dv', $this->incluirIva) . ' as total_ventas')
             )
                 ->groupBy('cat.id', 'cat.nombre', 'us.name', 'us.id')
                 ->orderBy('us.name')
@@ -114,7 +117,8 @@ class VentasPorCategoriaVendedorExport implements FromCollection, WithHeadings, 
                     $this->fechaInicio,
                     $this->fechaFin,
                     $this->sucursales,
-                    $categoriasIds
+                    $categoriasIds,
+                    $this->incluirIva
                 ));
     
             // Obtener categorías y vendedores por ID (no usar unique() sobre valores: elimina IDs distintos con el mismo nombre)

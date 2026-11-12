@@ -408,7 +408,7 @@
                       <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/whatsapp']" tooltip="WhatsApp" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/whatsapp.png" class="icon me-2">WhatsApp</a></li>
                     }
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/reportes-automaticos']" tooltip="Reportes automáticos" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/file.png" class="icon me-2">Reportes automáticos</a></li>
-                    @if (apiService.hasPermission('auditoria.ver')) {
+                    @if (apiService.hasPermission('auditoria.ver') || apiService.validateRole('admin', true)) {
                       <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/auditoria']" tooltip="Auditoría" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/check-square.png" class="icon me-2">Auditoría</a></li>
                     }
                   </ul>

@@ -6,6 +6,7 @@ use App\Models\Admin\Empresa;
 use App\Models\EmpresaConfiguracion;
 use App\Services\Admin\EmpresaConfiguracionService;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
@@ -88,5 +89,24 @@ final class EmpresaUpdateCustomConfigMirrorTest extends TestCase
             'SV'
         );
         $this->assertTrue($stored['fidelizacion_enviar_correos']);
+    }
+
+    public function test_sync_custom_empresa_invalida_cache_fidelizacion(): void
+    {
+        $empresa = Empresa::query()->create([
+            'nombre' => 'Cache test',
+            'cod_pais' => 'SV',
+            'custom_empresa' => [
+                'configuraciones' => [
+                    'fidelizacion_completa' => false,
+                ],
+            ],
+        ]);
+
+        Cache::put("empresa_fidelizacion_{$empresa->id}", true, 1800);
+
+        $empresa->syncCustomEmpresaToConfiguracion();
+
+        $this->assertNull(Cache::get("empresa_fidelizacion_{$empresa->id}"));
     }
 }

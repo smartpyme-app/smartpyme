@@ -21,4 +21,12 @@ class IndicadorBodegaFillableTest extends TestCase
         $this->assertInstanceOf(\App\Models\Inventario\Bodega::class, $relation->getRelated());
         $this->assertSame('id_bodega', $relation->getForeignKeyName());
     }
+
+    public function test_constructor_vacio_no_ensucia_attributes_y_declara_propiedades(): void
+    {
+        $indicador = new Indicador();
+        $this->assertSame([], $indicador->getAttributes());
+        $this->assertCount(0, $indicador->ventas);
+        $this->assertCount(0, $indicador->detalles_metodos_de_pago);
+    }
 }

@@ -734,8 +734,24 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     this.cdr.markForCheck();
     const esNuevo = !this.producto.id;
 
+    if (this.producto.precio_final != null && this.producto.precio_final !== '') {
+      this.calPrecioBase();
+    } else {
+      this.calPrecioFinal();
+    }
+
+    const pctGuardar = this.getPorcentajeProducto();
+    const precioSinIva = Number(this.producto.precio) || 0;
+    const precioConIva =
+      pctGuardar > 0
+        ? Math.round(precioSinIva * (1 + pctGuardar / 100) * 100) / 100
+        : precioSinIva;
+
     const payload = {
       ...this.producto,
+      precio: precioSinIva,
+      precio_sin_iva: precioSinIva,
+      precio_con_iva: precioConIva,
       partida_arancelaria: partidaNorm,
       id_impuestos: Array.isArray(this.producto.id_impuestos) ? this.producto.id_impuestos : [],
     };

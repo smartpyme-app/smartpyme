@@ -27,15 +27,16 @@ class MHController extends Controller
     }
 
     public function distritos() {
-       
-        $distritos = Distrito::orderBy('nombre','asc')->get();
-        return Response()->json($distritos, 200);
+        // ponytail: el SPA solo usa cod/nombre/cod_*; sin appends evita relación compuesta rota (500 str_contains / SQL).
+        $distritos = Distrito::query()->orderBy('nombre', 'asc')->get();
+        $distritos->each(static fn (Distrito $d) => $d->setAppends([]));
 
+        return Response()->json($distritos, 200);
     }
 
     public function municipios() {
        
-        $municipios = Municipio::orderBy('nombre','asc')->get();
+        $municipios = Municipio::with('departamento')->orderBy('nombre','asc')->get();
         return Response()->json($municipios, 200);
 
     }

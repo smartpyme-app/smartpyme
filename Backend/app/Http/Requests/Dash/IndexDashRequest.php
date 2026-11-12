@@ -48,9 +48,10 @@ class IndexDashRequest extends FormRequest
      */
     protected function prepareForValidation()
     {
-        if ($this->has('time')) {
+        $time = $this->input('time');
+        if (is_string($time) && $time !== '') {
             $this->merge([
-                'time' => strtoupper($this->time),
+                'time' => strtoupper($time),
             ]);
         }
     }

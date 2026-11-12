@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '@services/api.service';
+import { AlertService } from '@services/alert.service';
 import { AuditoriaService, AUDITORIA_MODULOS } from '@services/auditoria.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -31,6 +32,7 @@ export class AuditoriaPlatformComponent implements OnInit {
   constructor(
     private auditoriaService: AuditoriaService,
     private apiService: ApiService,
+    private alertService: AlertService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -63,8 +65,9 @@ export class AuditoriaPlatformComponent implements OnInit {
         this.loading = false;
         this.cdr.markForCheck();
       },
-      error: () => {
+      error: (err) => {
         this.loading = false;
+        this.alertService.error(err);
         this.cdr.markForCheck();
       },
     });
