@@ -189,6 +189,6 @@ class ActualizacionMasivaProductosTest extends TestCase
     {
         $this->assertSame('nuevos', ActualizacionMasivaProductos::tipoPlantilla(['nombre', 'precio_sin_iva', 'costo']));
         $this->assertSame('actualizar', ActualizacionMasivaProductos::tipoPlantilla(['id_creacion', 'codigo', 'costo']));
-        $this->assertSame('', ActualizacionMasivaProductos::tipoPlantilla(['nombre', 'id_creacion']));
+        $this->assertSame('actualizar', ActualizacionMasivaProductos::tipoPlantilla(['nombre', 'id_creacion', 'codigo']));
     }
 }
