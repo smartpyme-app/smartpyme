@@ -76,9 +76,11 @@ export class FacturacionConsignaComponent extends BaseModalComponent implements 
                                 this.apiService.auth_user()?.empresa?.iva
                             );
                             this.venta.cobrar_impuestos = parseFloat(this.venta.iva || 0) > 0;
+                            this.normalizarCostosDetalle();
                             this.loading = false;
                             this.cargarDocumentos();
                             this.cargarDatos();
+                            this.sumTotal();
                             this.cdr.markForCheck();
                         }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
                 }else{
@@ -161,6 +163,16 @@ export class FacturacionConsignaComponent extends BaseModalComponent implements 
             }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
+    private normalizarCostosDetalle(): void {
+        if (!Array.isArray(this.venta?.detalles)) {
+            return;
+        }
+        for (const detalle of this.venta.detalles) {
+            const costo = parseFloat(detalle.costo) || parseFloat(detalle.costo_producto) || 0;
+            detalle.costo = costo;
+        }
+    }
+
     public updateTotal(detalle:any){
         if(!detalle.cantidad){
             detalle.cantidad = 0;
@@ -171,7 +183,9 @@ export class FacturacionConsignaComponent extends BaseModalComponent implements 
             detalle.descuento = 0;
         }
 
-        detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(4);
+        const costoUnit = parseFloat(detalle.costo) || parseFloat(detalle.costo_producto) || 0;
+        detalle.costo = costoUnit;
+        detalle.total_costo = (parseFloat(detalle.cantidad) * costoUnit).toFixed(4);
         detalle.total  = (parseFloat(detalle.cantidad) * parseFloat(detalle.precio) - parseFloat(detalle.descuento)).toFixed(4);
         this.sumTotal();
     }
@@ -202,7 +216,8 @@ export class FacturacionConsignaComponent extends BaseModalComponent implements 
         const montoTotalImpuestos = this.venta.impuestos
             .reduce((suma:number, impuesto:any) => suma + (parseFloat(impuesto.monto) || 0), 0);
         this.venta.descuento = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'))).toFixed(4);
-        this.venta.total_costo = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'))).toFixed(4);
+        const sumCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
+        this.venta.total_costo = (Number.isFinite(sumCosto) ? sumCosto : 0).toFixed(4);
         this.venta.total = (parseFloat(this.venta.sub_total) + montoTotalImpuestos + parseFloat(this.venta.iva_percibido) - parseFloat(this.venta.iva_retenido)).toFixed(4);
     }
 
@@ -234,6 +249,8 @@ export class FacturacionConsignaComponent extends BaseModalComponent implements 
     // Guardar venta
         public onSubmit() {
             this.loading = true;
+            this.normalizarCostosDetalle();
+            this.sumTotal();
 
             this.apiService.store('venta/facturacion/consigna', this.venta)
                 .pipe(this.untilDestroyed())

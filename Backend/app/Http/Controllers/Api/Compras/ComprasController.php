@@ -635,8 +635,9 @@ class ComprasController extends Controller
             $referenciaConsignaOriginal = $compra->referencia;
 
             $lotesDetalleAntes = $compra->detalles->pluck('lote_id', 'id');
+            $esPagoParcial = round((float) $compra->total, 2) > round((float) $request->total, 2);
 
-            if ($compra->total != $request->total) {
+            if ($esPagoParcial) {
                 $consigna = $compra->replicate();
                 $consigna->tipo_documento = $tipoDocumentoConsignaOriginal;
                 $consigna->referencia = $referenciaConsignaOriginal;
@@ -698,6 +699,15 @@ class ComprasController extends Controller
             $compra->iva_retenido = $request->iva_retenido ?? 0;
             $compra->descuento = $request->descuento ?? $compra->descuento;
             $this->aplicarReglasCompraSinIvaFiscal($compra);
+            $etiquetaRemision = $tipoDocumentoConsignaOriginal . ' #' . $referenciaConsignaOriginal;
+            $prefijoObservacion = $esPagoParcial
+                ? 'Pago parcial de remisión en consigna'
+                : 'Pago de remisión en consigna';
+            $compra->observaciones = $this->anexarObservacionRemisionConsignaCompra(
+                $request->observaciones ?? $compra->observaciones,
+                $prefijoObservacion . ': ' . $etiquetaRemision
+            );
+
             $compra->fecha = $request->fecha;
             $compra->es_consigna = true;
             $compra->estado = 'Pagada';
@@ -1322,6 +1332,18 @@ class ComprasController extends Controller
         );
 
         $compra->fill($moneda);
+    }
+
+    private function anexarObservacionRemisionConsignaCompra(?string $actual, string $sufijo, int $maxLen = 255): string
+    {
+        $actual = trim((string) $actual);
+        if ($actual !== '' && str_contains($actual, $sufijo)) {
+            return $actual;
+        }
+
+        $nuevo = $actual === '' ? $sufijo : $actual . ' — ' . $sufijo;
+
+        return mb_substr($nuevo, 0, $maxLen);
     }
 
     private function incrementarCorrelativoDocumentoCompraSiAplica(Compra $compra): void

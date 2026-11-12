@@ -795,7 +795,13 @@ class VentasController extends Controller
 
         try {
             $venta = Venta::where('id', $request->id)->with('detalles')->firstOrFail();
-            if (round($venta->total, 2) > round($request->total, 2)) {
+            $idDocumentoRemision = (int) $venta->id_documento;
+            $correlativoRemision = $venta->correlativo;
+            $documentoRemision = Documento::query()->find($idDocumentoRemision);
+            $etiquetaRemisionConsigna = ($documentoRemision?->nombre ?? 'Remisión') . ' #' . $correlativoRemision;
+            $esPagoParcial = round((float) $venta->total, 2) > round((float) $request->total, 2);
+
+            if ($esPagoParcial) {
                 $idDocumentoRemanente = $venta->id_documento;
                 $correlativoRemanente = $venta->correlativo;
 
@@ -819,14 +825,18 @@ class VentasController extends Controller
                         $metaDetallesPorId[(int) $detalle['id']] = [
                             'lote_id' => $detalle_venta->lote_id,
                             'origen_stock' => $detalle_venta->origen_stock,
+                            'costo' => $detalle_venta->costo,
                         ];
                     }
                     if ($detalle_venta && $detalle_venta->cantidad > $detalle['cantidad']) {
+                        $costoRemanente = (float) ($detalle_venta->costo ?? $detalle['costo'] ?? 0);
                         $detalle_consigna = new Detalle();
                         $detalle_consigna->id_producto = $detalle['id_producto'];
                         $detalle_consigna->precio = $detalle['precio'];
+                        $detalle_consigna->costo = $costoRemanente;
                         $detalle_consigna->cantidad = $detalle_venta->cantidad - $detalle['cantidad'];
                         $detalle_consigna->total = $detalle_consigna->precio * $detalle_consigna->cantidad;
+                        $detalle_consigna->total_costo = $detalle_consigna->cantidad * $costoRemanente;
                         $detalle_consigna->id_venta = $consigna->id;
                         $detalle_consigna->lote_id = $detalle_venta->lote_id;
                         $detalle_consigna->origen_stock = $detalle_venta->origen_stock;
@@ -840,11 +850,14 @@ class VentasController extends Controller
                 foreach ($request->detalles as $detalle) {
                     if ($detalle['cantidad'] > 0) {
                         $meta = $metaDetallesPorId[(int) ($detalle['id'] ?? 0)] ?? null;
+                        $costoLinea = (float) ($meta['costo'] ?? $detalle['costo'] ?? 0);
                         $det = new Detalle();
                         $det->id_producto = $detalle['id_producto'];
                         $det->cantidad = $detalle['cantidad'];
                         $det->precio = $detalle['precio'];
+                        $det->costo = $costoLinea;
                         $det->total = $detalle['cantidad'] * $detalle['precio'];
+                        $det->total_costo = (float) $detalle['cantidad'] * $costoLinea;
                         $det->descuento = 0;
                         $det->id_venta = $venta->id;
                         if ($meta) {
@@ -862,7 +875,6 @@ class VentasController extends Controller
 
                 $venta->fill($request->except(array_merge(['detalles', 'id', 'estado'], DocumentoMoneda::CAMPOS_PERSISTIDOS)));
                 $venta->id_documento = $request->id_documento;
-                $venta->correlativo = $request->correlativo;
                 $venta->total = $request->total;
                 $venta->iva = $request->iva;
                 $venta->sub_total = $request->sub_total;
@@ -874,6 +886,7 @@ class VentasController extends Controller
                     $metaDetallesPorId[(int) $detalleVenta->id] = [
                         'lote_id' => $detalleVenta->lote_id,
                         'origen_stock' => $detalleVenta->origen_stock,
+                        'costo' => $detalleVenta->costo,
                     ];
                 }
                 $venta->detalles()->delete();
@@ -883,11 +896,14 @@ class VentasController extends Controller
                         continue;
                     }
                     $meta = $metaDetallesPorId[(int) ($detalle['id'] ?? 0)] ?? null;
+                    $costoLinea = (float) ($meta['costo'] ?? $detalle['costo'] ?? 0);
                     $det = new Detalle();
                     $det->id_producto = $detalle['id_producto'];
                     $det->cantidad = $detalle['cantidad'];
                     $det->precio = $detalle['precio'];
+                    $det->costo = $costoLinea;
                     $det->total = $detalle['cantidad'] * $detalle['precio'];
+                    $det->total_costo = (float) $detalle['cantidad'] * $costoLinea;
                     $det->descuento = 0;
                     $det->id_venta = $venta->id;
                     if ($meta) {
@@ -908,8 +924,19 @@ class VentasController extends Controller
                 $venta->total_costo = $request->total_costo;
                 $venta->fill($request->except(array_merge(['detalles', 'id', 'estado'], DocumentoMoneda::CAMPOS_PERSISTIDOS)));
                 $venta->id_documento = $request->id_documento;
-                $venta->correlativo = $request->correlativo;
             }
+
+            if ((int) $request->id_documento !== $idDocumentoRemision) {
+                $this->asignarCorrelativoDocumentoVentaFacturaConsigna($venta, (int) $request->id_documento);
+            }
+
+            $prefijoObservacion = $esPagoParcial
+                ? 'Pago parcial de remisión en consigna'
+                : 'Pago de remisión en consigna';
+            $venta->observaciones = $this->anexarObservacionRemisionConsigna(
+                $request->observaciones ?? $venta->observaciones,
+                $prefijoObservacion . ': ' . $etiquetaRemisionConsigna
+            );
 
             $venta->fecha = $request->fecha;
             $venta->estado = 'Pagada';
@@ -2304,6 +2331,35 @@ class VentasController extends Controller
             ->get();
 
         return response()->json($numsIds, 200);
+    }
+
+    private function asignarCorrelativoDocumentoVentaFacturaConsigna(Venta $venta, int $idDocumento): void
+    {
+        $documento = Documento::query()
+            ->where('id', $idDocumento)
+            ->where('id_empresa', $venta->id_empresa)
+            ->lockForUpdate()
+            ->first();
+
+        if (! $documento) {
+            return;
+        }
+
+        $venta->id_documento = $idDocumento;
+        $venta->correlativo = $documento->correlativo;
+        $documento->increment('correlativo');
+    }
+
+    private function anexarObservacionRemisionConsigna(?string $actual, string $sufijo, int $maxLen = 150): string
+    {
+        $actual = trim((string) $actual);
+        if ($actual !== '' && str_contains($actual, $sufijo)) {
+            return $actual;
+        }
+
+        $nuevo = $actual === '' ? $sufijo : $actual . ' — ' . $sufijo;
+
+        return mb_substr($nuevo, 0, $maxLen);
     }
 
 }
