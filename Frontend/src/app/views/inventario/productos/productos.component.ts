@@ -156,7 +156,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
             this.bodegas = bodegas;
         }, error => { this.alertService.error(error); });
 
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+        this.apiService.getAll('proveedores/list', { minimal: 1 }).subscribe(proveedores => {
             this.proveedores = proveedores;
         }, error => { this.alertService.error(error); });
 
@@ -297,7 +297,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
     public openReporteAnalisisVentasMensual(template: TemplateRef<any>) {
         if (!this.proveedores?.length) {
-            this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+            this.apiService.getAll('proveedores/list', { minimal: 1 }).subscribe(proveedores => {
                 this.proveedores = proveedores;
             }, error => { this.alertService.error(error); });
         }
@@ -446,7 +446,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
     public openFilter(template: TemplateRef<any>) {
         if (!this.proveedores?.length) {
-            this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+            this.apiService.getAll('proveedores/list', { minimal: 1 }).subscribe(proveedores => {
                 this.proveedores = proveedores;
             }, error => { this.alertService.error(error); });
         }

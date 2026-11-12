@@ -53,7 +53,7 @@ export class CuentasPagarComponent implements OnInit {
     }
 
     cargarListasFiltros() {
-        this.apiService.getAll('proveedores/list').subscribe(
+        this.apiService.getAll('proveedores/list', { minimal: 1 }).subscribe(
             (proveedores: any) => { this.proveedores = proveedores; },
             (error) => { this.alertService.error(error); }
         );

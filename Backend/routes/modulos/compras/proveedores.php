@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\Compras\ComprasController;
 
     Route::get('/proveedores',              [ProveedoresController::class, 'index']);
     Route::get('/proveedores/list',         [ProveedoresController::class, 'list']);
+    Route::get('/proveedores/buscar-emisor', [ProveedoresController::class, 'buscarEmisor']);
     Route::get('/proveedores/buscar/{txt}', [ProveedoresController::class, 'search']);
     Route::post('/proveedores/filtrar',     [ProveedoresController::class, 'filter']);
     Route::post('/proveedor',               [ProveedoresController::class, 'store']);

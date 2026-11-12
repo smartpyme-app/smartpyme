@@ -31,7 +31,7 @@ import { LazyImageDirective } from '../../directives/lazy-image.directive';
 import { CrearAbonoCompraComponent } from '@shared/modals/crear-abono-compra/crear-abono-compra.component';
 import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-proveedor.component';
 import { CompraDetallesComponent } from './facturacion/detalles/compra-detalles.component';
-import { Subject } from 'rxjs';
+import { Subject, firstValueFrom } from 'rxjs';
 
 /** Debe coincidir con el slug en Backend (FuncionalidadesSeeder / verificar-acceso). */
 const SLUG_IMPORTACION_MASIVA_COMPRAS_JSON = 'importacion-masiva-compras-json';
@@ -278,7 +278,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
             this.cdr.markForCheck();
         });
 
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+        this.apiService.getAll('proveedores/list', { minimal: 1 }).subscribe(proveedores => {
             this.proveedores = proveedores;
         }, error => {this.alertService.error(error); });
 
@@ -1432,7 +1432,16 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
     this.compraJsonBulk.recalcularTotales(item.compra, this.proveedores);
   }
 
-  onBulkProveedorChange(item: BulkCompraItem) {
+  async onBulkProveedorChange(item: BulkCompraItem) {
+    const row = (this.proveedores || []).find((p: any) => p.id == item.compra.id_proveedor);
+    if (row && !Object.prototype.hasOwnProperty.call(row, 'tipo_contribuyente')) {
+      try {
+        const full = await firstValueFrom(this.apiService.read('proveedor/', row.id));
+        row.tipo_contribuyente = full?.tipo_contribuyente ?? null;
+      } catch {
+        row.tipo_contribuyente = null;
+      }
+    }
     this.compraJsonBulk.recalcularTotales(item.compra, this.proveedores);
   }
 

@@ -85,7 +85,7 @@ export class GastosRecurrentesComponent extends BaseCrudComponent<any> implement
 
     ngOnInit() {
         this.loadAll();
-        this.apiService.getAll('proveedores/list')
+        this.apiService.getAll('proveedores/list', { minimal: 1 })
           .pipe(this.untilDestroyed())
           .subscribe(proveedores => {
             this.proveedores = proveedores;

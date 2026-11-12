@@ -64,7 +64,7 @@ export class PrestamoFormComponent implements OnInit {
       },
       error: (err) => this.alertService.error(err),
     });
-    this.apiService.getAll('proveedores/list').subscribe({
+    this.apiService.getAll('proveedores/list', { minimal: 1 }).subscribe({
       next: (proveedores) => {
         this.proveedores = proveedores ?? [];
       },
@@ -75,7 +75,7 @@ export class PrestamoFormComponent implements OnInit {
   setProveedor(id: number): void {
     this.form.id_proveedor = id;
     if (!this.proveedores.some((p) => p.id === id)) {
-      this.apiService.getAll('proveedores/list').subscribe({
+      this.apiService.getAll('proveedores/list', { minimal: 1 }).subscribe({
         next: (proveedores) => {
           this.proveedores = proveedores ?? [];
         },
