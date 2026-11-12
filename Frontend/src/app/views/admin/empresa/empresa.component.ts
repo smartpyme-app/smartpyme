@@ -1210,6 +1210,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
 
         // Calcular cantidad considerando limitaciones
         // this.cantidadFaltante = this.calcularCantidadFaltante(tipo);
+        // Hacienda pide 5 eventos de retorno: se sugiere el lote completo.
+        this.cantidadFaltante = tipo === 'eventosRetorno' ? 5 : 1;
 
         if (this.cantidadFaltante <= 0) {
             this.alertService.info(
