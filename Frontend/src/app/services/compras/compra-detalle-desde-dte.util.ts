@@ -93,9 +93,39 @@ export function descuentoImplicitoLinea(
 }
 
 /**
+ * Descuento de una línea de El Salvador que el formulario puede volver a calcular
+ * (subtotal = cantidad × precio − descuento) sin mover la base ya importada.
+ * Crédito fiscal: el precio viene sin IVA y la base es neta. Factura: el precio
+ * suele incluir IVA, así que solo entra si montoDescu cae justo sobre esa base.
+ */
+function descuentoElSalvador(
+  cantidad: number,
+  precio: number,
+  montoDescu: number | string | null | undefined,
+  base: number,
+  tipoDte: string | undefined
+): number {
+  const descXml = round2(parseFloat(String(montoDescu ?? 0)) || 0);
+  const gap = descuentoImplicitoLinea(cantidad, precio, base);
+  if (tipoDte === '03') {
+    if (descXml > 0 && Math.abs(gap - descXml) <= 0.02) {
+      return gap;
+    }
+    if (descXml <= 0 && gap > 0) {
+      return gap;
+    }
+    return 0;
+  }
+  if (descXml > 0 && Math.abs(cantidad * precio - descXml - base) <= 0.02) {
+    return gap > 0 ? gap : descXml;
+  }
+  return 0;
+}
+
+/**
  * Montos de una línea de gasto importada.
- * Costa Rica (y cualquier precio sin impuesto): la base es el neto después del descuento
- * y el impuesto se suma encima. El Salvador factura/CCF conserva la fórmula previa.
+ * Costa Rica: la base es el neto después del descuento y el impuesto se suma encima.
+ * El Salvador conserva el total del DTE y solo rellena el descuento cuando cuadra.
  */
 export function montosLineaGastoDesdeDte(
   item: {
@@ -159,11 +189,12 @@ export function montosLineaGastoDesdeDte(
     sub = rate > 0 ? total / (1 + rate) : total;
     iva = total - sub;
   }
+  const subTotal = round2(sub);
   return {
     cantidad: cant,
     precio_unitario: precio,
-    descuento: 0,
-    sub_total: round2(sub),
+    descuento: descuentoElSalvador(cant, precio, item.montoDescu, subTotal, opts.tipoDte),
+    sub_total: subTotal,
     iva: round2(iva),
     total: round2(total),
     tipo_gravado: iva > 0 ? 'gravada' : 'no_sujeta',
