@@ -1,5 +1,5 @@
 {
-    "_hash": "c93174869981585fa4f0b264526f363d453f3722008f0f2f24b4ea1548b45b4e",
+    "_hash": "fc2f3b73a2b39772cd53bdcc74d9e23a8b97569ece67dc40ce15e21a5cb433ff",
     "patches": {
         "dazza-dev/dgt-xml-generator": [
             {
@@ -16,7 +16,7 @@
                 "package": "dazza-dev/dgt-xml-generator",
                 "description": "Codigos de referencia 13 a 16 de anexos 4.4",
                 "url": "patches/dgt-xml-generator-codigos-referencia-13-16.patch",
-                "sha256": "ef15d287f15c929f3556a9992a9f3495741601c209c4c702bc1551e2e15340e0",
+                "sha256": "c4fa2c9d887f4e8c25791bd0930f16e83a06f761e4a3f612511332f0ec010009",
                 "depth": 1,
                 "extra": {
                     "provenance": "root"
