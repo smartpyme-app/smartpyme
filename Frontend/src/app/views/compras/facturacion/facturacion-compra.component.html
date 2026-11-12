@@ -28,16 +28,21 @@
             <label for="fecha">Fecha</label><br>
             <input type="date" class="form-control" [(ngModel)]="compra.fecha" name="fecha" id="fecha" (ngModelChange)="onFechaCompraChange()">
         </div>
-        <div class="form-group col-md-4 col-lg-3" *ngIf="tieneMultimoneda">
+        <div class="form-group col-md-4 col-lg-2" *ngIf="tieneMultimoneda">
             <label for="currency_code">Moneda</label>
-            <select name="currency_code" id="currency_code" class="form-select" [(ngModel)]="compra.currency_code"
-                (ngModelChange)="onCurrencyCodeChangeCompra()" [disabled]="compraYaTieneDte">
-                <option value="CRC">CR</option>
-                <option value="USD">{{ etiquetaOpcionUsdCompra }}</option>
-            </select>
-            <small class="text-danger d-block mt-1" *ngIf="monedaCompra === 'USD' && tcPreviewCompra.error">{{ tcPreviewCompra.error }}</small>
+            <div class="input-group">
+                <select name="currency_code" id="currency_code" class="form-select" [(ngModel)]="compra.currency_code"
+                    (ngModelChange)="onCurrencyCodeChangeCompra()" [disabled]="compraYaTieneDte">
+                    <option *ngFor="let mon of monedasDocumento" [value]="mon">{{ etiquetaMonedaCompra(mon) }}</option>
+                </select>
+                <button *ngIf="puedeEditarTipoCambioCompra" type="button" class="btn btn-default"
+                    (click)="abrirModalTipoCambioCompra(modalTipoCambioCompra)" title="Editar tipo de cambio">
+                    <i class="fa fa-pencil"></i>
+                </button>
+            </div>
+            <small class="text-danger d-block mt-1" *ngIf="esMonedaExtranjeraCompra && tcPreviewCompra.error">{{ tcPreviewCompra.error }}</small>
         </div>
-        <div class="form-group col-md-4 col-lg-3">
+        <div class="form-group col-md-4" [class.col-lg-2]="tieneMultimoneda" [class.col-lg-3]="!tieneMultimoneda">
             <label for="id_usuario">Usuario</label>
           <select name="id_usuario" [(ngModel)]="compra.id_usuario" class="form-select">
             @for (usuario of usuarios; track usuario.id) {
@@ -47,7 +52,7 @@
             }
           </select>
         </div>
-        <div class="form-group col-md-4 col-lg-3">
+        <div class="form-group col-md-4" [class.col-lg-2]="tieneMultimoneda" [class.col-lg-3]="!tieneMultimoneda">
             <label for="id_bodega">Bodega</label>
             <select name="id_bodega" (change)="setBodega()" [(ngModel)]="compra.id_bodega" class="form-select">
                 <option [value]="bodega.id" *ngFor="let bodega of bodegas">
@@ -209,7 +214,7 @@
                         <td style="width: 150px;" class="text-right"><b> {{ compra.total | currency}}</b> </td>
                         <td style="width: 50px;"></td>
                     </tr>
-                    <tr *ngIf="tieneMultimoneda && monedaCompra === 'USD' && usdEquivalentTotalCompra !== null">
+                    <tr *ngIf="usdEquivalentTotalCompra !== null">
                         <td class="text-right text-muted">Equivalente en dólares</td>
                         <td style="width: 150px;" class="text-right text-muted">
                             ${{ usdEquivalentTotalCompra | number:'1.2-2' }}
@@ -957,3 +962,23 @@
       </button>
     </div>
   </ng-template>
+
+<!-- Modal tipo de cambio (multimoneda) -->
+<ng-template #modalTipoCambioCompra>
+  <div class="modal-header">
+    <h5 class="modal-title">Tipo de cambio</h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="cerrarModalTipoCambioCompra()"></button>
+  </div>
+  <div class="modal-body">
+    <label for="exchange_rate_draft_compra" class="form-label">{{ simboloMonedaFuncional }} por 1 USD</label>
+    <input type="number" step="0.00001" min="0" class="form-control" id="exchange_rate_draft_compra"
+      name="exchange_rate_draft_compra" [(ngModel)]="exchangeRateDraft">
+    <small class="text-muted d-block mt-2" *ngIf="tcPreviewCompra.rate != null">
+      Referencia{{ tcPreviewCompra.date ? ' ' + tcPreviewCompra.date : '' }}: {{ tcPreviewCompra.rate | number:'1.2-5' }}
+    </small>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-light" (click)="cerrarModalTipoCambioCompra()">Cancelar</button>
+    <button type="button" class="btn btn-primary" (click)="aplicarTipoCambioManualCompra()">Aplicar</button>
+  </div>
+</ng-template>
