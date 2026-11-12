@@ -101,6 +101,7 @@ Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, '
 
 // Consignas
     Route::get('/productos/consignas',         [ConsignasController::class, 'index'])->middleware('permission:ventas.consignas.ver');
+    Route::get('/productos/consignas/{idProducto}/ventas', [ConsignasController::class, 'ventasPorProducto'])->middleware('permission:ventas.consignas.ver');
     Route::post('/producto/sucursal',          [ConsignasController::class, 'store']);
     Route::delete('/producto/sucursal/{id}',   [ConsignasController::class, 'delete']);
     Route::get('/productos/consignas/exportar',        [ConsignasController::class, 'export'])->middleware('permission:ventas.consignas.ver');
@@ -115,6 +116,10 @@ Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, '
     Route::get('/productos/consigna-kardex/exportar', [\App\Http\Controllers\Api\Inventario\ConsignaKardexController::class, 'export'])
         ->middleware('permission:inventario.consigna_kardex.exportar');
     Route::get('/productos/consigna-custodia', [\App\Http\Controllers\Api\Inventario\ConsignaCustodiaController::class, 'index'])
+        ->middleware('permission:inventario.consigna_kardex.ver');
+    Route::get('/productos/consigna-custodia/ventas', [\App\Http\Controllers\Api\Inventario\ConsignaCustodiaController::class, 'ventas'])
+        ->middleware('permission:inventario.consigna_kardex.ver');
+    Route::get('/productos/consigna-custodia/ventas/exportar', [\App\Http\Controllers\Api\Inventario\ConsignaCustodiaController::class, 'exportarVentas'])
         ->middleware('permission:inventario.consigna_kardex.ver');
     Route::post('/productos/consigna-custodia/conteo', [\App\Http\Controllers\Api\Inventario\ConsignaCustodiaController::class, 'conteo'])
         ->middleware('permission:inventario.consigna_kardex.ver');

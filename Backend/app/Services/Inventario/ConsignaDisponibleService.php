@@ -9,6 +9,7 @@ use App\Models\Inventario\ConsignaMovimiento;
 use App\Models\Compras\Detalle as DetalleCompra;
 use App\Models\Compras\Compra;
 use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Lote;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\ProductoPresentacion;
 use App\Models\Ventas\Detalle as DetalleVenta;
@@ -71,6 +72,31 @@ class ConsignaDisponibleService
             'stock_normal' => round(max(0, $stockFisico - $consignaDisponible), 4),
             'tiene_consigna_compra' => $entrada > 0,
         ];
+    }
+
+    /** Stock propio para kardex físico (excluye pool consigna compra en bodega/lote). */
+    public function stockPropioParaKardex(int $idProducto, int $idBodega, ?int $loteId = null): float
+    {
+        $idEmpresa = (int) (Producto::query()->where('id', $idProducto)->value('id_empresa') ?? 0);
+        $empresa = $idEmpresa > 0 ? Empresa::query()->find($idEmpresa) : null;
+        if (! $empresa?->isModuloConsignacionesLedgerActivo()) {
+            if ($loteId) {
+                return (float) (Lote::query()->find($loteId)?->stock ?? 0);
+            }
+
+            return $this->obtenerStockFisico($idProducto, $idBodega);
+        }
+
+        if ($loteId) {
+            $fisico = (float) (Lote::query()->find($loteId)?->stock ?? 0);
+            $pool = $this->calcularDisponibleProveedorDesdeLedger($idEmpresa, $idProducto, $idBodega, $loteId);
+
+            return max(0.0, round($fisico - $pool, 4));
+        }
+
+        $resumen = $this->obtenerResumenStock($idProducto, $idBodega);
+
+        return (float) $resumen['stock_normal'];
     }
 
     public function calcularDisponibleAgregadoProducto(int $idProducto, ?int $excluirVentaId = null): float
@@ -453,8 +479,12 @@ class ConsignaDisponibleService
     }
 
     // ponytail: O(n) scan por producto/bodega; upgrade: agregados SQL por tipo en ConsignaMovimientoService
-    public function calcularDisponibleProveedorDesdeLedger(int $idEmpresa, int $idProducto, int $idBodega): float
-    {
+    public function calcularDisponibleProveedorDesdeLedger(
+        int $idEmpresa,
+        int $idProducto,
+        int $idBodega,
+        ?int $loteId = null
+    ): float {
         $entrada = 0.0;
         $ventasConsigna = 0.0;
         $liquidado = 0.0;
@@ -463,6 +493,7 @@ class ConsignaDisponibleService
             ->where('id_empresa', $idEmpresa)
             ->where('id_producto', $idProducto)
             ->where('id_bodega', $idBodega)
+            ->when($loteId, fn ($q) => $q->where('lote_id', $loteId))
             ->get(['tipo', 'cantidad']);
 
         foreach ($movimientos as $movimiento) {
@@ -486,7 +517,9 @@ class ConsignaDisponibleService
             }
         }
 
-        $stockFisico = $this->obtenerStockFisico($idProducto, $idBodega);
+        $stockFisico = $loteId
+            ? (float) (Lote::query()->find($loteId)?->stock ?? 0)
+            : $this->obtenerStockFisico($idProducto, $idBodega);
 
         return self::calcularDisponibleDesdeComponentes($entrada, $ventasConsigna, $liquidado, $stockFisico);
     }

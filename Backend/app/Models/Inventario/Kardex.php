@@ -2,6 +2,8 @@
 
 namespace App\Models\Inventario;
 
+use App\Constants\KardexDetalleConstants;
+use App\Services\Inventario\ConsignaMovimientoService;
 use Illuminate\Database\Eloquent\Model;
 
 class Kardex extends Model {
@@ -40,7 +42,7 @@ class Kardex extends Model {
     public function getModeloDetalleattribute(){
         $detalle = [];
         $info = '';
-        if (str_starts_with($this->detalle, 'Venta') || $this->detalle == 'Venta a consigna' || str_starts_with($this->detalle, 'Remisión consigna')) {
+        if (str_starts_with($this->detalle, 'Venta') || $this->detalle == 'Venta a consigna' || str_starts_with($this->detalle, 'Remisión consigna') || $this->detalle == 'Liquidación consigna cliente') {
             $detalle = \App\Models\Ventas\Venta::find($this->referencia);
             if ($detalle) {
                 $nombre = $detalle->nombre_documento ?? 'Venta';
@@ -90,7 +92,7 @@ class Kardex extends Model {
     }
 
     public function getModeloattribute(){
-        if (str_starts_with($this->detalle, 'Venta') || $this->detalle == 'Venta a consigna' || str_starts_with($this->detalle, 'Remisión consigna')) {
+        if (str_starts_with($this->detalle, 'Venta') || $this->detalle == 'Venta a consigna' || str_starts_with($this->detalle, 'Remisión consigna') || $this->detalle == 'Liquidación consigna cliente') {
             return 'venta';
         }
         if ($this->detalle == 'Devolución Venta' || $this->detalle == 'Devolución Venta Anulada') {
@@ -167,7 +169,7 @@ class Kardex extends Model {
         }
         
         // Si es una venta, obtener el lote desde kardex, detalle o detalle_venta_lotes
-        if (str_starts_with($this->detalle, 'Venta') || $this->detalle == 'Venta a consigna' || str_starts_with($this->detalle, 'Remisión consigna')) {
+        if (str_starts_with($this->detalle, 'Venta') || $this->detalle == 'Venta a consigna' || str_starts_with($this->detalle, 'Remisión consigna') || $this->detalle === KardexDetalleConstants::LIQUIDACION_CONSIGNA_CLIENTE) {
             $venta = \App\Models\Ventas\Venta::find($this->referencia);
             if ($venta) {
                 $detalleVenta = \App\Models\Ventas\Detalle::where('id_venta', $venta->id)
@@ -185,6 +187,10 @@ class Kardex extends Model {
                         if ($asig && $asig->lote_id) {
                             return (int) $asig->lote_id;
                         }
+                    }
+                    if ($this->detalle === KardexDetalleConstants::LIQUIDACION_CONSIGNA_CLIENTE) {
+                        return app(ConsignaMovimientoService::class)
+                            ->resolverLoteIdLiquidacionCliente($venta, $detalleVenta);
                     }
                 }
             }

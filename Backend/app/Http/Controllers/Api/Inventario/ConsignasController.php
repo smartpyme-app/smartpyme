@@ -20,52 +20,96 @@ class ConsignasController extends Controller
 {
     
 
-    public function index() {
+    public function index(Request $request)
+    {
+        $todos = $this->coleccionProductosEnConsigna($request);
+        $perPage = min(max((int) ($request->input('paginate', 25)), 1), 100);
+        $page = max((int) ($request->input('page', 1)), 1);
+        $total = $todos->count();
+        $slice = $todos->forPage($page, $perPage)->values();
 
-        $detallesDeVenta = DetalleVenta::whereHas('venta', function ($query) {
-            $query->where('estado', 'Consigna')
-                ->where('cotizacion', 0);
-        })
-            ->with('producto.categoria', 'venta')
+        return response()->json([
+            'data' => $slice,
+            'current_page' => $page,
+            'last_page' => max((int) ceil($total / $perPage), 1),
+            'per_page' => $perPage,
+            'total' => $total,
+            'from' => $total === 0 ? null : ($page - 1) * $perPage + 1,
+            'to' => $total === 0 ? null : min($page * $perPage, $total),
+        ], 200);
+    }
+
+    /** @return \Illuminate\Support\Collection<int, array<string, mixed>> */
+    private function coleccionProductosEnConsigna(Request $request)
+    {
+        $detallesDeVenta = DetalleVenta::query()
+            ->whereHas('venta', fn ($q) => $q->where('estado', 'Consigna')->where('cotizacion', 0))
+            ->when($request->filled('buscador'), function ($query) use ($request) {
+                $t = trim((string) $request->buscador);
+                $query->where(function ($w) use ($t) {
+                    $w->whereHas('venta', function ($v) use ($t) {
+                        $v->where(function ($vq) use ($t) {
+                            $vq->where('correlativo', 'like', '%' . $t . '%');
+                            if (ctype_digit($t)) {
+                                $vq->orWhere('correlativo', (int) $t);
+                            }
+                            $vq->orWhere('nombre_cliente', 'like', '%' . $t . '%')
+                                ->orWhereHas('documento', fn ($d) => $d->where('nombre', 'like', '%' . $t . '%'));
+                        });
+                    })->orWhereHas('producto', function ($p) use ($t) {
+                        $p->where('nombre', 'like', '%' . $t . '%')
+                            ->orWhere('codigo', 'like', '%' . $t . '%');
+                    });
+                });
+            })
+            ->when($request->filled('categoria'), function ($query) use ($request) {
+                $cat = trim((string) $request->categoria);
+                if ($cat !== '') {
+                    $query->whereHas('producto.categoria', fn ($q) => $q->where('nombre', $cat));
+                }
+            })
+            ->with(['producto.categoria', 'venta.documento'])
             ->get()
             ->groupBy('id_producto');
-
 
         $detalles = collect();
 
         foreach ($detallesDeVenta as $detallesGroup) {
             $ventas = collect();
-            
+
             foreach ($detallesGroup as $detalle) {
+                $v = $detalle->venta;
+                $doc = $v->documento?->nombre ?? $v->nombre_documento ?? 'Documento';
+                $factura = $v->correlativo ? $doc . ' #' . $v->correlativo : $doc;
                 $ventas->push([
-                    'fecha'         => $detalle->venta->fecha,
-                    'cliente'       => $detalle->venta->nombre_cliente,
-                    'cantidad'      => $detalle->cantidad,
-                    'id'            => $detalle->venta->id,
-                    'nombre_documento'            => $detalle->venta->nombre_documento,
-                    'correlativo'            => $detalle->venta->correlativo,
-                    'fecha_pago'    => $detalle->venta->fecha_pago,
-                    'uuid'          => Crypt::encrypt($detalle->venta->id)
+                    'fecha' => $v->fecha,
+                    'cliente' => $v->nombre_cliente,
+                    'cantidad' => $detalle->cantidad,
+                    'id' => $v->id,
+                    'nombre_documento' => $doc,
+                    'correlativo' => $v->correlativo,
+                    'factura' => $factura,
+                    'fecha_pago' => $v->fecha_pago,
+                    'uuid' => Crypt::encrypt($v->id),
                 ]);
             }
-            $producto = $detallesGroup[0]->producto()->first();
 
+            $producto = $detallesGroup[0]->producto;
             if ($producto) {
                 $detalles->push([
-                    'id'                 => $producto->id,
-                    'nombre'             => $producto->nombre,
-                    'img'                => $producto->img,
-                    'nombre_categoria'   => $producto->nombre_categoria,
-                    'precio'             => $detallesGroup[0]->precio,
-                    'codigo'             => $producto->codigo,
-                    'stock'              => $detallesGroup->sum('cantidad'),
-                    'ventas'             => $ventas,
-                ]); 
+                    'id' => $producto->id,
+                    'nombre' => $producto->nombre,
+                    'img' => $producto->img,
+                    'nombre_categoria' => $producto->nombre_categoria,
+                    'precio' => $detallesGroup[0]->precio,
+                    'codigo' => $producto->codigo,
+                    'stock' => $detallesGroup->sum('cantidad'),
+                    'ventas' => $ventas->values(),
+                ]);
             }
         }
 
-        return Response()->json(['data' => $detalles->values()], 200);
-    
+        return $detalles->sortBy('nombre')->values();
     }
 
 
@@ -151,7 +195,25 @@ class ConsignasController extends Controller
         $consignas = new ConsignasExport();
         $consignas->filter($request);
 
-        return Excel::download($consignas, 'consignas.xlsx');
+        return Excel::download($consignas, 'productos-en-consigna.xlsx');
+    }
+
+    public function ventasPorProducto(int $idProducto)
+    {
+        $request = request();
+        $rows = $this->coleccionProductosEnConsigna($request)
+            ->firstWhere('id', $idProducto);
+
+        if (! $rows) {
+            return response()->json(['ventas' => [], 'stock' => 0], 200);
+        }
+
+        return response()->json([
+            'id' => $rows['id'],
+            'nombre' => $rows['nombre'],
+            'stock' => $rows['stock'],
+            'ventas' => $rows['ventas'] ?? [],
+        ], 200);
     }
 
     public function indexCompras()

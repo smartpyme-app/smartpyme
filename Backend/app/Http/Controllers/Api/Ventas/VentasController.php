@@ -344,7 +344,18 @@ class VentasController extends Controller
     public function read($id)
     {
         $venta = Venta::where('id', $id)
-            ->with('devoluciones', 'detalles.composiciones', 'detalles.vendedor', 'detalles.producto.impuestos', 'abonos.usuario', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')
+            ->with(
+                'devoluciones',
+                'detalles.composiciones',
+                'detalles.vendedor',
+                'detalles.producto.impuestos',
+                'detalles.lote:id,numero_lote,fecha_vencimiento',
+                'detalles.lotesAsignados.lote:id,numero_lote,fecha_vencimiento',
+                'abonos.usuario',
+                'cliente',
+                'impuestos.impuesto',
+                'metodos_de_pago'
+            )
             ->with(['giftCardsEmitidas' => function ($query) {
                 $query->select('id', 'id_venta_emision', 'codigo', 'saldo', 'estado', 'monto_inicial');
             }])
@@ -785,36 +796,41 @@ class VentasController extends Controller
         try {
             $venta = Venta::where('id', $request->id)->with('detalles')->firstOrFail();
             if (round($venta->total, 2) > round($request->total, 2)) {
-                // Crear consigna
-                $consigna = new Venta();
-                $consigna->fill($request->except(DocumentoMoneda::CAMPOS_PERSISTIDOS));
+                $idDocumentoRemanente = $venta->id_documento;
+                $correlativoRemanente = $venta->correlativo;
+
+                $consigna = $venta->replicate();
+                $consigna->id_documento = $idDocumentoRemanente;
+                $consigna->correlativo = $correlativoRemanente;
                 $consigna->estado = 'Consigna';
                 $consigna->sub_total = $venta->sub_total - $request->sub_total;
-                $consigna->total_costo  = $venta->total_costo  - $request->total_costo;
+                $consigna->total_costo = $venta->total_costo - $request->total_costo;
                 $consigna->total = $venta->total - $request->total;
                 $consigna->iva = $venta->iva - $request->iva;
-                // Heredar moneda/TC de la venta origen (no del request).
-                $consigna->currency_code = $venta->currency_code ?? DocumentoMoneda::MONEDA_CRC;
-                $consigna->exchange_rate = $venta->exchange_rate ?? 1;
-                $consigna->exchange_rate_date = $venta->exchange_rate_date;
-                $rate = (float) ($consigna->exchange_rate ?: 1);
-                $consigna->equivalent_total = round((float) $consigna->total * $rate, 5);
-                $consigna->equivalent_iva = round((float) $consigna->iva * $rate, 5);
+                $rateRem = (float) ($consigna->exchange_rate ?: 1);
+                $consigna->equivalent_total = round((float) $consigna->total * $rateRem, 5);
+                $consigna->equivalent_iva = round((float) $consigna->iva * $rateRem, 5);
                 $consigna->save();
 
+                $metaDetallesPorId = [];
                 foreach ($request->detalles as $detalle) {
-
                     $detalle_venta = $venta->detalles()->where('id', $detalle['id'])->first();
                     if ($detalle_venta) {
-                        if ($detalle_venta->cantidad > $detalle['cantidad']) {
-                            $detalle_consigna = new Detalle();
-                            $detalle_consigna->id_producto = $detalle['id_producto'];
-                            $detalle_consigna->precio = $detalle['precio'];
-                            $detalle_consigna->cantidad = $detalle_venta->cantidad - $detalle['cantidad'];
-                            $detalle_consigna->total = $detalle_consigna->precio * $detalle_consigna->cantidad;
-                            $detalle_consigna->id_venta = $consigna->id;
-                            $detalle_consigna->save();
-                        }
+                        $metaDetallesPorId[(int) $detalle['id']] = [
+                            'lote_id' => $detalle_venta->lote_id,
+                            'origen_stock' => $detalle_venta->origen_stock,
+                        ];
+                    }
+                    if ($detalle_venta && $detalle_venta->cantidad > $detalle['cantidad']) {
+                        $detalle_consigna = new Detalle();
+                        $detalle_consigna->id_producto = $detalle['id_producto'];
+                        $detalle_consigna->precio = $detalle['precio'];
+                        $detalle_consigna->cantidad = $detalle_venta->cantidad - $detalle['cantidad'];
+                        $detalle_consigna->total = $detalle_consigna->precio * $detalle_consigna->cantidad;
+                        $detalle_consigna->id_venta = $consigna->id;
+                        $detalle_consigna->lote_id = $detalle_venta->lote_id;
+                        $detalle_consigna->origen_stock = $detalle_venta->origen_stock;
+                        $detalle_consigna->save();
                     }
                 }
 
@@ -823,6 +839,7 @@ class VentasController extends Controller
 
                 foreach ($request->detalles as $detalle) {
                     if ($detalle['cantidad'] > 0) {
+                        $meta = $metaDetallesPorId[(int) ($detalle['id'] ?? 0)] ?? null;
                         $det = new Detalle();
                         $det->id_producto = $detalle['id_producto'];
                         $det->cantidad = $detalle['cantidad'];
@@ -830,6 +847,10 @@ class VentasController extends Controller
                         $det->total = $detalle['cantidad'] * $detalle['precio'];
                         $det->descuento = 0;
                         $det->id_venta = $venta->id;
+                        if ($meta) {
+                            $det->lote_id = $meta['lote_id'];
+                            $det->origen_stock = $meta['origen_stock'];
+                        }
                         $det->save();
                         app(ConsignaMovimientoService::class)->liquidacionClienteDesdeVenta(
                             $venta,
@@ -839,17 +860,29 @@ class VentasController extends Controller
                     }
                 }
 
+                $venta->fill($request->except(array_merge(['detalles', 'id', 'estado'], DocumentoMoneda::CAMPOS_PERSISTIDOS)));
+                $venta->id_documento = $request->id_documento;
+                $venta->correlativo = $request->correlativo;
                 $venta->total = $request->total;
                 $venta->iva = $request->iva;
                 $venta->sub_total = $request->sub_total;
+                $venta->total_costo = $request->total_costo;
             } elseif ($venta->estado === 'Consigna' && round($venta->total, 2) <= round($request->total, 2)) {
                 $movimientoService = app(ConsignaMovimientoService::class);
+                $metaDetallesPorId = [];
+                foreach ($venta->detalles as $detalleVenta) {
+                    $metaDetallesPorId[(int) $detalleVenta->id] = [
+                        'lote_id' => $detalleVenta->lote_id,
+                        'origen_stock' => $detalleVenta->origen_stock,
+                    ];
+                }
                 $venta->detalles()->delete();
 
                 foreach ($request->detalles as $detalle) {
                     if ((float) ($detalle['cantidad'] ?? 0) <= 0) {
                         continue;
                     }
+                    $meta = $metaDetallesPorId[(int) ($detalle['id'] ?? 0)] ?? null;
                     $det = new Detalle();
                     $det->id_producto = $detalle['id_producto'];
                     $det->cantidad = $detalle['cantidad'];
@@ -857,6 +890,10 @@ class VentasController extends Controller
                     $det->total = $detalle['cantidad'] * $detalle['precio'];
                     $det->descuento = 0;
                     $det->id_venta = $venta->id;
+                    if ($meta) {
+                        $det->lote_id = $meta['lote_id'];
+                        $det->origen_stock = $meta['origen_stock'];
+                    }
                     $det->save();
                     $movimientoService->liquidacionClienteDesdeVenta(
                         $venta,
@@ -869,8 +906,10 @@ class VentasController extends Controller
                 $venta->iva = $request->iva;
                 $venta->sub_total = $request->sub_total;
                 $venta->total_costo = $request->total_costo;
+                $venta->fill($request->except(array_merge(['detalles', 'id', 'estado'], DocumentoMoneda::CAMPOS_PERSISTIDOS)));
+                $venta->id_documento = $request->id_documento;
+                $venta->correlativo = $request->correlativo;
             }
-
 
             $venta->fecha = $request->fecha;
             $venta->estado = 'Pagada';

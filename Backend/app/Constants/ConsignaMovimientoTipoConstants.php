@@ -48,6 +48,18 @@ class ConsignaMovimientoTipoConstants
         ];
     }
 
+    /** Custodia cliente: entregas, liquidaciones (evidencia contable) y devoluciones. */
+    public static function tiposKardexCustodiaCliente(): array
+    {
+        return [
+            self::ENTREGA_CONSIGNA_PROPIO,
+            self::ENTREGA_CONSIGNA_PROVEEDOR,
+            self::LIQUIDACION_CLIENTE,
+            self::DEVOLUCION_CLIENTE,
+            self::AJUSTE_CONSIGNA,
+        ];
+    }
+
     public static function esValido(?string $tipo): bool
     {
         if ($tipo === null || $tipo === '') {

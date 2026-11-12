@@ -132,6 +132,8 @@ class ConsignaLedgerBackfillCommand extends Command
         if (! $dryRun) {
             $filasCustodia = app(ConsignaCustodiaService::class)->reconstruirDesdeLedger((int) $empresaId);
             $this->info("Custodias cliente reconstruidas: {$filasCustodia} filas.");
+            $kardexLiq = $service->sincronizarKardexLiquidacionesCliente((int) $empresaId);
+            $this->info("Kardex físico (liquidación consigna cliente): {$kardexLiq} fila(s) nuevas.");
         }
 
         return self::SUCCESS;

@@ -3,11 +3,14 @@
 namespace App\Services\Inventario;
 
 use App\Constants\ConsignaMovimientoTipoConstants;
+use App\Constants\KardexDetalleConstants;
 use App\Constants\OrigenStockVentaConstants;
 use App\Models\Admin\Empresa;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Detalle as DetalleCompra;
 use App\Models\Inventario\ConsignaMovimiento;
+use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Kardex;
 use App\Models\Inventario\Lote;
 use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Models\Ventas\Venta;
@@ -218,18 +221,147 @@ class ConsignaMovimientoService
             return null;
         }
 
-        return $this->registrar((int) $venta->id_empresa, [
+        $movimiento = $this->registrar((int) $venta->id_empresa, [
             'tipo' => ConsignaMovimientoTipoConstants::LIQUIDACION_CLIENTE,
             'cantidad' => -$cantidad,
             'id_producto' => (int) $detalle->id_producto,
             'id_bodega' => (int) $venta->id_bodega,
-            'lote_id' => $this->loteIdDesdeDetalleVenta($detalle),
+            'lote_id' => $this->resolverLoteIdLiquidacionCliente($venta, $detalle),
             'id_cliente' => $venta->id_cliente,
             'id_venta' => $venta->id,
             'id_detalle_venta' => $detalle->id,
             'fecha' => $venta->fecha,
             'idempotency_key' => 'venta-liq-' . $venta->id . '-det-' . $detalle->id,
         ]);
+
+        if ($movimiento) {
+            $this->registrarKardexInformativoLiquidacionCliente($venta, $detalle, $cantidad);
+        }
+
+        return $movimiento;
+    }
+
+    /**
+     * Crea filas informativas en kardexs para liquidaciones cliente ya registradas en el ledger.
+     */
+    public function sincronizarKardexLiquidacionesCliente(int $idEmpresa): int
+    {
+        if (! $this->isLedgerActivo($idEmpresa)) {
+            return 0;
+        }
+
+        $creados = 0;
+        ConsignaMovimiento::query()
+            ->forEmpresa($idEmpresa)
+            ->where('tipo', ConsignaMovimientoTipoConstants::LIQUIDACION_CLIENTE)
+            ->with(['venta', 'detalleVenta'])
+            ->orderBy('id')
+            ->chunk(100, function ($movimientos) use (&$creados) {
+                foreach ($movimientos as $movimiento) {
+                    $venta = $movimiento->venta;
+                    $detalle = $movimiento->detalleVenta;
+                    if (! $venta || ! $detalle) {
+                        continue;
+                    }
+                    $loteId = $this->resolverLoteIdLiquidacionCliente($venta, $detalle);
+                    if ($loteId) {
+                        if (! $detalle->lote_id) {
+                            $detalle->lote_id = $loteId;
+                            $detalle->saveQuietly();
+                        }
+                        if (! $movimiento->lote_id) {
+                            $movimiento->lote_id = $loteId;
+                            $movimiento->saveQuietly();
+                        }
+                        $this->repararKardexLiquidacionClienteSinLote(
+                            $venta,
+                            $detalle,
+                            abs((float) $movimiento->cantidad),
+                            $loteId
+                        );
+                    }
+                    if ($this->registrarKardexInformativoLiquidacionCliente(
+                        $venta,
+                        $detalle,
+                        abs((float) $movimiento->cantidad)
+                    )) {
+                        $creados++;
+                    }
+                }
+            });
+
+        return $creados;
+    }
+
+    private function registrarKardexInformativoLiquidacionCliente(
+        Venta $venta,
+        DetalleVenta $detalle,
+        float $cantidad
+    ): bool {
+        if ($cantidad <= 0 || ! $this->isLedgerActivo((int) $venta->id_empresa)) {
+            return false;
+        }
+
+        $fecha = Carbon::parse($venta->fecha)->format('Y-m-d');
+        $loteId = $this->resolverLoteIdLiquidacionCliente($venta, $detalle);
+
+        $existente = Kardex::query()
+            ->where('id_producto', (int) $detalle->id_producto)
+            ->where('id_inventario', (int) $venta->id_bodega)
+            ->where('detalle', KardexDetalleConstants::LIQUIDACION_CONSIGNA_CLIENTE)
+            ->where('referencia', $venta->id)
+            ->where('salida_cantidad', $cantidad)
+            ->where('fecha', $fecha)
+            ->first();
+        if ($existente) {
+            if ($loteId && ! $existente->lote_id) {
+                $existente->lote_id = $loteId;
+                $existente->saveQuietly();
+            }
+
+            return false;
+        }
+
+        $inventario = Inventario::query()
+            ->where('id_producto', (int) $detalle->id_producto)
+            ->where('id_bodega', (int) $venta->id_bodega)
+            ->first();
+        if (! $inventario) {
+            return false;
+        }
+
+        $producto = $inventario->producto()->withoutGlobalScope('empresa')->first();
+        if (! $producto) {
+            return false;
+        }
+
+        $costo = (float) ($detalle->costo ?? $producto->costo ?? 0);
+        $precio = (float) ($detalle->precio ?? $producto->precio ?? 0);
+        $totalCantidad = app(ConsignaDisponibleService::class)->stockPropioParaKardex(
+            (int) $detalle->id_producto,
+            (int) $venta->id_bodega,
+            $loteId
+        );
+
+        Kardex::create([
+            'fecha' => $fecha,
+            'id_producto' => (int) $detalle->id_producto,
+            'lote_id' => $loteId,
+            'id_inventario' => (int) $venta->id_bodega,
+            'detalle' => KardexDetalleConstants::LIQUIDACION_CONSIGNA_CLIENTE,
+            'referencia' => $venta->id,
+            'precio_unitario' => $precio,
+            'costo_unitario' => $costo,
+            'entrada_cantidad' => 0,
+            'entrada_valor' => 0,
+            'salida_cantidad' => $cantidad,
+            'salida_valor' => round($cantidad * $precio, 2),
+            'total_cantidad' => $totalCantidad,
+            'total_valor' => round($totalCantidad * $costo, 2),
+            'id_usuario' => $venta->id_usuario ?? auth()->id(),
+        ]);
+
+        return true;
     }
 
     /**
@@ -353,7 +485,11 @@ class ConsignaMovimientoService
         if ($request->filled('tipo')) {
             $query->where('tipo', $request->tipo);
         } else {
-            $query->whereIn('tipo', ConsignaMovimientoTipoConstants::tiposKardexPoolProveedor());
+            $alcance = (string) $request->input('alcance', 'pool');
+            $tipos = $alcance === 'custodia'
+                ? ConsignaMovimientoTipoConstants::tiposKardexCustodiaCliente()
+                : ConsignaMovimientoTipoConstants::tiposKardexPoolProveedor();
+            $query->whereIn('tipo', $tipos);
         }
 
         $paginate = (int) ($request->paginate ?? 0);
@@ -389,8 +525,12 @@ class ConsignaMovimientoService
         ]);
         $data['nombre_tercero'] = $terceros === [] ? '—' : implode(' / ', $terceros);
         $data['detalle_movimiento'] = $data['tipo_etiqueta'];
-        $data['afecta_saldo_consigna'] = $m->tipo !== ConsignaMovimientoTipoConstants::LIQUIDACION_PROVEEDOR;
-        $data['es_registro_contable'] = $m->tipo === ConsignaMovimientoTipoConstants::LIQUIDACION_PROVEEDOR;
+        $esLiquidacionContable = in_array($m->tipo, [
+            ConsignaMovimientoTipoConstants::LIQUIDACION_PROVEEDOR,
+            ConsignaMovimientoTipoConstants::LIQUIDACION_CLIENTE,
+        ], true);
+        $data['afecta_saldo_consigna'] = ! $esLiquidacionContable;
+        $data['es_registro_contable'] = $esLiquidacionContable;
         $data['numero_lote'] = $m->lote?->numero_lote
             ?? $m->detalleCompra?->lote?->numero_lote
             ?? $m->detalleVenta?->lote?->numero_lote;
@@ -414,6 +554,69 @@ class ConsignaMovimientoService
         }
 
         return null;
+    }
+
+    public function resolverLoteIdLiquidacionCliente(Venta $venta, DetalleVenta $detalle): ?int
+    {
+        $lote = $this->loteIdDesdeDetalleVenta($detalle);
+        if ($lote) {
+            return $lote;
+        }
+
+        $loteMovimiento = ConsignaMovimiento::query()
+            ->where('id_venta', $venta->id)
+            ->where('id_detalle_venta', $detalle->id)
+            ->where('tipo', ConsignaMovimientoTipoConstants::LIQUIDACION_CLIENTE)
+            ->whereNotNull('lote_id')
+            ->value('lote_id');
+        if ($loteMovimiento) {
+            return (int) $loteMovimiento;
+        }
+
+        if ($venta->id_cliente) {
+            $loteEntrega = ConsignaMovimiento::query()
+                ->forEmpresa((int) $venta->id_empresa)
+                ->where('id_cliente', $venta->id_cliente)
+                ->where('id_producto', (int) $detalle->id_producto)
+                ->where('id_bodega', (int) $venta->id_bodega)
+                ->where('tipo', ConsignaMovimientoTipoConstants::ENTREGA_CONSIGNA_PROPIO)
+                ->whereNotNull('lote_id')
+                ->orderByDesc('fecha')
+                ->orderByDesc('id')
+                ->value('lote_id');
+            if ($loteEntrega) {
+                return (int) $loteEntrega;
+            }
+        }
+
+        $loteRemision = Kardex::query()
+            ->where('id_producto', (int) $detalle->id_producto)
+            ->where('id_inventario', (int) $venta->id_bodega)
+            ->where('detalle', 'like', 'Remisión consigna%')
+            ->whereNotNull('lote_id')
+            ->orderByDesc('fecha')
+            ->orderByDesc('id')
+            ->value('lote_id');
+
+        return $loteRemision ? (int) $loteRemision : null;
+    }
+
+    private function repararKardexLiquidacionClienteSinLote(
+        Venta $venta,
+        DetalleVenta $detalle,
+        float $cantidad,
+        int $loteId
+    ): void {
+        $fecha = Carbon::parse($venta->fecha)->format('Y-m-d');
+        Kardex::query()
+            ->where('id_producto', (int) $detalle->id_producto)
+            ->where('id_inventario', (int) $venta->id_bodega)
+            ->where('detalle', KardexDetalleConstants::LIQUIDACION_CONSIGNA_CLIENTE)
+            ->where('referencia', $venta->id)
+            ->where('salida_cantidad', $cantidad)
+            ->where('fecha', $fecha)
+            ->whereNull('lote_id')
+            ->update(['lote_id' => $loteId]);
     }
 
     private function nombreProveedorMovimiento(ConsignaMovimiento $m): string

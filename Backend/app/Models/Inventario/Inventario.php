@@ -7,6 +7,7 @@ use App\Models\Inventario\Kardex;
 use App\Models\Inventario\Lote;
 use App\Models\Admin\Empresa;
 use App\Constants\OrigenStockVentaConstants;
+use App\Services\Inventario\ConsignaDisponibleService;
 use App\Services\Inventario\KardexInventarioNormalService;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
@@ -249,17 +250,8 @@ class Inventario extends Model {
         $empresaKardex = $producto->empresa
             ?? (Auth::user()?->empresa)
             ?? Empresa::query()->find($producto->id_empresa);
-        if ($empresaKardex?->isModuloConsignacionesLedgerActivo()) {
-            $totalCantidad = $this->calcularExistenciaPropiaTrasMovimiento(
-                $producto,
-                (float) ($entradaCantidad ?? 0),
-                (float) ($salidaCantidad ?? 0),
-                $opciones,
-                $empresaKardex
-            );
-        } else {
-            $totalCantidad = $this->calcularStockParaKardex($producto, $modelo, $clase, $opciones);
-        }
+        // ponytail: con ledger, inventario/lote ya está actualizado; total_cantidad = saldo físico real.
+        $totalCantidad = $this->calcularStockParaKardex($producto, $modelo, $clase, $opciones);
 
         $fechaKardex = $fecha ? (is_string($fecha) ? $fecha : $fecha->format('Y-m-d')) : date('Y-m-d');
 
@@ -303,31 +295,6 @@ class Inventario extends Model {
         return $this->hasMany('App\Models\Inventario\Kardex', 'id_inventario');
     }
 
-    private function calcularExistenciaPropiaTrasMovimiento(
-        Producto $producto,
-        float $entrada,
-        float $salida,
-        array $opciones,
-        Empresa $empresa
-    ): float {
-        $query = Kardex::query()
-            ->where('id_producto', $this->id_producto)
-            ->where('id_inventario', $this->id_bodega);
-        if (! empty($opciones['lote_id'])) {
-            $query->where('lote_id', (int) $opciones['lote_id']);
-        }
-
-        $historial = app(KardexInventarioNormalService::class)->paraKardexFisico(
-            $query->orderBy('fecha')->orderBy('id')->get(),
-            (int) $this->id_producto,
-            $empresa
-        );
-
-        $base = $historial->isEmpty() ? 0.0 : (float) $historial->last()->total_cantidad;
-
-        return $base + $entrada - $salida;
-    }
-
     /**
      * Calcula el stock para el kardex según si el producto usa lotes o no
      */
@@ -343,6 +310,21 @@ class Inventario extends Model {
         }
 
         $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
+        $loteId = ! empty($opciones['lote_id'])
+            ? (int) $opciones['lote_id']
+            : null;
+
+        if ($empresa?->isModuloConsignacionesLedgerActivo()) {
+            if (! $loteId && $producto->inventario_por_lotes && $lotesActivo) {
+                $loteId = $this->obtenerLoteIdDesdeModelo($modelo, $clase, $producto->id);
+            }
+
+            return app(ConsignaDisponibleService::class)->stockPropioParaKardex(
+                (int) $this->id_producto,
+                (int) $this->id_bodega,
+                $loteId
+            );
+        }
 
         // Si el producto no usa lotes o los lotes no están activos, usar stock tradicional
         if (!$producto->inventario_por_lotes || !$lotesActivo) {
@@ -350,7 +332,7 @@ class Inventario extends Model {
         }
 
         // Si el producto usa lotes, buscar el lote_id desde el modelo de referencia
-        $loteId = $opciones['lote_id'] ?? $this->obtenerLoteIdDesdeModelo($modelo, $clase, $producto->id);
+        $loteId = $loteId ?? $this->obtenerLoteIdDesdeModelo($modelo, $clase, $producto->id);
 
         if ($loteId) {
             // Si hay un lote específico, usar su stock

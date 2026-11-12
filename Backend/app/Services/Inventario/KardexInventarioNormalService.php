@@ -2,6 +2,7 @@
 
 namespace App\Services\Inventario;
 
+use App\Constants\KardexDetalleConstants;
 use App\Constants\OrigenStockVentaConstants;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Kardex;
@@ -17,8 +18,15 @@ class KardexInventarioNormalService
      * @param  Collection<int, Kardex>  $movimientos
      * @return Collection<int, Kardex>
      */
-    public function paraKardexFisico(Collection $movimientos, int $idProducto, ?Empresa $empresa): Collection
-    {
+    /**
+     * @param  float|null  $stockFisicoActual  Saldo en bodega/lote (post movimientos); ancla corridas sin historial completo en pantalla.
+     */
+    public function paraKardexFisico(
+        Collection $movimientos,
+        int $idProducto,
+        ?Empresa $empresa,
+        ?float $stockFisicoActual = null
+    ): Collection {
         if (! $empresa?->isModuloConsignacionesLedgerActivo()) {
             return $movimientos;
         }
@@ -38,7 +46,7 @@ class KardexInventarioNormalService
             return true;
         })->values();
 
-        return $this->recalcularExistenciasPropias($filtrados);
+        return $this->recalcularExistenciasPropias($filtrados, $stockFisicoActual);
     }
 
     /**
@@ -75,23 +83,38 @@ class KardexInventarioNormalService
      * @param  Collection<int, Kardex>  $movimientos
      * @return Collection<int, Kardex>
      */
-    private function recalcularExistenciasPropias(Collection $movimientos): Collection
+    private function recalcularExistenciasPropias(Collection $movimientos, ?float $stockFisicoActual = null): Collection
     {
         $ordenados = $movimientos->sortBy([
             ['fecha', 'asc'],
             ['id', 'asc'],
-        ]);
+        ])->values();
 
-        $existencia = 0.0;
+        $sumDelta = $ordenados
+            ->reject(fn (Kardex $mov) => $this->esRegistroContableLiquidacionCliente($mov))
+            ->sum(
+                fn (Kardex $mov) => (float) ($mov->entrada_cantidad ?? 0) - (float) ($mov->salida_cantidad ?? 0)
+            );
+        $existencia = $stockFisicoActual !== null
+            ? $stockFisicoActual - $sumDelta
+            : 0.0;
+
         foreach ($ordenados as $mov) {
             $entrada = (float) ($mov->entrada_cantidad ?? 0);
             $salida = (float) ($mov->salida_cantidad ?? 0);
-            $existencia += $entrada - $salida;
+            if (! $this->esRegistroContableLiquidacionCliente($mov)) {
+                $existencia += $entrada - $salida;
+            }
             $mov->total_cantidad = $existencia;
             $costo = (float) ($mov->costo_unitario ?? 0);
             $mov->total_valor = round($existencia * $costo, 2);
         }
 
         return $movimientos;
+    }
+
+    private function esRegistroContableLiquidacionCliente(Kardex $mov): bool
+    {
+        return $mov->detalle === KardexDetalleConstants::LIQUIDACION_CONSIGNA_CLIENTE;
     }
 }

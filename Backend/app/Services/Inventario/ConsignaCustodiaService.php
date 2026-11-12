@@ -5,6 +5,7 @@ namespace App\Services\Inventario;
 use App\Constants\ConsignaMovimientoTipoConstants;
 use App\Models\Inventario\ConsignaCustodia;
 use App\Models\Inventario\ConsignaMovimiento;
+use App\Models\Ventas\Venta;
 use Illuminate\Http\Request;
 
 class ConsignaCustodiaService
@@ -128,5 +129,53 @@ class ConsignaCustodiaService
         }
 
         return $query->limit(5000)->get();
+    }
+
+  /**
+   * Ventas en estado Consigna (remisiones pendientes), no agrupadas por producto.
+   */
+  public function listarVentasConsigna(Request $request, int $idEmpresa)
+    {
+        $query = Venta::query()
+            ->where('id_empresa', $idEmpresa)
+            ->where('estado', 'Consigna')
+            ->where('cotizacion', 0)
+            ->with([
+                'documento:id,nombre',
+                'cliente' => fn ($q) => $q->withoutGlobalScopes()->select(
+                    'id',
+                    'nombre',
+                    'apellido',
+                    'nombre_comercial',
+                    'nombre_empresa'
+                ),
+            ]);
+
+        if ($request->filled('buscador')) {
+            $t = trim((string) $request->buscador);
+            $query->where(function ($q) use ($t) {
+                $q->where('correlativo', 'like', '%' . $t . '%');
+                if (ctype_digit($t)) {
+                    $q->orWhere('correlativo', (int) $t);
+                }
+                $q->orWhereHas('cliente', function ($c) use ($t) {
+                        $c->where('nombre', 'like', '%' . $t . '%')
+                            ->orWhere('apellido', 'like', '%' . $t . '%')
+                            ->orWhere('nombre_comercial', 'like', '%' . $t . '%')
+                            ->orWhere('nombre_empresa', 'like', '%' . $t . '%');
+                    })
+                    ->orWhereHas('documento', fn ($d) => $d->where('nombre', 'like', '%' . $t . '%'));
+            });
+        }
+
+        $paginate = (int) ($request->input('paginate', 25));
+        if ($paginate > 0) {
+            return $query
+                ->orderByDesc('fecha')
+                ->orderByDesc('id')
+                ->paginate(min($paginate, 100));
+        }
+
+        return $query->orderByDesc('fecha')->orderByDesc('id')->limit(5000)->get();
     }
 }
