@@ -138,6 +138,8 @@
         "emitFailedViewAttemptXml": "Ver XML del comprobante (intento)",
         "emitFailedViewAttemptJson": "Ver JSON interno (payload)",
         "detailSectionTitle": "Detalles del comprobante electrónico (ATV)",
+        "detailDocumentTypeLabel": "Tipo de comprobante",
+        "detailControlNumberLabel": "Consecutivo",
         "emittingProgress": "Emitiendo ATV...",
         "mhUserLabel": "Usuario en Hacienda (ATV):",
         "mhPasswordLabel": "Contraseña en Hacienda (ATV):",

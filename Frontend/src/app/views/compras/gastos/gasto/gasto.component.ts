@@ -329,6 +329,45 @@ export class GastoComponent implements OnInit {
     return !Number.isFinite(rate) || rate <= 0 || rate === 1;
   }
 
+  public exchangeRateDraft: number | null = null;
+  private modalTipoCambioRef?: BsModalRef;
+
+  get puedeEditarTipoCambioGasto(): boolean {
+    return this.tieneMultimoneda
+      && this.monedaGasto === 'USD'
+      && this.monedaGasto !== this.monedaFuncional
+      && !this.gastoYaTieneDte
+      && (!!this.apiService.auth_user()?.empresa?.custom_empresa?.facturacion_fe?.permitir_editar_tipo_cambio
+        || !!this.monedaConfig?.permitir_editar);
+  }
+
+  public abrirModalTipoCambioGasto(template: TemplateRef<any>): void {
+    if (!this.puedeEditarTipoCambioGasto) {
+      return;
+    }
+    const actual = parseFloat(this.gasto?.exchange_rate);
+    this.exchangeRateDraft = (Number.isFinite(actual) && actual > 0 && actual !== 1)
+      ? actual
+      : (this.tcPreview.rate ?? null);
+    this.modalTipoCambioRef = this.modalService.show(template, { class: 'modal-sm', backdrop: 'static' });
+  }
+
+  public cerrarModalTipoCambioGasto(): void {
+    this.modalTipoCambioRef?.hide();
+    this.modalTipoCambioRef = undefined;
+  }
+
+  public aplicarTipoCambioManualGasto(): void {
+    const rate = parseFloat(String(this.exchangeRateDraft ?? ''));
+    if (!Number.isFinite(rate) || rate <= 0 || rate === 1) {
+      this.alertService.error('Ingrese un tipo de cambio válido mayor a 0 y distinto de 1.');
+      return;
+    }
+    this.gasto.exchange_rate = rate;
+    this.cerrarModalTipoCambioGasto();
+    this.cdr.markForCheck();
+  }
+
 	ngOnInit(){
         this.loadAll();
         this.loadDepartamentos();

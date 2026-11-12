@@ -285,6 +285,7 @@ class Venta extends AuditableModel {
             'ventas.id_venta_plantilla',
             'ventas.sello_mh',
             'ventas.codigo_generacion',
+            'ventas.numero_control',
             'ventas.clave_rechazada',
             'ventas.num_identificacion',
             'ventas.motivo_anulacion',

@@ -25,6 +25,7 @@ class EmitirFeCrNotaDebitoRequest extends FormRequest
             ],
             'motivo' => ['nullable', 'string', 'max:500'],
             'monto_linea' => ['required', 'numeric', 'min:0.01'],
+            'error_material' => ['sometimes', 'boolean'],
         ];
     }
 }
