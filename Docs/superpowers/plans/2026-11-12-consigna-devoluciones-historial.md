@@ -34,13 +34,15 @@
 
 - Tab devoluciones, `ConsignaCustodiaDevolucionesExport`, export exige `id_cliente`.
 
-## P4 — PDFs con lote/vencimiento
+## P4 — PDFs con lote/vencimiento — HECHO
 
-- Plantillas ticket/factura si lotes activos.
+- Partial `detalle-lote-impresion`; ticket, 80mm, devolución/compra PDF; remisión en impresión ticket.
 
-## P5 — Historial según PDF raíz
+## P5 — Historial según PDF raíz — HECHO
 
-- Reporte cliente obligatorio; ventas + compras.
+- `ConsignaHistorialService`, API `consigna-historial`, Excel (resumen + movimientos).
+- UI `/consigna-historial` (tabs ventas/cliente y compras/proveedor); export exige tercero.
+- Enlaces desde productos en consigna, consignas compras y custodia.
 
 ---
 

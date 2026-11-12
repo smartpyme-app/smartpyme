@@ -27,6 +27,7 @@
 - **P2:** Productos en consigna (ventas) agrupados por producto+lote si ledger y lotes activos; columnas lote/vencimiento en UI y Excel; detalle compras muestra lote/vencimiento.
 - **P3:** Custodia consigna: pestaña devoluciones, filtro cliente, export Excel por cliente (ventas y devoluciones) con columnas de lote opcionales.
 - **P4:** Impresión ticket/factura remisión, devolución consigna y compra muestran lote y vencimiento si `lotes_activo`.
+- **P5:** Historial consigna por cliente o proveedor (resumen ENVIADAS/FACTURADAS/DEVUELTAS/DISP + movimientos), Excel obligatorio con tercero, UI `/consigna-historial`.
 - DTE MH 04: documento impreso “Factura de remisión” vigente; transmisión MH → epic **FE-SV-5B** (respuesta API explícita).
 
 ### Lotes

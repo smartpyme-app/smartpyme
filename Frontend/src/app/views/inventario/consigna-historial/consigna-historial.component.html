@@ -1,0 +1,184 @@
+@if (!moduloActivo) {
+  <section class="bg-white p-4 rounded mb-3">
+    <p class="text-muted mb-0">El módulo de consignaciones no está habilitado para su empresa.</p>
+  </section>
+} @else {
+  <section class="bg-white p-4 rounded mb-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div>
+      <h2 class="h5 mb-0">Historial de consigna</h2>
+      <small class="text-muted">Resumen por producto{{ incluirLote ? ' y lote' : '' }} + movimientos (según reporte cliente/proveedor).</small>
+    </div>
+    <div class="d-flex gap-2">
+      @if (apiService.hasPermission('inventario.consigna_kardex.exportar')) {
+        <button type="button" class="btn btn-default" [disabled]="downloading" (click)="exportar()" tooltip="Descargar Excel">
+          <img appLazyImage="/assets/icons/download.png" class="icon" alt="">
+        </button>
+      }
+      <a routerLink="/consigna-custodia" class="btn btn-light">Custodia ventas</a>
+      <a routerLink="/consigna-kardex" class="btn btn-light">Kardex consigna</a>
+    </div>
+  </section>
+
+  <section class="bg-white p-4 rounded mb-3">
+    <ul class="nav nav-tabs mb-3">
+      <li class="nav-item">
+        <button type="button" class="nav-link" [class.active]="alcance === 'ventas'" (click)="cambiarAlcance('ventas')">
+          Ventas (cliente)
+        </button>
+      </li>
+      <li class="nav-item">
+        <button type="button" class="nav-link" [class.active]="alcance === 'compras'" (click)="cambiarAlcance('compras')">
+          Compras (proveedor)
+        </button>
+      </li>
+    </ul>
+
+    <form class="row g-3 mb-4" (ngSubmit)="cargar()">
+      @if (alcance === 'ventas') {
+        <div class="col-12 col-md-6 col-lg-4">
+          <label class="form-label">Cliente <span class="text-danger">*</span></label>
+          <ng-select
+            [(ngModel)]="filtros.id_cliente"
+            name="id_cliente"
+            [items]="clientes"
+            bindLabel="nombre"
+            bindValue="id"
+            placeholder="Seleccione cliente"
+            class="form-select p-0"
+            (change)="cargar()">
+          </ng-select>
+        </div>
+      } @else {
+        <div class="col-12 col-md-6 col-lg-4">
+          <label class="form-label">Proveedor <span class="text-danger">*</span></label>
+          <ng-select
+            [(ngModel)]="filtros.id_proveedor"
+            name="id_proveedor"
+            [items]="proveedores"
+            bindLabel="nombre"
+            bindValue="id"
+            placeholder="Seleccione proveedor"
+            class="form-select p-0"
+            (change)="cargar()">
+          </ng-select>
+        </div>
+      }
+      <div class="col-6 col-md-3 col-lg-2">
+        <label class="form-label">Del</label>
+        <input type="date" class="form-control" [(ngModel)]="filtros.fecha_ini" name="fecha_ini" />
+      </div>
+      <div class="col-6 col-md-3 col-lg-2">
+        <label class="form-label">Al</label>
+        <input type="date" class="form-control" [(ngModel)]="filtros.fecha_fin" name="fecha_fin" />
+      </div>
+      <div class="col-12 col-md-auto d-flex align-items-end">
+        <button type="submit" class="btn btn-primary" [disabled]="loading">
+          @if (!loading) {
+            <i class="fa fa-search"></i> Consultar
+          } @else {
+            <i class="fa fa-ellipsis-h"></i>
+          }
+        </button>
+      </div>
+    </form>
+
+    @if (terceroNombre) {
+      <p class="text-center text-uppercase fw-semibold mb-2">
+        Productos en consigna — {{ terceroNombre }}
+      </p>
+    }
+
+    <div class="table-responsive mb-4">
+      <table class="table table-sm table-bordered align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Código</th>
+            <th>Producto</th>
+            @if (incluirLote) {
+              <th>Lote</th>
+              <th>Vence</th>
+            }
+            <th>Bodega</th>
+            <th class="text-end">{{ etiquetaEnviadas() }}</th>
+            <th class="text-end">{{ etiquetaFacturadas() }}</th>
+            <th class="text-end">Devueltas</th>
+            <th class="text-end">Disp.</th>
+            <th class="text-end">Pr/un</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (resumen.length === 0) {
+            <tr>
+              <td [attr.colspan]="incluirLote ? 10 : 8" class="text-muted text-center py-3">
+                @if (terceroSeleccionado()) {
+                  Sin productos en el período.
+                } @else {
+                  Seleccione cliente o proveedor.
+                }
+              </td>
+            </tr>
+          } @else {
+            @for (fila of resumen; track fila.id_producto + '-' + (fila.lote_id ?? 0)) {
+              <tr>
+                <td>{{ fila.codigo }}</td>
+                <td>{{ fila.producto }}</td>
+                @if (incluirLote) {
+                  <td>{{ fila.lote }}</td>
+                  <td>{{ fila.vence | date:'dd/MM/yyyy' }}</td>
+                }
+                <td>{{ fila.bodega }}</td>
+                <td class="text-end">{{ fila.enviadas }}</td>
+                <td class="text-end">{{ fila.facturadas }}</td>
+                <td class="text-end">{{ fila.devueltas }}</td>
+                <td class="text-end fw-semibold">{{ fila.disponible }}</td>
+                <td class="text-end">{{ fila.precio_unitario | currencyFormat }}</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <p class="text-center fw-semibold mb-2">Historial de movimientos</p>
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Código</th>
+            <th>Producto</th>
+            <th class="text-end">Cant.</th>
+            @if (incluirLote) {
+              <th>Lote</th>
+              <th>Vence</th>
+            }
+            <th>Notas</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (movimientos.length === 0) {
+            <tr>
+              <td [attr.colspan]="incluirLote ? 8 : 6" class="text-muted text-center py-3">Sin movimientos.</td>
+            </tr>
+          } @else {
+            @for (m of movimientos; track m.fecha + m.tipo + m.producto + m.cantidad) {
+              <tr>
+                <td>{{ m.fecha | date:'dd/MM/yyyy' }}</td>
+                <td><span class="badge bg-secondary">{{ m.tipo }}</span></td>
+                <td>{{ m.codigo }}</td>
+                <td>{{ m.producto }}</td>
+                <td class="text-end">{{ m.cantidad }}</td>
+                @if (incluirLote) {
+                  <td>{{ m.lote }}</td>
+                  <td>{{ m.vence | date:'dd/MM/yyyy' }}</td>
+                }
+                <td class="small">{{ m.notas }}</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+}
