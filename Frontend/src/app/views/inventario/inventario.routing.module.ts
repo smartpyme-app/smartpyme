@@ -59,9 +59,9 @@ const routes: Routes = [
 
         { path: 'consignas', canActivate: [InventarioOperacionesAdminGuard, PermissionGuard], data: { permission: 'compras.consignas.ver' }, component: ProductosConsignasComprasComponent, title: 'Consignas' },
         { path: 'consigna-kardex', canActivate: [InventarioOperacionesAdminGuard, PermissionGuard], data: { permission: 'inventario.consigna_kardex.ver' }, component: ConsignaKardexComponent, title: 'Kardex consigna' },
-        { path: 'consigna-custodia', canActivate: [InventarioOperacionesAdminGuard, PermissionGuard], data: { permission: 'inventario.consigna_kardex.ver' }, component: ConsignaCustodiaComponent, title: 'Stock consigna' },
+        { path: 'consigna-custodia', canActivate: [InventarioOperacionesAdminGuard, PermissionGuard], data: { permission: 'inventario.consigna_kardex.ver' }, component: ConsignaCustodiaComponent, title: 'Ventas en consigna' },
         { path: 'consignas/custodia', redirectTo: 'consigna-custodia', pathMatch: 'full' },
-        { path: 'consignas/ventas', canActivate: [InventarioOperacionesAdminGuard, PermissionGuard], data: { permission: 'ventas.consignas.ver' }, component: ProductosConsignasComponent, title: 'Consignas' },
+        { path: 'consignas/ventas', canActivate: [InventarioOperacionesAdminGuard, PermissionGuard], data: { permission: 'ventas.consignas.ver' }, component: ProductosConsignasComponent, title: 'Productos en consigna' },
         { path: 'consignas-compras', redirectTo: 'consignas', pathMatch: 'full' },
 
         { path: 'materias-primas', component: MateriasPrimaComponent, title: 'Materias primas' },

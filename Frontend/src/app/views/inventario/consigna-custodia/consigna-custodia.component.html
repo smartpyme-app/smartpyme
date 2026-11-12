@@ -1,9 +1,5 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
-  <h2 class="page-heading">Stock consigna</h2>
-  <div class="d-flex gap-2 align-items-center">
-    <a routerLink="/consignas/ventas" class="btn btn-light btn-sm">Consignas ventas</a>
-    <a routerLink="/consigna-kardex" class="btn btn-outline-secondary btn-sm">Kardex consigna</a>
-  </div>
+  <h2 class="page-heading">Ventas en consigna</h2>
 </section>
 
 @if (!moduloActivo) {
@@ -13,95 +9,122 @@
 } @else {
   <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
-      <div class="col">
-        @if (filasFiltradas()?.length) {
-          <span class="text-muted">Mostrando {{ filasFiltradas().length }} registros</span>
+      <div class="col-md-6 mb-2">
+        @if (ventasConsigna?.total) {
+          <span class="text-muted d-flex align-items-center gap-2 flex-wrap">
+            Mostrando
+            <select
+              name="paginate"
+              class="form-select w-auto"
+              [(ngModel)]="filtros.paginate"
+              (change)="cambiarPaginacion()">
+              <option [ngValue]="25">25</option>
+              <option [ngValue]="50">50</option>
+              <option [ngValue]="100">100</option>
+            </select>
+            de {{ ventasConsigna.total }} registros
+          </span>
         }
       </div>
-      <div class="col">
+      <div class="col-md-6 mb-2">
         <div class="d-flex gap-2">
+          <button
+            [disabled]="downloading"
+            tooltip="Descargar reporte de ventas de consigna"
+            (click)="descargar()"
+            class="btn btn-default tcla-F6">
+            <img appLazyImage="/assets/icons/download.png" class="icon">
+          </button>
           <input
             type="text"
             name="buscador"
-            class="form-control"
-            placeholder="Buscar cliente o producto..."
-            [(ngModel)]="filtros.buscador" />
-          <button type="button" class="btn btn-default tcla-F6" [disabled]="loading" (click)="loadAll()" tooltip="Actualizar (F6)">
-            <i *ngIf="!loading" class="fa fa-filter"></i>
+            class="form-control pull-right"
+            placeholder="Buscar por cliente, documento o Nº de factura..."
+            [(ngModel)]="filtros.buscador"
+            (keyup.enter)="loadAll()" />
+          <button
+            type="button"
+            class="btn btn-default tcla-F6"
+            [disabled]="loading"
+            (click)="loadAll()"
+            tooltip="Buscar (F6)">
+            <i *ngIf="!loading" class="fa fa-search"></i>
             <i *ngIf="loading" class="fa fa-ellipsis-h"></i>
           </button>
         </div>
       </div>
     </div>
 
-    @if (conteo.id_cliente) {
-      <div class="card mb-3 border-primary">
-        <div class="card-body">
-          <h5 class="card-title">Conteo físico</h5>
-          <p class="mb-2 text-muted small">{{ conteo._label }}</p>
-          <div class="row g-2 align-items-end">
-            <div class="col-md-3">
-              <label class="form-label">Cantidad contada</label>
-              <input type="number" min="0" step="0.0001" class="form-control" [(ngModel)]="conteo.cantidad_fisica" name="cantidad_fisica" />
-            </div>
-            <div class="col-md-5">
-              <label class="form-label">Nota (opcional)</label>
-              <input type="text" class="form-control" [(ngModel)]="conteo.nota" name="nota" />
-            </div>
-            <div class="col-md-4 d-flex gap-2">
-              <button type="button" class="btn btn-success" [disabled]="guardandoConteo" (click)="enviarConteo()">Registrar conteo</button>
-              <button type="button" class="btn btn-outline-secondary" (click)="conteo = {}">Cancelar</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    }
-
     <div class="row">
       <div class="col-12 table-responsive">
-        <table class="table table-borderless table-hover align-middle">
+        <table class="table table-borderless table-hover align-middle mb-0">
           <thead>
             <tr>
+              <th>Fecha</th>
               <th>Cliente</th>
-              <th class="d-none d-md-table-cell">Producto</th>
-              <th class="d-none d-md-table-cell">Código</th>
-              <th>Bodega</th>
-              <th class="text-end">Stock en custodia</th>
-              <th class="text-center">Más</th>
+              <th class="d-none d-md-table-cell">Documento / Factura</th>
+              <th class="d-none d-md-table-cell">Fecha pago</th>
+              <th>Estado</th>
+              <th class="text-end">Total</th>
+              <th class="text-center"><i class="fa fa-cog"></i></th>
             </tr>
           </thead>
           <tbody>
-            @if (filasFiltradas()?.length < 1 && !loading) {
+            @if ((ventasConsigna?.data?.length ?? 0) < 1 && !loading) {
               <tr>
-                <td colspan="6" class="text-center">
-                  <span class="badge bg-primary">No hay saldos en custodia de clientes</span>
+                <td colspan="7" class="text-center">
+                  <span class="badge bg-primary">No hay ventas en consigna</span>
                 </td>
               </tr>
             }
             @if (loading) {
               <tr>
-                <td colspan="6" class="text-center">
+                <td colspan="7" class="text-center">
                   <span class="badge bg-primary">Cargando...</span>
                 </td>
               </tr>
             }
-            @for (f of filasFiltradas(); track f.id_cliente + '-' + f.id_producto + '-' + f.id_bodega) {
+            @for (venta of ventasConsigna?.data; track venta.id) {
               <tr>
-                <td>{{ nombreCliente(f) }}</td>
-                <td class="d-none d-md-table-cell">{{ f.producto?.nombre || '—' }}</td>
-                <td class="d-none d-md-table-cell">{{ f.producto?.codigo || '—' }}</td>
-                <td>{{ f.bodega?.nombre || f.id_bodega }}</td>
-                <td class="text-end">{{ f.cantidad | number:'1.0-4' }}</td>
+                <td>{{ venta.fecha | date: 'dd/MM/yyyy' }}</td>
+                <td>{{ nombreClienteVenta(venta) | truncate: 30 }}</td>
+                <td class="d-none d-md-table-cell">{{ documentoVenta(venta) }}</td>
+                <td class="d-none d-md-table-cell">{{ venta.fecha_pago | date: 'dd/MM/yyyy' }}</td>
+                <td>
+                  <span
+                    class="badge py-2 bg-info"
+                    style="font-size: 0.8rem;">{{ venta.estado }}</span>
+                </td>
+                <td class="text-end">{{ venta.total | currency }}</td>
                 <td class="text-center">
-                  <button type="button" class="btn btn-sm btn-default" (click)="prepararConteo(f)" tooltip="Registrar conteo físico">
-                    <img src="/assets/icons/edit.png" class="icon" alt="">
-                  </button>
+                  <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                    <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                  </span>
+                  <ng-template #accionesTemplate>
+                    <div class="list-group border-0">
+                      <a
+                        routerLink="/venta/consigna/revisar/{{ venta.id }}"
+                        class="list-group-item list-group-item-action border-0 click">
+                        <i class="fas fa-fw fa-hand-holding-usd"></i> Revisar consigna
+                      </a>
+                      <a
+                        routerLink="/venta/{{ venta.id }}"
+                        class="list-group-item list-group-item-action border-0 click">
+                        <i class="fa fa-fw fa-magnifying-glass"></i> Ver venta
+                      </a>
+                    </div>
+                  </ng-template>
                 </td>
               </tr>
             }
           </tbody>
         </table>
       </div>
+      @if (ventasConsigna?.last_page > 1) {
+        <div class="col-12">
+          <app-pagination [items]="ventasConsigna" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+      }
     </div>
   </section>
 }

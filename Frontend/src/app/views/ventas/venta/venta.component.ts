@@ -45,6 +45,7 @@ export class VentaComponent implements OnInit {
         puedeFacturarVentaCuota(venta, this.creditosClientesActivo);
     public queryFacturarVenta = queryFacturarVenta;
     public usuario:any = {};
+    public moduloConsignacionesActivo = false;
     public loading = false;
     public saving = false;
     public type: string = '';
@@ -91,6 +92,18 @@ export class VentaComponent implements OnInit {
                     this.cdr.markForCheck();
                 },
             });
+        this.funcionalidadesService.verificarAcceso('modulo-consignaciones')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (acceso) => {
+                    this.moduloConsignacionesActivo = !!acceso;
+                    this.cdr.markForCheck();
+                },
+                error: () => {
+                    this.moduloConsignacionesActivo = false;
+                    this.cdr.markForCheck();
+                },
+            });
         this.loadAll();
     }
 
@@ -124,6 +137,46 @@ export class VentaComponent implements OnInit {
     }
 
     readonly detalleTieneExoneracionCr = detalleTieneExoneracionCr;
+
+    public etiquetaOrigenStockDetalle(detalle: any): string {
+        const origen = detalle?.origen_stock;
+        if (origen === 'consigna_compra') {
+            return 'Consigna compra';
+        }
+        return 'Bodega normal';
+    }
+
+    public textoLoteDetalle(detalle: any): string | null {
+        if (!this.apiService.isLotesActivo()) {
+            return null;
+        }
+        const partes: string[] = [];
+        const lote = detalle?.lote;
+        if (lote?.numero_lote) {
+            partes.push(`Lote ${lote.numero_lote}`);
+            if (lote.fecha_vencimiento) {
+                partes.push(`vence ${lote.fecha_vencimiento}`);
+            }
+        }
+        const asignaciones = detalle?.lotes_asignados ?? detalle?.lotesAsignados;
+        if (Array.isArray(asignaciones) && asignaciones.length) {
+            for (const a of asignaciones) {
+                const ln = a?.lote?.numero_lote ?? a?.numero_lote;
+                const fv = a?.lote?.fecha_vencimiento;
+                if (ln) {
+                    let t = `Lote ${ln}`;
+                    if (a?.cantidad != null) {
+                        t += ` (${a.cantidad})`;
+                    }
+                    if (fv) {
+                        t += ` vence ${fv}`;
+                    }
+                    partes.push(t);
+                }
+            }
+        }
+        return partes.length ? partes.join(' · ') : null;
+    }
 
     etiquetaTipoGravado(detalle: any): string {
         const t = (detalle?.tipo_gravado || 'gravada').toLowerCase();

@@ -79,7 +79,10 @@
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proyectos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/share-2.png" class="icon me-2">Proyectos</a></li>
                 }
                 @if (apiService.canAccederOperacionesInventario() && apiService.hasPermission('ventas.consignas.ver')) {
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/consignas/ventas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/package.png" class="icon me-2">Consignas</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/consignas/ventas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/package.png" class="icon me-2">Productos en consigna</a></li>
+                }
+                @if (apiService.canAccederOperacionesInventario() && apiService.hasPermission('inventario.consigna_kardex.ver')) {
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/consignas/custodia']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/users.png" class="icon me-2">Consignas</a></li>
                 }
                 @if (tieneGiftCardsHabilitada) {
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gift-cards/consulta']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/money-transaction.png" class="icon me-2">Gift Cards</a></li>

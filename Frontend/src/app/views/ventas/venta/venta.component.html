@@ -351,6 +351,12 @@
                                     </span>
                                     <br>
                                     <small class="text-muted text-tiny">{{ detalle?.producto?.tipo }}</small>
+                                    @if (moduloConsignacionesActivo) {
+                                      <br><small class="text-muted">Inventario: <span class="badge bg-light text-dark border">{{ etiquetaOrigenStockDetalle(detalle) }}</span></small>
+                                    }
+                                    @if (textoLoteDetalle(detalle); as loteTxt) {
+                                      <br><small class="text-muted">{{ loteTxt }}</small>
+                                    }
                                     @if (esFeCostaRica() && detalleTieneExoneracionCr(detalle)) {
                                       <br><span class="badge bg-info mt-1">{{ 'country.tax.taxExemptionBadge' | translate }}</span>
                                       @if (detalle.fe_cr_exoneracion?.numero_documento) {

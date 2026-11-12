@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Subject, of, Subscription } from 'rxjs';
@@ -41,12 +41,14 @@ export class ConsignaKardexComponent implements OnInit, OnDestroy {
     id_bodega: '',
     lote_id: '',
     tipo: '',
+    alcance: 'pool',
   };
 
   constructor(
     public apiService: ApiService,
     private alertService: AlertService,
-    private funcionalidadesService: FuncionalidadesService
+    private funcionalidadesService: FuncionalidadesService,
+    private route: ActivatedRoute
   ) {
     this.searchSub = this.searchProductos$.pipe(
       debounceTime(300),
@@ -75,6 +77,10 @@ export class ConsignaKardexComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    const alcance = this.route.snapshot.queryParamMap.get('alcance');
+    if (alcance === 'custodia') {
+      this.filtros.alcance = 'custodia';
+    }
     const hace30 = new Date();
     hace30.setDate(hace30.getDate() - 30);
     this.filtros.fecha_ini = hace30.toISOString().slice(0, 10);
@@ -242,7 +248,8 @@ export class ConsignaKardexComponent implements OnInit, OnDestroy {
     let existencia = 0;
     const filas = sorted.map((m, i) => {
       const qty = Number(m.cantidad) || 0;
-      const esLiquidacion = m.tipo === 'liquidacion_proveedor';
+      const esLiquidacion =
+        m.tipo === 'liquidacion_proveedor' || m.tipo === 'liquidacion_cliente' || m.es_registro_contable === true;
       const afectaSaldo = m.afecta_saldo_consigna !== false && !esLiquidacion;
       const entrada = afectaSaldo && qty > 0 ? qty : 0;
       const salida = esLiquidacion

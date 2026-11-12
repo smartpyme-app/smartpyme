@@ -6,7 +6,11 @@
   <section class="bg-white p-4 rounded mb-3 d-flex justify-content-between align-items-center">
     <div>
       <h2 class="h5 mb-0">Kardex de consignaciones</h2>
-      <small class="text-muted">Solo consigna de compra. Ventas con stock propio y remisiones a clientes van al kardex de producto y custodia.</small>
+      @if (filtros.alcance === 'custodia') {
+        <small class="text-muted">Custodia clientes: entregas, liquidaciones (facturación parcial/total, solo evidencia) y devoluciones.</small>
+      } @else {
+        <small class="text-muted">Solo consigna de compra. Ventas con stock propio y remisiones a clientes van al kardex de producto y custodia.</small>
+      }
     </div>
     <div class="d-flex gap-2 align-items-center">
       @if (apiService.hasPermission('inventario.consigna_kardex.exportar')) {
@@ -60,7 +64,7 @@
           (change)="loadAll()"
           [disabled]="!filtros.id_bodega || lotesCargando">
           <option value="">{{ lotesCargando ? 'Cargando lotes…' : 'Seleccione un lote' }}</option>
-          <option [value]="lote.id" *ngFor="let lote of lotes">{{ lote.numero_lote }} (Stock: {{ lote.stock | number:'1.0' }})</option>
+          <option [value]="lote.id" *ngFor="let lote of lotes">{{ lote.numero_lote }}</option>
         </select>
         <small class="text-muted" *ngIf="!lotesCargando && lotes.length === 0 && filtros.id_producto && filtros.id_bodega">
           No se encontraron lotes para filtrar; al buscar se muestran todos los movimientos de consigna del producto en esta bodega.
