@@ -20,6 +20,9 @@ final class ModulosOperativosPermissionsTest extends TestCase
         $this->assertRouteHasPermission('api/productos/consigna-kardex', 'GET', 'permission:inventario.consigna_kardex.ver');
         $this->assertRouteHasPermission('api/productos/consigna-kardex/exportar', 'GET', 'permission:inventario.consigna_kardex.exportar');
         $this->assertRouteHasPermission('api/productos/consigna-custodia', 'GET', 'permission:inventario.consigna_kardex.ver');
+        $this->assertRouteHasPermission('api/productos/consigna-custodia/ventas', 'GET', 'permission:inventario.consigna_kardex.ver');
+        $this->assertRouteHasPermission('api/productos/consigna-custodia/devoluciones', 'GET', 'permission:inventario.consigna_kardex.ver');
+        $this->assertRouteHasPermission('api/productos/consigna-custodia/devoluciones/exportar', 'GET', 'permission:inventario.consigna_kardex.ver');
         $this->assertRouteHasPermission('api/productos/consigna-custodia/conteo', 'POST', 'permission:inventario.consigna_kardex.ver');
     }
 

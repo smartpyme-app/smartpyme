@@ -30,9 +30,9 @@
 
 - `ConsignaProductosVentaListadoService`, `ConsignasExport`, UI + export compras detalle lote.
 
-## P3 — Tab devoluciones custodia + export por cliente
+## P3 — Tab devoluciones custodia + export por cliente — HECHO
 
-- `consigna-custodia`, `ConsignaCustodiaVentasExport`.
+- Tab devoluciones, `ConsignaCustodiaDevolucionesExport`, export exige `id_cliente`.
 
 ## P4 — PDFs con lote/vencimiento
 

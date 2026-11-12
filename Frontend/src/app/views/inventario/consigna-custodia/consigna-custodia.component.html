@@ -1,5 +1,5 @@
-<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
-  <h2 class="page-heading">Ventas en consigna</h2>
+<section class="d-flex flex-wrap justify-content-between align-items-center gap-2 bg-white p-2 p-md-4 rounded mb-3">
+  <h2 class="page-heading mb-0">Custodia consigna (ventas)</h2>
 </section>
 
 @if (!moduloActivo) {
@@ -8,9 +8,30 @@
   </section>
 } @else {
   <section class="bg-white p-4 rounded mb-3">
+    <ul class="nav nav-tabs mb-3">
+      <li class="nav-item">
+        <button
+          type="button"
+          class="nav-link"
+          [class.active]="tabActiva === 'ventas'"
+          (click)="cambiarTab('ventas')">
+          Ventas en consigna
+        </button>
+      </li>
+      <li class="nav-item">
+        <button
+          type="button"
+          class="nav-link"
+          [class.active]="tabActiva === 'devoluciones'"
+          (click)="cambiarTab('devoluciones')">
+          Devoluciones de consigna
+        </button>
+      </li>
+    </ul>
+
     <div class="row mb-3">
       <div class="col-md-6 mb-2">
-        @if (ventasConsigna?.total) {
+        @if (etiquetaPaginacion()) {
           <span class="text-muted d-flex align-items-center gap-2 flex-wrap">
             Mostrando
             <select
@@ -22,15 +43,15 @@
               <option [ngValue]="50">50</option>
               <option [ngValue]="100">100</option>
             </select>
-            de {{ ventasConsigna.total }} registros
+            de {{ etiquetaPaginacion() }} registros
           </span>
         }
       </div>
       <div class="col-md-6 mb-2">
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap">
           <button
             [disabled]="downloading"
-            tooltip="Descargar reporte de ventas de consigna"
+            [tooltip]="tabActiva === 'ventas' ? 'Descargar ventas en consigna del cliente' : 'Descargar devoluciones del cliente'"
             (click)="descargar()"
             class="btn btn-default tcla-F6">
             <img appLazyImage="/assets/icons/download.png" class="icon">
@@ -38,93 +59,184 @@
           <input
             type="text"
             name="buscador"
-            class="form-control pull-right"
-            placeholder="Buscar por cliente, documento o Nº de factura..."
+            class="form-control"
+            style="min-width: 160px; flex: 1"
+            placeholder="Buscar cliente, documento o Nº..."
             [(ngModel)]="filtros.buscador"
-            (keyup.enter)="loadAll()" />
+            (keyup.enter)="buscar()" />
           <button
             type="button"
             class="btn btn-default tcla-F6"
             [disabled]="loading"
-            (click)="loadAll()"
+            (click)="buscar()"
             tooltip="Buscar (F6)">
-            <i *ngIf="!loading" class="fa fa-search"></i>
-            <i *ngIf="loading" class="fa fa-ellipsis-h"></i>
+            @if (!loading) {
+              <i class="fa fa-search"></i>
+            } @else {
+              <i class="fa fa-ellipsis-h"></i>
+            }
           </button>
         </div>
       </div>
     </div>
 
-    <div class="row">
-      <div class="col-12 table-responsive">
-        <table class="table table-borderless table-hover align-middle mb-0">
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Cliente</th>
-              <th class="d-none d-md-table-cell">Documento / Factura</th>
-              <th class="d-none d-md-table-cell">Fecha pago</th>
-              <th>Estado</th>
-              <th class="text-end">Total</th>
-              <th class="text-center"><i class="fa fa-cog"></i></th>
-            </tr>
-          </thead>
-          <tbody>
-            @if ((ventasConsigna?.data?.length ?? 0) < 1 && !loading) {
-              <tr>
-                <td colspan="7" class="text-center">
-                  <span class="badge bg-primary">No hay ventas en consigna</span>
-                </td>
-              </tr>
-            }
-            @if (loading) {
-              <tr>
-                <td colspan="7" class="text-center">
-                  <span class="badge bg-primary">Cargando...</span>
-                </td>
-              </tr>
-            }
-            @for (venta of ventasConsigna?.data; track venta.id) {
-              <tr>
-                <td>{{ venta.fecha | date: 'dd/MM/yyyy' }}</td>
-                <td>{{ nombreClienteVenta(venta) | truncate: 30 }}</td>
-                <td class="d-none d-md-table-cell">{{ documentoVenta(venta) }}</td>
-                <td class="d-none d-md-table-cell">{{ venta.fecha_pago | date: 'dd/MM/yyyy' }}</td>
-                <td>
-                  <span
-                    class="badge py-2 bg-info"
-                    style="font-size: 0.8rem;">{{ venta.estado }}</span>
-                </td>
-                <td class="text-end">{{ venta.total | currency }}</td>
-                <td class="text-center">
-                  <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
-                    <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                  </span>
-                  <ng-template #accionesTemplate>
-                    <div class="list-group border-0">
-                      <a
-                        routerLink="/venta/consigna/revisar/{{ venta.id }}"
-                        class="list-group-item list-group-item-action border-0 click">
-                        <i class="fas fa-fw fa-hand-holding-usd"></i> Revisar consigna
-                      </a>
-                      <a
-                        routerLink="/venta/{{ venta.id }}"
-                        class="list-group-item list-group-item-action border-0 click">
-                        <i class="fa fa-fw fa-magnifying-glass"></i> Ver venta
-                      </a>
-                    </div>
-                  </ng-template>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-      @if (ventasConsigna?.last_page > 1) {
-        <div class="col-12">
-          <app-pagination [items]="ventasConsigna" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
-      }
+  <div class="row mb-3">
+    <div class="col-md-6 col-lg-4">
+      <label class="form-label small text-muted mb-1">Cliente</label>
+      <ng-select
+        [items]="clientes"
+        bindLabel="nombre_completo"
+        bindValue="id"
+        [(ngModel)]="filtros.id_cliente"
+        (change)="onFiltroCliente()"
+        placeholder="Todos los clientes"
+        [clearable]="true"
+        class="form-select p-0 border-0 bg-default">
+      </ng-select>
+      <p class="small text-muted mb-0 mt-1">La descarga Excel requiere cliente seleccionado.</p>
     </div>
+  </div>
+
+    @if (tabActiva === 'ventas') {
+      <div class="row">
+        <div class="col-12 table-responsive">
+          <table class="table table-borderless table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th class="d-none d-md-table-cell">Documento / Factura</th>
+                <th class="d-none d-md-table-cell">Fecha pago</th>
+                <th>Estado</th>
+                <th class="text-end">Total</th>
+                <th class="text-center"><i class="fa fa-cog"></i></th>
+              </tr>
+            </thead>
+            <tbody>
+              @if ((ventasConsigna?.data?.length ?? 0) < 1 && !loading) {
+                <tr>
+                  <td colspan="7" class="text-center">
+                    <span class="badge bg-primary">No hay ventas en consigna</span>
+                  </td>
+                </tr>
+              }
+              @if (loading) {
+                <tr>
+                  <td colspan="7" class="text-center">
+                    <span class="badge bg-primary">Cargando...</span>
+                  </td>
+                </tr>
+              }
+              @for (venta of ventasConsigna?.data; track venta.id) {
+                <tr>
+                  <td>{{ venta.fecha | date: 'dd/MM/yyyy' }}</td>
+                  <td>{{ nombreClienteVenta(venta) | truncate: 30 }}</td>
+                  <td class="d-none d-md-table-cell">{{ documentoVenta(venta) }}</td>
+                  <td class="d-none d-md-table-cell">{{ venta.fecha_pago | date: 'dd/MM/yyyy' }}</td>
+                  <td>
+                    <span class="badge py-2 bg-info" style="font-size: 0.8rem;">{{ venta.estado }}</span>
+                  </td>
+                  <td class="text-end">{{ venta.total | currency }}</td>
+                  <td class="text-center">
+                    <span class="btn" [popover]="accionesVenta" [outsideClick]="true" tooltip="Acciones">
+                      <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                    </span>
+                    <ng-template #accionesVenta>
+                      <div class="list-group border-0">
+                        <a
+                          routerLink="/venta/consigna/revisar/{{ venta.id }}"
+                          class="list-group-item list-group-item-action border-0 click">
+                          <i class="fas fa-fw fa-hand-holding-usd"></i> Revisar consigna
+                        </a>
+                        <a
+                          routerLink="/venta/{{ venta.id }}"
+                          class="list-group-item list-group-item-action border-0 click">
+                          <i class="fa fa-fw fa-magnifying-glass"></i> Ver venta
+                        </a>
+                      </div>
+                    </ng-template>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (ventasConsigna?.last_page > 1) {
+          <div class="col-12">
+            <app-pagination [items]="ventasConsigna" (setPagination)="setPagination($event)"></app-pagination>
+          </div>
+        }
+      </div>
+    }
+
+    @if (tabActiva === 'devoluciones') {
+      <div class="row">
+        <div class="col-12 table-responsive">
+          <table class="table table-borderless table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th class="d-none d-md-table-cell">Devolución</th>
+                <th class="d-none d-md-table-cell">Remisión origen</th>
+                <th class="text-end">Total</th>
+                <th class="text-center"><i class="fa fa-cog"></i></th>
+              </tr>
+            </thead>
+            <tbody>
+              @if ((devolucionesConsigna?.data?.length ?? 0) < 1 && !loading) {
+                <tr>
+                  <td colspan="6" class="text-center">
+                    <span class="badge bg-primary">No hay devoluciones de consigna</span>
+                  </td>
+                </tr>
+              }
+              @if (loading) {
+                <tr>
+                  <td colspan="6" class="text-center">
+                    <span class="badge bg-primary">Cargando...</span>
+                  </td>
+                </tr>
+              }
+              @for (dev of devolucionesConsigna?.data; track dev.id) {
+                <tr>
+                  <td>{{ dev.fecha | date: 'dd/MM/yyyy' }}</td>
+                  <td>{{ nombreClienteDevolucion(dev) | truncate: 30 }}</td>
+                  <td class="d-none d-md-table-cell">{{ documentoDevolucion(dev) }}</td>
+                  <td class="d-none d-md-table-cell">{{ ventaOrigenDevolucion(dev) }}</td>
+                  <td class="text-end">{{ dev.total | currency }}</td>
+                  <td class="text-center">
+                    <span class="btn" [popover]="accionesDev" [outsideClick]="true" tooltip="Acciones">
+                      <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                    </span>
+                    <ng-template #accionesDev>
+                      <div class="list-group border-0">
+                        <a
+                          routerLink="/devolucion/venta/{{ dev.id }}"
+                          class="list-group-item list-group-item-action border-0 click">
+                          <i class="fa fa-fw fa-magnifying-glass"></i> Ver devolución
+                        </a>
+                        @if (dev.id_venta) {
+                          <a
+                            routerLink="/venta/{{ dev.id_venta }}"
+                            class="list-group-item list-group-item-action border-0 click">
+                            <i class="fa fa-fw fa-file-invoice"></i> Ver remisión
+                          </a>
+                        }
+                      </div>
+                    </ng-template>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (devolucionesConsigna?.last_page > 1) {
+          <div class="col-12">
+            <app-pagination [items]="devolucionesConsigna" (setPagination)="setPagination($event)"></app-pagination>
+          </div>
+        }
+      </div>
+    }
   </section>
 }

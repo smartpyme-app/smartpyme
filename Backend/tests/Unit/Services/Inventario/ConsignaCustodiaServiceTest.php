@@ -3,12 +3,29 @@
 namespace Tests\Unit\Services\Inventario;
 
 use App\Constants\ConsignaMovimientoTipoConstants;
+use App\Models\Admin\Empresa;
 use App\Models\Inventario\ConsignaMovimiento;
 use App\Services\Inventario\ConsignaCustodiaService;
+use Mockery;
 use Tests\TestCase;
 
 class ConsignaCustodiaServiceTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
+    public function test_incluir_lote_en_export_requiere_ledger_y_lotes(): void
+    {
+        $service = new ConsignaCustodiaService();
+        $empresa = Mockery::mock(Empresa::class);
+        $empresa->shouldReceive('isModuloConsignacionesLedgerActivo')->andReturn(true);
+        $empresa->shouldReceive('isLotesActivo')->andReturn(true);
+        $this->assertTrue($service->incluirLoteEnExport($empresa));
+    }
+
     public function test_delta_entrega_usa_valor_absoluto(): void
     {
         $service = new ConsignaCustodiaService();

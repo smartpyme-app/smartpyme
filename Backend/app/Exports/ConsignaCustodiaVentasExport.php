@@ -2,8 +2,10 @@
 
 namespace App\Exports;
 
-use App\Models\Ventas\Detalle as DetalleVenta;
+use App\Models\Admin\Empresa;
+use App\Services\Inventario\ConsignaCustodiaService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -12,14 +14,21 @@ class ConsignaCustodiaVentasExport implements FromCollection, WithHeadings, With
 {
     private ?Request $request = null;
 
+    private ?Empresa $empresa = null;
+
+    private bool $incluirLote = false;
+
     public function filter(Request $request): void
     {
         $this->request = $request;
+        $this->empresa = Empresa::query()->find(Auth::user()->id_empresa);
+        $this->incluirLote = app(ConsignaCustodiaService::class)->incluirLoteEnExport($this->empresa);
     }
 
     public function headings(): array
     {
-        return [
+        $headings = [
+            'Id cliente',
             'Fecha venta',
             'Cliente',
             'Documento',
@@ -27,15 +36,22 @@ class ConsignaCustodiaVentasExport implements FromCollection, WithHeadings, With
             'Fecha pago',
             'Producto',
             'Código',
-            'Cantidad en consigna',
-            'Precio unitario',
-            'Total línea',
         ];
+        if ($this->incluirLote) {
+            $headings[] = 'Lote';
+            $headings[] = 'Vencimiento lote';
+        }
+        $headings[] = 'Cantidad en consigna';
+        $headings[] = 'Precio unitario';
+        $headings[] = 'Total línea';
+
+        return $headings;
     }
 
     public function map($row): array
     {
-        return [
+        $fields = [
+            $row['id_cliente'],
             $row['fecha'],
             $row['cliente'],
             $row['documento'],
@@ -43,57 +59,29 @@ class ConsignaCustodiaVentasExport implements FromCollection, WithHeadings, With
             $row['fecha_pago'],
             $row['producto'],
             $row['codigo'],
-            $row['cantidad'],
-            $row['precio'],
-            $row['total_linea'],
         ];
+        if ($this->incluirLote) {
+            $fields[] = $row['lote_numero'] ?? '';
+            $fields[] = $row['lote_vencimiento'] ?? '';
+        }
+        $fields[] = $row['cantidad'];
+        $fields[] = $row['precio'];
+        $fields[] = $row['total_linea'];
+
+        return $fields;
     }
 
     public function collection()
     {
-        $request = $this->request ?? new Request();
+        $user = Auth::user();
+        if (! $this->request || ! $user?->id_empresa) {
+            return collect();
+        }
 
-        $query = DetalleVenta::query()
-            ->whereHas('venta', fn ($q) => $q->where('estado', 'Consigna')->where('cotizacion', 0))
-            ->when($request->filled('buscador'), function ($q) use ($request) {
-                $t = trim((string) $request->buscador);
-                $q->where(function ($w) use ($t) {
-                    $w->whereHas('venta', function ($v) use ($t) {
-                        $v->where(function ($vq) use ($t) {
-                            $vq->where('correlativo', 'like', '%' . $t . '%');
-                            if (ctype_digit($t)) {
-                                $vq->orWhere('correlativo', (int) $t);
-                            }
-                            $vq->orWhere('nombre_cliente', 'like', '%' . $t . '%')
-                                ->orWhereHas('documento', fn ($d) => $d->where('nombre', 'like', '%' . $t . '%'));
-                        });
-                    })->orWhereHas('producto', function ($p) use ($t) {
-                        $p->where('nombre', 'like', '%' . $t . '%')
-                            ->orWhere('codigo', 'like', '%' . $t . '%');
-                    });
-                });
-            })
-            ->with(['producto:id,nombre,codigo', 'venta.documento:id,nombre']);
-
-        return $query
-            ->orderByDesc('id_venta')
-            ->get()
-            ->map(function (DetalleVenta $detalle) {
-                $venta = $detalle->venta;
-                $doc = $venta->documento?->nombre ?? $venta->nombre_documento ?? 'Documento';
-
-                return [
-                    'fecha' => $venta->fecha,
-                    'cliente' => $venta->nombre_cliente,
-                    'documento' => $doc,
-                    'correlativo' => $venta->correlativo,
-                    'fecha_pago' => $venta->fecha_pago,
-                    'producto' => $detalle->producto?->nombre,
-                    'codigo' => $detalle->producto?->codigo,
-                    'cantidad' => $detalle->cantidad,
-                    'precio' => $detalle->precio,
-                    'total_linea' => $detalle->total,
-                ];
-            });
+        return app(ConsignaCustodiaService::class)->coleccionExportVentasConsigna(
+            $this->request,
+            (int) $user->id_empresa,
+            $this->empresa
+        );
     }
 }

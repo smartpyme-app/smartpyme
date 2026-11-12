@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Inventario;
 use App\Constants\ConsignaMovimientoTipoConstants;
 use App\Http\Controllers\Controller;
 use App\Models\Inventario\ConsignaCustodia;
+use App\Exports\ConsignaCustodiaDevolucionesExport;
 use App\Exports\ConsignaCustodiaVentasExport;
 use App\Services\Inventario\ConsignaCustodiaService;
 use App\Services\Inventario\ConsignaMovimientoService;
@@ -14,16 +15,38 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ConsignaCustodiaController extends Controller
 {
-    public function exportarVentas(Request $request)
+    private function empresaLedgerActiva(): array
     {
         $user = auth()->user();
         if (! $user?->id_empresa) {
-            return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
+            return ['error' => response()->json(['error' => 'Usuario sin empresa asociada'], 400)];
         }
 
         $empresa = $user->empresa()->first();
         if (! $empresa || ! $empresa->isModuloConsignacionesLedgerActivo()) {
-            return response()->json(['error' => 'Módulo de consignaciones no activo para esta empresa'], 403);
+            return ['error' => response()->json(['error' => 'Módulo de consignaciones no activo para esta empresa'], 403)];
+        }
+
+        return ['empresa' => $empresa, 'id_empresa' => (int) $user->id_empresa];
+    }
+
+    private function validarClienteParaExport(Request $request): ?\Illuminate\Http\JsonResponse
+    {
+        if (! $request->filled('id_cliente')) {
+            return response()->json(['error' => 'Debe seleccionar un cliente para exportar.'], 422);
+        }
+
+        return null;
+    }
+
+    public function exportarVentas(Request $request)
+    {
+        $ctx = $this->empresaLedgerActiva();
+        if (isset($ctx['error'])) {
+            return $ctx['error'];
+        }
+        if ($rechazo = $this->validarClienteParaExport($request)) {
+            return $rechazo;
         }
 
         $export = new ConsignaCustodiaVentasExport();
@@ -32,20 +55,44 @@ class ConsignaCustodiaController extends Controller
         return Excel::download($export, 'reporte-ventas-consigna.xlsx');
     }
 
-    public function ventas(Request $request, ConsignaCustodiaService $custodiaService)
+    public function exportarDevoluciones(Request $request)
     {
-        $user = auth()->user();
-        if (! $user?->id_empresa) {
-            return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
+        $ctx = $this->empresaLedgerActiva();
+        if (isset($ctx['error'])) {
+            return $ctx['error'];
+        }
+        if ($rechazo = $this->validarClienteParaExport($request)) {
+            return $rechazo;
         }
 
-        $empresa = $user->empresa()->first();
-        if (! $empresa || ! $empresa->isModuloConsignacionesLedgerActivo()) {
-            return response()->json(['error' => 'Módulo de consignaciones no activo para esta empresa'], 403);
+        $export = new ConsignaCustodiaDevolucionesExport();
+        $export->filter($request);
+
+        return Excel::download($export, 'reporte-devoluciones-consigna.xlsx');
+    }
+
+    public function ventas(Request $request, ConsignaCustodiaService $custodiaService)
+    {
+        $ctx = $this->empresaLedgerActiva();
+        if (isset($ctx['error'])) {
+            return $ctx['error'];
         }
 
         return response()->json(
-            $custodiaService->listarVentasConsigna($request, (int) $user->id_empresa),
+            $custodiaService->listarVentasConsigna($request, $ctx['id_empresa']),
+            200
+        );
+    }
+
+    public function devoluciones(Request $request, ConsignaCustodiaService $custodiaService)
+    {
+        $ctx = $this->empresaLedgerActiva();
+        if (isset($ctx['error'])) {
+            return $ctx['error'];
+        }
+
+        return response()->json(
+            $custodiaService->listarDevolucionesConsigna($request, $ctx['id_empresa']),
             200
         );
     }
