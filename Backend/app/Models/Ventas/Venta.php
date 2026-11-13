@@ -18,6 +18,13 @@ class Venta extends AuditableModel {
         return 'ventas';
     }
 
+    /** ponytail: payload FE/DTE vive en venta; no duplicar JSON/XML en audits */
+    protected $auditExclude = [
+        'dte',
+        'dte_invalidacion',
+        'fe_cr_exoneracion',
+    ];
+
     public const DOCUMENTOS_NO_CONTABLES = ['Cotización', 'Orden de compra'];
 
     protected $table = 'ventas';

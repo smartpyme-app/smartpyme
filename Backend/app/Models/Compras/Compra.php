@@ -15,6 +15,12 @@ class Compra extends AuditableModel {
         return 'compras';
     }
 
+    /** ponytail: mismo criterio que Venta — sin JSON/XML de emisión DTE en audits */
+    protected $auditExclude = [
+        'dte',
+        'dte_invalidacion',
+    ];
+
     protected $table = 'compras';
     protected $fillable = array(
         'tipo_dte',
