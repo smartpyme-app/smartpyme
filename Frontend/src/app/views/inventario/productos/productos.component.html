@@ -302,6 +302,11 @@
                                         class="btn text-start border-0 text-black">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalle
                                     </button>
+                                    <button *ngIf="tieneUbicaciones(producto)" type="button"
+                                        (click)="abrirVerUbicaciones(mubicacionesProducto, producto)"
+                                        class="btn text-start border-0">
+                                        <i class="fa fa-fw fa-map-marker-alt me-1"></i>Ver ubicaciones
+                                    </button>
                                     <button *ngIf="isShopifyActive() && apiService.canEditTest('productos.editar')" type="button"
                                         (click)="abrirModalShopifySync(producto)"
                                         class="btn text-start border-0">
@@ -320,6 +325,48 @@
         </div>
     </div>
 </section>
+
+<ng-template #mubicacionesProducto>
+    <div class="modal-header">
+        <h3 class="modal-title text-center w-100">
+            Ubicaciones
+            <br>
+            <small class="text-muted fw-normal">{{ productoUbicaciones?.nombre }}</small>
+        </h3>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <div class="text-center py-3" *ngIf="loadingUbicacionesModal">
+            <span class="badge bg-primary">Cargando ubicaciones...</span>
+        </div>
+        <div class="table-responsive" *ngIf="!loadingUbicacionesModal">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Bodega</th>
+                        <th>Ubicación</th>
+                        <th>Ubicación específica</th>
+                        <th>Detalle</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngIf="filasUbicacionesModal.length === 0">
+                        <td colspan="4" class="text-center text-muted">No tiene ubicaciones configuradas</td>
+                    </tr>
+                    <tr *ngFor="let fila of filasUbicacionesModal" [class.text-muted]="!fila.activa">
+                        <td>{{ fila.nombre_bodega }}</td>
+                        <td>{{ fila.ubicacion }}</td>
+                        <td>{{ fila.ubicacion_especifica }}</td>
+                        <td style="white-space: pre-line;">
+                            {{ fila.detalle }}
+                            <small class="text-muted" *ngIf="!fila.activa"> (sin existencias)</small>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</ng-template>
 
 <ng-template #mfilter>
     <div class="modal-header">

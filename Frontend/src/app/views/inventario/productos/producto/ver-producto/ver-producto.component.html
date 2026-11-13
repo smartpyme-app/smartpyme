@@ -201,6 +201,7 @@
                         <th>Sucursal</th>
                         <th class="text-center d-none d-lg-table-cell">Stock mínino</th>
                         <th class="text-center d-none d-lg-table-cell">Stock máximo</th>
+                        <th>Ubicación</th>
                         <th class="text-center">Stock</th>
                     </tr>
                 </thead>
@@ -208,7 +209,7 @@
 
                     @if (!loading && producto?.inventarios.length == 0) {
                     <tr>
-                        <td colspan="5" class="text-center">
+                        <td colspan="6" class="text-center">
                             <span class="text-muted">No tiene inventarios configurados</span>
                         </td>
                     </tr>
@@ -219,6 +220,7 @@
                         <td>{{ bodega.nombre_sucursal }}</td>
                         <td class="text-center d-none d-lg-table-cell"><span class="w-100 click d-block" (click)="openModal(mbodega, bodega)">{{ bodega.stock_minimo }}</span></td>
                         <td class="text-center d-none d-lg-table-cell"><span class="w-100 click d-block" (click)="openModal(mbodega, bodega)">{{ bodega.stock_maximo }}</span></td>
+                        <td style="white-space: pre-line;">{{ formatoUbicaciones(bodega.ubicaciones) }}</td>
                         <td class="text-center">{{ bodega.stock | number:'1.2' }}</td>
 
                     </tr>

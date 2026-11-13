@@ -96,6 +96,9 @@ export class ProductosComponent implements OnInit, OnDestroy {
     public readonly aniosReporteAnalisis = aniosDisponiblesExportDesde();
     public filtros: any = {};
     public producto: any = {};
+    public productoUbicaciones: any = {};
+    public filasUbicacionesModal: any[] = [];
+    public loadingUbicacionesModal = false;
     public bodegas: any = [];
     public categorias: any = [];
     public proveedores: any = [];
@@ -706,6 +709,49 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
     public tieneLotes(producto: any): boolean {
         return Array.isArray(producto?.lotes) && producto.lotes.length > 0;
+    }
+
+    /** Usa el flag EXISTS del API; O(1) por fila, sin recorrer inventarios. */
+    public tieneUbicaciones(producto: any): boolean {
+        return !!producto?.tiene_ubicaciones;
+    }
+
+    public abrirVerUbicaciones(template: TemplateRef<any>, producto: any): void {
+        this.productoUbicaciones = { nombre: producto?.nombre };
+        this.filasUbicacionesModal = [];
+        this.loadingUbicacionesModal = true;
+        this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
+
+        this.apiService.read('producto/', producto.id).subscribe(
+            (detalle) => {
+                this.productoUbicaciones = detalle;
+                this.filasUbicacionesModal = this.construirFilasUbicaciones(detalle);
+                this.loadingUbicacionesModal = false;
+            },
+            (error) => {
+                this.alertService.error(error);
+                this.loadingUbicacionesModal = false;
+                if (this.modalRef) {
+                    this.modalRef.hide();
+                }
+            }
+        );
+    }
+
+    private construirFilasUbicaciones(producto: any): any[] {
+        const rows: any[] = [];
+        for (const inv of producto?.inventarios || []) {
+            for (const u of inv.ubicaciones || []) {
+                rows.push({
+                    nombre_bodega: inv.nombre_bodega || '—',
+                    ubicacion: u.ubicacion || '—',
+                    ubicacion_especifica: u.ubicacion_especifica || '—',
+                    detalle: u.detalle || '—',
+                    activa: u.activa !== false,
+                });
+            }
+        }
+        return rows;
     }
 
     public abrirModalShopifySync(producto: any): void {

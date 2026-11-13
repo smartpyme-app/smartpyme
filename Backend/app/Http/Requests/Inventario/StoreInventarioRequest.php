@@ -29,6 +29,12 @@ class StoreInventarioRequest extends FormRequest
             'stock' => ['required', 'numeric', 'min:0'],
             'stock_minimo' => ['required', 'numeric', 'min:0'],
             'stock_maximo' => ['required', 'numeric', 'min:0'],
+            'ubicaciones' => ['nullable', 'array'],
+            'ubicaciones.*.id' => ['nullable', 'integer'],
+            'ubicaciones.*.ubicacion' => ['nullable', 'string', 'max:100'],
+            'ubicaciones.*.ubicacion_especifica' => ['nullable', 'string', 'max:100'],
+            'ubicaciones.*.detalle' => ['nullable', 'string'],
+            'ubicaciones.*.activa' => ['nullable', 'boolean'],
         ];
     }
 
@@ -95,6 +101,26 @@ class StoreInventarioRequest extends FormRequest
             $this->merge([
                 'stock_maximo' => (float) $this->stock_maximo,
             ]);
+        }
+
+        if ($this->has('ubicaciones') && is_array($this->ubicaciones)) {
+            $ubicaciones = [];
+            foreach ($this->ubicaciones as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                foreach (['ubicacion', 'ubicacion_especifica', 'detalle'] as $campo) {
+                    if (array_key_exists($campo, $row) && is_string($row[$campo])) {
+                        $trimmed = trim($row[$campo]);
+                        $row[$campo] = $trimmed === '' ? null : $trimmed;
+                    }
+                }
+                if (!array_key_exists('activa', $row) || $row['activa'] === null || $row['activa'] === '') {
+                    $row['activa'] = true;
+                }
+                $ubicaciones[] = $row;
+            }
+            $this->merge(['ubicaciones' => $ubicaciones]);
         }
     }
 }

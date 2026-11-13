@@ -31,7 +31,7 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
     public loading:boolean = false;
     public file:any = {};
     public plantillaUrl: string = '';
-    public modoProducto: 'nuevos' | 'actualizar' = 'nuevos';
+    public modoProducto: 'nuevos' | 'actualizar' | 'ubicaciones' = 'nuevos';
     public resultadoActualizacion: { actualizados: number; errores: { fila: number; mensaje: string }[] } | null = null;
     public descargandoActualizacion = false;
     public importResult: any = null;
@@ -190,7 +190,7 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
             && this.apiService.hasPermission('productos.actualizacion_masiva.ejecutar');
     }
 
-    elegirModoProducto(modo: 'nuevos' | 'actualizar', archivo?: HTMLInputElement): void {
+    elegirModoProducto(modo: 'nuevos' | 'actualizar' | 'ubicaciones', archivo?: HTMLInputElement): void {
         this.modoProducto = modo;
         this.resultadoActualizacion = null;
         this.file = {};
@@ -229,6 +229,10 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
     // }
 
     onSubmit(event:any) {
+        if (this.nombre.toLowerCase() === 'productos' && this.modoProducto === 'ubicaciones') {
+            this.subirUbicaciones();
+            return;
+        }
         if (this.puedeActualizarProductos() && this.modoProducto === 'actualizar') {
             this.subirActualizacionProductos();
             return;
@@ -372,6 +376,47 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
         this.loading = true;
         this.resultadoActualizacion = null;
         this.apiService.store('productos/actualizacion-masiva', formData)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+                next: (data: any) => {
+                    this.loading = false;
+                    this.resultadoActualizacion = data;
+                    this.loadAll.emit();
+                },
+                error: (error) => {
+                    this.loading = false;
+                    this.alertService.error(error);
+                    this.alertService.modal = true;
+                },
+            });
+    }
+
+    public descargarUbicaciones(event: Event): void {
+        event.preventDefault();
+        this.descargandoActualizacion = true;
+        this.apiService.download('productos/ubicaciones-importacion')
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+                next: (blob) => {
+                    this.apiService.downloadFile(blob, 'plantilla_ubicaciones_productos.xlsx');
+                    this.descargandoActualizacion = false;
+                },
+                error: (err) => {
+                    this.descargandoActualizacion = false;
+                    this.alertService.error(err?.error?.message || 'Error al descargar las ubicaciones');
+                },
+            });
+    }
+
+    private subirUbicaciones(): void {
+        if (!this.file?.file) {
+            return;
+        }
+        const formData = new FormData();
+        formData.append('file', this.file.file);
+        this.loading = true;
+        this.resultadoActualizacion = null;
+        this.apiService.store('productos/ubicaciones-importacion', formData)
             .pipe(takeUntil(this.destroy$))
             .subscribe({
                 next: (data: any) => {

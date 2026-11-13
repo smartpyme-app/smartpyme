@@ -13,16 +13,20 @@
     <app-notificaciones-container></app-notificaciones-container>
         <form #form="ngForm" (ngSubmit)="onSubmit($event)" enctype="multipart/form-data">
         <div class="row mb-4">
-            <div class="col-12 mb-3 text-center" *ngIf="nombre.toLowerCase() === 'productos' && puedeActualizarProductos()">
+            <div class="col-12 mb-3 text-center" *ngIf="nombre.toLowerCase() === 'productos'">
               <div class="btn-group btn-group-sm" role="group" aria-label="Tipo de carga">
                 <button type="button" class="btn"
                   [class.btn-primary]="modoProducto === 'nuevos'"
                   [class.btn-outline-secondary]="modoProducto !== 'nuevos'"
                   (click)="elegirModoProducto('nuevos', archivoProductos)">Productos nuevos</button>
-                <button type="button" class="btn"
+                <button type="button" class="btn" *ngIf="puedeActualizarProductos()"
                   [class.btn-primary]="modoProducto === 'actualizar'"
                   [class.btn-outline-secondary]="modoProducto !== 'actualizar'"
                   (click)="elegirModoProducto('actualizar', archivoProductos)">Actualizar existentes</button>
+                <button type="button" class="btn"
+                  [class.btn-primary]="modoProducto === 'ubicaciones'"
+                  [class.btn-outline-secondary]="modoProducto !== 'ubicaciones'"
+                  (click)="elegirModoProducto('ubicaciones', archivoProductos)">Ubicaciones</button>
               </div>
             </div>
             <!-- <div class="col-md-12">
@@ -35,7 +39,7 @@
             </div> -->
             <div class="col-md-12">
               <div class="alert bg-info text-center">
-                <p *ngIf="!(nombre.toLowerCase() === 'productos' && puedeActualizarProductos() && modoProducto === 'actualizar')">Seleccionar un archivo de Excel con el listado de sus {{ this.nombre.replace('-', ' ') }}, debe tener la misma estructura de la plantilla que se comparte a continuación. <br>
+                <p *ngIf="!(nombre.toLowerCase() === 'productos' && (modoProducto === 'actualizar' || modoProducto === 'ubicaciones'))">Seleccionar un archivo de Excel con el listado de sus {{ this.nombre.replace('-', ' ') }}, debe tener la misma estructura de la plantilla que se comparte a continuación. <br>
 
                   <!-- Productos nuevos -->
                   <span *ngIf="this.nombre === 'productos' && modoProducto !== 'actualizar'">
@@ -50,6 +54,11 @@
                   <span *ngIf="apiService.isLotesActivo()"> Con lotes activos puede editar lote, fechas y stock del lote por fila; la existencia en bodega se alinea con la suma de lotes.</span>
                   <br>
                   <a role="button" href="#" class="link-primary" (click)="descargarActualizacionProductos($event)">{{ descargandoActualizacion ? 'Descargando...' : 'Descargar productos' }}</a>
+                </p>
+                <p *ngIf="nombre.toLowerCase() === 'productos' && modoProducto === 'ubicaciones'" class="mb-0">
+                  Descargue el listado de productos y escriba la ubicación en las columnas vacías. No cambia el stock ni los demás datos del producto.<br>
+                  Una fila por producto y bodega. Si el producto está en varias bodegas, complete cada fila. Las filas sin ubicación se ignoran. El código es opcional: si lo deja vacío, el producto se identifica por el nombre.<br>
+                  <a role="button" href="#" class="link-primary" (click)="descargarUbicaciones($event)">{{ descargandoActualizacion ? 'Descargando...' : 'Descargar productos' }}</a>
                 </p>
                 <p *ngIf="nombre.toLowerCase() !== 'productos'">
 
@@ -101,7 +110,10 @@
               <div class="alert mt-3 mb-0" *ngIf="resultadoActualizacion"
                 [class.alert-success]="!resultadoActualizacion.errores?.length"
                 [class.alert-warning]="resultadoActualizacion.errores?.length">
-                <div class="fw-semibold">{{ resultadoActualizacion.actualizados }} productos actualizados.</div>
+                <div class="fw-semibold" *ngIf="modoProducto === 'ubicaciones'">
+                  {{ resultadoActualizacion.agregados || 0 }} ubicaciones agregadas, {{ resultadoActualizacion.actualizados || 0 }} actualizadas.
+                </div>
+                <div class="fw-semibold" *ngIf="modoProducto !== 'ubicaciones'">{{ resultadoActualizacion.actualizados }} productos actualizados.</div>
                 <ul class="mb-0 mt-2 small overflow-auto" style="max-height: 9rem;" *ngIf="resultadoActualizacion.errores?.length">
                   <li *ngFor="let error of resultadoActualizacion.errores">Fila {{ error.fila }}: {{ error.mensaje }}</li>
                 </ul>
@@ -109,8 +121,9 @@
 
               <div class="d-grid mt-3">
                   <button type="submit" class="btn btn-primary btn-block" [disabled]="!form.form.valid || loading">
-                      <span *ngIf="!loading && !(puedeActualizarProductos() && modoProducto === 'actualizar')">Importar</span>
-                      <span *ngIf="!loading && puedeActualizarProductos() && modoProducto === 'actualizar'">Actualizar</span>
+                      <span *ngIf="!loading && modoProducto === 'nuevos'">Importar</span>
+                      <span *ngIf="!loading && modoProducto === 'actualizar'">Actualizar</span>
+                      <span *ngIf="!loading && modoProducto === 'ubicaciones'">Importar ubicaciones</span>
                       <span *ngIf="loading">Procesando...</span>
                   </button>
               </div>

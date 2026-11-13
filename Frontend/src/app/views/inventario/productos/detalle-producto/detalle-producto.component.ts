@@ -49,6 +49,22 @@ export class DetalleProductoComponent implements OnInit {
     this.location.back();
   }
 
+  get filasUbicaciones(): any[] {
+    const rows: any[] = [];
+    for (const inv of this.producto?.inventarios || []) {
+      for (const u of inv.ubicaciones || []) {
+        rows.push({
+          nombre_bodega: inv.nombre_bodega || '—',
+          ubicacion: u.ubicacion || '—',
+          ubicacion_especifica: u.ubicacion_especifica || '—',
+          detalle: u.detalle || '—',
+          activa: u.activa !== false,
+        });
+      }
+    }
+    return rows;
+  }
+
   getPorcentajeImpuestosProducto(): number {
     if (Array.isArray(this.producto?.impuestos) && this.producto.impuestos.length > 0) {
       return this.producto.impuestos.reduce((sum: number, i: any) => sum + Number(i.porcentaje || 0), 0);
