@@ -38,8 +38,10 @@ use Illuminate\Support\Str;
 use App\Exports\PlantillaInventarioMasivoExport;
 use App\Models\Inventario\Composiciones\Composicion;
 use App\Exports\ActualizacionMasivaProductosExport;
+use App\Exports\ImportacionUbicacionesExport;
 use App\Exports\PlantillaProductosImportExport;
 use App\Imports\ActualizacionMasivaProductosImport;
+use App\Imports\ImportacionUbicacionesImport;
 use App\Support\Inventario\ActualizacionMasivaProductos;
 use App\Support\Inventario\SincronizarPrecioCatalogo;
 use Maatwebsite\Excel\HeadingRowImport;
@@ -1490,6 +1492,29 @@ class ProductosController extends Controller
         }
 
         $import = new ActualizacionMasivaProductosImport((int) Auth::user()->id_empresa, (int) Auth::id());
+        Excel::import($import, $request->file('file'));
+
+        return response()->json($import->resultado, 200);
+    }
+
+    public function descargarImportacionUbicaciones()
+    {
+        return Excel::download(
+            new ImportacionUbicacionesExport(),
+            'plantilla_ubicaciones_productos.xlsx'
+        );
+    }
+
+    public function importarUbicaciones(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls',
+        ], [
+            'file.required' => 'El archivo es obligatorio.',
+            'file.mimes' => 'El archivo debe ser Excel (.xlsx o .xls).',
+        ]);
+
+        $import = new ImportacionUbicacionesImport((int) Auth::user()->id_empresa);
         Excel::import($import, $request->file('file'));
 
         return response()->json($import->resultado, 200);
