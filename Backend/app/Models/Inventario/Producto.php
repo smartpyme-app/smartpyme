@@ -133,8 +133,8 @@ class Producto extends AuditableModel
 
     public function getNombreCategoriaAttribute()
     {
-        if ($this->relationLoaded('categoria') && $this->categoria) {
-            return $this->categoria->nombre;
+        if ($this->relationLoaded('categoria')) {
+            return $this->categoria ? $this->categoria->nombre : null;
         }
 
         return $this->categoria()->pluck('nombre')->first();

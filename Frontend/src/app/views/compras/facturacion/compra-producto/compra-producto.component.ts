@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -67,7 +67,7 @@ export class CompraProductoComponent implements OnInit {
     constructor( 
         public apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService, private sumPipe:SumPipe,
-        
+        private cdr: ChangeDetectorRef,
     ) { }
 
     ngOnInit() {
@@ -91,6 +91,7 @@ export class CompraProductoComponent implements OnInit {
                             console.error('Error en la búsqueda:', error);
                             this.productos = [];
                             this.loading = false;
+                            this.cdr.markForCheck();
                             return of([]);
                         })
                     );
@@ -100,6 +101,7 @@ export class CompraProductoComponent implements OnInit {
                 next: (results: any[]) => {
                     this.productos = Array.isArray(results) ? results : [];
                     this.loading = false;
+                    this.cdr.markForCheck();
 
                     const busqueda = this.normalizeBusqueda(this.searchControl.value);
                     if (!busqueda || !this.productos.length) {

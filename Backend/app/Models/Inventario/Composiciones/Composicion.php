@@ -17,9 +17,13 @@ class Composicion extends Model {
     protected $appends = ['nombre_producto', 'nombre_compuesto', 'precio', 'costo'];
 
     public function getNombreCompuestoAttribute(){
-        $nombre = $this->compuesto()->pluck('nombre')->first();
+        $nombre = $this->relationLoaded('compuesto')
+            ? ($this->compuesto ? $this->compuesto->nombre : null)
+            : $this->compuesto()->pluck('nombre')->first();
         if ($this->id_presentacion) {
-            $presentacion = $this->presentacion()->first();
+            $presentacion = $this->relationLoaded('presentacion')
+                ? $this->presentacion
+                : $this->presentacion()->first();
             if ($presentacion && $presentacion->nombre_comercial) {
                 $nombre = $nombre . ' (' . $presentacion->nombre_comercial . ')';
             }
@@ -28,14 +32,26 @@ class Composicion extends Model {
     }
 
     public function getNombreProductoAttribute(){
+        if ($this->relationLoaded('compuesto')) {
+            return $this->compuesto ? $this->compuesto->nombre : null;
+        }
+
         return $this->producto()->pluck('nombre')->first();
     }
-    
+
     public function getPrecioAttribute(){
+        if ($this->relationLoaded('compuesto')) {
+            return $this->compuesto ? $this->compuesto->precio : null;
+        }
+
         return $this->producto()->pluck('precio')->first();
     }
-    
+
     public function getCostoAttribute(){
+        if ($this->relationLoaded('compuesto')) {
+            return $this->compuesto ? $this->compuesto->costo : null;
+        }
+
         return $this->producto()->pluck('costo')->first();
     }
 

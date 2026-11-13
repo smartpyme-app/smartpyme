@@ -15,6 +15,10 @@ class Opcion extends Model {
     protected $appends = ['nombre_producto'];
 
     public function getNombreProductoAttribute(){
+        if ($this->relationLoaded('producto')) {
+            return $this->producto ? $this->producto->nombre : null;
+        }
+
         return $this->producto()->pluck('nombre')->first();
     }
 
