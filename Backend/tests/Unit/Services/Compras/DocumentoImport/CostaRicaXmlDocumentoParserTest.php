@@ -192,7 +192,9 @@ XML;
   </DetalleServicio>
   <ResumenFactura>
     <TotalGravado>1800</TotalGravado>
+    <TotalVenta>2000</TotalVenta>
     <TotalDescuentos>200</TotalDescuentos>
+    <TotalVentaNeta>1800</TotalVentaNeta>
     <TotalImpuesto>234</TotalImpuesto>
     <TotalComprobante>2034</TotalComprobante>
   </ResumenFactura>
@@ -204,6 +206,7 @@ XML;
         $this->assertSame(200.0, $dto->lineas[0]['descuento']);
         $mh = $dto->toMhCompatArray();
         $this->assertSame(200.0, $mh['cuerpoDocumento'][0]['montoDescu']);
+        $this->assertSame(1800.0, $mh['resumen']['subTotal']);
     }
 
     public function test_rechaza_xml_respuesta_hacienda(): void

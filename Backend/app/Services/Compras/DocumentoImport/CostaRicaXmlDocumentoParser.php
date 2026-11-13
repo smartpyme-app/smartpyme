@@ -421,6 +421,12 @@ final class CostaRicaXmlDocumentoParser implements DocumentoImportParserInterfac
         $totalVenta = XmlLocalNameHelper::floatValue(
             XmlLocalNameHelper::firstText($xp, 'TotalVenta', $ctx)
         );
+        $totalVentaNeta = XmlLocalNameHelper::floatValue(
+            XmlLocalNameHelper::firstText($xp, 'TotalVentaNeta', $ctx)
+        );
+        $totalDescuentos = XmlLocalNameHelper::floatValue(
+            XmlLocalNameHelper::firstText($xp, 'TotalDescuentos', $ctx)
+        );
         $totalImpuesto = XmlLocalNameHelper::floatValue(
             XmlLocalNameHelper::firstText($xp, 'TotalImpuesto', $ctx)
         );
@@ -428,7 +434,10 @@ final class CostaRicaXmlDocumentoParser implements DocumentoImportParserInterfac
             XmlLocalNameHelper::firstText($xp, 'TotalComprobante', $ctx)
         );
 
-        $subtotal = $totalVenta > 0 ? $totalVenta : ($totalGravado + $totalExento);
+        // TotalVenta es la suma de MontoTotal (antes del descuento). La base del gasto es la neta.
+        $subtotal = $totalVentaNeta > 0
+            ? $totalVentaNeta
+            : ($totalVenta > 0 ? max(0, $totalVenta - $totalDescuentos) : ($totalGravado + $totalExento));
 
         $tributos = [];
         if ($totalImpuesto > 0) {
