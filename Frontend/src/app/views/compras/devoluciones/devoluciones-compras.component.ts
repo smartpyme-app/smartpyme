@@ -60,7 +60,7 @@ export class DevolucionesComprasComponent extends BaseCrudComponent<any> impleme
 
     ngOnInit() {
         this.loadAll();
-        this.apiService.getAll('proveedores/list')
+        this.apiService.getAll('proveedores/list', { minimal: 1 })
             .pipe(this.untilDestroyed())
             .subscribe(proveedores => {
                 this.proveedores = proveedores;
@@ -160,7 +160,7 @@ export class DevolucionesComprasComponent extends BaseCrudComponent<any> impleme
     // Filtros
 
     openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('proveedores/list')
+        this.apiService.getAll('proveedores/list', { minimal: 1 })
             .pipe(this.untilDestroyed())
             .subscribe(proveedores => {
                 this.proveedores = proveedores;

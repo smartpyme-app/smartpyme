@@ -70,7 +70,7 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
         this.loadAll();
         this.verificarAccesoContabilidad();
 
-        this.apiService.getAll('proveedores/list').pipe(this.untilDestroyed()).subscribe(proveedores => {
+        this.apiService.getAll('proveedores/list', { minimal: 1 }).pipe(this.untilDestroyed()).subscribe(proveedores => {
             this.proveedores = proveedores;
             this.proveedoresSelect = this.mapProveedoresSelect(proveedores);
             this.cdr.markForCheck();
@@ -163,7 +163,7 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
                 this.cdr.markForCheck();
             }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         if (!this.proveedoresSelect.length) {
-            this.apiService.getAll('proveedores/list')
+            this.apiService.getAll('proveedores/list', { minimal: 1 })
                 .pipe(this.untilDestroyed())
                 .subscribe(proveedores => {
                     this.proveedores = proveedores;

@@ -156,7 +156,7 @@ export class GastosComponent implements OnInit {
             this.filtrarGastos(false);
         });
 
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
+        this.apiService.getAll('proveedores/list', { minimal: 1 }).subscribe(proveedores => { 
             this.proveedores = proveedores;
         }, error => {this.alertService.error(error); });
 

@@ -110,6 +110,9 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     public searchResults: any[] = [];
     public searchLoading: boolean = false;
     public searchProductos$ = new Subject<string>();
+    public proveedorSearch$ = new Subject<string>();
+    public proveedoresBuscando = false;
+    public aceptarBusquedaProveedor = () => true;
 
     cotizacion: any = {};
     // Propiedades para crear productos nuevos
@@ -426,6 +429,31 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             this.cdr.markForCheck();
         });
 
+        this.proveedorSearch$.pipe(
+            debounceTime(300),
+            distinctUntilChanged(),
+            switchMap((term) => {
+                const texto = (term || '').trim();
+                if (texto.length < 2) {
+                    return of(this.proveedorSeleccionadoEnLista());
+                }
+                this.proveedoresBuscando = true;
+                this.cdr.markForCheck();
+                return this.apiService.getAll('proveedores/buscar', { q: texto }).pipe(
+                    catchError(() => of([]))
+                );
+            }),
+            this.untilDestroyed()
+        ).subscribe((results) => {
+            const lista = Array.isArray(results) ? results : [];
+            const seleccionado = this.proveedorSeleccionadoEnLista()[0];
+            this.proveedores = seleccionado && !lista.some((p: any) => p.id == seleccionado.id)
+                ? [seleccionado, ...lista]
+                : lista;
+            this.proveedoresBuscando = false;
+            this.cdr.markForCheck();
+        });
+
     }
 
     ngOnInit() {
@@ -500,35 +528,22 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
         }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
-        this.sharedDataService.getProveedores()
-          .pipe(this.untilDestroyed())
-          .subscribe({
-            next: (proveedores) => {
-              this.proveedores = proveedores;
-              this.loading = false;
-              this.cdr.markForCheck();
-            },
-            error: (error) => {
-              this.alertService.error(error);
-              this.loading = false;
-              this.cdr.markForCheck();
-            }
-          });
-
-        this.sharedDataService.getProyectos()
-          .pipe(this.untilDestroyed())
-          .subscribe({
-            next: (proyectos) => {
-              this.proyectos = proyectos;
-              this.loading = false;
-              this.cdr.markForCheck();
-            },
-            error: (error) => {
-              this.alertService.error(error);
-              this.loading = false;
-              this.cdr.markForCheck();
-            }
-          });
+        if (this.apiService.auth_user()?.empresa?.modulo_proyectos) {
+          this.sharedDataService.getProyectos()
+            .pipe(this.untilDestroyed())
+            .subscribe({
+              next: (proyectos) => {
+                this.proyectos = proyectos;
+                this.loading = false;
+                this.cdr.markForCheck();
+              },
+              error: (error) => {
+                this.alertService.error(error);
+                this.loading = false;
+                this.cdr.markForCheck();
+              }
+            });
+        }
     }
 
     public cargarDocumentos(){
@@ -628,6 +643,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                   .pipe(this.untilDestroyed())
                   .subscribe(compra => {
                     this.compra = compra;
+                    this.fijarProveedorVisible(compra);
                     this.normalizarDetallesLotes();
                     // El API no envía catálogo de impuestos; si aún no hay filas, usar plantilla cargada desde /impuestos
                     if (!this.compra.impuestos || !Array.isArray(this.compra.impuestos) || this.compra.impuestos.length === 0) {
@@ -654,6 +670,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
               .pipe(this.untilDestroyed())
               .subscribe(compra => {
                 this.compra = compra;
+                this.fijarProveedorVisible(compra);
                 this.normalizarDetallesLotes();
                 // Asegurar que impuestos existe y es un array, y usar los impuestos filtrados
                 if (!this.compra.impuestos || !Array.isArray(this.compra.impuestos) || this.compra.impuestos.length === 0) {
@@ -813,6 +830,31 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         } else {
             this.compra.tipo_operacion = 'No Gravada';
         }
+    }
+
+    private proveedorSeleccionadoEnLista(): any[] {
+        const id = this.compra?.id_proveedor;
+        if (!id) {
+            return [];
+        }
+        const actual = (this.proveedores || []).find((p: any) => p.id == id);
+        return actual ? [actual] : [];
+    }
+
+    private fijarProveedorVisible(compra: any): void {
+        const id = compra?.id_proveedor;
+        if (!id || (this.proveedores || []).some((p: any) => p.id == id)) {
+            return;
+        }
+        const nombre = compra.nombre_proveedor || '';
+        this.proveedores = [{
+            id,
+            tipo: 'Persona',
+            nombre,
+            nombre_completo: nombre,
+            nombre_empresa: nombre,
+            nombre_comercial: '',
+        }];
     }
 
     // proveedor
