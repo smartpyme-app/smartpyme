@@ -4,41 +4,6 @@
 
 <section class="bg-white p-4 rounded mb-3">
     <app-activos-nav-tabs></app-activos-nav-tabs>
-
-    <div class="border rounded p-3 mb-4">
-        <h5 class="mb-3">Importación masiva de activos</h5>
-        <p class="text-muted small mb-3">Cargue activos desde Excel. La referencia debe ser única por empresa. No se generan partidas contables.</p>
-        <div class="d-flex flex-wrap gap-2 align-items-center">
-            <button type="button" class="btn btn-light" (click)="descargarPlantilla()" [disabled]="descargandoPlantilla">
-                <i class="fa fa-download"></i> Descargar plantilla
-            </button>
-            <input type="file" class="form-control form-control-sm w-auto" accept=".xlsx,.xls" (change)="onArchivoImport($event)">
-            <button type="button" class="btn btn-default" (click)="importarActivos()" [disabled]="importando || !archivoImport">
-                <i class="fa fa-upload"></i> Importar
-            </button>
-        </div>
-        @if (resultadoImport?.errores?.length) {
-            <div class="table-responsive mt-3">
-                <table class="table table-sm table-bordered mb-0">
-                    <thead>
-                        <tr>
-                            <th>Fila</th>
-                            <th>Error</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (err of resultadoImport.errores; track err.fila) {
-                            <tr>
-                                <td>{{ err.fila }}</td>
-                                <td>{{ err.mensaje }}</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
-    </div>
-
     <div class="row g-3 align-items-end mb-4">
         <div class="col-md-4">
             <label class="form-label">Período</label>

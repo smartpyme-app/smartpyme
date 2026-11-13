@@ -33,6 +33,7 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
     public plantillaUrl: string = '';
     public modoProducto: 'nuevos' | 'actualizar' = 'nuevos';
     public resultadoActualizacion: { actualizados: number; errores: { fila: number; mensaje: string }[] } | null = null;
+    public resultadoActivos: { creados: number; omitidos: number; errores: { fila: number; mensaje: string }[] } | null = null;
     public descargandoActualizacion = false;
     public importResult: any = null;
     public showResults: boolean = false;
@@ -132,7 +133,7 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
     calcularPlantillaUrl(): void {
         const nombreArchivo = this.nombre.toLowerCase();
 
-        if (nombreArchivo === 'productos') {
+        if (nombreArchivo === 'productos' || nombreArchivo === 'activos') {
             this.plantillaUrl = '';
             return;
         }
@@ -175,10 +176,20 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
         }
     }
 
+    private importUrl(): string {
+        const nombre = this.nombre.toLowerCase();
+        if (nombre === 'activos') {
+            return 'activos/import';
+        }
+
+        return `${nombre}/importar`;
+    }
+
     openModal(template: TemplateRef<any>) {
         this.calcularPlantillaUrl();
         this.modoProducto = 'nuevos';
         this.resultadoActualizacion = null;
+        this.resultadoActivos = null;
         this.file = {};
         this.alertService.modal = true;
         this.modalRef = this.modalService.show(template, { backdrop: 'static' });
@@ -204,6 +215,7 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
         this.file.file = event.target.files[0];
         this.ventasErrores = [];
         this.resultadoActualizacion = null;
+        this.resultadoActivos = null;
     }
 
     // onSubmit(event:any) {
@@ -245,10 +257,30 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
         this.loading = true;
         this.ventasErrores = [];
 
-        this.apiService.store(this.nombre.toLowerCase() + '/importar', formData).subscribe(
+        this.apiService.store(this.importUrl(), formData).subscribe(
             (data: any) => {
                 this.loading = false;
 
+                if (this.nombre.toLowerCase() === 'activos' && data && typeof data === 'object') {
+                    this.resultadoActivos = data;
+                    const errores = data.errores?.length ?? 0;
+                    const msg = `${data.creados ?? 0} activo(s) creado(s).${data.omitidos ? ` ${data.omitidos} omitido(s).` : ''}`;
+                    if (errores === 0) {
+                        this.modalRef.hide();
+                        this.alertService.modal = false;
+                        setTimeout(() => {
+                            this.alertService.success('Importación de activos', msg);
+                            this.loadAll.emit();
+                        }, 300);
+                    } else {
+                        // ponytail: errores solo en el panel del modal; evita alerta duplicada en la vista principal
+                        this.alertService.modal = true;
+                        if ((data.creados ?? 0) > 0) {
+                            this.loadAll.emit();
+                        }
+                    }
+                    return;
+                }
 
                 if (this.nombre.toLowerCase() === 'ventas') {
                     const mensaje = data && typeof data === 'object' && data.message
@@ -408,15 +440,14 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
 
     public downloadTemplate(event?: Event) {
         event?.preventDefault();
-        const url = `${this.nombre.toLowerCase()}/plantilla`;
+        const nombre = this.nombre.toLowerCase();
+        const url = nombre === 'activos' ? 'activos/import/plantilla' : `${nombre}/plantilla`;
+        const archivo = nombre === 'activos' ? 'plantilla_activos_fijos.xlsx' : `plantilla_${nombre}.xlsx`;
         this.apiService.download(url)
           .pipe(takeUntil(this.destroy$))
           .subscribe({
             next: (blob) => {
-                this.apiService.downloadFile(
-                    blob,
-                    `plantilla_${this.nombre.toLowerCase()}.xlsx`
-                );
+                this.apiService.downloadFile(blob, archivo);
             },
             error: (err) => {
                 this.alertService.error(

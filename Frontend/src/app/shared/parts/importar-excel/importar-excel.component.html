@@ -57,8 +57,13 @@
                     <a role="button" href="#" class="link-primary" (click)="downloadTemplate($event)">Descargar plantilla</a>
                   </span>
 
+                  <span *ngIf="this.nombre === 'activos'">
+                    La referencia debe ser única por empresa. Si la categoría no existe, se creará (desde plantilla del país o con los datos del Excel). No se generan partidas contables.
+                    <a role="button" href="#" class="link-primary" (click)="downloadTemplate($event)">Descargar plantilla</a>
+                  </span>
+
                   <!-- Plantilla estática (documento en /docs) -->
-                  <span *ngIf="this.nombre !== 'ventas' && this.nombre !== 'productos' && this.nombre !== 'servicios'">
+                  <span *ngIf="this.nombre !== 'ventas' && this.nombre !== 'productos' && this.nombre !== 'servicios' && this.nombre !== 'activos'">
                     Puede descargar la plantilla de Excel acá:
                     <a [href]="plantillaUrlConCache" target="_blank">Descargar plantilla</a>
                   </span>
@@ -102,6 +107,15 @@
                 <div class="fw-semibold">{{ resultadoActualizacion.actualizados }} productos actualizados.</div>
                 <ul class="mb-0 mt-2 small overflow-auto" style="max-height: 9rem;" *ngIf="resultadoActualizacion.errores?.length">
                   <li *ngFor="let error of resultadoActualizacion.errores">Fila {{ error.fila }}: {{ error.mensaje }}</li>
+                </ul>
+              </div>
+
+              <div class="alert mt-3 mb-0" *ngIf="resultadoActivos"
+                [class.alert-success]="!resultadoActivos.errores?.length"
+                [class.alert-warning]="resultadoActivos.errores?.length">
+                <div class="fw-semibold">{{ resultadoActivos.creados }} activo(s) creado(s). {{ resultadoActivos.omitidos ? (resultadoActivos.omitidos + ' omitido(s).') : '' }}</div>
+                <ul class="mb-0 mt-2 small overflow-auto" style="max-height: 9rem;" *ngIf="resultadoActivos.errores?.length">
+                  <li *ngFor="let error of resultadoActivos.errores">Fila {{ error.fila }}: {{ error.mensaje }}</li>
                 </ul>
               </div>
 

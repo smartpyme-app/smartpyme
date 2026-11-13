@@ -12,12 +12,13 @@ import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 import { BajaActivoComponent } from '@shared/modals/baja-activo/baja-activo.component';
 import { ActivosNavTabsComponent } from '@views/contabilidad/activos/activos-nav-tabs/activos-nav-tabs.component';
+import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 
 @Component({
     selector: 'app-activos',
     templateUrl: './activos.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TooltipModule, PopoverModule, CurrencyPipe, BajaActivoComponent, ActivosNavTabsComponent],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TooltipModule, PopoverModule, CurrencyPipe, BajaActivoComponent, ActivosNavTabsComponent, ImportarExcelComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ActivosComponent extends BasePaginatedComponent implements OnInit {

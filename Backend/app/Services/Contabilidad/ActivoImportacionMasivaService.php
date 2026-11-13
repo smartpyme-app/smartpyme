@@ -2,9 +2,12 @@
 
 namespace App\Services\Contabilidad;
 
+use App\Models\Admin\Empresa;
 use App\Models\Contabilidad\Activo;
 use App\Models\Contabilidad\ActivoCategoria;
 use App\Models\Contabilidad\ActivoConfiguracion;
+use App\Models\Contabilidad\PaisActivoCategoriaPlantilla;
+use Illuminate\Support\Collection;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -44,7 +47,7 @@ class ActivoImportacionMasivaService
                 }
                 $referenciasEnArchivo[$refKey] = $numeroFila;
 
-                $payload = $this->mapearFila($fila, $numeroFila, $categoriasPorNombre);
+                $payload = $this->mapearFila($fila, $numeroFila, $categoriasPorNombre, $idEmpresa);
 
                 $existente = Activo::withoutGlobalScopes()
                     ->where('id_empresa', $idEmpresa)
@@ -95,6 +98,63 @@ class ActivoImportacionMasivaService
         return $resultado;
     }
 
+    /**
+     * @param  Collection<string, ActivoCategoria>  $categoriasPorNombre
+     */
+    private function resolverCategoria(
+        string $nombreCategoria,
+        int $idEmpresa,
+        Collection $categoriasPorNombre,
+        ?float $vidaUtilFila = null,
+    ): ActivoCategoria {
+        $key = mb_strtolower(trim($nombreCategoria));
+        $existente = $categoriasPorNombre->get($key);
+        if ($existente) {
+            return $existente;
+        }
+
+        $empresa = Empresa::find($idEmpresa);
+        $codPais = strtoupper((string) ($empresa?->cod_pais ?: $empresa?->pais ?: 'SV'));
+
+        $plantilla = PaisActivoCategoriaPlantilla::query()
+            ->where('cod_pais', $codPais)
+            ->where('activo', true)
+            ->whereRaw('LOWER(TRIM(nombre)) = ?', [$key])
+            ->first();
+
+        if ($plantilla) {
+            $categoria = ActivoCategoria::withoutGlobalScopes()->create([
+                'id_empresa' => $idEmpresa,
+                'nombre' => $plantilla->nombre,
+                'plantilla_id' => $plantilla->id,
+                'metodo_depreciacion' => $plantilla->metodo_depreciacion ?: 'linea_recta',
+                'porcentaje_anual' => $plantilla->porcentaje_anual,
+                'vida_util_anios' => $plantilla->vida_util_anios,
+                'valor_residual_default' => $plantilla->valor_residual_default ?? 0,
+                'permite_bien_usado' => (bool) $plantilla->permite_bien_usado,
+                'reglas_bien_usado' => $plantilla->reglas_bien_usado,
+            ]);
+        } else {
+            $vidaAnios = ($vidaUtilFila !== null && $vidaUtilFila > 0)
+                ? $vidaUtilFila
+                : 5.0;
+
+            $categoria = ActivoCategoria::withoutGlobalScopes()->create([
+                'id_empresa' => $idEmpresa,
+                'nombre' => trim($nombreCategoria),
+                'metodo_depreciacion' => 'linea_recta',
+                'porcentaje_anual' => round(100 / $vidaAnios, 2),
+                'vida_util_anios' => $vidaAnios,
+                'valor_residual_default' => 0,
+                'permite_bien_usado' => false,
+            ]);
+        }
+
+        $categoriasPorNombre->put($key, $categoria);
+
+        return $categoria;
+    }
+
     /** @param  array<string, mixed>  $fila */
     private function filaVacia(array $fila): bool
     {
@@ -109,18 +169,19 @@ class ActivoImportacionMasivaService
 
     /**
      * @param  array<string, mixed>  $fila
-     * @param  \Illuminate\Support\Collection<string, ActivoCategoria>  $categoriasPorNombre
+     * @param  Collection<string, ActivoCategoria>  $categoriasPorNombre
      * @return array<string, mixed>
      */
-    private function mapearFila(array $fila, int $numeroFila, $categoriasPorNombre): array
+    private function mapearFila(array $fila, int $numeroFila, Collection $categoriasPorNombre, int $idEmpresa): array
     {
         $nombre = $this->textoObligatorio($fila, 'nombre', $numeroFila);
         $nombreCategoria = $this->textoObligatorio($fila, 'nombre_categoria', $numeroFila);
-        $categoria = $categoriasPorNombre->get(mb_strtolower(trim($nombreCategoria)));
-
-        if (! $categoria) {
-            throw new RuntimeException("Categoría «{$nombreCategoria}» no existe en la empresa.");
-        }
+        $categoria = $this->resolverCategoria(
+            $nombreCategoria,
+            $idEmpresa,
+            $categoriasPorNombre,
+            $this->numeroOpcional($fila, 'vida_util'),
+        );
 
         $fechaCompra = $this->parseFecha($fila, 'fecha_compra', $numeroFila, true);
         $valorCompra = $this->numeroObligatorio($fila, 'valor_compra', $numeroFila);

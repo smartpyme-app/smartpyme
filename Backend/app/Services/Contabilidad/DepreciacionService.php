@@ -2,8 +2,11 @@
 
 namespace App\Services\Contabilidad;
 
+use App\Models\Admin\Sucursal;
 use App\Models\Compras\Gastos\Categoria;
+use App\Models\Compras\Proveedores\Proveedor;
 use App\Models\Compras\Gastos\Gasto;
+use App\Models\User;
 use App\Models\Contabilidad\Activo;
 use App\Models\Contabilidad\ActivoConfiguracion;
 use App\Models\Contabilidad\ActivoDepreciacion;
@@ -30,6 +33,45 @@ class DepreciacionService
     private function decimales(int $idEmpresa): int
     {
         return (int) (ActivoConfiguracion::forEmpresa($idEmpresa)->redondeo_decimales ?? 2);
+    }
+
+    private function idSucursalParaEgreso(int $idEmpresa, int $idUsuario): int
+    {
+        $idSucursal = User::withoutGlobalScopes()->find($idUsuario)?->id_sucursal;
+        if ($idSucursal) {
+            return (int) $idSucursal;
+        }
+
+        $idSucursal = Sucursal::withoutGlobalScopes()
+            ->where('id_empresa', $idEmpresa)
+            ->orderBy('id')
+            ->value('id');
+
+        if (! $idSucursal) {
+            throw new RuntimeException('Configure una sucursal para registrar el egreso de depreciación.');
+        }
+
+        return (int) $idSucursal;
+    }
+
+    private function idProveedorParaEgresoInterno(int $idEmpresa, int $idUsuario): int
+    {
+        $etiqueta = 'Proveedor interno';
+
+        $proveedor = Proveedor::withoutGlobalScopes()->firstOrCreate(
+            [
+                'id_empresa' => $idEmpresa,
+                'nombre_empresa' => $etiqueta,
+            ],
+            [
+                'nombre' => $etiqueta,
+                'tipo' => 'Empresa',
+                'enable' => true,
+                'id_usuario' => $idUsuario,
+            ]
+        );
+
+        return (int) $proveedor->id;
     }
 
     public function vidaUtilAnios(Activo $activo): float
@@ -247,6 +289,8 @@ class DepreciacionService
                 'id_categoria' => $categoria->id,
                 'id_usuario' => $idUsuario,
                 'id_empresa' => $idEmpresa,
+                'id_sucursal' => $this->idSucursalParaEgreso($idEmpresa, $idUsuario),
+                'id_proveedor' => $this->idProveedorParaEgresoInterno($idEmpresa, $idUsuario),
                 'nota' => $detalleActivos,
             ]);
 

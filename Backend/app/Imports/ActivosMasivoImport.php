@@ -21,7 +21,7 @@ class ActivosMasivoImport implements ToCollection, WithHeadingRow
     {
         $filas = $rows->map(fn ($fila) => $fila instanceof Collection ? $fila->toArray() : (array) $fila)->all();
 
-        $this->resultado = (new ActivoImportacionMasivaService())->procesar(
+        $this->resultado = app(ActivoImportacionMasivaService::class)->procesar(
             $filas,
             $this->idEmpresa,
             $this->idUsuario
