@@ -1496,7 +1496,14 @@ class ProductosController extends Controller
     private function denegarActualizacionMasiva()
     {
         $user = Auth::user();
-        if (!$user || !$user->can('productos.actualizacion_masiva.ejecutar')) {
+        if (!$user) {
+            return response()->json(['mensaje' => 'No tiene permiso para la actualización masiva de productos.'], 403);
+        }
+
+        $puedeEjecutar = $user->hasRole(['admin', 'super_admin'])
+            || $user->can('productos.actualizacion_masiva.ejecutar');
+
+        if (!$puedeEjecutar) {
             return response()->json(['mensaje' => 'No tiene permiso para la actualización masiva de productos.'], 403);
         }
 

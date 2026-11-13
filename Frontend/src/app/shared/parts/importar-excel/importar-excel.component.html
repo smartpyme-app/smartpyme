@@ -46,7 +46,9 @@
                 </p>
                 <p *ngIf="nombre.toLowerCase() === 'productos' && puedeActualizarProductos() && modoProducto === 'actualizar'" class="mb-0">
                   Descargue los productos ya registrados, edite el archivo y vuelva a subirlo. Conserve las columnas de la plantilla.<br>
-                  El ID identifica cada producto. Una celda vacía no cambia ese dato. Escriba 0 para dejar un mínimo o máximo en cero. No modifica la existencia ni crea productos.<br>
+                  El ID (columna oculta) identifica cada producto; el nombre es solo referencia. Una celda vacía no cambia ese dato. Escriba 0 para dejar un mínimo o máximo en cero. No crea productos.
+                  <span *ngIf="apiService.isLotesActivo()"> Con lotes activos puede editar lote, fechas y stock del lote por fila; la existencia en bodega se alinea con la suma de lotes.</span>
+                  <br>
                   <a role="button" href="#" class="link-primary" (click)="descargarActualizacionProductos($event)">{{ descargandoActualizacion ? 'Descargando...' : 'Descargar productos' }}</a>
                 </p>
                 <p *ngIf="nombre.toLowerCase() !== 'productos'">

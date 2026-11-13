@@ -2,10 +2,13 @@
 
 namespace App\Support\Inventario;
 
+use App\Models\Admin\Empresa;
 use App\Models\Inventario\Bodega;
 use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Lote;
 use App\Models\Inventario\Producto;
 use App\Services\ImpuestosService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -131,12 +134,167 @@ class ActualizacionMasivaProductos
             }
         }
 
-        return [
+        $out = [
             'ok' => true,
             'producto' => $patch,
             'inventarios' => $invPatch,
             'registrar_kardex' => $kardex,
+            'lote' => null,
         ];
+
+        return $out;
+    }
+
+    /**
+     * Valida y arma cambios de lote cuando la empresa tiene lotes activos y el producto usa inventario por lotes.
+     *
+     * @param  array<int, int>  $bodegasActivas
+     * @return array{ok: bool, error?: string, lote?: array{id?: int, id_bodega: int, crear: bool, patch: array<string, mixed>, sincronizar_inventario: bool}}
+     */
+    public function evaluarDatosLoteEnFila(
+        array $row,
+        ?Producto $modelo,
+        bool $lotesActivo,
+        array $bodegasActivas,
+        int $idEmpresa
+    ): array {
+        if (!$lotesActivo || !$modelo || !$modelo->inventario_por_lotes) {
+            return ['ok' => true];
+        }
+        if (!$this->filaTieneDatosLote($row)) {
+            return ['ok' => true];
+        }
+
+        $idLote = $this->enteroOpcional($row['id_lote'] ?? null);
+        $idBodegaFila = $this->enteroOpcional($row['id_bodega'] ?? null);
+        $numeroLote = $this->textoNumeroLote($row);
+
+        $lote = null;
+        if ($idLote !== null) {
+            $lote = Lote::withoutGlobalScopes()
+                ->where('id', $idLote)
+                ->where('id_empresa', $idEmpresa)
+                ->whereNull('deleted_at')
+                ->first();
+            if (!$lote || (int) $lote->id_producto !== (int) $modelo->id) {
+                return ['ok' => false, 'error' => 'El lote indicado no existe o no pertenece al producto.'];
+            }
+            $idBodega = (int) $lote->id_bodega;
+        } else {
+            if ($idBodegaFila === null || $numeroLote === null) {
+                return ['ok' => false, 'error' => 'Para el lote indique id_lote o id_bodega y lote.'];
+            }
+            $idBodega = $idBodegaFila;
+            if (!in_array($idBodega, array_map('intval', $bodegasActivas), true)) {
+                return ['ok' => false, 'error' => 'La bodega '.$idBodega.' no es una bodega activa de la empresa.'];
+            }
+            $lote = Lote::withoutGlobalScopes()
+                ->where('id_producto', $modelo->id)
+                ->where('id_bodega', $idBodega)
+                ->where('id_empresa', $idEmpresa)
+                ->whereNull('deleted_at')
+                ->whereRaw('LOWER(numero_lote) = ?', [mb_strtolower($numeroLote)])
+                ->first();
+        }
+
+        $patch = [];
+        $sincronizar = false;
+
+        if ($numeroLote !== null && (!$lote || (string) $lote->numero_lote !== $numeroLote)) {
+            $patch['numero_lote'] = $numeroLote;
+        }
+
+        foreach (['fecha_fabricacion' => 'La fecha de fabricación', 'fecha_vencimiento' => 'La fecha de vencimiento'] as $col => $etiqueta) {
+            if (!array_key_exists($col, $row)) {
+                continue;
+            }
+            $fecha = $this->parseFecha($row[$col], $etiqueta);
+            if (isset($fecha['error'])) {
+                return ['ok' => false, 'error' => $fecha['error']];
+            }
+            if (!isset($fecha['value'])) {
+                continue;
+            }
+            $actual = $lote && $lote->{$col} ? $lote->{$col}->format('Y-m-d') : null;
+            if ($fecha['value'] !== $actual) {
+                $patch[$col] = $fecha['value'];
+            }
+        }
+
+        $stockLote = $this->numero($row['stock_lote'] ?? null, 'El stock del lote');
+        if (isset($stockLote['error'])) {
+            return ['ok' => false, 'error' => $stockLote['error']];
+        }
+        if (isset($stockLote['value'])) {
+            $actualStock = $lote ? (float) $lote->stock : null;
+            if (!$this->igual($stockLote['value'], $actualStock)) {
+                $patch['stock'] = $stockLote['value'];
+                $sincronizar = true;
+            }
+        }
+
+        if ($lote === null) {
+            if (!isset($patch['stock'])) {
+                return ['ok' => false, 'error' => 'Para crear un lote nuevo indique stock_lote.'];
+            }
+            if (!Inventario::query()->where('id_producto', $modelo->id)->where('id_bodega', $idBodega)->exists()) {
+                return ['ok' => false, 'error' => 'El producto no tiene inventario en la bodega '.$idBodega.'.'];
+            }
+
+            return [
+                'ok' => true,
+                'lote' => [
+                    'id_bodega' => $idBodega,
+                    'crear' => true,
+                    'patch' => array_merge($patch, [
+                        'numero_lote' => $numeroLote,
+                        'id_producto' => (int) $modelo->id,
+                        'id_empresa' => $idEmpresa,
+                        'stock_inicial' => $patch['stock'],
+                    ]),
+                    'sincronizar_inventario' => true,
+                ],
+            ];
+        }
+
+        if ($patch === []) {
+            return ['ok' => true];
+        }
+
+        return [
+            'ok' => true,
+            'lote' => [
+                'id' => (int) $lote->id,
+                'id_bodega' => $idBodega,
+                'crear' => false,
+                'patch' => $patch,
+                'sincronizar_inventario' => $sincronizar,
+            ],
+        ];
+    }
+
+    /**
+     * @param  array<int, int>  $bodegasActivas
+     */
+    public function claveFilaUnica(array $row, bool $lotesActivo, bool $inventarioPorLotes): ?string
+    {
+        $id = $this->idFila($row);
+        if ($id === null) {
+            return null;
+        }
+        if ($lotesActivo && $inventarioPorLotes && $this->filaTieneDatosLote($row)) {
+            $idLote = $this->enteroOpcional($row['id_lote'] ?? null);
+            if ($idLote !== null) {
+                return $id.':l:'.$idLote;
+            }
+            $idBodega = $this->enteroOpcional($row['id_bodega'] ?? null);
+            $numero = $this->textoNumeroLote($row);
+            if ($idBodega !== null && $numero !== null) {
+                return $id.':b:'.$idBodega.':'.mb_strtolower($numero);
+            }
+        }
+
+        return (string) $id;
     }
 
     /**
@@ -145,6 +303,9 @@ class ActualizacionMasivaProductos
      */
     public function procesar(array $filas, int $idEmpresa, int $idUsuario): array
     {
+        $empresa = Empresa::find($idEmpresa);
+        $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
+
         $ids = [];
         foreach ($filas as $fila) {
             $id = $this->idFila($fila);
@@ -192,15 +353,19 @@ class ActualizacionMasivaProductos
             }
             $numeroFila = $indice + 2;
             $id = $this->idFila($fila);
-            if ($id !== null && isset($vistos[$id])) {
-                $errores[] = ['fila' => $numeroFila, 'mensaje' => 'El ID de creación está repetido en el archivo.'];
+            $modelo = $id !== null ? $productos->get($id) : null;
+            $claveUnica = $this->claveFilaUnica(
+                $fila,
+                $lotesActivo,
+                $modelo ? (bool) $modelo->inventario_por_lotes : false
+            );
+            if ($claveUnica !== null && isset($vistos[$claveUnica])) {
+                $errores[] = ['fila' => $numeroFila, 'mensaje' => 'Fila duplicada en el archivo (mismo producto o lote).'];
                 continue;
             }
-            if ($id !== null) {
-                $vistos[$id] = true;
+            if ($claveUnica !== null) {
+                $vistos[$claveUnica] = true;
             }
-
-            $modelo = $id !== null ? $productos->get($id) : null;
             $invModelo = $modelo ? $inventarios->get($modelo->id, collect()) : collect();
             $inv = [];
             foreach ($invModelo as $item) {
@@ -240,13 +405,20 @@ class ActualizacionMasivaProductos
                 continue;
             }
 
-            if ($resultado['producto'] === [] && $resultado['inventarios'] === []) {
+            $loteEval = $this->evaluarDatosLoteEnFila($fila, $modelo, $lotesActivo, $bodegaIds, $idEmpresa);
+            if (!$loteEval['ok']) {
+                $errores[] = ['fila' => $numeroFila, 'mensaje' => $loteEval['error']];
+                continue;
+            }
+            $resultado['lote'] = $loteEval['lote'] ?? null;
+
+            if ($resultado['producto'] === [] && $resultado['inventarios'] === [] && empty($resultado['lote'])) {
                 $actualizados++;
                 continue;
             }
 
             try {
-                DB::transaction(function () use ($modelo, $resultado, $idUsuario) {
+                DB::transaction(function () use ($modelo, $resultado, $idUsuario, $idEmpresa) {
                     if ($resultado['producto'] !== []) {
                         $modelo->fill($resultado['producto']);
                         $modelo->save();
@@ -277,6 +449,9 @@ class ActualizacionMasivaProductos
                             }
                         }
                     }
+                    if (!empty($resultado['lote'])) {
+                        $this->aplicarCambioLote($resultado['lote'], $modelo, $idEmpresa);
+                    }
                 });
                 if (isset($resultado['producto']['codigo'])) {
                     $codigosPorId[$modelo->id] = $resultado['producto']['codigo'];
@@ -304,12 +479,11 @@ class ActualizacionMasivaProductos
             }
         }
 
-        $actualizar = isset($claves['id_creacion']) || isset($claves['id_de_creacion']);
-        $nuevos = isset($claves['nombre']);
-        if ($actualizar && !$nuevos) {
+        $tieneIdCreacion = isset($claves['id_creacion']) || isset($claves['id_de_creacion']);
+        if ($tieneIdCreacion) {
             return 'actualizar';
         }
-        if ($nuevos && !$actualizar) {
+        if (isset($claves['nombre'])) {
             return 'nuevos';
         }
 
@@ -431,5 +605,104 @@ class ActualizacionMasivaProductos
         $texto = preg_replace('/\s+/', ' ', trim($texto));
 
         return $texto !== '' ? $texto : '-';
+    }
+
+  /**
+     * @param  array{id?: int, id_bodega: int, crear: bool, patch: array<string, mixed>, sincronizar_inventario: bool}  $operacion
+     */
+    private function aplicarCambioLote(array $operacion, Producto $modelo, int $idEmpresa): void
+    {
+        if (!empty($operacion['crear'])) {
+            Lote::create($operacion['patch']);
+        } else {
+            $lote = Lote::withoutGlobalScopes()->find($operacion['id'] ?? 0);
+            if (!$lote) {
+                throw new \RuntimeException('Lote no encontrado.');
+            }
+            $lote->fill($operacion['patch']);
+            $lote->save();
+        }
+
+        if (!empty($operacion['sincronizar_inventario'])) {
+            $this->sincronizarInventarioDesdeLotes($modelo, (int) $operacion['id_bodega'], $idEmpresa);
+        }
+    }
+
+    private function sincronizarInventarioDesdeLotes(Producto $modelo, int $idBodega, int $idEmpresa): void
+    {
+        $sum = (float) Lote::withoutGlobalScopes()
+            ->where('id_producto', $modelo->id)
+            ->where('id_bodega', $idBodega)
+            ->where('id_empresa', $idEmpresa)
+            ->whereNull('deleted_at')
+            ->sum('stock');
+
+        $inventario = Inventario::query()
+            ->where('id_producto', $modelo->id)
+            ->where('id_bodega', $idBodega)
+            ->first();
+        if ($inventario) {
+            $inventario->stock = round($sum, 4);
+            $inventario->save();
+        }
+    }
+
+    private function filaTieneDatosLote(array $row): bool
+    {
+        foreach (['id_lote', 'id_bodega', 'lote', 'numero_lote', 'fecha_fabricacion', 'fecha_vencimiento', 'stock_lote'] as $clave) {
+            if (array_key_exists($clave, $row) && $this->presente($row[$clave])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function textoNumeroLote(array $row): ?string
+    {
+        foreach (['lote', 'numero_lote'] as $clave) {
+            if (array_key_exists($clave, $row) && $this->presente($row[$clave])) {
+                return trim((string) $row[$clave]);
+            }
+        }
+
+        return null;
+    }
+
+    private function enteroOpcional($valor): ?int
+    {
+        if (!$this->presente($valor)) {
+            return null;
+        }
+        if (!is_numeric($valor) || (float) $valor != (int) $valor) {
+            return null;
+        }
+
+        return (int) $valor;
+    }
+
+    /**
+     * @return array{value?: string, error?: string}
+     */
+    private function parseFecha($valor, string $etiqueta): array
+    {
+        if (!$this->presente($valor)) {
+            return [];
+        }
+        if (is_numeric($valor)) {
+            try {
+                $serial = (float) $valor;
+                $base = Carbon::create(1899, 12, 30);
+
+                return ['value' => $base->addDays((int) floor($serial))->format('Y-m-d')];
+            } catch (\Throwable) {
+                return ['error' => $etiqueta.' no es una fecha válida.'];
+            }
+        }
+        try {
+            return ['value' => Carbon::parse((string) $valor)->format('Y-m-d')];
+        } catch (\Throwable) {
+            return ['error' => $etiqueta.' no es una fecha válida.'];
+        }
     }
 }

@@ -358,7 +358,7 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
                 },
                 error: (err) => {
                     this.descargandoActualizacion = false;
-                    this.alertService.error(err?.error?.message || 'Error al descargar los productos');
+                    this.alertService.error(err?.error?.mensaje || err?.error?.message || 'Error al descargar los productos');
                 },
             });
     }
