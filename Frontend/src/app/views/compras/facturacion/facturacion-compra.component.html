@@ -101,12 +101,14 @@
     <div class="form-group col-md-6 col-lg-4">
       <label for="">Proveedor</label>
       <div class="input-group flex-nowrap">
-        <ng-select name="id_proveedor" placeholder="Consumidor Final" [(ngModel)]="compra.id_proveedor"
-                   class="form-select p-0">
-          <ng-option value=""> Seleccione aquí </ng-option>
-          @if (loading) {
-            <ng-option value=""> Cargando proveedores... </ng-option>
-          }
+        <ng-select name="id_proveedor" placeholder="Escriba para buscar" [(ngModel)]="compra.id_proveedor"
+                   class="form-select p-0"
+                   [typeahead]="proveedorSearch$"
+                   [loading]="proveedoresBuscando"
+                   [minTermLength]="2"
+                   [searchFn]="aceptarBusquedaProveedor"
+                   [clearable]="true"
+                   notFoundText="Escriba al menos 2 caracteres">
           @for (proveedor of proveedores; track proveedor.id) {
             <ng-option [value]="proveedor.id">
               {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo }}@if (proveedor.nombre_comercial) { ({{ proveedor.nombre_comercial }}) }

@@ -128,6 +128,28 @@ final class ProveedoresListMinimalTest extends TestCase
         $this->assertSame([], $this->buscar(['nit' => 'x']));
     }
 
+    public function test_buscar_por_texto_exige_dos_caracteres_y_no_trae_inactivos(): void
+    {
+        $this->assertSame([], $this->buscarTexto('A'));
+
+        $porNombre = $this->buscarTexto('Ana');
+        $this->assertCount(1, $porNombre);
+        $this->assertSame('Ana Ruiz', $porNombre[0]['nombre_completo']);
+        $this->assertArrayNotHasKey('etiquetas', $porNombre[0]);
+
+        $porNit = $this->buscarTexto('0614');
+        $this->assertSame('Ana Ruiz', $porNit[0]['nombre_completo']);
+    }
+
+    private function buscarTexto(string $q): array
+    {
+        $response = (new ProveedoresController)->buscar(
+            Request::create('/proveedores/buscar', 'GET', ['q' => $q])
+        );
+
+        return $response->getData(true);
+    }
+
     private function buscar(array $query): ?array
     {
         $response = (new ProveedoresController)->buscarEmisor(

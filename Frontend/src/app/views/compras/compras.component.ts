@@ -35,7 +35,7 @@ import { Subject, firstValueFrom } from 'rxjs';
 
 /** Debe coincidir con el slug en Backend (FuncionalidadesSeeder / verificar-acceso). */
 const SLUG_IMPORTACION_MASIVA_COMPRAS_JSON = 'importacion-masiva-compras-json';
-import { debounceTime, distinctUntilChanged, switchMap, takeUntil, catchError } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, map, switchMap, takeUntil, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { esTipoFacturaElectronicaCompraCr } from '@views/ventas/documentos/documento-nombre-options';
 import { esElSalvadorFe as empresaEsElSalvador } from '@services/facturacion-electronica/fe-pais.util';
@@ -245,6 +245,64 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
         return out;
     }
 
+    private filtrosDesdeParams(params: Params): Record<string, unknown> {
+        return {
+            buscador: params['buscador'] || '',
+            id_proyecto: +params['id_proyecto'] || '',
+            id_documento: +params['id_documento'] || '',
+            id_proveedor: this.parseOptionalIdParam(params, 'id_proveedor'),
+            id_sucursal: +params['id_sucursal'] || '',
+            id_usuario: +params['id_usuario'] || '',
+            forma_pago: params['forma_pago'] || '',
+            dte: params['dte'] || '',
+            estado: params['estado'] || '',
+            inicio: params['inicio'] || '',
+            fin: params['fin'] || '',
+            num_identificacion: params['num_identificacion'] || '',
+            orden: params['orden'] || 'id',
+            direccion: params['direccion'] || 'desc',
+            paginate: +params['paginate'] || 10,
+            page: +params['page'] || 1,
+        };
+    }
+
+    /** Clave del GET en curso. queryParams repite el mismo filtro al sincronizar la URL. */
+    private cargaEnCurso = '';
+
+    private cargarCompras(): void {
+        if (!this.filtros.id_usuario) {
+            this.filtros.id_usuario = '';
+        }
+
+        const params = this.filtrosParaApi();
+        const clave = JSON.stringify(params);
+        if (this.loading && clave === this.cargaEnCurso) {
+            return;
+        }
+
+        this.cargaEnCurso = clave;
+        this.loading = true;
+        this.cdr.markForCheck();
+
+        this.apiService.getAll('compras', params)
+            .pipe(this.untilDestroyed())
+            .subscribe(
+                (compras) => {
+                    this.compras = compras;
+                    this.loading = false;
+                    if (this.modalRef) {
+                        this.closeModal();
+                    }
+                    this.cdr.markForCheck();
+                },
+                (error) => {
+                    this.loading = false;
+                    this.alertService.error(error);
+                    this.cdr.markForCheck();
+                }
+            );
+    }
+
     ngOnInit() {
         this.searchSubject$.pipe(
             debounceTime(400),
@@ -253,30 +311,16 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
         this.verificarAccesoContabilidad();
 
         this.route.queryParams
-            .pipe(this.untilDestroyed())
-            .subscribe((params: Params) => {
-            this.filtros = {
-                buscador: params['buscador'] || '',
-                id_proyecto: +params['id_proyecto'] || '',
-                id_documento: +params['id_documento'] || '',
-                id_proveedor: this.parseOptionalIdParam(params, 'id_proveedor'),
-                id_sucursal: +params['id_sucursal'] || '',
-                id_usuario: +params['id_usuario'] || '',
-                forma_pago: params['forma_pago'] || '',
-                dte: params['dte'] || '',
-                estado: params['estado'] || '',
-                inicio: params['inicio'] || '',
-                fin: params['fin'] || '',
-                num_identificacion: params['num_identificacion'] || '',
-                orden: params['orden'] || 'id',
-                direccion: params['direccion'] || 'desc',
-                paginate: +params['paginate'] || 10,
-                page: +params['page'] || 1,
-            };
-
-            this.filtrarCompras(false);
-            this.cdr.markForCheck();
-        });
+            .pipe(
+                this.untilDestroyed(),
+                map((params: Params) => this.filtrosDesdeParams(params)),
+                distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b)),
+            )
+            .subscribe((filtros) => {
+                this.filtros = filtros;
+                this.cargarCompras();
+                this.cdr.markForCheck();
+            });
 
         this.apiService.getAll('proveedores/list', { minimal: 1 }).subscribe(proveedores => {
             this.proveedores = proveedores;
@@ -328,31 +372,18 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
      *                  false al paginar, sincronizar URL o refrescar tras guardar sin cambiar de página.
      */
     public filtrarCompras(resetPage = true): void {
-        if (resetPage) {
-            this.filtros.page = 1;
-        }
+        // ponytail: (change) del select/ng-select corre antes de que ngModel escriba. El microtask lee el valor ya commiteado.
+        queueMicrotask(() => {
+            if (resetPage) {
+                this.filtros.page = 1;
+            }
 
-        this.router.navigate([], {
-            relativeTo: this.route,
-            queryParams: this.filtrosParaApi(),
+            this.cargarCompras();
+            void this.router.navigate([], {
+                relativeTo: this.route,
+                queryParams: this.filtrosParaApi(),
+            });
         });
-
-        this.loading = true;
-
-        if(!this.filtros.id_usuario){
-            this.filtros.id_usuario = '';
-        }
-
-        this.apiService.getAll('compras', this.filtrosParaApi())
-            .pipe(this.untilDestroyed())
-            .subscribe(compras => {
-                this.compras = compras;
-                this.loading = false;
-                if(this.modalRef){
-                    this.closeModal();
-                }
-                this.cdr.markForCheck();
-            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     public setOrden(columna: string) {

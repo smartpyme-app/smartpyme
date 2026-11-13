@@ -107,6 +107,43 @@ class ProveedoresController extends Controller
         return Response()->json($proveedor, 200);
     }
 
+    public function buscar(Request $request)
+    {
+        $term = trim((string) $request->input('q', ''));
+        if (mb_strlen($term) < 2) {
+            return Response()->json([], 200);
+        }
+
+        $like = '%'.addcslashes($term, '%_\\').'%';
+        $proveedores = Proveedor::query()
+            ->where('enable', true)
+            ->where(function ($q) use ($like) {
+                $q->where('nombre', 'like', $like)
+                    ->orWhere('apellido', 'like', $like)
+                    ->orWhere('nombre_empresa', 'like', $like)
+                    ->orWhere('nombre_comercial', 'like', $like)
+                    ->orWhere('nit', 'like', $like)
+                    ->orWhere('ncr', 'like', $like);
+            })
+            ->select(['id', 'tipo', 'nombre', 'apellido', 'nombre_empresa', 'nombre_comercial'])
+            ->orderBy('nombre')
+            ->limit(20)
+            ->get()
+            ->map(function ($proveedor) {
+                return [
+                    'id' => $proveedor->id,
+                    'tipo' => $proveedor->tipo,
+                    'nombre' => $proveedor->nombre,
+                    'nombre_empresa' => $proveedor->nombre_empresa,
+                    'nombre_comercial' => $proveedor->nombre_comercial,
+                    'nombre_completo' => $proveedor->nombre_completo,
+                ];
+            })
+            ->values();
+
+        return Response()->json($proveedores, 200);
+    }
+
 
     public function read($id) {
 
