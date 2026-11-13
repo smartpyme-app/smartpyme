@@ -23,6 +23,9 @@ class ClinicaModuloPermissionSeeder extends Seeder
         'consultas' => 'Consultas clínicas',
         'tratamientos' => 'Tratamientos clínicos',
         'diagnosticos' => 'Diagnósticos clínicos',
+        'medicamentos' => 'Medicamentos clínicos (producto)',
+        'recetas' => 'Recetas clínicas',
+        'vacunas' => 'Vacunas y preventivos',
     ];
 
     /** @return list<string> */
