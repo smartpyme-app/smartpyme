@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Planilla\PlanillaAprobacionController;
 use App\Http\Controllers\Api\Planilla\PlanillaCalculoController;
 use App\Http\Controllers\Api\Planilla\PlanillaExportController;
 use App\Http\Controllers\Api\Planilla\PlanillaImportController;
+use App\Http\Controllers\Api\Planilla\SpuPlanillaController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'planillas', 'middleware' => ['jwt.auth']], function () {
@@ -52,5 +53,13 @@ Route::group(['prefix' => 'planillas', 'middleware' => ['jwt.auth']], function (
 
     Route::controller(PlanillaImportController::class)->group(function () {
         Route::post('/importar', 'importar')->middleware('permission:planilla.registros.crear');
+    });
+
+    Route::controller(SpuPlanillaController::class)->prefix('spu')->group(function () {
+        Route::get('empleador', 'datosEmpleador')->middleware('permission:planilla.registros.ver');
+        Route::post('empleador', 'guardarDatosEmpleador')->middleware('permission:planilla.registros.editar');
+        Route::get('preview', 'preview')->middleware('permission:planilla.registros.ver');
+        Route::post('validar', 'validar')->middleware('permission:planilla.registros.ver');
+        Route::post('csv', 'csv')->middleware('permission:planilla.registros.ver');
     });
 });
