@@ -56,7 +56,7 @@ export class ProductoProveedoresComponent extends BaseModalComponent implements 
     public loadAll(){
         this.loading = true;
         this.cdr.markForCheck();
-        this.apiService.getAll('proveedores/list').pipe(this.untilDestroyed()).subscribe(proveedores => {
+        this.apiService.getAll('proveedores/list', { minimal: 1 }).pipe(this.untilDestroyed()).subscribe(proveedores => {
             this.proveedores = proveedores;
             this.loading = false;
             this.cdr.markForCheck();

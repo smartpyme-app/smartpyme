@@ -82,7 +82,7 @@ export class AntiguedadSaldosComponent implements OnInit {
       (data: any) => { this.clientes = data; },
       (error) => this.alertService.error(error)
     );
-    this.apiService.getAll('proveedores/list').subscribe(
+    this.apiService.getAll('proveedores/list', { minimal: 1 }).subscribe(
       (data: any) => { this.proveedores = data; },
       (error) => this.alertService.error(error)
     );

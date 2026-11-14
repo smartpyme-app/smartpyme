@@ -25,16 +25,16 @@ class Inventario extends Model {
     protected $appends = ['nombre_bodega', 'nombre_sucursal'];
 
     public function getNombreBodegaAttribute(){
-        if ($this->relationLoaded('bodega') && $this->bodega) {
-            return $this->bodega->nombre;
+        if ($this->relationLoaded('bodega')) {
+            return $this->bodega ? $this->bodega->nombre : null;
         }
 
         return $this->bodega()->pluck('nombre')->first();
     }
 
     public function getNombreSucursalAttribute(){
-        if ($this->relationLoaded('bodega') && $this->bodega) {
-            return $this->bodega->nombre_sucursal;
+        if ($this->relationLoaded('bodega')) {
+            return $this->bodega ? $this->bodega->nombre_sucursal : null;
         }
 
         return $this->bodega()->first() ? $this->bodega()->first()->nombre_sucursal : null;
