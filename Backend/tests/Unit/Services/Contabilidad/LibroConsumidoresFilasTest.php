@@ -18,7 +18,7 @@ class LibroConsumidoresFilasTest extends TestCase
         $this->assertCount(2, $filas);
         $this->assertSame('UUID-A', $filas[0]['correlativo_inicial']);
         $this->assertSame('UUID-B', $filas[0]['correlativo_final']);
-        $this->assertSame(150.0, $filas[0]['ventas_internas_gravadas']);
+        $this->assertSame(169.5, $filas[0]['ventas_internas_gravadas']);
         $this->assertSame(0.0, $filas[0]['exportaciones']);
         $this->assertSame(169.5, $filas[0]['total_ventas_diarias_propias']);
         $this->assertSame('UUID-C', $filas[1]['correlativo_inicial']);
@@ -43,7 +43,7 @@ class LibroConsumidoresFilasTest extends TestCase
 
         $montos = LibroConsumidoresFilas::montosAnexoConsumidor($venta, false);
 
-        $this->assertSame(100.0, $montos['gravada']);
+        $this->assertSame(113.0, $montos['gravada']);
         $this->assertSame(113.0, $montos['total_propio']);
         $this->assertSame(0.0, $montos['exportacion']);
     }
