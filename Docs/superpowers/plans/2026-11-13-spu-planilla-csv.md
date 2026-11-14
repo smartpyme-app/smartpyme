@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- CSV: 21 columnas en el orden del manual SPU (enero 2024), sin encabezado por defecto, separador `;`, decimales con punto y 2 decimales, `\r\n`, UTF-8 sin BOM; todo configurable en `config/spu.php`.
+- CSV: 21 columnas en el orden del manual SPU (enero 2024), sin encabezado, separador `;`, decimales con punto y 2 decimales, `\r\n`, UTF-8 sin BOM. Por decisión del usuario, estos supuestos son constantes en `SpuPlanillaService` (no hay `config/spu.php`).
 - Sin comillas salvo que el valor contenga el separador, comillas o salto de línea (no usar `fputcsv`: entrecomilla valores con espacios).
 - Documentos, NIT/DUI y número patronal sin guiones; tratados siempre como string.
 - Columnas 17 y 18 siempre 2 dígitos; columna 19 con 2 dígitos cuando es > 0.
@@ -26,7 +26,6 @@
 | `Backend/database/migrations/2026_11_13_120000_add_spu_fields_to_empresas_sucursales_empleados.php` | Crear | Columnas nuevas |
 | `Backend/app/Models/Admin/Empresa.php`, `Backend/app/Models/Admin/Sucursal.php`, `Backend/app/Models/Planilla/Empleado.php` | Modificar | `$fillable` |
 | `Backend/app/Http/Requests/Planilla/StoreEmpleadoRequest.php`, `UpdateEmpleadoRequest.php` | Modificar | Reglas de los 2 campos nuevos |
-| `Backend/config/spu.php` | Crear | Supuestos de formato |
 | `Backend/app/Services/Planilla/SpuPlanillaService.php` | Crear | Derivar, validar, CSV, consultas |
 | `Backend/tests/Unit/Services/Planilla/SpuPlanillaServiceTest.php` | Crear | Check de formato y reglas |
 | `Backend/app/Http/Controllers/Api/Planilla/SpuPlanillaController.php` | Crear | Endpoints |
