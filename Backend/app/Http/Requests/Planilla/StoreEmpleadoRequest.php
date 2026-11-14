@@ -28,6 +28,8 @@ class StoreEmpleadoRequest extends FormRequest
             'nit' => ['nullable', 'string'],
             'isss' => ['nullable', 'string'],
             'afp' => ['nullable', 'string'],
+            'institucion_previsional' => ['nullable', 'in:COF,MAX,ISP,ISS'],
+            'apellido_casada' => ['nullable', 'string', 'max:40'],
             'fecha_nacimiento' => ['required', 'date'],
             'direccion' => ['nullable', 'string'],
             'telefono' => ['nullable', 'string'],
