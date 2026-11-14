@@ -760,6 +760,7 @@ class EmpleadosController extends Controller
             $rutaArchivo = null;
             $tipoDocumento = null;
             $tipoBajaInt = null;
+            $documento = null;
 
             // Determinar tipo de baja antes del manejo de archivos
             switch ($request->tipo_baja) {
@@ -821,7 +822,7 @@ class EmpleadosController extends Controller
                 'fecha_baja' => $request->fecha_baja,
                 'tipo_baja' => $tipoBajaInt,
                 'motivo' => $request->motivo,
-                'documento_respaldo' => $documento->id ?? null,
+                'documento_respaldo' => $documento?->id,
                 'estado' => PlanillaConstants::ESTADO_ACTIVO
             ]);
 

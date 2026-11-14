@@ -580,10 +580,11 @@
       ></button>
     </div>
     <div class="modal-body">
-      <form name="form" (ngSubmit)="darBaja()">
+      <app-notificaciones-container></app-notificaciones-container>
+      <form name="formDarBaja" (ngSubmit)="darBaja()" novalidate>
         <div class="row">
           <div class="form-group col-12 mb-3">
-            <label for="fecha_fin">Fecha de notificación:</label>
+            <label for="fecha_fin">Fecha de notificación <span class="text-danger">*</span>:</label>
             <input
               type="date"
               [(ngModel)]="empleado.fecha_fin"
@@ -597,7 +598,7 @@
           </div>
   
           <div class="form-group col-12 mb-3">
-            <label for="fecha_baja">Fecha efectiva de baja:</label>
+            <label for="fecha_baja">Fecha efectiva de baja <span class="text-danger">*</span>:</label>
             <input
               type="date"
               [(ngModel)]="empleado.fecha_baja"
@@ -613,7 +614,7 @@
           </div>
   
           <div class="form-group col-12 mb-3">
-            <label for="tipo_baja">Tipo de baja:</label>
+            <label for="tipo_baja">Tipo de baja <span class="text-danger">*</span>:</label>
             <select
               [(ngModel)]="empleado.tipo_baja"
               name="tipo_baja"
@@ -635,7 +636,7 @@
           </div>
   
           <div class="form-group col-12 mb-3">
-            <label for="motivo">Motivo de la baja:</label>
+            <label for="motivo">Motivo de la baja <span class="text-danger">*</span>:</label>
             <textarea
               [(ngModel)]="empleado.motivo"
               name="motivo"
