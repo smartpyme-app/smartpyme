@@ -6,6 +6,9 @@
     @if (puedeVerEmpleados()) {
         <a class="btn" routerLink="/planilla/empleados" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}">Empleados</a>
     }
+    @if (puedeVerRegistros() && esElSalvador) {
+        <a class="btn" routerLink="/planilla/spu" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}">Planilla Única SPU</a>
+    }
     @if (puedeVerConfiguracion()) {
         <a class="btn" routerLink="/planilla/configuracion-planilla" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}">Configuración</a>
     }

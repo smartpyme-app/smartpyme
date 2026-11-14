@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { ApiService } from '@services/api.service';
 import { PermissionService } from '@services/permission.service';
+import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { environment } from 'src/environments/environment';
 
@@ -47,6 +48,10 @@ export class PlanillaNavComponent implements OnInit {
 
     puedeVerConfiguracion(): boolean {
         return this.apiService.hasPermission('planilla.configuracion.ver');
+    }
+
+    get esElSalvador(): boolean {
+        return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_SV;
     }
 
     get mostrarComisiones(): boolean {
