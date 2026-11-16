@@ -12,7 +12,6 @@ import { ConfiguracionPlanillaComponent } from './configuracion-planilla/configu
 import { AguinaldosComponent } from './aguinaldos/aguinaldos.component';
 import { AguinaldoDetalleComponent } from './aguinaldos/aguinaldo-detalle.component';
 import { PrestamosComponent } from './prestamos/prestamos.component';
-import { PlanillaSpuComponent } from './spu/planilla-spu.component';
 
 const routes: Routes = [
   {
@@ -44,7 +43,6 @@ const routes: Routes = [
       {path: 'aguinaldos', component: AguinaldosComponent, title: 'Aguinaldos', canActivate: [PermissionGuard], data: { permission: 'planilla.registros.ver' }},
       {path: 'aguinaldo/detalle/:id', component: AguinaldoDetalleComponent, title: 'Aguinaldo', canActivate: [PermissionGuard], data: { permission: 'planilla.registros.ver' }},
       {path: 'prestamos', component: PrestamosComponent, title: 'Préstamos', canActivate: [PermissionGuard], data: { permission: 'planilla.registros.ver' }},
-      {path: 'spu', component: PlanillaSpuComponent, title: 'Planilla Única SPU', canActivate: [PermissionGuard], data: { permission: 'planilla.registros.ver' }}
     ],
   },
 ];

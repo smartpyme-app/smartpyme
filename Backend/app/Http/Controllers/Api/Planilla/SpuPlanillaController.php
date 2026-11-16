@@ -111,13 +111,26 @@ class SpuPlanillaController extends Controller
     private function entrada(Request $request): array
     {
         $periodo = $this->periodo($request);
+        $empleador = $this->empleador($periodo);
+
+        if (!$request->exists('filas')) {
+            $filas = $this->spu->filas(
+                auth()->user()->id_empresa,
+                $periodo['id_sucursal'],
+                $periodo['anio'],
+                $periodo['mes']
+            );
+
+            return [$periodo, $empleador, $filas];
+        }
+
         $request->validate([
             'filas' => ['present', 'array', 'max:5000'],
             'filas.*' => ['array'],
         ]);
         $filas = array_map(fn ($fila) => Arr::only($fila, self::CAMPOS_FILA), $request->input('filas', []));
 
-        return [$periodo, $this->empleador($periodo), $filas];
+        return [$periodo, $empleador, $filas];
     }
 
     private function empleador(array $periodo): array

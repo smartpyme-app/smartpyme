@@ -12,6 +12,7 @@ import {
 } from '../../../services/configuracion-planilla.service';
 import { AlertService } from '../../../services/alert.service';
 import { ApiService } from '../../../services/api.service';
+import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { formatEmpresaCurrency } from '@helpers/currency-format.helper';
 import { PlanillaNavComponent } from '../planilla-nav/planilla-nav.component';
@@ -55,6 +56,16 @@ export class ConfiguracionPlanillaComponent implements OnInit {
   
   // Pestañas activas
   tabActiva = 'conceptos';
+
+  // Datos ISSS del empleador (SPU / El Salvador)
+  empleadorSpu: any = {
+    numero_patronal_isss: '',
+    tipo_persona: null,
+    regimen_especial_isss: null,
+    sucursales: [],
+  };
+  cargandoEmpleadorSpu = false;
+  guardandoEmpleadorSpu = false;
   
   // Resultados de prueba
   resultadoPrueba: any = null;
@@ -170,6 +181,10 @@ export class ConfiguracionPlanillaComponent implements OnInit {
     return this.configuracion?.cod_pais
       || this.empresaPais?.cod_pais
       || 'SV';
+  }
+
+  get esElSalvador(): boolean {
+    return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_SV;
   }
 
   private createConfiguracionForm(): FormGroup {
@@ -573,7 +588,46 @@ guardarConcepto(): void {
 
   cambiarTab(tab: string): void {
     this.tabActiva = tab;
+    if (tab === 'isss' && this.esElSalvador) {
+      this.cargarEmpleadorSpu();
+    }
     this.cdr.markForCheck();
+  }
+
+  cargarEmpleadorSpu(): void {
+    if (this.cargandoEmpleadorSpu) {
+      return;
+    }
+    this.cargandoEmpleadorSpu = true;
+    this.apiService.getAll('planillas/spu/empleador').pipe(this.untilDestroyed()).subscribe({
+      next: (data) => {
+        this.empleadorSpu = data;
+        this.cargandoEmpleadorSpu = false;
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        this.cargandoEmpleadorSpu = false;
+        this.alertService.error(error);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  guardarEmpleadorSpu(): void {
+    this.guardandoEmpleadorSpu = true;
+    this.apiService.store('planillas/spu/empleador', this.empleadorSpu).pipe(this.untilDestroyed()).subscribe({
+      next: (data) => {
+        this.empleadorSpu = data;
+        this.guardandoEmpleadorSpu = false;
+        this.alertService.success('Datos guardados', 'Datos ISSS del empleador actualizados.');
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        this.guardandoEmpleadorSpu = false;
+        this.alertService.error(error);
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   onTipoConceptoCambiado(): void {

@@ -124,13 +124,15 @@
         Conceptos ({{ conceptosArray.length }})
       </a>
     </li>
-    <!-- <li class="nav-item">
-      <a class="nav-link" [class.active]="tabActiva === 'configuracion'" (click)="cambiarTab('configuracion')"
-        href="javascript:void(0)">
-        <i class="fas fa-sliders-h me-1"></i>
-        Configuración General
-      </a>
-    </li> -->
+    @if (esElSalvador) {
+      <li class="nav-item">
+        <a class="nav-link" [class.active]="tabActiva === 'isss'" (click)="cambiarTab('isss')"
+          href="javascript:void(0)">
+          <i class="fas fa-id-card me-1"></i>
+          Datos ISSS (SPU)
+        </a>
+      </li>
+    }
   </ul>
 
   <!-- Tab: Conceptos -->
@@ -372,6 +374,68 @@
         </div>
       </div>
     </div>
+    </div>
+  }
+
+  @if (tabActiva === 'isss' && esElSalvador) {
+    <div class="tab-content">
+      <div class="card">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3">Datos ISSS del empleador</h6>
+          <p class="text-muted small">
+            Se usan al generar la Planilla Única (SPU) desde el listado de planillas.
+          </p>
+
+          @if (cargandoEmpleadorSpu) {
+            <div class="text-center py-3">
+              <span class="spinner-border spinner-border-sm me-2"></span>
+              Cargando datos del empleador...
+            </div>
+          } @else {
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label for="numero_patronal_isss">Número patronal ISSS</label>
+                <input id="numero_patronal_isss" name="numero_patronal_isss" class="form-control" maxlength="9"
+                  inputmode="numeric" [(ngModel)]="empleadorSpu.numero_patronal_isss" />
+              </div>
+              <div class="col-md-3">
+                <label for="tipo_persona">Tipo de persona</label>
+                <select id="tipo_persona" name="tipo_persona" class="form-select" [(ngModel)]="empleadorSpu.tipo_persona">
+                  <option [ngValue]="null">Sin definir</option>
+                  <option value="juridica">Jurídica</option>
+                  <option value="natural">Natural</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label for="regimen_especial_isss">Régimen especial</label>
+                <select id="regimen_especial_isss" name="regimen_especial_isss" class="form-select"
+                  [(ngModel)]="empleadorSpu.regimen_especial_isss">
+                  <option [ngValue]="null">Ninguno</option>
+                  <option value="domestico">Sector doméstico (15)</option>
+                  <option value="marino_mercante">Marino mercante (16)</option>
+                  <option value="regidores">Regidores (17)</option>
+                </select>
+              </div>
+            </div>
+            <div class="row g-3 mt-1">
+              @for (sucursal of empleadorSpu.sucursales; track sucursal.id) {
+                <div class="col-md-3">
+                  <label [for]="'correlativo_' + sucursal.id">Centro de trabajo ISSS: {{ sucursal.nombre }}</label>
+                  <input [id]="'correlativo_' + sucursal.id" [name]="'correlativo_' + sucursal.id" class="form-control"
+                    maxlength="3" inputmode="numeric" [(ngModel)]="sucursal.correlativo_centro_trabajo_isss" />
+                </div>
+              }
+            </div>
+            <button type="button" class="btn btn-outline-primary mt-3" [disabled]="guardandoEmpleadorSpu"
+              (click)="guardarEmpleadorSpu()">
+              @if (guardandoEmpleadorSpu) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              }
+              Guardar datos del empleador
+            </button>
+          }
+        </div>
+      </div>
     </div>
   }
   </div>
