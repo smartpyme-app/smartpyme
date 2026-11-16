@@ -1,59 +1,14 @@
 .flujo-semanal-card {
-  margin-top: 1rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background: #fff;
-  padding: 1rem 1.15rem 1.05rem;
-}
-
-.flujo-semanal-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.85rem;
-}
-
-.flujo-semanal-titulo {
   margin: 0;
-  font-size: 1rem;
-  font-weight: 700;
-  color: #1e293b;
+  padding: 0;
+  border: none;
+  background: transparent;
 }
 
-.flujo-semanal-tag {
-  font-size: 0.75rem;
-  color: #64748b;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 999px;
-  padding: 0.25rem 0.65rem;
-}
-
-.flujo-semanal-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.78rem;
-}
-
-.flujo-semanal-table thead th {
-  padding: 0.55rem 0.4rem;
-  background: #f8fafc;
-  color: #64748b;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+.flujo-semanal-table.sf-table thead th {
   text-transform: uppercase;
-  border-bottom: 1px solid #e5e7eb;
-  white-space: nowrap;
-}
-
-.flujo-semanal-table tbody td {
-  padding: 0.45rem 0.4rem;
-  border-bottom: 1px solid #f1f5f9;
-  color: #334155;
-  vertical-align: middle;
+  font-size: 11px;
+  letter-spacing: 0.03em;
 }
 
 .flujo-semanal-row {
@@ -61,11 +16,11 @@
 }
 
 .flujo-semanal-row:hover {
-  background: #f8fafc;
+  background: var(--sf-bg, #f2f0f4);
 }
 
-.flujo-semanal-row--selected {
-  background: #eff6ff;
+.flujo-semanal-row--selected td {
+  background: var(--sf-bg, #f2f0f4);
 }
 
 .flujo-col-semana {
@@ -75,13 +30,13 @@
 .flujo-semana-id {
   display: block;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--sf-text, #1a1b1f);
 }
 
 .flujo-semana-rango {
   display: block;
-  font-size: 0.7rem;
-  color: #94a3b8;
+  font-size: 12px;
+  color: var(--sf-soft-text, #5e5e62);
 }
 
 .flujo-num {
@@ -96,46 +51,43 @@
 .flujo-ventas-input {
   width: 4.75rem;
   max-width: 100%;
-  padding: 0.2rem 0.35rem;
-  border: 1px solid #93c5fd;
-  border-radius: 6px;
-  font-size: 0.78rem;
+  padding: 4px 6px;
+  border: 1px solid var(--sf-blue-soft, #d7e2ff);
+  border-radius: var(--sf-radius-sm, 6px);
+  font-size: 13px;
   font-weight: 600;
-  color: #1d4ed8;
+  color: var(--sf-blue, #005cb8);
   text-align: right;
-  background: #fff;
+  background: var(--sf-card, #fff);
 }
 
 .flujo-text-blue {
-  color: #2563eb;
+  color: var(--sf-blue, #005cb8);
   font-weight: 600;
 }
 
 .flujo-text-muted {
-  color: #94a3b8;
+  color: var(--sf-soft-text, #5e5e62);
 }
 
 .flujo-neto--pos {
-  color: #16a34a;
+  color: var(--sf-good, #16a34a);
   font-weight: 700;
 }
 
 .flujo-neto--neg {
-  color: #ea580c;
+  color: var(--sf-orange, #d17c2f);
   font-weight: 700;
 }
 
 .flujo-final {
   font-weight: 700;
-  color: #0f172a;
+  color: var(--sf-text, #1a1b1f);
 }
 
 .flujo-semanal-nota {
-  margin: 0.85rem 0 0;
-  font-size: 0.72rem;
-  color: #94a3b8;
-  line-height: 1.45;
+  margin-top: 12px;
   display: flex;
-  gap: 0.35rem;
+  gap: 6px;
   align-items: flex-start;
 }

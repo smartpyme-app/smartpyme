@@ -1,25 +1,28 @@
-@import '../finanzas-suite.shared.css';
-
 .pl-gastos-caption {
-  margin: -0.35rem 0 0.85rem;
-  font-size: 0.8rem;
+  margin: 0 0 12px;
 }
 
 .pl-gastos-list {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 8px;
 }
 
 .pl-gastos-row {
+  display: grid;
   grid-template-columns: minmax(7.5rem, 10rem) minmax(4rem, 1fr) 3.25rem 7rem 4.5rem;
+  gap: 10px;
+  align-items: center;
+}
+
+.pl-gastos-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sf-text, #1a1b1f);
 }
 
 .pl-gastos-bar-track {
   position: relative;
-  height: 8px;
-  border-radius: 999px;
-  background: #e2e8f0;
   overflow: visible;
 }
 
@@ -29,18 +32,34 @@
   width: 2px;
   height: calc(100% + 6px);
   margin-left: -1px;
-  background: #94a3b8;
+  background: var(--sf-muted, #46464a);
   border-radius: 1px;
+  pointer-events: none;
+}
+
+.pl-gastos-pct {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .pl-gastos-delta {
-  font-size: 0.78rem;
+  font-size: 12px;
   line-height: 1.25;
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
-.pl-gastos-spark {
-  justify-self: end;
+.pl-gastos-sparkline {
+  width: 76px;
+  height: 30px;
+}
+
+.pl-spark-up {
+  stroke: var(--sf-good, #16a34a);
+}
+
+.pl-spark-down {
+  stroke: var(--sf-alert, #ba1a1a);
 }
 
 @media (max-width: 992px) {
@@ -52,11 +71,11 @@
       'delta spark';
   }
 
-  .rent-barra-label {
+  .pl-gastos-label {
     grid-area: label;
   }
 
-  .rent-barra-pct {
+  .pl-gastos-pct {
     grid-area: valor;
   }
 

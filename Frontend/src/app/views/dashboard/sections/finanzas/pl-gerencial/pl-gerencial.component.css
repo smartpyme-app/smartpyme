@@ -1,271 +1,51 @@
-/* Mismo lenguaje visual que dashboard Ventas (card-performance, métricas, cards internas) */
+/* P&L Gerencial — layout de tabla; base visual en finanzas-suite.design.css */
 
-.pl-gerencial-dashboard.ventas-dashboard .card {
-  margin-bottom: 0 !important;
-}
-
-.card-performance {
-  background-color: #ffffff;
-  border: 1px solid rgba(0, 118, 227, 0.15) !important;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 118, 227, 0.08) !important;
-}
-
-.pl-gerencial-dashboard .card-performance .card {
-  border: 1px solid rgba(0, 118, 227, 0.15) !important;
-  box-shadow: none !important;
-  border-radius: 8px !important;
-}
-
-.metrics-flex-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: stretch;
-}
-
-.metric-flex-col {
-  flex: 1 1 160px;
-  min-width: 155px;
-  max-width: 100%;
-  display: flex;
-}
-
-.metrics-flex-row app-finanzas-kpi-card {
-  flex: 1;
-  width: 100%;
-}
-
-.ventas-card-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #333;
-}
-
-.pl-kpi-sublinea {
-  margin-top: 0.35rem;
-  line-height: 1.25;
-  font-size: 0.75rem;
-  color: #94a3b8;
+.pl-gerencial-dashboard {
+  gap: var(--sf-gap, 14px);
 }
 
 .pl-col-concepto {
-  min-width: 11rem;
+  min-width: 14rem;
   text-align: left;
 }
 
 .pl-concepto-indent {
-  padding-left: 0.35rem;
+  padding-left: 14px !important;
 }
 
 .pl-concepto-chevron {
-  color: #94a3b8;
-  margin-right: 0.35rem;
+  color: var(--sf-muted, #46464a);
+  margin-right: 6px;
+  font-size: 12px;
 }
 
-.pl-concepto-detalle {
-  display: block;
-  margin-top: 0.1rem;
-  font-size: 0.72rem;
-  color: #94a3b8;
+.pl-concepto-margen {
+  color: var(--sf-muted, #46464a);
+  font-style: italic;
   font-weight: 400;
 }
 
-.pl-estado-table thead th {
-  background-color: #66a3ff !important;
-  color: #ffffff !important;
-  font-weight: 600;
-  font-size: 0.875rem;
-  text-align: center;
-  vertical-align: middle;
-  border: none;
-  padding: 12px 16px;
-}
-
-.pl-estado-table--mes thead th,
-.pl-estado-table--anual thead th {
-  background: #f8fafc !important;
-  color: #64748b !important;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  padding: 0.65rem 0.75rem;
-  border-bottom: 1px solid #e5e7eb;
-  text-align: right;
-}
-
-.pl-estado-table--mes thead th.pl-col-concepto,
-.pl-estado-table--anual thead th.pl-col-concepto {
-  text-align: left;
-}
-
 .pl-estado-periodo {
-  font-weight: 500;
-  color: #64748b;
-}
-
-.pl-estado-table--mes tbody td {
-  padding: 0.55rem 0.75rem;
-  font-size: 0.8125rem;
-  border-bottom: 1px solid #f1f5f9;
-  color: #334155;
-  vertical-align: middle;
-}
-
-.pl-estado-table--mes tbody tr:nth-child(even),
-.pl-estado-table--mes tbody tr:nth-child(odd) {
-  background: #fff;
-}
-
-.pl-estado-table--mes tbody tr:hover {
-  background: #f8fafc;
-}
-
-.pl-celda-pct {
-  color: #64748b;
-}
-
-.pl-vs-pos {
-  color: #16a34a !important;
-  font-weight: 500;
-}
-
-.pl-vs-neg {
-  color: #dc2626 !important;
-  font-weight: 500;
-}
-
-.pl-mes-row-subtotal td {
-  background: #eef4ff !important;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.pl-mes-row-destacado td {
-  font-weight: 700;
-  color: #1e40af;
-}
-
-.pl-estado-table thead th.pl-col-concepto {
-  text-align: left;
-}
-
-.pl-estado-table tbody tr {
-  border-bottom: 1px solid #e0e0e0;
-  transition: background-color 0.15s ease;
-}
-
-.pl-estado-table tbody tr:nth-child(even) {
-  background-color: #f7f7f7;
-}
-
-.pl-estado-table tbody tr:nth-child(odd) {
-  background-color: #ffffff;
-}
-
-.pl-estado-table tbody tr:hover {
-  background-color: #e8f0fe;
-}
-
-.pl-estado-table tbody td {
-  padding: 12px 16px;
-  font-size: 0.875rem;
-  vertical-align: middle;
-  border: none;
-}
-
-.pl-row-subtotal td {
-  font-weight: 700;
-  color: #212529;
-}
-
-.pl-row-total td {
-  font-weight: 700;
-  color: #38528f;
-  background-color: #ffffff !important;
-  border-top: 1px solid #dee2e6;
-}
-
-.pl-row-total:hover td {
-  background-color: #ffffff !important;
-}
-
-.pl-estado-scroll {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.pl-anual-estado-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  background: #fff;
-  overflow: hidden;
-}
-
-.pl-anual-estado-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid #eef0f3;
-}
-
-.pl-anual-estado-icon {
-  color: #64748b;
-  display: inline-flex;
-}
-
-.pl-anual-estado-title {
-  font-size: 0.9375rem;
   font-weight: 600;
-  color: #334155;
+  color: var(--sf-text, #292a2d);
 }
 
-.pl-estado-table--anual {
-  margin-bottom: 0;
+.pl-kpi-sublinea {
+  white-space: normal;
 }
 
-.pl-estado-table--anual thead th {
-  background: #f8fafc !important;
-  color: #64748b !important;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  padding: 0.65rem 0.5rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.pl-estado-table--mes .pl-col-concepto,
-.pl-estado-table--anual .pl-col-concepto {
-  min-width: 10.5rem;
-  text-align: left;
-}
-
-.pl-estado-table--anual tbody td {
-  padding: 0.55rem 0.5rem;
-  font-size: 0.8125rem;
-  border-bottom: 1px solid #f1f5f9;
-  color: #334155;
-}
-
-.pl-estado-table--anual tbody tr:nth-child(even),
-.pl-estado-table--anual tbody tr:nth-child(odd) {
-  background: #fff;
-}
-
-.pl-estado-table--anual .pl-col-mes {
+.pl-col-mes {
   min-width: 4.5rem;
   white-space: nowrap;
-  text-align: right;
 }
 
 .pl-col-mes-activo {
-  background-color: #fdf3e7 !important;
+  font-weight: 600;
 }
 
 .pl-mes-activo-mark {
-  color: #ea580c;
-  margin-left: 1px;
+  color: var(--sf-orange, #d17c2f);
+  margin-left: 2px;
 }
 
 .pl-col-total-anual {
@@ -273,67 +53,35 @@
   font-weight: 600;
 }
 
-.pl-estado-table--anual thead th.pl-col-total-anual {
-  background: #f1f5f9 !important;
-  color: #475569 !important;
-}
-
-.pl-estado-table--anual tbody td.pl-col-total-anual {
-  background: #f8fafc;
-}
-
-.pl-anual-row-subtotal td {
-  background: #eef4ff !important;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.pl-anual-row-subtotal .pl-col-sticky {
-  background: #eef4ff !important;
-}
-
-.pl-anual-row-margen td {
-  background: #fff !important;
-  font-size: 0.75rem;
-}
-
-.pl-concepto-margen {
-  font-style: italic;
-  color: #94a3b8;
-  font-weight: 400;
-}
-
+.pl-celda-pct,
 .pl-celda-margen {
-  color: #94a3b8;
-  font-style: italic;
+  color: var(--sf-soft-text, #5e5e62);
 }
 
-.pl-anual-row-resultado td {
-  background: #1e3a5f !important;
-  color: #fff !important;
-  font-weight: 700;
-  border-bottom: none;
-}
-
-.pl-anual-row-resultado .pl-col-sticky,
-.pl-anual-row-resultado .pl-col-total-anual {
-  background: #1e3a5f !important;
-  color: #fff !important;
-}
-
-.pl-anual-row-resultado .pl-concepto-chevron {
-  color: rgba(255, 255, 255, 0.75);
+.pl-estado-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .pl-col-sticky {
   position: sticky;
   left: 0;
   z-index: 2;
-  background-color: inherit;
-  box-shadow: 2px 0 4px rgba(15, 23, 42, 0.04);
+  background: inherit;
+  box-shadow: 1px 0 0 var(--sf-bg, #f2f0f4);
 }
 
 .pl-estado-table--anual thead th.pl-col-sticky {
   z-index: 3;
-  background: #f8fafc !important;
+  background: var(--sf-card, #fff) !important;
+}
+
+.pl-anual-row-margen td {
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .pl-col-concepto {
+    min-width: 10rem;
+  }
 }

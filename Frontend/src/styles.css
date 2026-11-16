@@ -1,6 +1,7 @@
 /* AG Grid Styles */
 @import '@webdatarocks/webdatarocks/webdatarocks.min.css';
 @import './styles/smart-colors.css';
+@import './app/views/dashboard/sections/finanzas/finanzas-suite.design.css';
 
 /*Scrool Chrome*/
 

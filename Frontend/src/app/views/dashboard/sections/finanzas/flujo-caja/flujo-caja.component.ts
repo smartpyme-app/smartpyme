@@ -34,6 +34,17 @@ export interface FlujoKpiChartItem {
   sublinea?: string;
 }
 
+const SF_CHART = {
+  blue: '#005cb8',
+  blueDark: '#001b3f',
+  muted: '#5e5e62',
+  lineSoft: '#e3e2e6',
+  good: '#16a34a',
+  alert: '#ba1a1a',
+  orange: '#d17c2f',
+  band: 'rgba(215, 226, 255, 0.45)',
+} as const;
+
 @Component({
   selector: 'app-flujo-caja',
   templateUrl: './flujo-caja.component.html',
@@ -239,7 +250,7 @@ export class FlujoCajaComponent implements OnInit, OnChanges, OnDestroy {
         left: 'center',
         itemWidth: 12,
         itemHeight: 12,
-        textStyle: { fontSize: 11, color: '#64748b' },
+        textStyle: { fontSize: 11, color: SF_CHART.muted },
         data: ['Neto +', 'Neto −', 'Saldo', 'Rango de escenarios'],
       },
       tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
@@ -248,7 +259,7 @@ export class FlujoCajaComponent implements OnInit, OnChanges, OnDestroy {
         data: labels,
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { color: '#94a3b8', fontSize: 11 },
+        axisLabel: { color: SF_CHART.muted, fontSize: 11 },
       },
       yAxis: {
         type: 'value',
@@ -256,14 +267,14 @@ export class FlujoCajaComponent implements OnInit, OnChanges, OnDestroy {
         max: yMax,
         interval,
         axisLabel: {
-          color: '#94a3b8',
+          color: SF_CHART.muted,
           fontSize: 11,
           formatter: (v: number) => {
             const sym = getEmpresaCurrencySymbol(empresa);
             return `${sym}${v / 1000}k`;
           },
         },
-        splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } },
+        splitLine: { lineStyle: { color: SF_CHART.lineSoft, type: 'dashed' } },
       },
       series: [
         {
@@ -280,7 +291,7 @@ export class FlujoCajaComponent implements OnInit, OnChanges, OnDestroy {
           type: 'line',
           data: saldoAlto.map((hi, i) => hi - saldoBajo[i]),
           lineStyle: { opacity: 0 },
-          areaStyle: { color: 'rgba(147, 197, 253, 0.35)' },
+          areaStyle: { color: SF_CHART.band },
           stack: 'band',
           symbol: 'none',
           silent: true,
@@ -290,7 +301,7 @@ export class FlujoCajaComponent implements OnInit, OnChanges, OnDestroy {
           type: 'bar',
           data: netoPos,
           barMaxWidth: 18,
-          itemStyle: { color: '#1e3a5f', borderRadius: [3, 3, 0, 0] },
+          itemStyle: { color: SF_CHART.blueDark, borderRadius: [3, 3, 0, 0] },
         },
         {
           name: 'Neto −',
@@ -299,7 +310,7 @@ export class FlujoCajaComponent implements OnInit, OnChanges, OnDestroy {
           barMaxWidth: 18,
           itemStyle: {
             color: (params: { dataIndex: number }) =>
-              labels[params.dataIndex] === semCritica ? '#ef4444' : '#fb923c',
+              labels[params.dataIndex] === semCritica ? SF_CHART.alert : SF_CHART.orange,
             borderRadius: [0, 0, 3, 3],
           },
         },
@@ -310,20 +321,20 @@ export class FlujoCajaComponent implements OnInit, OnChanges, OnDestroy {
           smooth: 0.25,
           symbol: 'circle',
           symbolSize: 8,
-          lineStyle: { width: 2.5, color: '#3b82f6' },
+          lineStyle: { width: 2.5, color: SF_CHART.blue },
           itemStyle: {
             color: '#fff',
-            borderColor: '#3b82f6',
+            borderColor: SF_CHART.blue,
             borderWidth: 2,
           },
           markLine: colchon
             ? {
                 silent: true,
                 symbol: 'none',
-                lineStyle: { type: 'dashed', color: '#f97316', width: 1.5 },
+                lineStyle: { type: 'dashed', color: SF_CHART.orange, width: 1.5 },
                 label: {
                   formatter: 'colchón',
-                  color: '#f97316',
+                  color: SF_CHART.orange,
                   fontSize: 11,
                 },
                 data: [{ yAxis: colchon }],

@@ -1,8 +1,10 @@
-<div class="modelado-dashboard ventas-dashboard">
+<div class="modelado-dashboard sf-stack">
   @if (cargando && !contenidoListo) {
-    <div class="text-center py-5" role="status">
-      <div class="spinner-border text-primary" aria-hidden="true"></div>
-      <p class="text-muted mt-2 mb-0">Cargando modelado…</p>
+    <div class="sf-card text-center py-5" role="status">
+      <div class="spinner-border text-primary" aria-hidden="true" style="width: 2.5rem; height: 2.5rem;">
+        <span class="visually-hidden">Cargando modelado…</span>
+      </div>
+      <p class="sf-note mt-3 mb-0">Cargando modelado…</p>
     </div>
   } @else if (errorMensaje && !contenidoListo) {
     <div class="alert alert-warning mb-0" role="alert">{{ errorMensaje }}</div>
@@ -12,7 +14,7 @@
   }
   <div class="row mb-2">
     <div class="col-12">
-      <div class="card card-performance">
+      <div class="sf-card">
         <div class="card-body p-4">
           <div class="modelado-resumen">
             <h2 class="modelado-titulo mb-0">Modelado</h2>
@@ -49,7 +51,7 @@
 
   <div class="row mb-2">
     <div class="col-12">
-      <div class="card card-performance">
+      <div class="sf-card">
         <div class="card-body p-3 px-4">
           <div class="modelado-perfil d-flex flex-wrap align-items-center gap-3 gap-md-4">
             <div class="modelado-perfil-titulo d-inline-flex align-items-center gap-2">
@@ -93,12 +95,12 @@
   <div class="row g-2 mb-2">
     @for (modulo of data.modulosExternos.modulos; track modulo.titulo) {
       <div class="col-lg-6">
-        <div class="card card-performance h-100">
+        <div class="sf-card h-100">
           <div class="card-body p-4">
             <div class="card h-100">
               <div class="card-body p-3 d-flex flex-column">
                 <header class="modelado-modulo-header mb-3">
-                  <h3 class="ventas-card-title mb-1">{{ modulo.titulo }}</h3>
+                  <h3 class="sf-card-head__title mb-1">{{ modulo.titulo }}</h3>
                   <p class="modelado-modulo-estado mb-0">
                     <span class="modelado-modulo-dot" aria-hidden="true"></span>
                     {{ modulo.estadoConexion }}
@@ -128,11 +130,11 @@
 
   <div class="row g-2 mb-2">
     <div class="col-lg-8">
-      <div class="card card-performance h-100">
+      <div class="sf-card h-100">
         <div class="card-body p-4">
           <div class="card h-100">
             <div class="card-body p-3">
-              <h2 class="ventas-card-title mb-3">{{ data.paso1Titulo }}</h2>
+              <h2 class="sf-card-head__title mb-3">{{ data.paso1Titulo }}</h2>
 
               <ul class="modelado-gastos-list list-unstyled mb-3">
                 @for (gasto of gastos; track gasto.id) {
@@ -156,19 +158,19 @@
                       [attr.value]="gasto.montoMensual ? gasto.montoMensual : ''"
                       (blur)="guardarMonto(gasto, $event)"
                       [attr.aria-label]="'Monto mensual ' + gasto.nombre" />
-                    <div class="modelado-tipo-group" role="group" [attr.aria-label]="'Tipo de ' + gasto.nombre">
+                    <div class="sf-seg" role="group" [attr.aria-label]="'Tipo de ' + gasto.nombre">
                       <button
                         type="button"
-                        class="modelado-tipo-btn"
-                        [class.modelado-tipo-btn--active]="gasto.tipo === 'fijo'"
+                        class="sf-seg__btn"
+                        [class.is-active]="gasto.tipo === 'fijo'"
                         [attr.aria-pressed]="gasto.tipo === 'fijo'"
                         (mousedown)="elegirTipo(gasto, 'fijo', $event)">
                         Fijo
                       </button>
                       <button
                         type="button"
-                        class="modelado-tipo-btn"
-                        [class.modelado-tipo-btn--active]="gasto.tipo === 'variable'"
+                        class="sf-seg__btn"
+                        [class.is-active]="gasto.tipo === 'variable'"
                         [attr.aria-pressed]="gasto.tipo === 'variable'"
                         (mousedown)="elegirTipo(gasto, 'variable', $event)">
                         Variable
@@ -302,11 +304,11 @@
     </div>
 
     <div class="col-lg-4">
-      <div class="card card-performance h-100">
+      <div class="sf-card h-100">
         <div class="card-body p-4">
           <div class="card h-100">
             <div class="card-body p-3">
-              <h2 class="ventas-card-title mb-3">Punto de equilibrio</h2>
+              <h2 class="sf-card-head__title mb-3">Punto de equilibrio</h2>
 
               <dl class="modelado-equilibrio-list mb-3">
                 <div class="modelado-equilibrio-item">
@@ -357,11 +359,11 @@
 
   <div class="row mb-2">
     <div class="col-12">
-      <div class="card card-performance">
+      <div class="sf-card">
         <div class="card-body p-4">
           <div class="card">
             <div class="card-header bg-white border-0 py-3">
-              <h2 class="ventas-card-title mb-0">{{ data.paso2Titulo }}</h2>
+              <h2 class="sf-card-head__title mb-0">{{ data.paso2Titulo }}</h2>
             </div>
             <div class="card-body pt-0 px-3 pb-3">
               <div class="table-responsive">
@@ -593,18 +595,18 @@
 
   <div class="row mb-2">
     <div class="col-12">
-      <div class="card card-performance">
+      <div class="sf-card">
         <div class="card-body p-4">
           <div class="card">
             <div class="card-header bg-white border-0 py-3">
               <div class="modelado-p3-header">
-                <h2 class="ventas-card-title mb-0">{{ data.paso3Titulo }}</h2>
-                <div class="modelado-vista-group" role="group" aria-label="Vista del presupuesto">
+                <h2 class="sf-card-head__title mb-0">{{ data.paso3Titulo }}</h2>
+                <div class="sf-seg" role="group" aria-label="Vista del presupuesto">
                   @for (vista of presupuestoVistas; track vista.id) {
                     <button
                       type="button"
-                      class="modelado-vista-btn"
-                      [class.modelado-vista-btn--active]="presupuestoVista === vista.id"
+                      class="sf-seg__btn"
+                      [class.is-active]="presupuestoVista === vista.id"
                       [attr.aria-pressed]="presupuestoVista === vista.id"
                       [disabled]="!vista.activo || (vista.id === 'sucursales' && !presupuestoSucursalesActivo())"
                       (click)="presupuestoVista = vista.id">
@@ -615,19 +617,19 @@
               </div>
               <div class="modelado-p3-toolbar">
                 <span class="modelado-p3-reparto-label">Reparto por mes:</span>
-                <div class="modelado-tipo-group" role="group" aria-label="Reparto por mes">
+                <div class="sf-seg" role="group" aria-label="Reparto por mes">
                   <button
                     type="button"
-                    class="modelado-tipo-btn"
-                    [class.modelado-tipo-btn--active]="presupuestoReparto === 'estacionalidad'"
+                    class="sf-seg__btn"
+                    [class.is-active]="presupuestoReparto === 'estacionalidad'"
                     [attr.aria-pressed]="presupuestoReparto === 'estacionalidad'"
                     (click)="elegirReparto('estacionalidad')">
                     Según su estacionalidad
                   </button>
                   <button
                     type="button"
-                    class="modelado-tipo-btn"
-                    [class.modelado-tipo-btn--active]="presupuestoReparto === 'igual'"
+                    class="sf-seg__btn"
+                    [class.is-active]="presupuestoReparto === 'igual'"
                     [attr.aria-pressed]="presupuestoReparto === 'igual'"
                     (click)="elegirReparto('igual')">
                     Igual cada mes
@@ -819,11 +821,11 @@
 
   <div class="row mb-2">
     <div class="col-12">
-      <div class="card card-performance">
+      <div class="sf-card">
         <div class="card-body p-4">
           <div class="card">
             <div class="card-body p-3">
-              <h2 class="ventas-card-title modelado-p4-titulo mb-3">
+              <h2 class="sf-card-head__title modelado-p4-titulo mb-3">
                 <span class="modelado-p4-icon" aria-hidden="true">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path

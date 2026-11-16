@@ -1,23 +1,23 @@
 <div class="finanzas-section">
-  <header class="suite-financiera-header bg-white rounded px-4 pt-4 pb-0">
-    <div class="d-flex flex-wrap align-items-center gap-2 gap-md-3 mb-2">
-      <h1 class="suite-financiera-title mb-0">Suite Financiera</h1>
+  <header class="sf-page-head">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <h1 class="sf-page-head__title">Suite Financiera</h1>
     </div>
-    <p class="suite-financiera-subtitle text-muted mb-0">{{ subtituloContexto }}</p>
+    <p class="sf-page-head__sub">{{ subtituloContexto }}</p>
 
-    <nav class="suite-financiera-tabs mt-4" role="tablist" aria-label="Suite Financiera">
+    <nav class="sf-tabs" role="tablist" aria-label="Suite Financiera">
       @for (tab of tabs; track tab.id) {
         <button
           type="button"
-          class="suite-financiera-tab"
+          class="sf-tab"
           role="tab"
           [attr.aria-selected]="tabActiva === tab.id"
-          [class.suite-financiera-tab--active]="tabActiva === tab.id"
+          [class.is-active]="tabActiva === tab.id"
           (click)="seleccionarTab(tab.id)">
-          <span class="suite-financiera-tab__icon" aria-hidden="true">
+          <span class="sf-tab__icon" aria-hidden="true">
             @switch (tab.id) {
               @case ('pl') {
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                   <path d="M14 3v4a1 1 0 0 0 1 1h4" />
                   <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
@@ -26,7 +26,7 @@
                 </svg>
               }
               @case ('rentabilidad') {
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                   <path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
                   <path d="M12 12m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0" />
@@ -34,21 +34,21 @@
                 </svg>
               }
               @case ('flujo') {
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                   <path d="M17 8v-3a1 1 0 0 0 -1 -1h-10a2 2 0 0 0 0 4h12a1 1 0 0 1 1 1v3m0 4v3a1 1 0 0 1 -1 1h-12a2 2 0 0 1 -2 -2v-12" />
                   <path d="M20 12v4h-4a2 2 0 0 1 0 -4h4" />
                 </svg>
               }
               @case ('cierre') {
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                   <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
                   <path d="M9 12l2 2l4 -4" />
                 </svg>
               }
               @case ('modelado') {
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                   <path d="M4 10a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
                   <path d="M6 4v4" />
@@ -62,7 +62,7 @@
                 </svg>
               }
               @case ('alertas') {
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                   <path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" />
                   <path d="M9 17v1a3 3 0 0 0 6 0v-1" />
@@ -70,16 +70,15 @@
               }
             }
           </span>
-          <span class="suite-financiera-tab__label">{{ tab.label }}</span>
+          <span class="sf-tab__label">{{ tab.label }}</span>
         </button>
       }
     </nav>
 
     @if (tabActiva === 'pl' || tabActiva === 'rentabilidad' || tabActiva === 'flujo') {
-      <div class="pl-gerencial-toolbar" aria-label="Filtros P&L, rentabilidad y flujo de caja">
-        <div class="suite-filtros-compartidos" role="group" aria-label="Mes, año y sucursal">
+      <div class="sf-toolbar" aria-label="Filtros P&L, rentabilidad y flujo de caja">
+        <div class="sf-field" role="group" aria-label="Mes, año y sucursal">
           <select
-            class="pl-sucursal-select suite-filtro-mes"
             [value]="suiteMes"
             (change)="seleccionarSuiteMes($event)"
             aria-label="Mes de referencia">
@@ -87,9 +86,10 @@
               <option [value]="opt.value">{{ opt.label }}</option>
             }
           </select>
+        </div>
 
+        <div class="sf-field" style="min-width: 110px">
           <select
-            class="pl-sucursal-select suite-filtro-anio"
             [value]="suiteAnio"
             (change)="seleccionarSuiteAnio($event)"
             aria-label="Año de referencia">
@@ -97,9 +97,10 @@
               <option [value]="anio">{{ anio }}</option>
             }
           </select>
+        </div>
 
+        <div class="sf-field" style="min-width: 170px">
           <select
-            class="pl-sucursal-select suite-filtro-sucursal"
             [value]="suiteSucursalId"
             (change)="seleccionarSuiteSucursal($event)"
             aria-label="Sucursal">
@@ -107,25 +108,28 @@
               <option [value]="opt.id">{{ opt.label }}</option>
             }
           </select>
-
-          <select
-            class="rent-horizonte-select"
-            [value]="rentHorizonte"
-            (change)="seleccionarRentHorizonte($event)"
-            aria-label="Horizonte de rentabilidad">
-            @for (opt of rentHorizonteOpciones; track opt.id) {
-              <option [value]="opt.id">{{ opt.label }}</option>
-            }
-          </select>
         </div>
 
+        @if (tabActiva === 'rentabilidad') {
+          <div class="sf-field" style="min-width: 130px">
+            <select
+              [value]="rentHorizonte"
+              (change)="seleccionarRentHorizonte($event)"
+              aria-label="Horizonte de rentabilidad">
+              @for (opt of rentHorizonteOpciones; track opt.id) {
+                <option [value]="opt.id">{{ opt.label }}</option>
+              }
+            </select>
+          </div>
+        }
+
         @if (tabActiva === 'pl') {
-          <div class="pl-segment-group pl-segment-group--navy" role="group" aria-label="Base contable">
+          <div class="sf-seg" role="group" aria-label="Base contable">
             @for (opt of plBaseOpciones; track opt.id) {
               <button
                 type="button"
-                class="pl-segment"
-                [class.pl-segment--active]="plBase === opt.id"
+                class="sf-seg__btn"
+                [class.is-active]="plBase === opt.id"
                 [attr.aria-pressed]="plBase === opt.id"
                 (click)="seleccionarPlBase(opt.id)">
                 {{ opt.label }}
@@ -133,12 +137,12 @@
             }
           </div>
 
-          <div class="pl-segment-group pl-segment-group--orange" role="group" aria-label="Comparación">
+          <div class="sf-seg" role="group" aria-label="Comparación">
             @for (opt of plComparacionOpciones; track opt.id) {
               <button
                 type="button"
-                class="pl-segment"
-                [class.pl-segment--active]="plComparacion === opt.id"
+                class="sf-seg__btn"
+                [class.is-active]="plComparacion === opt.id"
                 [attr.aria-pressed]="plComparacion === opt.id"
                 (click)="seleccionarPlComparacion(opt.id)">
                 {{ opt.label }}
@@ -150,7 +154,7 @@
     }
   </header>
 
-  <div class="suite-financiera-panel mt-3" role="tabpanel">
+  <div class="suite-financiera-panel" role="tabpanel">
     @if (tabActiva === 'pl') {
       <app-pl-gerencial
         [query]="plQuery"

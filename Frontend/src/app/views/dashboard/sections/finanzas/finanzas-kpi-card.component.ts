@@ -8,15 +8,18 @@ import { CurrencyFormatService } from '@services/currency-format.service';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="card fin-kpi-card">
-      <div class="card-body pt-3 ps-3 pe-3 pb-3">
-        <div class="fin-kpi-label text-muted mb-1">{{ data.title }}</div>
-        <div class="fin-kpi-value mb-1" [class.text-danger]="negativo" [class.text-dark]="!negativo">
-          @if (muestraMoneda) {
-            <span>{{ moneda }}</span>
-          }
-          {{ texto }}
-        </div>
+    <div class="sf-kpi fin-kpi-card">
+      <div class="sf-kpi__label fin-kpi-label">{{ data.title }}</div>
+      <div
+        class="sf-kpi__value fin-kpi-value"
+        [class.sf-kpi__value--neg]="negativo"
+        [class.fin-kpi-value--neg]="negativo">
+        @if (muestraMoneda) {
+          <span class="fin-kpi-moneda">{{ moneda }}</span>
+        }
+        {{ texto }}
+      </div>
+      <div class="fin-kpi-slot">
         <ng-content></ng-content>
       </div>
     </div>
@@ -32,39 +35,26 @@ import { CurrencyFormatService } from '@services/currency-format.service';
 
     .fin-kpi-card {
       height: 100%;
-      background-color: #fff;
-      border: 1px solid rgba(0, 118, 227, 0.15);
-      border-radius: 8px;
-      box-shadow: none;
-      min-width: 0;
-      overflow: hidden;
-    }
-
-    .fin-kpi-card .card-body {
       min-width: 0;
     }
 
     .fin-kpi-label {
-      font-size: 0.62rem;
-      font-weight: 600;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      line-height: 1.3;
+      white-space: normal;
+      overflow: visible;
+    }
+
+    .fin-kpi-moneda {
+      font-weight: 700;
+    }
+
+    .fin-kpi-value {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    .fin-kpi-value {
-      font-size: clamp(1rem, 2.8vw, 1.45rem);
-      font-weight: 400;
-      line-height: 1.2;
-      letter-spacing: -0.02em;
-      color: #1e293b;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .fin-kpi-slot:empty {
+      display: none;
     }
   `,
 })

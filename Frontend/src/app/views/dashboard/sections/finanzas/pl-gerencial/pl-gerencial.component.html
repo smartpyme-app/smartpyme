@@ -1,201 +1,186 @@
-<div class="pl-gerencial-dashboard ventas-dashboard">
+<div class="pl-gerencial-dashboard sf-stack">
   @if (cargando && !filas.length) {
-    <div class="text-center py-5">
+    <div class="sf-card text-center py-5">
       <div class="spinner-border text-primary" role="status" style="width: 2.5rem; height: 2.5rem;">
         <span class="visually-hidden">Cargando P&amp;L…</span>
       </div>
-      <p class="text-muted small mt-3 mb-0">Cargando P&amp;L gerencial…</p>
+      <p class="sf-note mt-3 mb-0">Cargando P&amp;L gerencial…</p>
     </div>
   } @else if (errorMensaje && !filas.length) {
     <div class="alert alert-warning mb-0" role="alert">{{ errorMensaje }}</div>
   } @else {
     @if (errorMensaje) {
-      <div class="alert alert-warning" role="alert">{{ errorMensaje }}</div>
+      <div class="alert alert-warning mb-0" role="alert">{{ errorMensaje }}</div>
     }
-    <div class="row mb-2">
-      <div class="col-12">
-        <div class="card card-performance">
-          <div class="card-body p-4">
-            <div class="metrics-flex-row mb-3">
-              @for (item of kpiItems; track item.metric.title) {
-                <div class="metric-flex-col">
-                  <app-finanzas-kpi-card [data]="item.metric">
-                    @if (item.sublinea) {
-                      <p class="pl-kpi-sublinea mb-0">{{ item.sublinea }}</p>
+
+    @if (kpiItems.length) {
+      <div class="sf-grid sf-grid--kpi">
+        @for (item of kpiItems; track item.metric.title) {
+          <app-finanzas-kpi-card [data]="item.metric">
+            @if (item.sublinea) {
+              <p class="pl-kpi-sublinea sf-kpi__sub mb-0">{{ item.sublinea }}</p>
+            }
+          </app-finanzas-kpi-card>
+        }
+      </div>
+    }
+
+    @if (esVistaAnualMensual()) {
+      <section class="sf-card">
+        <header class="sf-card-head">
+          <div class="sf-card-head__main">
+            <span class="sf-card-head__icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"
+                  stroke="currentColor"
+                  stroke-width="1.5" />
+                <path d="M14 3v5h5" stroke="currentColor" stroke-width="1.5" />
+                <path d="M9 12h6M9 16h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+            </span>
+            <h3 class="sf-card-head__title mb-0">
+              Estado de resultados — {{ tituloEstadoAnual() }}
+            </h3>
+          </div>
+        </header>
+        <div class="sf-table-wrap pl-estado-scroll">
+          <table class="sf-table sf-table--compact pl-estado-table pl-estado-table--anual">
+            <thead>
+              <tr>
+                <th scope="col" class="pl-col-concepto pl-col-sticky">Concepto</th>
+                @for (abr of mesesAbr; track abr; let idx = $index) {
+                  <th scope="col" class="pl-col-mes" [class.pl-col-mes-activo]="esMesActivo(idx)">
+                    {{ abr }}@if (esMesActivo(idx)) {
+                      <span class="pl-mes-activo-mark" aria-hidden="true">*</span>
                     }
-                  </app-finanzas-kpi-card>
-                </div>
-              }
-            </div>
-
-            <div class="row">
-              <div class="col-12 mb-2">
-                @if (esVistaAnualMensual()) {
-                  <div class="pl-anual-estado-card">
-                    <header class="pl-anual-estado-header">
-                      <span class="pl-anual-estado-icon" aria-hidden="true">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path
-                            d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"
-                            stroke="currentColor"
-                            stroke-width="1.5" />
-                          <path d="M14 3v5h5" stroke="currentColor" stroke-width="1.5" />
-                          <path d="M9 12h6M9 16h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                        </svg>
-                      </span>
-                      <h3 class="pl-anual-estado-title mb-0">
-                        Estado de resultados — {{ tituloEstadoAnual() }}
-                      </h3>
-                    </header>
-                    <div class="pl-estado-scroll">
-                      <table class="table table-sm pl-estado-table pl-estado-table--anual mb-0">
-                        <thead>
-                          <tr>
-                            <th scope="col" class="pl-col-concepto pl-col-sticky">CONCEPTO</th>
-                            @for (abr of mesesAbr; track abr; let idx = $index) {
-                              <th
-                                scope="col"
-                                class="text-end pl-col-mes"
-                                [class.pl-col-mes-activo]="esMesActivo(idx)">
-                                {{ abr }}@if (esMesActivo(idx)) {
-                                  <span class="pl-mes-activo-mark" aria-hidden="true">*</span>
-                                }
-                              </th>
-                            }
-                            <th scope="col" class="text-end pl-col-total-anual">TOTAL</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          @for (row of filasVistaAnual; track row.key) {
-                            <tr
-                              [class.pl-anual-row-subtotal]="row.estilo === 'subtotal'"
-                              [class.pl-anual-row-margen]="row.estilo === 'margen'"
-                              [class.pl-anual-row-resultado]="row.estilo === 'resultado'">
-                              <td
-                                class="pl-col-concepto pl-col-sticky"
-                                [class.pl-concepto-indent]="row.indent">
-                                @if (row.indent) {
-                                  <span class="pl-concepto-chevron" aria-hidden="true">›</span>
-                                }
-                                <span
-                                  class="pl-concepto-text"
-                                  [class.pl-concepto-margen]="row.estilo === 'margen'">
-                                  {{ row.concepto }}
-                                </span>
-                              </td>
-                              @if (row.estilo === 'margen') {
-                                @for (idx of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]; track idx) {
-                                  <td
-                                    class="text-end pl-col-mes pl-celda-margen"
-                                    [class.pl-col-mes-activo]="esMesActivo(idx)">
-                                    {{ formatMargenAnual(row.margenMeses?.[idx]) }}
-                                  </td>
-                                }
-                                <td class="text-end pl-col-total-anual pl-celda-margen">
-                                  {{ formatMargenAnual(row.margenTotal) }}
-                                </td>
-                              } @else {
-                                @for (idx of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]; track idx) {
-                                  <td
-                                    class="text-end pl-col-mes"
-                                    [class.pl-col-mes-activo]="esMesActivo(idx)">
-                                    {{ formatMontoAnual(montoMesVista(row, idx)) }}
-                                  </td>
-                                }
-                                <td class="text-end fw-semibold pl-col-total-anual">
-                                  {{ formatMontoAnual(totalAnualVista(row)) }}
-                                </td>
-                              }
-                            </tr>
-                          }
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                } @else {
-                  <div class="pl-anual-estado-card">
-                    <header class="pl-anual-estado-header">
-                      <span class="pl-anual-estado-icon" aria-hidden="true">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path
-                            d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"
-                            stroke="currentColor"
-                            stroke-width="1.5" />
-                          <path d="M14 3v5h5" stroke="currentColor" stroke-width="1.5" />
-                          <path d="M9 12h6M9 16h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                        </svg>
-                      </span>
-                      <h3 class="pl-anual-estado-title mb-0">
-                        Estado de resultados —
-                        <span class="pl-estado-periodo">{{ tituloEstadoMes() }}</span>
-                      </h3>
-                    </header>
-                    <div class="table-responsive">
-                      <table class="table table-sm pl-estado-table pl-estado-table--mes mb-0">
-                        <thead>
-                          <tr>
-                            <th scope="col" class="pl-col-concepto">CONCEPTO</th>
-                            <th scope="col" class="text-end">{{ etiquetaColumnaMes() }}</th>
-                            <th scope="col" class="text-end">% VENTAS</th>
-                            <th scope="col" class="text-end">VS. {{ comparacionTitulo }}</th>
-                            <th scope="col" class="text-end">ACUM. {{ anioAcumulado }}</th>
-                            <th scope="col" class="text-end">% VENTAS</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          @for (fila of filas; track fila.lineId ?? fila.concepto) {
-                            <tr
-                              [class.pl-mes-row-subtotal]="claseFilaMes(fila) === 'subtotal'"
-                              [class.pl-mes-row-destacado]="claseFilaMes(fila) === 'destacado'">
-                              <td class="pl-col-concepto" [class.pl-concepto-indent]="fila.indent">
-                                @if (fila.indent) {
-                                  <span class="pl-concepto-chevron" aria-hidden="true">›</span>
-                                }
-                                <span class="pl-concepto-text">{{ fila.concepto }}</span>
-                              </td>
-                              <td class="text-end">{{ formatMontoAnual(fila.mes) }}</td>
-                              <td class="text-end pl-celda-pct">{{ formatPct(fila.pctVentasMes) }}</td>
-                              <td
-                                class="text-end"
-                                [class.pl-vs-pos]="variacionPositiva(fila)"
-                                [class.pl-vs-neg]="variacionNegativa(fila)">
-                                {{ formatVariacion(fila) }}
-                              </td>
-                              <td class="text-end fw-semibold">{{ formatMontoAnual(fila.acum) }}</td>
-                              <td class="text-end pl-celda-pct">{{ formatPct(fila.pctVentasAcum) }}</td>
-                            </tr>
-                          }
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                  </th>
                 }
-              </div>
-            </div>
-          </div>
+                <th scope="col" class="pl-col-total-anual">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of filasVistaAnual; track row.key) {
+                <tr
+                  [class.sf-row--highlight]="row.estilo === 'subtotal' || row.estilo === 'resultado'"
+                  [class.pl-anual-row-margen]="row.estilo === 'margen'">
+                  <td
+                    class="pl-col-concepto pl-col-sticky"
+                    [class.pl-concepto-indent]="row.indent">
+                    @if (row.indent) {
+                      <span class="pl-concepto-chevron" aria-hidden="true">›</span>
+                    }
+                    <span
+                      class="pl-concepto-text"
+                      [class.pl-concepto-margen]="row.estilo === 'margen'">
+                      {{ row.concepto }}
+                    </span>
+                  </td>
+                  @if (row.estilo === 'margen') {
+                    @for (idx of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]; track idx) {
+                      <td
+                        class="pl-col-mes pl-celda-margen"
+                        [class.pl-col-mes-activo]="esMesActivo(idx)">
+                        {{ formatMargenAnual(row.margenMeses?.[idx]) }}
+                      </td>
+                    }
+                    <td class="pl-col-total-anual pl-celda-margen">
+                      {{ formatMargenAnual(row.margenTotal) }}
+                    </td>
+                  } @else {
+                    @for (idx of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]; track idx) {
+                      <td
+                        class="pl-col-mes"
+                        [class.pl-col-mes-activo]="esMesActivo(idx)">
+                        {{ formatMontoAnual(montoMesVista(row, idx)) }}
+                      </td>
+                    }
+                    <td class="pl-col-total-anual sf-cell-strong">
+                      {{ formatMontoAnual(totalAnualVista(row)) }}
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
         </div>
-      </div>
-    </div>
+      </section>
+    } @else {
+      <section class="sf-card">
+        <header class="sf-card-head">
+          <div class="sf-card-head__main">
+            <span class="sf-card-head__icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"
+                  stroke="currentColor"
+                  stroke-width="1.5" />
+                <path d="M14 3v5h5" stroke="currentColor" stroke-width="1.5" />
+                <path d="M9 12h6M9 16h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+            </span>
+            <h3 class="sf-card-head__title mb-0">
+              Estado de resultados —
+              <span class="pl-estado-periodo">{{ tituloEstadoMes() }}</span>
+            </h3>
+          </div>
+        </header>
+        <div class="sf-table-wrap">
+          <table class="sf-table sf-table--compact pl-estado-table pl-estado-table--mes">
+            <thead>
+              <tr>
+                <th scope="col" class="pl-col-concepto">Concepto</th>
+                <th scope="col">{{ etiquetaColumnaMes() }}</th>
+                <th scope="col">% ventas</th>
+                <th scope="col">vs. {{ comparacionTitulo }}</th>
+                <th scope="col">Acum. {{ anioAcumulado }}</th>
+                <th scope="col">% ventas</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of filas; track fila.lineId ?? fila.concepto) {
+                <tr [class.sf-row--highlight]="claseFilaMes(fila) === 'subtotal' || claseFilaMes(fila) === 'destacado'">
+                  <td class="pl-col-concepto" [class.pl-concepto-indent]="fila.indent">
+                    @if (fila.indent) {
+                      <span class="pl-concepto-chevron" aria-hidden="true">›</span>
+                    }
+                    <span class="pl-concepto-text">{{ fila.concepto }}</span>
+                  </td>
+                  <td>{{ formatMontoAnual(fila.mes) }}</td>
+                  <td class="pl-celda-pct">{{ formatPct(fila.pctVentasMes) }}</td>
+                  <td
+                    [class.sf-cell-pos]="variacionPositiva(fila)"
+                    [class.sf-cell-neg]="variacionNegativa(fila)">
+                    {{ formatVariacion(fila) }}
+                  </td>
+                  <td class="sf-cell-strong">{{ formatMontoAnual(fila.acum) }}</td>
+                  <td class="pl-celda-pct">{{ formatPct(fila.pctVentasAcum) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
 
-    <div class="row mb-2">
-      <div class="col-12">
-        <div class="card card-performance">
-          <div class="card-body p-4">
-            <div class="card h-100">
-              <div class="card-header bg-white border-0 py-3 text-center">
-                <div class="ventas-card-title mb-0">
-                  Gastos como % de ventas — {{ etiquetaMesTitulo() }} vs. su promedio de 6 meses
-                </div>
-              </div>
-              <div class="card-body pt-0">
-                <app-pl-gastos-pct-ventas
-                  [mesEtiqueta]="etiquetaMesTitulo()"
-                  [data]="gastosPctVentas"></app-pl-gastos-pct-ventas>
-              </div>
-            </div>
-          </div>
+    <section class="sf-card">
+      <header class="sf-card-head">
+        <div class="sf-card-head__main">
+          <span class="sf-card-head__icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 20V5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              <path d="M4 20h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              <path d="M8 17v-5M12 17V8M16 17v-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+          </span>
+          <h3 class="sf-card-head__title mb-0">
+            Gastos como % de ventas — {{ etiquetaMesTitulo() }} vs. su promedio de 6 meses
+          </h3>
         </div>
-      </div>
-    </div>
+      </header>
+      <app-pl-gastos-pct-ventas
+        [mesEtiqueta]="etiquetaMesTitulo()"
+        [data]="gastosPctVentas"></app-pl-gastos-pct-ventas>
+    </section>
   }
 </div>

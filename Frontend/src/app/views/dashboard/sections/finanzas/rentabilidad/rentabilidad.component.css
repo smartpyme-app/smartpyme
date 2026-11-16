@@ -1,83 +1,89 @@
-/* Shell alineado con dashboard Ventas (card-performance, metric-card) */
-.rentabilidad-dashboard.ventas-dashboard .card {
-  margin-bottom: 0 !important;
+/* Rentabilidad — layout y detalle; primitivas en finanzas-suite.design.css */
+
+.rentabilidad-dashboard {
+  gap: var(--sf-gap, 14px);
 }
 
-.rentabilidad-dashboard .card-performance {
-  background-color: #ffffff;
-  border: 1px solid rgba(0, 118, 227, 0.15) !important;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 118, 227, 0.08) !important;
-}
-
-.rentabilidad-dashboard .card-performance .card {
-  border: 1px solid rgba(0, 118, 227, 0.15) !important;
-  box-shadow: none !important;
-  border-radius: 8px !important;
-}
-
-.metrics-flex-row {
-  display: flex;
+.rent-dimension-bar {
   flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: stretch;
 }
 
-.metric-flex-col {
-  flex: 1 1 160px;
-  min-width: 155px;
-  max-width: 100%;
-  display: flex;
+.rent-dimension-tab {
+  gap: 0.4rem;
 }
 
-.metrics-flex-row app-finanzas-kpi-card {
-  flex: 1;
-  width: 100%;
+.rent-dimension-icon,
+.rent-tabla-titulo-icon {
+  display: inline-flex;
+  line-height: 0;
 }
 
-.ventas-card-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #333;
+.rent-kpi-linea,
+.rent-kpi-sublinea {
+  white-space: normal;
 }
 
-.rent-dashboard-table thead th {
-  background-color: #66a3ff !important;
-  color: #ffffff !important;
-  font-weight: 600;
-  font-size: 0.875rem;
+.rent-productos-scroll {
+  max-height: 28rem;
+  overflow: auto;
+}
+
+.rent-tabla.sf-table thead th {
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.rent-tabla.sf-table .rent-th-num,
+.rent-mini .rent-th-num {
+  text-align: right;
+}
+
+.rent-tabla.sf-table .rent-th-spark {
   text-align: center;
-  vertical-align: middle;
-  border: none;
-  padding: 12px 16px;
+  width: 4.5rem;
 }
 
-.rent-dashboard-table thead th:first-child {
-  text-align: left;
+.rent-col-fuerte {
+  font-weight: 600;
 }
 
-.rent-dashboard-table tbody tr {
-  border-bottom: 1px solid #e0e0e0;
-  transition: background-color 0.15s ease;
+.rent-text-pos {
+  color: var(--sf-good, #16a34a);
+  font-weight: 600;
 }
 
-.rent-dashboard-table tbody tr:nth-child(even) {
-  background-color: #f7f7f7;
+.rent-text-neg {
+  color: var(--sf-alert, #ba1a1a);
+  font-weight: 600;
 }
 
-.rent-dashboard-table tbody tr:nth-child(odd) {
-  background-color: #ffffff;
+.rent-text-warn {
+  color: var(--sf-amber, #914c00);
+  font-weight: 600;
 }
 
-.rent-dashboard-table tbody tr:hover {
-  background-color: #e8f0fe;
+.rent-text-muted {
+  color: var(--sf-soft-text, #5e5e62);
 }
 
-.rent-dashboard-table tbody td {
-  padding: 12px 14px;
-  font-size: 0.875rem;
-  vertical-align: middle;
-  border: none;
+.rent-col-nombre {
+  font-weight: 600;
+}
+
+.rent-spark {
+  width: 3.5rem;
+  height: 1.625rem;
+  display: block;
+  margin: 0 auto;
+}
+
+.rent-spark-up {
+  stroke: var(--sf-good, #16a34a);
+}
+
+.rent-spark-down {
+  stroke: var(--sf-alert, #ba1a1a);
 }
 
 .rent-detalle--suite {
@@ -89,8 +95,8 @@
 }
 
 .rent-detalle-kpis .rent-kpi-card {
-  border: 1px solid rgba(0, 118, 227, 0.15);
-  border-radius: 8px;
+  border: 1px solid var(--sf-line, #c7c6ca);
+  border-radius: var(--sf-radius, 8px);
   box-shadow: none;
 }
 
@@ -101,11 +107,11 @@
 }
 
 .rent-kpi-card {
-  border: 1px solid #e8eaed;
-  border-radius: 12px;
-  background: #fff;
+  border: 1px solid var(--sf-line, #c7c6ca);
+  border-radius: var(--sf-radius, 8px);
+  background: var(--sf-card, #fff);
   padding: 0.85rem 1rem 0.75rem;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-shadow: none;
 }
 
 .rent-kpi-titulo {
@@ -151,46 +157,9 @@
   color: #334155;
 }
 
-.rent-kpi-sublinea {
-  margin-top: 0.15rem;
-  font-size: 0.75rem;
-  color: #94a3b8;
-}
 
-.rent-dimension-bar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  padding: 0.4rem;
-  background: #fff;
-  border: 1px solid #e8eaed;
-  border-radius: 12px;
-}
-
-.rent-dimension-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  border: none;
-  background: transparent;
-  color: #64748b;
-  font-size: 0.9rem;
-  font-weight: 600;
-  padding: 0.45rem 0.8rem;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.rent-dimension-tab--active {
-  background: #e8f1fc;
-  color: #2563eb;
-}
-
-.rent-dimension-icon,
-.rent-tabla-titulo-icon {
-  display: inline-flex;
-  line-height: 0;
+.rent-detalle-ancla {
+  scroll-margin-top: 1rem;
 }
 
 .rent-detalle {
@@ -246,14 +215,12 @@
 .rent-fila:hover,
 .rent-fila:focus-visible,
 .rent-fila--activa {
-  background: #f4f8ff;
+  background: var(--sf-bg, #f2f0f4);
   outline: none;
 }
 
-.rent-fila:hover td:first-child,
-.rent-fila:focus-visible td:first-child,
-.rent-fila--activa td:first-child {
-  box-shadow: inset 3px 0 0 #3b82f6;
+.rent-fila--activa {
+  font-weight: 600;
 }
 
 .rent-th-num {
@@ -298,11 +265,8 @@
 }
 
 .rent-prod-fila--activa {
-  background: #f4f8ff !important;
-}
-
-.rent-prod-fila--activa td:first-child {
-  box-shadow: inset 3px 0 0 #3b82f6;
+  background: var(--sf-bg, #f2f0f4) !important;
+  font-weight: 600;
 }
 
 .rent-prod-detalle-header {
@@ -393,9 +357,9 @@
   align-self: flex-start;
   min-width: 10rem;
   padding: 0.85rem 1rem;
-  border-radius: 10px;
-  border: 1px solid #fed7aa;
-  background: #fff7ed;
+  border-radius: var(--sf-radius, 8px);
+  border: 1px solid var(--sf-line, #c7c6ca);
+  background: var(--sf-card, #fff);
 }
 
 .rent-descuento-titulo {
@@ -420,7 +384,7 @@
 }
 
 .rent-prod-fila--riesgo {
-  background: #fff7ed;
+  background: var(--sf-bg, #f2f0f4);
 }
 
 .rent-prod-fila--muerta {
@@ -472,15 +436,12 @@
 }
 
 .rent-cliente-fila--activa {
-  background: #f4f8ff !important;
-}
-
-.rent-cliente-fila--activa td:first-child {
-  box-shadow: inset 3px 0 0 #3b82f6;
+  background: var(--sf-bg, #f2f0f4) !important;
+  font-weight: 600;
 }
 
 .rent-cliente-fila--alerta {
-  background: #fff7ed;
+  background: var(--sf-bg, #f2f0f4);
 }
 
 .rent-text-warn {
@@ -505,19 +466,12 @@
 }
 
 .rent-proveedor-fila--activa {
-  background: #f4f8ff !important;
-}
-
-.rent-proveedor-fila--activa td:first-child {
-  box-shadow: inset 3px 0 0 #3b82f6;
+  background: var(--sf-bg, #f2f0f4) !important;
+  font-weight: 600;
 }
 
 .rent-proveedor-fila--alerta {
-  background: #fff7ed;
-}
-
-.rent-proveedor-fila--alerta td:first-child {
-  box-shadow: inset 3px 0 0 #fb923c;
+  background: var(--sf-bg, #f2f0f4);
 }
 
 .rent-proyecto-nombre {
@@ -536,11 +490,8 @@
 }
 
 .rent-proyecto-fila--seleccionada {
-  background: #f4f8ff !important;
-}
-
-.rent-proyecto-fila--seleccionada td:first-child {
-  box-shadow: inset 3px 0 0 #3b82f6;
+  background: var(--sf-bg, #f2f0f4) !important;
+  font-weight: 600;
 }
 
 .rent-tabla-proyecto .rent-th-progreso {
@@ -767,7 +718,7 @@
 }
 
 .rent-prov-margen-stroke {
-  stroke: #1e3a5f;
+  stroke: var(--sf-blue-dark, #001b3f);
 }
 
 .rent-legend-dot--naranja {
@@ -779,7 +730,7 @@
 }
 
 .rent-legend-dot--indigo {
-  background: #1e3a5f;
+  background: var(--sf-blue-dark, #001b3f);
 }
 
 .rent-prov-cliente-row {

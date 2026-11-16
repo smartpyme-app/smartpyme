@@ -1,24 +1,11 @@
-.modelado-dashboard.ventas-dashboard .card {
+/* Modelado — layout; primitivas en finanzas-suite.design.css */
+
+.modelado-dashboard.sf-stack {
+  gap: var(--sf-gap, 14px);
+}
+
+.modelado-dashboard .card {
   margin-bottom: 0 !important;
-}
-
-.modelado-dashboard .card-performance {
-  background-color: #ffffff;
-  border: 1px solid rgba(0, 118, 227, 0.15) !important;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 118, 227, 0.08) !important;
-}
-
-.modelado-dashboard .card-performance > .card-body > .card {
-  border: 1px solid rgba(0, 118, 227, 0.15) !important;
-  box-shadow: none !important;
-  border-radius: 8px !important;
-}
-
-.ventas-card-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1e3a5f;
 }
 
 .modelado-resumen {
@@ -31,7 +18,7 @@
 .modelado-titulo {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #1e3a5f;
+  color: var(--sf-blue-dark, #001b3f);
   min-width: 7rem;
 }
 
@@ -120,7 +107,7 @@
 
 .modelado-perfil-titulo {
   font-weight: 600;
-  color: #1e3a5f;
+  color: var(--sf-blue-dark, #001b3f);
 }
 
 .modelado-perfil-icon {
@@ -145,7 +132,7 @@
 .modelado-seccion-titulo {
   font-size: 1rem;
   font-weight: 700;
-  color: #1e3a5f;
+  color: var(--sf-blue-dark, #001b3f);
   margin: 0 0 0.15rem;
   padding-left: 0.15rem;
 }
@@ -217,7 +204,7 @@
 }
 
 .modelado-gasto-row--nuevo {
-  background: #fff7ed;
+  background: var(--sf-bg, #f2f0f4);
   border-color: #fed7aa;
 }
 
@@ -250,7 +237,7 @@
 .modelado-gasto-form-titulo {
   font-size: 1.05rem;
   font-weight: 800;
-  color: #1e3a5f;
+  color: var(--sf-blue-dark, #001b3f);
 }
 
 .modelado-gasto-form-label {
@@ -285,7 +272,7 @@
 }
 
 .modelado-comportamiento-btn--active {
-  background: #1e3a5f;
+  background: var(--sf-blue-dark, #001b3f);
   color: #fff;
 }
 
@@ -326,32 +313,6 @@
   margin-top: 0.1rem;
   font-size: 0.78rem;
   color: #64748b;
-}
-
-.modelado-tipo-group {
-  display: inline-flex;
-  gap: 0.15rem;
-  padding: 0.15rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 999px;
-  background: #f8fafc;
-  flex-shrink: 0;
-}
-
-.modelado-tipo-btn {
-  border: none;
-  background: transparent;
-  color: #64748b;
-  font-size: 0.78rem;
-  font-weight: 600;
-  padding: 0.35rem 0.7rem;
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.modelado-tipo-btn--active {
-  background: #1e3a5f;
-  color: #fff;
 }
 
 .modelado-agregar-gasto {
@@ -479,7 +440,7 @@
   margin-left: 0.35rem;
   padding: 0.1rem 0.45rem;
   border-radius: 999px;
-  background: #eff6ff;
+  background: var(--sf-bg, #f2f0f4);
   color: #1d4ed8;
   font-size: 0.65rem;
   font-weight: 700;
@@ -517,7 +478,7 @@
 }
 
 .modelado-cal-pendiente {
-  background: #fff7ed !important;
+  background: var(--sf-bg, #f2f0f4) !important;
 }
 
 .modelado-cal-pendiente-meta {
@@ -537,31 +498,6 @@
   gap: 1rem;
   flex-wrap: wrap;
   margin-bottom: 0.85rem;
-}
-
-.modelado-vista-group {
-  display: inline-flex;
-  gap: 0.15rem;
-  padding: 0.15rem;
-  border: 1px solid #dbeafe;
-  border-radius: 999px;
-  background: #f8fafc;
-}
-
-.modelado-vista-btn {
-  border: none;
-  background: transparent;
-  color: #64748b;
-  font-size: 0.78rem;
-  font-weight: 600;
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.modelado-vista-btn--active {
-  background: #3b82f6;
-  color: #fff;
 }
 
 .modelado-p3-toolbar {
@@ -677,7 +613,7 @@
   gap: 0.75rem 1rem;
   margin-top: 0.75rem;
   padding: 0.85rem 1rem;
-  background: #eff6ff;
+  background: var(--sf-bg, #f2f0f4);
   border-radius: 8px;
   font-size: 0.88rem;
 }
@@ -707,7 +643,7 @@
   flex-wrap: wrap;
   margin-top: 0.65rem;
   padding: 0.85rem 1rem;
-  background: #f0f9ff;
+  background: var(--sf-bg, #f2f0f4);
   border-radius: 8px;
   border: 1px solid #e0f2fe;
 }
@@ -743,7 +679,7 @@
 
 .modelado-p4-icon {
   display: inline-flex;
-  color: #1e3a5f;
+  color: var(--sf-blue-dark, #001b3f);
 }
 
 .modelado-p4-grid {
@@ -757,7 +693,7 @@
   flex: 1 1 160px;
   min-width: 150px;
   padding: 0.75rem 0.85rem;
-  background: #f0f9ff;
+  background: var(--sf-bg, #f2f0f4);
   border: 1px solid #e0f2fe;
   border-radius: 8px;
 }
@@ -771,7 +707,7 @@
   margin-bottom: 0.45rem;
   font-size: 0.78rem;
   font-weight: 700;
-  color: #1e3a5f;
+  color: var(--sf-blue-dark, #001b3f);
   line-height: 1.25;
 }
 
@@ -865,7 +801,7 @@
 }
 
 .modelado-pres-suc-contrib-row {
-  background: #eff6ff !important;
+  background: var(--sf-bg, #f2f0f4) !important;
 }
 
 .modelado-pres-suc-contrib--pos {
@@ -887,7 +823,3 @@
   background: #fef2f2 !important;
 }
 
-.modelado-vista-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}

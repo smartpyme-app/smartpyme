@@ -1,164 +1,121 @@
-/* Alineado con dashboard Ventas (card-performance, metric-card) */
-.flujo-caja-dashboard.ventas-dashboard .card {
-  margin-bottom: 0 !important;
-}
+/* Flujo de caja — layout; primitivas en finanzas-suite.design.css */
 
-.flujo-caja-dashboard .card-performance {
-  background-color: #ffffff;
-  border: 1px solid rgba(0, 118, 227, 0.15) !important;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 118, 227, 0.08) !important;
-}
-
-.flujo-caja-dashboard .card-performance > .card-body > .card,
-.flujo-caja-dashboard .flujo-posicion-grid .flujo-pos-card {
-  border: 1px solid rgba(0, 118, 227, 0.15) !important;
-  box-shadow: none !important;
-  border-radius: 8px !important;
-}
-
-.flujo-caja-dashboard .flujo-semanal-card {
-  border: none;
-  border-radius: 0;
-  padding: 0;
-  margin-top: 0;
-}
-
-.flujo-caja-dashboard .flujo-posicion-grid {
-  margin-top: 0;
-}
-
-.metrics-flex-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: stretch;
-}
-
-.metric-flex-col {
-  flex: 1 1 140px;
-  min-width: 130px;
-  max-width: 100%;
-  display: flex;
-}
-
-.metrics-flex-row app-finanzas-kpi-card {
-  flex: 1;
-  width: 100%;
+.flujo-caja-dashboard {
+  gap: var(--sf-gap, 14px);
 }
 
 .flujo-kpi-sublinea {
-  margin-top: 0.35rem;
-  font-size: 0.75rem;
-  line-height: 1.25;
-  color: #94a3b8;
+  white-space: normal;
 }
 
-.ventas-card-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #333;
+.flujo-context-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: var(--sf-gap, 14px);
+}
+
+.flujo-context-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  min-width: 0;
 }
 
 .flujo-context-item {
-  font-size: 0.875rem;
-  color: #475569;
+  font-size: 14px;
+  color: var(--sf-muted, #46464a);
 }
 
 .flujo-context-item strong {
-  color: #0f172a;
+  color: var(--sf-text, #1a1b1f);
   font-weight: 700;
 }
 
 .flujo-editar-link {
-  font-size: 0.875rem;
-  text-decoration: none;
+  margin-left: 4px;
+  min-height: 28px;
+  padding: 4px 10px;
+  vertical-align: baseline;
 }
 
 .flujo-vista-group {
-  display: inline-flex;
-  gap: 0.15rem;
-  padding: 0.2rem;
-  border: 1px solid rgba(0, 118, 227, 0.2);
-  border-radius: 999px;
-  background: #fff;
   flex-shrink: 0;
 }
 
-.flujo-vista-btn {
-  border: none;
-  background: transparent;
-  color: #64748b;
-  font-size: 0.875rem;
-  font-weight: 600;
-  padding: 0.45rem 0.9rem;
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.flujo-vista-btn--active {
-  background: #1e3a5f;
-  color: #fff;
+.flujo-supuestos-card,
+.flujo-proyeccion-card {
+  margin: 0;
 }
 
 .flujo-slider-block {
   display: block;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.flujo-slider-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .flujo-slider-label {
-  font-size: 0.85rem;
+  font-size: 14px;
   font-weight: 600;
-  color: #334155;
+  color: var(--sf-text, #1a1b1f);
 }
 
 .flujo-slider-track-wrap {
   position: relative;
-  padding: 0.35rem 0 0.15rem;
+  padding: 6px 0 4px;
 }
 
 .flujo-slider {
   width: 100%;
-  accent-color: #2563eb;
+  accent-color: var(--sf-blue, #005cb8);
   margin: 0;
 }
 
 .flujo-slider-marker {
   position: absolute;
-  top: 0.15rem;
+  top: 2px;
   width: 0;
   height: 0;
   margin-left: -5px;
   border-left: 5px solid transparent;
   border-right: 5px solid transparent;
-  border-bottom: 7px solid #2563eb;
+  border-bottom: 7px solid var(--sf-blue, #005cb8);
   pointer-events: none;
 }
 
 .flujo-slider-marker--historial {
   top: auto;
-  bottom: 0.1rem;
+  bottom: 2px;
   border-bottom: none;
-  border-top: 7px solid #94a3b8;
+  border-top: 7px solid var(--sf-soft-text, #5e5e62);
 }
 
 .flujo-slider-valor {
-  font-size: 0.95rem;
+  font-size: 14px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--sf-text, #1a1b1f);
 }
 
 .flujo-slider-scale {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 0.35rem;
-  font-size: 0.72rem;
-  color: #94a3b8;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--sf-soft-text, #5e5e62);
 }
 
 .flujo-slider-historial {
-  color: #64748b;
   font-weight: 500;
 }
 

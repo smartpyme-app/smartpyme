@@ -1,10 +1,12 @@
 <section class="flujo-semanal-card" aria-labelledby="flujo-semanal-titulo">
-  <div class="flujo-semanal-header">
-    <h2 id="flujo-semanal-titulo" class="flujo-semanal-titulo">Detalle semana a semana</h2>
-  </div>
+  <header class="sf-card-head">
+    <div class="sf-card-head__main">
+      <h2 id="flujo-semanal-titulo" class="sf-card-head__title mb-0">Detalle semana a semana</h2>
+    </div>
+  </header>
 
-  <div class="table-responsive">
-    <table class="flujo-semanal-table">
+  <div class="sf-table-wrap">
+    <table class="sf-table sf-table--compact flujo-semanal-table">
       <thead>
         <tr>
           <th scope="col">Semana</th>
@@ -59,7 +61,7 @@
   </div>
 
   @if (notaPie) {
-  <p class="flujo-semanal-nota">
+  <p class="flujo-semanal-nota sf-note mb-0">
     <span aria-hidden="true">ⓘ</span>
     {{ notaPie }}
   </p>

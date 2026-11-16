@@ -12,9 +12,9 @@
 }
 
 .flujo-semana-desglose-titulo {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #1e3a5f;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--sf-text, #1a1b1f);
 }
 
 .flujo-semana-desglose-grid {
@@ -51,7 +51,7 @@
 .flujo-semana-mov-monto {
   flex-shrink: 0;
   font-weight: 700;
-  color: #1e3a5f;
+  color: var(--sf-blue-dark, #001b3f);
   white-space: nowrap;
 }
 
