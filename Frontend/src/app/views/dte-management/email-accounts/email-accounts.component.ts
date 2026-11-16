@@ -12,6 +12,7 @@ import { EmailAccountService, EmailAccount } from '@services/dte-management/emai
 import { EmailInboxService, EmailInbox } from '@services/dte-management/email-inbox.service';
 import { CountryI18nService } from '@services/country-i18n.service';
 import { TranslatePipe } from '@ngx-translate/core';
+import { forkJoin } from 'rxjs';
 
 const SYNC_COOLDOWN_MS = 10 * 60 * 1000;
 
@@ -24,15 +25,23 @@ const SYNC_COOLDOWN_MS = 10 * 60 * 1000;
 export class EmailAccountsComponent implements OnInit {
   private readonly countryI18n = inject(CountryI18nService);
   @ViewChild('syncModal') syncModalTpl!: TemplateRef<any>;
+  @ViewChild('accountSettingsModal') accountSettingsModalTpl!: TemplateRef<any>;
 
   accounts: EmailAccount[] = [];
   loading = false;
   saving = false;
   testing = false;
-  savingNotifications = false;
+  savingAccountSettings = false;
+  private pendingAccountConfigureEmail: string | null = null;
   modalRef!: BsModalRef;
-  notificationAccount: EmailAccount | null = null;
   notificationUserId: number | null = null;
+  configAccount: EmailAccount | null = null;
+  configAccountLabel = '';
+  configForm = {
+    id_sucursal: null as number | null,
+    id_bodega: null as number | null,
+    actualizar_inventario: false,
+  };
   usuarios: any[] = [];
 
   syncingAccountId: number | null = null;
@@ -56,6 +65,7 @@ export class EmailAccountsComponent implements OnInit {
 
   sucursales: any[] = [];
   bodegas: any[] = [];
+  bodegasParaConfig: any[] = [];
 
   inbox: EmailInbox | null = null;
   inboxLoading = false;
@@ -100,7 +110,11 @@ export class EmailAccountsComponent implements OnInit {
       const message = params['message'];
 
       if (gmail === 'success') {
-        this.alertService.success('Cuenta Gmail conectada correctamente', email ? `Correo: ${email}` : '');
+        this.alertService.success(
+          'Cuenta Gmail conectada correctamente',
+          email ? `Correo: ${email}. Configure notificaciones e inventario.` : 'Configure notificaciones e inventario.'
+        );
+        this.pendingAccountConfigureEmail = email || null;
         this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
         this.loadAccounts();
       } else if (gmail === 'error') {
@@ -116,6 +130,14 @@ export class EmailAccountsComponent implements OnInit {
       next: (accounts) => {
         this.accounts = accounts;
         this.loading = false;
+        if (this.pendingAccountConfigureEmail) {
+          const pending = this.pendingAccountConfigureEmail;
+          this.pendingAccountConfigureEmail = null;
+          const match = accounts.find((a) => a.email.toLowerCase() === pending.toLowerCase());
+          if (match) {
+            setTimeout(() => this.openAccountSettingsModal(this.accountSettingsModalTpl, match));
+          }
+        }
       },
       error: (err) => {
         this.alertService.error(err);
@@ -133,9 +155,33 @@ export class EmailAccountsComponent implements OnInit {
 
   loadBodegas(): void {
     this.apiService.getAll('bodegas/list').subscribe({
-      next: (data) => this.bodegas = data,
+      next: (data) => {
+        this.bodegas = data || [];
+        this.actualizarBodegasParaConfig();
+      },
       error: (err) => this.alertService.error(err)
     });
+  }
+
+  private actualizarBodegasParaConfig(): void {
+    const idSucursal = this.configForm.id_sucursal;
+    if (!idSucursal) {
+      this.bodegasParaConfig = [...this.bodegas];
+      return;
+    }
+    this.bodegasParaConfig = this.bodegas.filter(
+      (b: any) => Number(b.id_sucursal) === Number(idSucursal)
+    );
+  }
+
+  onConfigSucursalChange(): void {
+    this.actualizarBodegasParaConfig();
+    const ok = this.bodegasParaConfig.some(
+      (b: any) => Number(b.id) === Number(this.configForm.id_bodega)
+    );
+    if (!ok) {
+      this.configForm.id_bodega = null;
+    }
   }
 
   loadUsuarios(): void {
@@ -166,30 +212,73 @@ export class EmailAccountsComponent implements OnInit {
     this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
   }
 
-  openNotificationModal(template: TemplateRef<any>, account: EmailAccount): void {
-    this.notificationAccount = account;
+  openAccountSettingsModal(template: TemplateRef<any>, account: EmailAccount, label?: string): void {
+    this.configAccount = account;
+    this.configAccountLabel = label ?? account.email;
     this.notificationUserId = account.notification_user_id ?? null;
-    this.modalRef = this.modalService.show(template, { class: 'modal-md' });
+    this.configForm = {
+      id_sucursal: account.id_sucursal ?? null,
+      id_bodega: account.id_bodega ?? null,
+      actualizar_inventario: !!account.actualizar_inventario,
+    };
+    this.actualizarBodegasParaConfig();
+    this.modalRef = this.modalService.show(template, { class: 'modal-lg modal-ng-select-overflow' });
   }
 
-  saveNotificationConfig(): void {
-    if (!this.notificationAccount) {
+  openInboxConfigModal(template: TemplateRef<any>): void {
+    if (!this.inbox?.user_email_account_id) {
+      this.alertService.warning('Sin cuenta', 'No hay cuenta de correo asociada al reenvío.');
+      return;
+    }
+    const linked = this.accounts.find((a) => a.id === this.inbox!.user_email_account_id);
+    this.openAccountSettingsModal(
+      template,
+      linked ?? {
+        id: this.inbox.user_email_account_id,
+        email: this.inbox.email,
+        provider: 'forward',
+        is_active: true,
+        id_sucursal: this.inbox.id_sucursal ?? null,
+        id_bodega: this.inbox.id_bodega ?? null,
+        actualizar_inventario: !!this.inbox.actualizar_inventario,
+      },
+      `Reenvío automático (${this.inbox.email})`
+    );
+  }
+
+  saveAccountSettings(): void {
+    if (!this.configAccount) {
+      return;
+    }
+    if (this.configForm.actualizar_inventario && !this.configForm.id_bodega) {
+      this.alertService.warning('Bodega requerida', 'Seleccione la bodega donde ingresará el inventario.');
       return;
     }
 
-    this.savingNotifications = true;
-    this.emailAccountService.updateNotificaciones(this.notificationAccount.id, this.notificationUserId).subscribe({
+    this.savingAccountSettings = true;
+    forkJoin([
+      this.emailAccountService.updateNotificaciones(this.configAccount.id, this.notificationUserId),
+      this.emailAccountService.updateConfig(this.configAccount.id, this.configForm),
+    ]).subscribe({
       next: () => {
-        this.savingNotifications = false;
+        this.savingAccountSettings = false;
         this.modalRef?.hide();
-        this.alertService.success('Configuración guardada', 'Usuario de notificaciones actualizado.');
+        this.alertService.success('Configuración guardada', 'Notificaciones, compras e inventario actualizados.');
         this.loadAccounts();
+        this.loadInbox();
       },
       error: (err) => {
-        this.savingNotifications = false;
+        this.savingAccountSettings = false;
         this.alertService.error(err);
       }
     });
+  }
+
+  inventarioResumen(account: EmailAccount): string {
+    if (!account.actualizar_inventario) {
+      return 'No';
+    }
+    return account.bodega?.nombre ? `Sí (${account.bodega.nombre})` : 'Sí';
   }
 
   testImapConnection(): void {
@@ -229,11 +318,19 @@ export class EmailAccountsComponent implements OnInit {
       id_bodega: this.imapConfig.id_bodega,
       actualizar_inventario: this.imapConfig.actualizar_inventario
     }).subscribe({
-      next: () => {
+      next: (res) => {
         this.saving = false;
         this.modalRef?.hide();
-        this.alertService.success('Cuenta conectada', 'La cuenta IMAP se conectó correctamente.');
+        this.alertService.success(
+          'Cuenta conectada',
+          'Configure notificaciones e inventario en el siguiente paso.'
+        );
         this.loadAccounts();
+        if (res.account) {
+          setTimeout(() => this.openAccountSettingsModal(this.accountSettingsModalTpl, res.account));
+        } else {
+          this.pendingAccountConfigureEmail = this.imapConfig.user?.trim() || null;
+        }
       },
       error: (err) => {
         this.saving = false;

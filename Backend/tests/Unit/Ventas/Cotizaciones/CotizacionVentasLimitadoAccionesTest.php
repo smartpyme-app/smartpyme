@@ -7,14 +7,10 @@ use Tests\TestCase;
 
 class CotizacionVentasLimitadoAccionesTest extends TestCase
 {
-    public function test_solo_factura_pendiente_e_imprime_facturada(): void
+    public function test_detecta_ventas_limitado_y_normaliza_estado(): void
     {
-        $this->assertSame('facturar', CotizacionConstants::accionVentasLimitado('Pendiente'));
-        $this->assertSame('imprimir', CotizacionConstants::accionVentasLimitado('Facturada'));
-        $this->assertNull(CotizacionConstants::accionVentasLimitado('Anulada'));
-        $this->assertSame('facturar', CotizacionConstants::accionVentasLimitado('Enviada'));
-        $this->assertSame('facturar', CotizacionConstants::accionVentasLimitado('pendiente'));
         $this->assertSame(CotizacionConstants::ESTADO_PENDIENTE, CotizacionConstants::normalizarEstado('aceptada'));
+        $this->assertSame(CotizacionConstants::ESTADO_PENDIENTE, CotizacionConstants::normalizarEstado('pendiente'));
 
         $this->assertTrue(CotizacionConstants::esVentasLimitado((object) ['tipo' => 'Ventas Limitado']));
         $this->assertFalse(CotizacionConstants::esVentasLimitado((object) ['tipo' => 'Ventas']));
@@ -30,26 +26,37 @@ class CotizacionVentasLimitadoAccionesTest extends TestCase
         $this->assertTrue(CotizacionConstants::esVentasLimitado($ventasConRolLimitado));
     }
 
-    public function test_ventas_limitado_crea_cotizacion_solo_con_permiso(): void
+    public function test_ventas_limitado_crea_edita_e_imprime_solo_con_permiso(): void
     {
-        $conPermiso = new class {
-            public string $tipo = 'Ventas Limitado';
-            public function can(string $permiso): bool
-            {
-                return $permiso === 'ventas.cotizaciones.crear';
-            }
-        };
-        $sinPermiso = new class {
-            public string $tipo = 'Ventas Limitado';
-            public function can(string $permiso): bool
-            {
-                return false;
-            }
-        };
+        $soloCrear = $this->ventasLimitadoCon(['ventas.cotizaciones.crear']);
+        $soloEditar = $this->ventasLimitadoCon(['ventas.cotizaciones.editar']);
+        $soloVer = $this->ventasLimitadoCon(['ventas.cotizaciones.ver']);
+        $sinPermiso = $this->ventasLimitadoCon([]);
 
-        $this->assertTrue(CotizacionConstants::puedeCrearCotizacion($conPermiso));
-        $this->assertFalse(CotizacionConstants::puedeCrearCotizacion($sinPermiso));
-        $this->assertTrue(CotizacionConstants::puedeCrearCotizacion((object) ['tipo' => 'Ventas']));
+        $this->assertTrue(CotizacionConstants::puedeGuardarCotizacion($soloCrear, true));
+        $this->assertFalse(CotizacionConstants::puedeGuardarCotizacion($soloCrear, false));
+        $this->assertTrue(CotizacionConstants::puedeGuardarCotizacion($soloEditar, false));
+        $this->assertFalse(CotizacionConstants::puedeGuardarCotizacion($soloEditar, true));
+        $this->assertFalse(CotizacionConstants::puedeGuardarCotizacion($sinPermiso, true));
+        $this->assertFalse(CotizacionConstants::puedeGuardarCotizacion($sinPermiso, false));
+        $this->assertTrue(CotizacionConstants::puedeGuardarCotizacion((object) ['tipo' => 'Ventas'], false));
+
+        $this->assertTrue(CotizacionConstants::puedeImprimirCotizacion($soloVer));
+        $this->assertTrue(CotizacionConstants::puedeImprimirCotizacion($soloEditar));
+        $this->assertFalse(CotizacionConstants::puedeImprimirCotizacion($soloCrear));
+        $this->assertTrue(CotizacionConstants::puedeImprimirCotizacion((object) ['tipo' => 'Ventas']));
+    }
+
+    private function ventasLimitadoCon(array $permisos): object
+    {
+        return new class($permisos) {
+            public string $tipo = 'Ventas Limitado';
+            public function __construct(private array $permisos) {}
+            public function can(string $permiso): bool
+            {
+                return in_array($permiso, $this->permisos, true);
+            }
+        };
     }
 
     public function test_ventas_y_ventas_limitado_filtran_listado_por_usuario(): void

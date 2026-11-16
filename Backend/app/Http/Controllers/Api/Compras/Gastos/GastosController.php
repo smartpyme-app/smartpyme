@@ -73,7 +73,14 @@ class GastosController extends Controller
     public function index(Request $request)
     {
 
-        $gastos = Gasto::with('retaceoGasto')->when($request->filled('id_proveedor'), function ($query) use ($request) {
+        $gastos = Gasto::with([
+            'retaceoGasto',
+            'proveedor',
+            'usuario:id,name',
+            'categoria:id,nombre',
+            'sucursal:id,nombre',
+            'proyecto:id,nombre',
+        ])->when($request->filled('id_proveedor'), function ($query) use ($request) {
             return $query->where('id_proveedor', (int) $request->id_proveedor);
         })
             ->when($request->estado, function ($query) use ($request) {

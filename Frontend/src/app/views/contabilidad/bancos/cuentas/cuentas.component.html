@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Cuentas Bancarias</h2>
-    @if (apiService.canCreateTest('finanzas.cuentas.crear')) {
+    @if (apiService.canCreateTest('finanzas.bancos.crear')) {
         <button routerLink="/bancos/cuenta/crear" tooltip="Crear cuenta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cuenta</button>
     }
 </section>
@@ -82,7 +82,7 @@
                             <td>{{cuenta.numero}}</td>
                             <td>{{cuenta.tipo}}</td>
                             <td class="text-end">{{cuenta.saldo | currency}}</td>
-                            @if (apiService.canEditTest('finanzas.cuentas.editar')) {
+                            @if (apiService.canEditTest('finanzas.bancos.editar')) {
                                 <td class="text-center">
                                     <a class="btn btn-light" routerLink="/bancos/cuenta/{{cuenta.id}}" tooltip="Ver y editar">
                                         <i class="fa fa-pencil-alt"></i>

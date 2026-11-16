@@ -116,4 +116,7 @@ assert.match(restauranteRouting, /funcionalidadSlug: 'modulo-restaurante'/);
 assert.match(pedidosRouting, /permission: 'pedidos\.ver'/);
 assert.match(pedidosRouting, /funcionalidadSlug: 'modulo-restaurante'/);
 
+assert.match(sidebarAdmin, /@if \(apiService\.verifyRoleAdmin\(\)\) \{[\s\S]*Super Admin/);
+assert.doesNotMatch(sidebarAdmin, /verifyRoleAdmin\(\)\s*\|\|\s*usuario\.tipo == 'Administrador'/);
+
 console.log('sidebar-operativos-nav.check: ok');

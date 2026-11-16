@@ -21,12 +21,18 @@
             </div>
             <div class="form-group col-md-3" *ngIf="tieneMultimoneda">
                 <label for="currency_code">Moneda</label>
-                <select name="currency_code" id="currency_code" class="form-select" [(ngModel)]="gasto.currency_code"
-                    (ngModelChange)="onCurrencyCodeChange()" [disabled]="gastoYaTieneDte">
-                    <option *ngFor="let mon of monedasDocumento" [value]="mon">
-                        {{ etiquetaMoneda(mon) }}
-                    </option>
-                </select>
+                <div class="input-group">
+                    <select name="currency_code" id="currency_code" class="form-select" [(ngModel)]="gasto.currency_code"
+                        (ngModelChange)="onCurrencyCodeChange()" [disabled]="gastoYaTieneDte">
+                        <option *ngFor="let mon of monedasDocumento" [value]="mon">
+                            {{ etiquetaMoneda(mon) }}
+                        </option>
+                    </select>
+                    <button *ngIf="puedeEditarTipoCambioGasto" type="button" class="btn btn-default"
+                        (click)="abrirModalTipoCambioGasto(modalTipoCambioGasto)" title="Editar tipo de cambio">
+                        <i class="fa fa-pencil"></i>
+                    </button>
+                </div>
                 <small class="text-danger d-block mt-1" *ngIf="monedaGasto === 'USD' && monedaGasto !== monedaFuncional && tcPreview.error">{{ tcPreview.error }}</small>
             </div>
             <div class="form-group col-md-3">
@@ -182,6 +188,10 @@
                         <label>Precio unit.:</label>
                         <input type="number" step="0.01" class="form-control" [(ngModel)]="d.precio_unitario" (change)="recalcularDesdePrecio(i)" [name]="'det_precio_'+i">
                     </div>
+                    <div class="form-group col-md-3 col-lg-2">
+                        <label>Descuento:</label>
+                        <input type="number" min="0" step="0.01" class="form-control" [(ngModel)]="d.descuento" (change)="recalcularDesdePrecio(i)" [name]="'det_desc_'+i">
+                    </div>
                     <div class="form-group col-md-4 col-lg-2">
                         <label>Sub total:</label>
                         <input type="number" step="0.01" class="form-control" [(ngModel)]="d.sub_total" (change)="recalcularDetalleLinea(i)" [name]="'det_sub_'+i">
@@ -301,13 +311,17 @@
     <div class="bg-white rounded p-3 mb-3">
         <h6>Pagos</h6>
         <div class="row">
-            <div class="form-group col-md-4 col-lg-3 without-label">
+            <div class="form-group col-md-4 col-lg-3 without-label" *ngIf="!gastoEnEstadoAnulado">
                 <div class="form-switch border rounded">
                   <label for="credito">Pendiente</label>
                   <input class="form-check-input float-end" type="checkbox" role="switch" id="credito" (change)="setCredito()" [(ngModel)]="gasto.credito" name="credito">
                 </div>
             </div>
-            <div class="form-group col-md-4 col-lg-3" *ngIf="gasto.credito">
+            <div class="form-group col-md-4 col-lg-3" *ngIf="gastoEnEstadoAnulado">
+                <label class="fw-medium">Estado</label>
+                <p class="mb-0 pt-2"><span class="badge bg-danger">{{ gasto.estado }}</span></p>
+            </div>
+            <div class="form-group col-md-4 col-lg-3" *ngIf="gasto.credito && !gastoEnEstadoAnulado">
                 <label for="fecha_pago">Fecha de pago:</label>
                 <input type="date" class="form-control" [(ngModel)]="gasto.fecha_pago" name="fecha_pago" id="fecha_pago">
             </div>
@@ -321,7 +335,7 @@
                 <label for="detalle_banco">Bancos:</label>
                 <select name="detalle_banco" id="detalle_banco" [(ngModel)]="gasto.detalle_banco" class="form-select">
                     <option value="">Seleccione aquí</option>
-                    @if (contabilidadHabilitada) {
+                    @if (apiService.isModuloBancos()) {
                       @for (banco of bancos; track banco.id) {
                         <option [value]="banco.nombre_banco">{{ banco.nombre_banco }}</option>
                       }
@@ -667,5 +681,25 @@
         }
       </button>
     </div>
+  </div>
+</ng-template>
+
+<!-- Modal tipo de cambio (multimoneda) -->
+<ng-template #modalTipoCambioGasto>
+  <div class="modal-header">
+    <h5 class="modal-title">Tipo de cambio</h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="cerrarModalTipoCambioGasto()"></button>
+  </div>
+  <div class="modal-body">
+    <label for="exchange_rate_draft_gasto" class="form-label">{{ simboloMonedaFuncional }} por 1 USD</label>
+    <input type="number" step="0.00001" min="0" class="form-control" id="exchange_rate_draft_gasto"
+      name="exchange_rate_draft_gasto" [(ngModel)]="exchangeRateDraft">
+    <small class="text-muted d-block mt-2" *ngIf="tcPreview.rate != null">
+      Referencia{{ tcPreview.date ? ' ' + tcPreview.date : '' }}: {{ tcPreview.rate | number:'1.2-5' }}
+    </small>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-light" (click)="cerrarModalTipoCambioGasto()">Cancelar</button>
+    <button type="button" class="btn btn-primary" (click)="aplicarTipoCambioManualGasto()">Aplicar</button>
   </div>
 </ng-template>

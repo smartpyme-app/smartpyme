@@ -8,9 +8,11 @@ use App\Models\Admin\Sucursal;
 use App\Models\Inventario\Bodega;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use App\Http\Requests\Admin\Sucursales\StoreSucursalRequest;
+use App\Support\AdminUsuariosAlcance;
 
 class SucursalesController extends Controller
 {
@@ -60,17 +62,22 @@ class SucursalesController extends Controller
         return Response()->json($sucursales, 200);
     }
 
-    public function list()
+    public function list(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
+        $idEmpresa = (int) $user->id_empresa;
+        if ($request->filled('id_empresa')) {
+            $requested = (int) $request->id_empresa;
+            if (!AdminUsuariosAlcance::empresaIdPermitido($user, $requested)) {
+                abort(403, 'No autorizado para esta empresa.');
+            }
+            $idEmpresa = $requested;
+        }
 
-        // Empresa 2 (super admin): sin filtro de empresa, igual que bodegas/list.
-        // Resto de usuarios: solo sucursales de su empresa.
-        $sucursales = Sucursal::orderby('nombre')
-            ->where('activo', true)
-            ->when($user->id_empresa != 2, function ($q) use ($user) {
-                $q->where('id_empresa', $user->id_empresa);
-            })
+        $sucursales = Sucursal::withoutGlobalScopes()
+            ->orderby('nombre')
+            ->whereIn('activo', ['1', 1, true])
+            ->where('id_empresa', $idEmpresa)
             ->get();
 
         return Response()->json($sucursales, 200);
@@ -81,11 +88,14 @@ class SucursalesController extends Controller
     public function listaMarcas()
     {
 
-        $marcas = Producto::select('marca as nombre')
+        // ponytail: distinct marcas only — was loading Producto rows + appends (N+1 in Sentry)
+        $marcas = Producto::query()
             ->where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
             ->whereNotNull('marca')
             ->where('marca', '!=', '')
-            ->groupBy('marca')
+            ->select(DB::raw('marca as nombre'))
+            ->distinct()
+            ->orderBy('marca', 'asc')
             ->get();
 
         return Response()->json($marcas, 200);

@@ -290,7 +290,7 @@ class RolePermissionService
             ->values();
 
         return [
-            'role' => $user->roles->first()->name ?? 'Sin rol asignado',
+            'role' => $this->nombreRolPrincipal($user),
             'rolePermissions' => $rolePermissions,
             'directPermissions' => $directPermissions,
             'revokedPermissions' => $revokedPermissions,
@@ -392,7 +392,8 @@ class RolePermissionService
      */
     public function listarModulos($request)
     {
-        $query = Module::with('permissions', 'submodules');
+        // ponytail: submodule.permissions was N+1 when serializing modules list
+        $query = Module::with(['permissions', 'submodules.permissions']);
 
         if ($request->buscador) {
             $query->where('name', 'like', '%' . $request->buscador . '%');
@@ -610,6 +611,21 @@ class RolePermissionService
     public function esSuperAdmin(User $user): bool
     {
         return $user->hasRole('super_admin');
+    }
+
+    /**
+     * Rol expuesto al frontend (permisos/menú). No usar roles->first(): el orden no es estable.
+     */
+    private function nombreRolPrincipal(User $user): string
+    {
+        if ($user->hasRole(config('constants.ROL_SUPER_ADMIN', 'super_admin'))) {
+            return config('constants.ROL_SUPER_ADMIN', 'super_admin');
+        }
+        if ($user->hasRole(config('constants.ROL_ADMIN', 'admin'))) {
+            return config('constants.ROL_ADMIN', 'admin');
+        }
+
+        return $user->roles->first()->name ?? 'Sin rol asignado';
     }
 
     /**

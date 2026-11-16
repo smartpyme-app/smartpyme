@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 use App\Http\Controllers\Api\Admin\MHController;
 use App\Http\Controllers\Api\Admin\MHDTEController;
@@ -13,7 +13,7 @@ use App\Http\Controllers\Api\Admin\MHDTEController;
     Route::get('/regimenes', [MHController::class, 'regimenes']);
     Route::get('/incoterms', [MHController::class, 'incoterms']);
 
-    // Generar DTE
+    // Generar DTE (sin middleware de permiso: emisión acotada en UI por empresa.facturacion_electronica)
     Route::post('/generarDTE',          [MHDTEController::class, 'generarDTE']);
     Route::post('/generarDTENotaCredito',          [MHDTEController::class, 'generarDTENotaCredito']);
     Route::post('/generarDTESujetoExcluidoGasto', [MHDTEController::class, 'generarDTESujetoExcluidoGasto']);

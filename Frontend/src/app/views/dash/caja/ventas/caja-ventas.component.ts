@@ -348,7 +348,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
             }
         };
 
-        if (venta.dte_en_s3 && !venta.dte) {
+        if ((venta.dte_en_s3 || venta.sello_mh) && !venta.dte) {
             this.apiService.read('venta/', venta.id)
                 .pipe(this.untilDestroyed())
                 .subscribe({

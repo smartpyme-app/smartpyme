@@ -77,6 +77,8 @@ class OrdenCompraService
                 if ($detalleOrden->cantidad_procesada < $detalleOrden->cantidad) {
                     $finishOrder = false;
                 }
+            } elseif (($detalleOrden->cantidad_procesada ?? 0) < $detalleOrden->cantidad) {
+                $finishOrder = false;
             }
         }
 

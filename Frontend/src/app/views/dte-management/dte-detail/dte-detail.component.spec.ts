@@ -92,6 +92,7 @@ describe('DteDetailComponent - proceso compra/gasto', () => {
       expect(payload.id_sucursal).toBe(8);
       expect(payload.id_bodega).toBe(3);
       expect(payload.line_mappings).toEqual([{ index: 0, id_producto: 12, cantidad: 3 }]);
+      expect(payload.actualizar_inventario).toBe(true);
     });
 
     it('en gasto no envía mappings', () => {

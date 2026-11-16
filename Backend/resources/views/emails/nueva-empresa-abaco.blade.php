@@ -12,7 +12,7 @@
         <header>
             <!-- Logo de SmartPyme -->
             <div style="text-align: center; padding: 20px 0;">
-                <img width="150px" src="https://www.smartpyme.sv/wp-content/uploads/2022/09/logo-web-smartpyme-2022-new.png" alt="Logo SmartPyme">
+                <img width="150px" src="https://www.smartpyme.app/wp-content/uploads/2022/09/logo-web-smartpyme-2022-new.png" alt="Logo SmartPyme">
                 <div style="margin-top: 15px; border-bottom: 1px solid #cecece;"></div>
             </div>
 
@@ -80,7 +80,7 @@
 
         <footer>
             <p style="margin: 5px;">SmartPyme &copy; {{ date('Y') }}</p>
-            <p><a href="https://smartpyme.sv" target="_blank" style="color: #1775e5; text-decoration: none;">smartpyme.sv</a></p>
+            <p><a href="https://smartpyme.app" target="_blank" style="color: #1775e5; text-decoration: none;">smartpyme.app</a></p>
         </footer>
     </section>
 

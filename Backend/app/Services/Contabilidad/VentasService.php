@@ -6,12 +6,12 @@ use App\Models\Contabilidad\Configuracion;
 use App\Models\Contabilidad\Partidas\Partida;
 use App\Models\Contabilidad\Partidas\Detalle;
 use App\Models\Contabilidad\Catalogo\Cuenta;
-use App\Models\Admin\FormaDePago;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Models\Inventario\Categorias\Cuenta as CuentaCategoria;
 use App\Services\Contabilidad\Partidas\ReglaCuentaIva;
 use App\Services\Contabilidad\Partidas\ReglaIngresoVenta;
+use App\Services\Contabilidad\Partidas\ReglaLineasDebeIngresoVenta;
 use App\Services\Contabilidad\Partidas\ReglaMontoIngresoVentaDetalle;
 use App\Services\Ventas\VincularProductoDetalleVentaService;
 use App\Exceptions\PartidaDetalleSinProductoException;
@@ -90,35 +90,38 @@ class VentasService
                     throw new Exception('No se encontró la cuenta contable de cuentas por cobrar', 400);
                 }
             } else {
-                if (!$venta->forma_pago) {
-                    throw new Exception('La venta no tiene forma de pago asignada', 400);
-                }
-
-                $formapago = FormaDePago::with('banco')->where('nombre', $venta->forma_pago)->first();
-                if (!$formapago) {
-                    throw new Exception('No se encontró la forma de pago: ' . $venta->forma_pago, 400);
-                }
-
-                if (!$formapago->banco || !$formapago->banco->id_cuenta_contable) {
-                    throw new Exception('La forma de pago no tiene un banco o cuenta contable configurada, para configurarla puede ir al menú de la aplicación, en Finanzas > Métodos de pago', 400);
-                }
-
-                $cuenta_debe = Cuenta::find($formapago->banco->id_cuenta_contable);
-                if (!$cuenta_debe) {
-                    throw new Exception('No se encontró la cuenta contable del banco asociado a la forma de pago, para configurarla puede ir al menú de la aplicación, en Finanzas > Bancos, seleccionar el tab de Cuentas y agregar la cuenta contable al banco.', 400);
+                $venta->loadMissing('metodos_de_pago');
+                $lineasDebe = ReglaLineasDebeIngresoVenta::lineasDebe($venta);
+                foreach ($lineasDebe as $linea) {
+                    $cuenta_debe = CuentaContableDesdeFormaPagoResolver::resolve($linea['nombre']);
+                    $conceptoDebe = count($lineasDebe) > 1
+                        ? $concepto . ' (' . $linea['nombre'] . ')'
+                        : $concepto;
+                    Detalle::create([
+                        'id_cuenta' => $cuenta_debe->id,
+                        'codigo' => $cuenta_debe->codigo,
+                        'nombre_cuenta' => $cuenta_debe->nombre,
+                        'concepto' => $conceptoDebe,
+                        'debe' => $linea['monto'],
+                        'haber' => NULL,
+                        'saldo' => 0,
+                        'id_partida' => $partida_ingresos->id,
+                    ]);
                 }
             }
 
-            Detalle::create([
-                'id_cuenta' => $cuenta_debe->id,
-                'codigo' => $cuenta_debe->codigo,
-                'nombre_cuenta' => $cuenta_debe->nombre,
-                'concepto' => $concepto,
-                'debe' => $venta->total,
-                'haber' => NULL,
-                'saldo' => 0,
-                'id_partida' => $partida_ingresos->id
-            ]);
+            if ($origenDebe === 'cxc') {
+                Detalle::create([
+                    'id_cuenta' => $cuenta_debe->id,
+                    'codigo' => $cuenta_debe->codigo,
+                    'nombre_cuenta' => $cuenta_debe->nombre,
+                    'concepto' => $concepto,
+                    'debe' => $venta->total,
+                    'haber' => NULL,
+                    'saldo' => 0,
+                    'id_partida' => $partida_ingresos->id,
+                ]);
+            }
 
             // Haber - Procesar productos de la venta
             $productos_venta = DetalleVenta::where('id_venta', $venta->id)->get();

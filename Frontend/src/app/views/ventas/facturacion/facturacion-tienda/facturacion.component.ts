@@ -151,13 +151,9 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   public api: boolean = false;
   public opAvanzadas = false;
   public opAvanzadasFacturacion = false;
-  public customFields: any = [];
-  public selectedCustomFields: number[] = [];
-  public activeCustomFields: any = [];
   public filtros: any = {
     bandera: true,
   };
-  public customField: boolean = false;
   public tieneAccesoPropina: boolean = false;
   public tieneMultimoneda: boolean = false;
   /** Config pais_configuracion módulo moneda (cargada al activar multimoneda). */
@@ -334,10 +330,28 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     if (venta?.boxful_paquete_stub_id || this.venta?.boxful_paquete_stub_id) {
       return { id: venta?.boxful_paquete_stub_id || this.venta?.boxful_paquete_stub_id, peso: 1 };
     }
-    if (this.paqueteData?.id) {
-      return { id: this.paqueteData.id, peso: this.paqueteData.peso || 1 };
-    }
     return null;
+  }
+
+  /** Descripción de contenido para la guía BoxFul a partir del detalle de la venta. */
+  private contenidoDescripcionBoxful(venta: any): string {
+    const fuente =
+      Array.isArray(venta?.detalles) && venta.detalles.length
+        ? venta.detalles
+        : this.venta?.detalles;
+    if (!Array.isArray(fuente) || !fuente.length) {
+      return 'Productos varios';
+    }
+    const nombres = fuente
+      .map((d: any) =>
+        String(d.descripcion || d.nombre || d.producto?.nombre || '').trim()
+      )
+      .filter(Boolean);
+    if (!nombres.length) {
+      return 'Productos varios';
+    }
+    const texto = nombres.join(', ');
+    return texto.length > 500 ? `${texto.slice(0, 497)}...` : texto;
   }
 
   private abrirWizardBoxfulDesdeVenta(venta: any): void {
@@ -352,6 +366,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
     const stub = this.resolverPaqueteStubBoxful(venta);
     const peso = parseFloat(stub?.peso || 1) || 1;
+    const contenido = this.contenidoDescripcionBoxful(venta);
 
     this.boxfulVentaId = venta.id;
     this.boxfulClienteId = venta.id_cliente;
@@ -364,18 +379,22 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       ancho: 43,
       largo: 47.5,
       es_fragil: false,
+      contenido,
       parcels: [{
         peso,
         alto: 11,
         ancho: 43,
         largo: 47.5,
         es_fragil: false,
-        contenido: '',
+        contenido,
         valor: parseFloat(venta.total || 50)
       }]
     };
     this.mostrarModalBoxful = true;
-    this.alertService.success('Venta creada', 'Complete los datos del envío BoxFul.');
+    this.alertService.info(
+      'Venta guardada',
+      'Complete dirección y paquetería en el asistente BoxFul para generar la guía.'
+    );
   }
 
   onBoxfulGuiaGenerada(guia: any): void {
@@ -443,27 +462,15 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   }
 
   cargarBancos() {
-    // Si tiene contabilidad habilitada, usar el endpoint de cuentas bancarias
-    // Si no tiene contabilidad, usar el endpoint simple de bancos (index)
-    const endpoint = this.contabilidadHabilitada ? 'banco/cuentas/list' : 'bancos';
-
-    this.apiService.getAll(endpoint).pipe(this.untilDestroyed()).subscribe(
-      (bancos) => {
-        // Si no tiene contabilidad, los bancos vienen como array de objetos {nombre, activo}
-        // del endpoint bancos (index)
-        // Necesitamos transformarlos para que tengan la estructura esperada {id, nombre_banco}
-        if (!this.contabilidadHabilitada) {
-          // Los bancos del endpoint bancos tienen estructura {nombre, activo}
-          // Transformar a formato {id, nombre_banco} para que coincida con lo esperado
-          // Usar el nombre como id temporal ya que no hay id en este endpoint
-          this.bancos = bancos
-            .filter((banco: any) => banco.activo === true || banco.activo === 1)
-            .map((banco: any) => ({
-              id: banco.nombre, // Usar nombre como id temporal
-              nombre_banco: banco.nombre
-            }));
+    this.apiService.loadBancosParaAbono().pipe(this.untilDestroyed()).subscribe(
+      ({ bancos, usarCuentas }) => {
+        if (!usarCuentas) {
+          this.bancos = (bancos || []).map((banco: any) => ({
+            id: banco.id ?? banco.nombre,
+            nombre_banco: banco.nombre,
+            nombre: banco.nombre,
+          }));
         } else {
-          // Con contabilidad, los bancos ya vienen en el formato correcto {id, nombre_banco, ...}
           this.bancos = bancos;
         }
         this.cdr.markForCheck();
@@ -860,10 +867,10 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     // Para cotizaciones Pre-venta
     if (this.route.snapshot.queryParamMap.get('cotizacion')) {
       const esEdicion = !!this.route.snapshot.paramMap.get('id');
-      const puedeCrear = this.apiService.canCreateTest('ventas.cotizaciones.crear')
+      const puedeGuardar = this.apiService.canCreateTest(esEdicion ? 'ventas.cotizaciones.editar' : 'ventas.cotizaciones.crear')
         && !this.apiService.restriccionesCotizacionesVendedoresActivas();
-      if (this.apiService.isVentasLimitado() && (esEdicion || !puedeCrear)) {
-        this.alertService.error('No puede crear ni editar cotizaciones.');
+      if (this.apiService.isVentasLimitado() && !puedeGuardar) {
+        this.alertService.error(esEdicion ? 'No puede editar cotizaciones.' : 'No puede crear cotizaciones.');
         this.router.navigate(['/cotizaciones']);
         return;
       }
@@ -946,7 +953,8 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
     // Para editar cotizaciones Pre-venta / ventas
     if (this.route.snapshot.paramMap.get('id')) {
-      if (this.apiService.isVentasLimitado() && this.router.url.includes('/cotizacion/')) {
+      if (this.apiService.isVentasLimitado() && this.router.url.includes('/cotizacion/')
+        && !this.apiService.canEditTest('ventas.cotizaciones.editar')) {
         this.alertService.error('No puede editar cotizaciones.');
         this.router.navigate(['/cotizaciones']);
         return;
@@ -971,22 +979,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             this.sincronizarPreviewMonedaDesdeVenta();
             this.sumTotal();
 
-            // Obtener todos los custom_field_ids únicos de los detalles
-            const usedCustomFieldIds = new Set();
-            this.venta.detalles.forEach((detalle: any) => {
-              if (detalle.custom_fields && detalle.custom_fields.length > 0) {
-                detalle.custom_fields.forEach((cf: any) => {
-                  if (cf.custom_field) {
-                    usedCustomFieldIds.add(cf.custom_field.id);
-                  }
-                });
-              }
-            });
-            // Pre-seleccionar los campos personalizados
-            this.selectedCustomFields = Array.from(
-              usedCustomFieldIds
-            ) as number[];
-            this.updateCustomFields();
             this.cdr.markForCheck();
           },
           (error) => {
@@ -2843,16 +2835,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       this.venta.consigna = false;
     }
 
-    if (this.venta.detalles) {
-      this.venta.detalles.forEach((detalle: any) => {
-        if (detalle.custom_fields) {
-          detalle.custom_fields = detalle.custom_fields.filter((cf: any) =>
-            this.selectedCustomFields.includes(cf.custom_field?.id)
-          );
-        }
-      });
-    }
-
     if (!this.venta.detalles || !Array.isArray(this.venta.detalles) || this.venta.detalles.length === 0) {
       this.alertService.warning(
         'Faltan productos',
@@ -3150,27 +3132,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   }
   toggleDivFacturacion(): void {
     this.opAvanzadasFacturacion = !this.opAvanzadasFacturacion; // Cambiar entre true y false
-  }
-
-  updateCustomFields() {
-    //verificar si hay campos personalizados
-    if (this.customFields.data.length === 0) {
-      return;
-    }
-    this.activeCustomFields = this.customFields.data.filter((f: any) =>
-      this.selectedCustomFields.includes(f.id)
-    );
-
-    // Limpiar campos personalizados que ya no están seleccionados
-    if (this.venta.detalles) {
-      this.venta.detalles.forEach((detalle: any) => {
-        if (detalle.custom_fields) {
-          detalle.custom_fields = detalle.custom_fields.filter((cf: any) =>
-            this.selectedCustomFields.includes(cf.custom_field?.id)
-          );
-        }
-      });
-    }
   }
 
   public isColumnEnabled(columnName: string): boolean {

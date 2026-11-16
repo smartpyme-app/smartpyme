@@ -124,7 +124,7 @@
               <td>{{ item.descripcion || '—' }}</td>
               <td *ngIf="esCompra" style="min-width: 220px;">
                 <ng-select
-                  *ngIf="puedeEditarClasificacion"
+                  *ngIf="puedeEditarLineasCompra"
                   [items]="searchResults"
                   bindLabel="nombre"
                   [(ngModel)]="item.producto"
@@ -135,17 +135,17 @@
                   placeholder="Buscar producto..."
                   class="form-select p-0">
                 </ng-select>
-                <span *ngIf="!puedeEditarClasificacion">{{ item.producto?.nombre || '—' }}</span>
+                <span *ngIf="!puedeEditarLineasCompra">{{ item.producto?.nombre || '—' }}</span>
               </td>
               <td class="text-end">
                 <input
-                  *ngIf="esCompra && puedeEditarClasificacion"
+                  *ngIf="esCompra && puedeEditarLineasCompra"
                   type="number"
                   min="0.01"
                   step="0.01"
                   class="form-control form-control-sm text-end"
                   [(ngModel)]="item.cantidad">
-                <ng-container *ngIf="!(esCompra && puedeEditarClasificacion)">{{ item.cantidad }}</ng-container>
+                <ng-container *ngIf="!(esCompra && puedeEditarLineasCompra)">{{ item.cantidad }}</ng-container>
               </td>
               <td class="text-end">{{ formatMoney(item.precio_unitario) }}</td>
               <td class="text-end">{{ formatMoney(item.total) }}</td>
@@ -180,11 +180,16 @@
     </div>
   </div>
 
-  <div class="card border-0" *ngIf="document.validation_status === 'valid' && document.processing_status !== 'processed' && document.processing_status !== 'anulado'">
+  <div class="card border-0" *ngIf="mostrarPanelProcesar">
     <div class="card-body">
-      <h6 class="col-12 mb-3">{{ 'country.tax.fe.processModalTitle' | translate }}</h6>
+      <h6 class="col-12 mb-3">
+        {{ puedeEditarProductosCompra ? 'Actualizar productos de la compra' : ('country.tax.fe.processModalTitle' | translate) }}
+      </h6>
+      <div class="alert alert-info py-2" *ngIf="puedeEditarProductosCompra">
+        Este DTE ya está procesado. Vincule los productos de inventario y guarde para actualizar la compra y el kardex.
+      </div>
       <div class="row align-items-end">
-        <div class="form-group col-md-4">
+        <div class="form-group col-md-4" *ngIf="puedeEditarClasificacion">
           <label class="fw-medium">Destino</label>
           <select class="form-select" [(ngModel)]="destinoSeleccionado" (ngModelChange)="cambiarDestino()">
             <option value="compra">Compra (inventario)</option>
@@ -335,8 +340,11 @@
 
         <div class="form-group col-md-4">
           <button class="btn btn-primary" [disabled]="procesando || guardando || resolviendoProductos" (click)="procesar()">
-            <span *ngIf="procesando">Procesando...</span>
-            <span *ngIf="!procesando"><i class="fa fa-play me-1"></i> Procesar</span>
+            <span *ngIf="procesando">{{ puedeEditarProductosCompra ? 'Guardando...' : 'Procesando...' }}</span>
+            <span *ngIf="!procesando">
+              <i class="fa fa-play me-1"></i>
+              {{ puedeEditarProductosCompra ? 'Guardar productos e inventario' : 'Procesar' }}
+            </span>
           </button>
         </div>
       </div>

@@ -29,6 +29,9 @@ class Module extends Model
     //submodules_count
     public function getSubmodulesCountAttribute()
     {
+        if ($this->relationLoaded('submodules')) {
+            return $this->submodules->count();
+        }
         return $this->submodules()->count();
     }
 

@@ -20,6 +20,8 @@ class Indicador extends Model
 {
     use HasFactory;
 
+    public $detalles_metodos_de_pago;
+    public $metodos_de_pago_por_venta;
     public $ventas;
     public $ventas_pagadas;
     public $cxc;
@@ -53,28 +55,46 @@ class Indicador extends Model
     {
         parent::__construct($attributes);
 
-        $this->detalles_metodos_de_pago = MetodoDePago::whereHas('venta', function($q){
-                            $q->where('id_empresa', $this->id_empresa)
-                            ->where('estado', 'Pagada')
-                            ->whereDoesntHave('devoluciones')
-                            ->when($this->id_sucursal, function($q){
-                                $q->where('id_sucursal', $this->id_sucursal);
-                            })
-                            ->when($this->id_bodega, function($q){
-                                $q->where('id_bodega', $this->id_bodega);
-                            })
-                            ->when($this->id_usuario, function($q){
-                                $q->where('id_usuario', $this->id_usuario);
-                            })
-                            ->when($this->id_canal, function($q){
-                                $q->where('id_canal', $this->id_canal);
-                            })
-                            ->where('cotizacion', 0)
-                            ->whereBetween('fecha', [$this->inicio, $this->fin]);
-                        })
-                        ->get();
+        if (empty($attributes)) {
+            $this->detalles_metodos_de_pago = collect();
+            $this->metodos_de_pago_por_venta = collect();
+            $this->ventas = collect();
+            $this->ventas_pagadas = collect();
+            $this->ventas_anuladas = collect();
+            $this->devoluciones_ventas = collect();
+            $this->cxc = collect();
+            $this->abonos = collect();
+            $this->compras = collect();
+            $this->devoluciones_compras = collect();
+            $this->cxp = collect();
+            $this->gastos = collect();
 
-        $this->ventas = Venta::where('id_empresa', $this->id_empresa)
+            return;
+        }
+
+        $columnasVentas = [
+            'id',
+            'fecha',
+            'correlativo',
+            'estado',
+            'forma_pago',
+            'detalle_banco',
+            'total',
+            'propina',
+            'cotizacion',
+            'id_empresa',
+            'id_sucursal',
+            'id_bodega',
+            'id_usuario',
+            'id_vendedor',
+            'id_cliente',
+            'id_canal',
+            'id_documento',
+            'id_proyecto',
+        ];
+
+        $this->ventas = Venta::select($columnasVentas)
+                        ->where('id_empresa', $this->id_empresa)
                         ->when($this->id_sucursal, function($q){
                             $q->where('id_sucursal', $this->id_sucursal);
                         })
@@ -91,43 +111,25 @@ class Indicador extends Model
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
                         ->get();
 
-        $this->ventas_pagadas = Venta::where('id_empresa', $this->id_empresa)
-                        ->when($this->id_sucursal, function($q){
-                            $q->where('id_sucursal', $this->id_sucursal);
-                        })
-                        ->when($this->id_bodega, function($q){
-                            $q->where('id_bodega', $this->id_bodega);
-                        })
-                        ->when($this->id_usuario, function($q){
-                            $q->where('id_usuario', $this->id_usuario);
-                        })
-                        ->when($this->id_canal, function($q){
-                            $q->where('id_canal', $this->id_canal);
-                        })
-                        ->where('cotizacion', 0)
-                        ->where('estado', 'Pagada')
-                        ->whereBetween('fecha', [$this->inicio, $this->fin])
-                        ->get();
+        $this->ventas_pagadas = $this->ventas->where('estado', 'Pagada')->values();
 
-        $this->ventas_anuladas = Venta::where('id_empresa', $this->id_empresa)
-                        ->when($this->id_sucursal, function($q){
-                            $q->where('id_sucursal', $this->id_sucursal);
-                        })
-                        ->when($this->id_bodega, function($q){
-                            $q->where('id_bodega', $this->id_bodega);
-                        })
-                        ->when($this->id_usuario, function($q){
-                            $q->where('id_usuario', $this->id_usuario);
-                        })
-                        ->when($this->id_canal, function($q){
-                            $q->where('id_canal', $this->id_canal);
-                        })
-                        ->where('cotizacion', 0)
-                        ->where('estado', 'Anulada')
-                        ->whereBetween('fecha', [$this->inicio, $this->fin])
-                        ->get();
+        $this->ventas_anuladas = $this->ventas->where('estado', 'Anulada')->values();
 
-        $this->devoluciones_ventas = DevolucionVenta::where('enable', '=', true)
+        $this->devoluciones_ventas = DevolucionVenta::select([
+                            'id',
+                            'fecha',
+                            'correlativo',
+                            'total',
+                            'enable',
+                            'id_venta',
+                            'id_documento',
+                            'id_cliente',
+                            'id_usuario',
+                            'id_sucursal',
+                            'id_bodega',
+                            'id_empresa',
+                        ])
+                        ->where('enable', '=', true)
                         ->whereHas('venta', function($q){
                             $q->where('id_empresa', $this->id_empresa)
                             ->when($this->id_sucursal, function($q){
@@ -143,27 +145,38 @@ class Indicador extends Model
                                 $q->where('id_canal', $this->id_canal);
                             });
                         })
-                        ->with('venta')
+                        ->with(['venta' => function ($q) use ($columnasVentas) {
+                            $q->select($columnasVentas);
+                        }])
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
                         ->get();
 
-        $this->cxc = Venta::where('id_empresa', $this->id_empresa)
-                        ->when($this->id_sucursal, function($q){
-                            $q->where('id_sucursal', $this->id_sucursal);
-                        })
-                        ->when($this->id_bodega, function($q){
-                            $q->where('id_bodega', $this->id_bodega);
-                        })
-                        ->when($this->id_usuario, function($q){
-                            $q->where('id_usuario', $this->id_usuario);
-                        })
-                        ->when($this->id_canal, function($q){
-                            $q->where('id_canal', $this->id_canal);
-                        })
-                        ->where('estado', 'Pendiente')
-                        ->where('cotizacion', 0)
-                        ->whereBetween('fecha', [$this->inicio, $this->fin])
-                        ->get();
+        $idsMetodos = $this->ventas
+                        ->where('estado', '!=', 'Anulada')
+                        ->where('forma_pago', 'Multiple')
+                        ->pluck('id')
+                        ->merge(
+                            $this->devoluciones_ventas
+                                ->filter(fn ($d) => (optional($d->venta)->forma_pago ?? '') === 'Multiple')
+                                ->map(fn ($d) => $d->id_venta ?? optional($d->venta)->id)
+                        )
+                        ->filter()
+                        ->unique()
+                        ->values();
+
+        $this->metodos_de_pago_por_venta = $idsMetodos->isEmpty()
+                        ? collect()
+                        : MetodoDePago::whereIn('id_venta', $idsMetodos->all())->get()->groupBy('id_venta');
+
+        $idsConDevolucion = $this->devoluciones_ventas->pluck('id_venta')->filter()->unique();
+        $this->detalles_metodos_de_pago = $this->ventas_pagadas
+                        ->where('forma_pago', 'Multiple')
+                        ->pluck('id')
+                        ->reject(fn ($id) => $idsConDevolucion->contains($id))
+                        ->flatMap(fn ($id) => $this->metodos_de_pago_por_venta->get($id, collect()))
+                        ->values();
+
+        $this->cxc = $this->ventas->where('estado', 'Pendiente')->values();
 
         $this->abonos = Abono::where('estado', 'Confirmado')
                         ->whereBetween('fecha', [$this->inicio, $this->fin])
@@ -189,7 +202,19 @@ class Indicador extends Model
             $this->cxp = collect();
             $this->gastos = collect();
         } else {
-            $this->compras = Compra::where('id_empresa', $this->id_empresa)
+            $columnasCompras = [
+                'id',
+                'fecha',
+                'estado',
+                'cotizacion',
+                'total',
+                'id_empresa',
+                'id_sucursal',
+                'id_usuario',
+            ];
+
+            $this->compras = Compra::select($columnasCompras)
+                            ->where('id_empresa', $this->id_empresa)
                             ->when($this->id_sucursal, function($q){
                                 $q->where('id_sucursal', $this->id_sucursal);
                             })
@@ -214,7 +239,8 @@ class Indicador extends Model
                             ->whereBetween('fecha', [$this->inicio, $this->fin])
                             ->get();
 
-            $this->cxp = Compra::where('id_empresa', $this->id_empresa)
+            $this->cxp = Compra::select($columnasCompras)
+                            ->where('id_empresa', $this->id_empresa)
                             ->when($this->id_sucursal, function($q){
                                 $q->where('id_sucursal', $this->id_sucursal);
                             })
@@ -225,7 +251,16 @@ class Indicador extends Model
                             ->whereBetween('fecha', [$this->inicio, $this->fin])
                             ->get();
 
-            $this->gastos = Gasto::where('id_empresa', $this->id_empresa)
+            $this->gastos = Gasto::select([
+                                'id',
+                                'fecha',
+                                'estado',
+                                'total',
+                                'id_empresa',
+                                'id_sucursal',
+                                'id_usuario',
+                            ])
+                            ->where('id_empresa', $this->id_empresa)
                             ->when($this->id_sucursal, function($q){
                                 $q->where('id_sucursal', $this->id_sucursal);
                             })
@@ -537,8 +572,15 @@ class Indicador extends Model
     public function getVentasByFormaPago()
     {
         $ventas = $this->ventas->where('estado', '!=', 'Anulada')->values();
-        $ids = $ventas->pluck('id')->merge(
-            $this->devoluciones_ventas->map(fn ($d) => $d->id_venta ?? optional($d->venta)->id)
+
+        if ($this->metodos_de_pago_por_venta !== null) {
+            return self::acumularFormasPago($ventas, $this->devoluciones_ventas, $this->metodos_de_pago_por_venta);
+        }
+
+        $ids = $ventas->where('forma_pago', 'Multiple')->pluck('id')->merge(
+            $this->devoluciones_ventas
+                ->filter(fn ($d) => (optional($d->venta)->forma_pago ?? '') === 'Multiple')
+                ->map(fn ($d) => $d->id_venta ?? optional($d->venta)->id)
         )->filter()->unique()->values();
 
         $metodos = $ids->isEmpty()
@@ -641,6 +683,7 @@ class Indicador extends Model
             ->where('estado', 'Pagada')
             ->groupBy('time')
             ->orderBy('time')
+            ->toBase()
             ->get()
             ->keyBy('time');
 
@@ -654,6 +697,7 @@ class Indicador extends Model
             ->whereIn('estado', ['Confirmado', 'Pagado'])
             ->groupBy('time')
             ->orderBy('time')
+            ->toBase()
             ->get()
             ->keyBy('time');
 
@@ -681,9 +725,14 @@ class Indicador extends Model
     public function getTotalesVentas($tiempo = 'DAY', $fecha = null){
         $ventas = Venta::selectRaw($tiempo . '(fecha) as time')
                                         ->selectRaw('sum(total) as total')
+                                        ->where('id_empresa', $this->id_empresa)
+                                        ->when($this->id_sucursal, function ($q) {
+                                            $q->where('id_sucursal', $this->id_sucursal);
+                                        })
                                         ->groupBy('time')
                                         ->where('created_at', '>=', $fecha)
                                         ->orderBy('time')
+                                        ->toBase()
                                         ->get();
         if (count($ventas) == 0) {
             $ventas->push(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
@@ -699,9 +748,14 @@ class Indicador extends Model
     public function getTotalesTransacciones($tiempo = 'DAY', $fecha = null){
         $transacciones = Venta::selectRaw($tiempo . '(fecha) as time')
                                         ->selectRaw('count(*) as total')
+                                        ->where('id_empresa', $this->id_empresa)
+                                        ->when($this->id_sucursal, function ($q) {
+                                            $q->where('id_sucursal', $this->id_sucursal);
+                                        })
                                         ->groupBy('time')
                                         ->where('created_at', '>=', $fecha)
                                         ->orderBy('time')
+                                        ->toBase()
                                         ->get();
         if (count($transacciones) == 0) {
             $transacciones->push(['cantidad' => 1, 'id' => null, 'nombre' => '', 'total' => 1 ]);
@@ -717,9 +771,14 @@ class Indicador extends Model
     public function getTotalesBalances($tiempo = 'DAY', $fecha = null){
         $balance = Venta::selectRaw($tiempo . '(fecha) as time')
                                         ->selectRaw('count(*) as total')
+                                        ->where('id_empresa', $this->id_empresa)
+                                        ->when($this->id_sucursal, function ($q) {
+                                            $q->where('id_sucursal', $this->id_sucursal);
+                                        })
                                         ->groupBy('time')
                                         ->where('created_at', '>=', $fecha)
                                         ->orderBy('time')
+                                        ->toBase()
                                         ->get();
 
         if (count($balance) == 0) {

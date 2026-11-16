@@ -789,7 +789,7 @@ class GenerarVentasRecurrentesService
 
         $correo = trim((string) $venta->cliente->correo);
         $nombre = $dte['receptor']['nombre'] ?? $venta->cliente->nombre_completo ?? $venta->cliente->nombre;
-        $fromAddress = config('mail.from.address') ?: 'noreply@smartpyme.sv';
+        $fromAddress = config('mail.from.address', 'no-reply@smartpyme.app');
         $fromName = $dte['emisor']['nombre'] ?? config('mail.from.name') ?: 'SmartPyme';
 
         Mail::send('mails.DTE', ['DTE' => $dte, 'nombre' => $nombre], function ($m) use ($pdfContent, $dte, $correo, $nombre, $fromAddress, $fromName) {
@@ -814,7 +814,7 @@ class GenerarVentasRecurrentesService
             return;
         }
 
-        $fromAddress = config('mail.from.address') ?: 'noreply@smartpyme.sv';
+        $fromAddress = config('mail.from.address', 'no-reply@smartpyme.app');
         $fromName = config('mail.from.name') ?: 'SmartPyme';
         $fechaEtiqueta = Carbon::parse($fecha)->format('d/m/Y');
         $asunto = '[SmartPyme] Ventas recurrentes — '.$empresa->nombre.' — '.$fechaEtiqueta;

@@ -17,7 +17,10 @@ class Municipio extends Model {
 
     public function getNombreDepartamentoAttribute() 
     {
-        return $this->departamento()->pluck('nombre')->first();
+        if ($this->relationLoaded('departamento') && $this->departamento) {
+            return $this->departamento->nombre;
+        }
+        return $this->departamento()->value('nombre');
     }
 
         public function departamento() 

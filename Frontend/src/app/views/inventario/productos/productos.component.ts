@@ -121,12 +121,6 @@ export class ProductosComponent implements OnInit, OnDestroy {
         private funcionalidadesService: FuncionalidadesService
     ) { }
 
-    /** Supervisor consulta el listado; las acciones de fila quedan para el resto de roles. */
-    mostrarMenuAcciones(): boolean {
-        return !this.apiService.isSupervisorLimitado()
-            && this.apiService.validateRole('usuario_supervisor', false);
-    }
-
     ngOnInit() {
         this.funcionalidadesService.verificarAcceso('transformacion-productos').subscribe((tieneFuncionalidad) => {
             this.mostrarTransformacionProductos = tieneFuncionalidad
@@ -160,6 +154,10 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
         this.apiService.getAll('bodegas/list').subscribe(bodegas => {
             this.bodegas = bodegas;
+        }, error => { this.alertService.error(error); });
+
+        this.apiService.getAll('proveedores/list', { minimal: 1 }).subscribe(proveedores => {
+            this.proveedores = proveedores;
         }, error => { this.alertService.error(error); });
 
     }
@@ -299,7 +297,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
     public openReporteAnalisisVentasMensual(template: TemplateRef<any>) {
         if (!this.proveedores?.length) {
-            this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+            this.apiService.getAll('proveedores/list', { minimal: 1 }).subscribe(proveedores => {
                 this.proveedores = proveedores;
             }, error => { this.alertService.error(error); });
         }
@@ -448,7 +446,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
     public openFilter(template: TemplateRef<any>) {
         if (!this.proveedores?.length) {
-            this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+            this.apiService.getAll('proveedores/list', { minimal: 1 }).subscribe(proveedores => {
                 this.proveedores = proveedores;
             }, error => { this.alertService.error(error); });
         }

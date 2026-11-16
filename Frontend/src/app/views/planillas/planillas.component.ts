@@ -248,10 +248,31 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
     });
   }
 
+  private textoConfirmacionAprobarPlanilla(): string {
+    if (!this.apiService.tieneContabilidadActivaEnSesion()) {
+      return 'La planilla pasará a estado aprobado.';
+    }
+    if (this.apiService.auth_user()?.empresa?.generar_partidas === 'Auto') {
+      return 'Se generará la partida de devengo. Luego solo podrá cambiar la cuenta banco hasta pagar.';
+    }
+    return 'La planilla pasará a estado aprobado.';
+  }
+
+  private textoExitoProcesarPago(response: any): string {
+    const base = response?.message || 'Pago procesado. Boletas enviadas según correo configurado.';
+    if (
+      this.apiService.tieneContabilidadActivaEnSesion() &&
+      this.apiService.auth_user()?.empresa?.generar_partidas === 'Auto'
+    ) {
+      return `${base} Se generó la partida de egreso en contabilidad.`;
+    }
+    return base;
+  }
+
   public aprobarPlanilla(planilla: any) {
     Swal.fire({
       title: '¿Está seguro?',
-      text: 'Se generará la partida de devengo si contabilidad está en modo Automático. Luego solo podrá cambiar la cuenta banco hasta pagar.',
+      text: this.textoConfirmacionAprobarPlanilla(),
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
@@ -353,7 +374,7 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
           next: (response) => {
             Swal.fire({
               title: '¡Éxito!',
-              text: response?.message || 'Pago procesado. Boletas enviadas según correo configurado; con contabilidad en Auto se generó la partida de egreso.',
+              text: this.textoExitoProcesarPago(response),
               icon: 'success',
             });
             this.loadPlanillas();

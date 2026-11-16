@@ -80,13 +80,9 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
   public api: boolean = false;
   public opAvanzadas = false;
   public opAvanzadasFacturacion = false;
-  public customFields: any = [];
-  public selectedCustomFields: number[] = [];
-  public activeCustomFields: any = [];
   public filtros: any = {
     bandera: true,
   };
-  public customField: boolean = false;
 
   public modalCredito!: any; // BsModalRef
 
@@ -401,24 +397,6 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
           this.venta = venta;
           this.venta.cotizacion = isCotizacion ? 1 : 0;
           this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
-
-          // Obtener todos los custom_field_ids únicos de los detalles
-          const usedCustomFieldIds = new Set();
-          this.venta.detalles.forEach((detalle: any) => {
-            if (detalle.custom_fields && detalle.custom_fields.length > 0) {
-              detalle.custom_fields.forEach((cf: any) => {
-                if (cf.custom_field) {
-                  usedCustomFieldIds.add(cf.custom_field.id);
-                }
-              });
-            }
-          });
-
-          // Pre-seleccionar los campos personalizados
-          this.selectedCustomFields = Array.from(
-            usedCustomFieldIds
-          ) as number[];
-          this.updateCustomFields();
         });
     }
 
@@ -987,16 +965,6 @@ if (
       this.venta.cambio = 0;
     }
 
-    if (this.venta.detalles) {
-      this.venta.detalles.forEach((detalle: any) => {
-        if (detalle.custom_fields) {
-          detalle.custom_fields = detalle.custom_fields.filter((cf: any) =>
-            this.selectedCustomFields.includes(cf.custom_field?.id)
-          );
-        }
-      });
-    }
-
     this.apiService.store('facturacion', this.venta).pipe(this.untilDestroyed()).subscribe(
       (venta) => {
         const detallesAntes = this.venta.detalles;
@@ -1216,32 +1184,6 @@ if (
     
   toggleDivFacturacion(): void {
     this.opAvanzadasFacturacion = !this.opAvanzadasFacturacion; // Cambiar entre true y false
-  }
-
-  // updateCustomFields() {
-  //   this.activeCustomFields = this.customFields.data
-  //     .filter((f: any) => this.selectedCustomFields.includes(f.id));
-  // }
-
-  updateCustomFields() {
-    //verificar si hay campos personalizados
-    if (this.customFields.data.length === 0) {
-      return;
-    }
-    this.activeCustomFields = this.customFields.data.filter((f: any) =>
-      this.selectedCustomFields.includes(f.id)
-    );
-
-    // Limpiar campos personalizados que ya no están seleccionados
-    if (this.venta.detalles) {
-      this.venta.detalles.forEach((detalle: any) => {
-        if (detalle.custom_fields) {
-          detalle.custom_fields = detalle.custom_fields.filter((cf: any) =>
-            this.selectedCustomFields.includes(cf.custom_field?.id)
-          );
-        }
-      });
-    }
   }
 
   public isColumnEnabled(columnName: string): boolean {

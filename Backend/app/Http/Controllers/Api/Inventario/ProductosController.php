@@ -41,6 +41,7 @@ use App\Exports\ActualizacionMasivaProductosExport;
 use App\Exports\PlantillaProductosImportExport;
 use App\Imports\ActualizacionMasivaProductosImport;
 use App\Support\Inventario\ActualizacionMasivaProductos;
+use App\Support\Inventario\SincronizarPrecioCatalogo;
 use Maatwebsite\Excel\HeadingRowImport;
 use App\Exports\TrasladoLineasUiExport;
 use App\Exports\ShopifyExport;
@@ -101,6 +102,10 @@ class ProductosController extends Controller
         $empresa = Empresa::find($user->id_empresa);
 
         $query = $this->buildProductosListadoQuery($request, $empresa, true);
+        // El modal de selección múltiple en ventas necesita las tarifas; el listado de inventario no.
+        if ($request->boolean('con_precios')) {
+            $query->with('precios.usuarios');
+        }
 
         $stockTotalFiltrado = null;
         if ($empresa && $empresa->isInventarioSumarStockBusquedasHabilitado()) {
@@ -128,7 +133,8 @@ class ProductosController extends Controller
      */
     protected function buildProductosListadoQuery(Request $request, ?Empresa $empresa, bool $withRelations): \Illuminate\Database\Eloquent\Builder
     {
-        $query = Producto::query()->whereIn('tipo', ['Producto', 'Compuesto']);
+        $tipos = $request->boolean('con_servicios') ? ['Producto', 'Compuesto', 'Servicio'] : ['Producto', 'Compuesto'];
+        $query = Producto::query()->whereIn('tipo', $tipos);
 
         if ($withRelations) {
             $query->with([
@@ -439,19 +445,59 @@ class ProductosController extends Controller
         $incluirNombreComercial = $empresa && $empresa->isNombreComercialHabilitado();
         $incluirPresentaciones = $this->puedeCargarPresentaciones($empresa);
 
-        // ── 1. Buscar productos base ──────────────────────────────────────────────
+        $productos = $this->productosSearchByQuery(
+            $query,
+            $incluirComponenteQuimico,
+            $incluirNombreComercial,
+            $incluirPresentaciones
+        );
+        $this->prepararRelacionesSearchByQuery($productos);
+        $lotesActivo = (bool) ($empresa && $empresa->isLotesActivo());
+
+        $resultado = [];
+
+        foreach ($productos as $producto) {
+            $stockBase = $this->stockSearchByQuery(
+                $producto,
+                $id_bodega ? (int) $id_bodega : null,
+                $empresa,
+                $lotesActivo
+            );
+
+            foreach ($this->filasSearchByQuery($producto, $stockBase, $incluirPresentaciones) as $fila) {
+                $resultado[] = $fila;
+            }
+        }
+
+        return Response()->json($resultado, 200);
+    }
+
+    private function productosSearchByQuery($query, $incluirComponenteQuimico, $incluirNombreComercial, $incluirPresentaciones)
+    {
         $with = array_merge([
-            'inventarios',
-            'lotes',
-            'composiciones.opciones',
-            'composiciones.compuesto.inventarios',
+            'categoria',
+            'imagenes' => static function ($q) {
+                $q->select('id', 'id_producto', 'img')->limit(1);
+            },
+            'inventarios.bodega.sucursal',
+            'lotes.bodega',
+            'composiciones.opciones.producto' => static function ($q) {
+                $q->select('id', 'nombre');
+            },
+            'composiciones.presentacion',
+            'composiciones.compuesto.categoria',
+            'composiciones.compuesto.imagenes' => static function ($q) {
+                $q->select('id', 'id_producto', 'img');
+            },
+            'composiciones.compuesto.lotes',
+            'composiciones.compuesto.inventarios.bodega.sucursal',
             'precios',
         ], $this->relacionesImpuestosProducto());
         if ($incluirPresentaciones) {
             $with[] = 'presentaciones';
         }
 
-        $productos = Producto::where('enable', true)
+        return Producto::where('enable', true)
             ->with($with)
             ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
             ->where(function ($q) use ($query, $incluirComponenteQuimico, $incluirNombreComercial) {
@@ -470,54 +516,132 @@ class ProductosController extends Controller
             })
             ->take(50)
             ->get();
+    }
 
-        // ── 2. Construir lista aplanada ────────────────────────────────────────────
-        $resultado = [];
+    private function filasSearchByQuery($producto, $stockBase, $incluirPresentaciones): array
+    {
+        $filas = [];
+        $base = $producto->toArray();
 
-        foreach ($productos as $producto) {
+        $nombreMostrar = !empty($producto->nombre_variante)
+            ? "{$producto->nombre} ({$producto->nombre_variante})"
+            : $producto->nombre;
 
-            $stockBase = $this->calcularStockBaseParaBusqueda($producto, $id_bodega ? (int) $id_bodega : null, $empresa);
+        $filas[] = array_merge($base, [
+            'id_producto'      => $producto->id,
+            'id_presentacion'  => null,
+            'nombre_mostrar'   => $nombreMostrar,
+            'precio'           => $producto->precio,
+            'stock_base_actual'=> $stockBase,
+            'factor_conversion'=> 1,
+            'presentaciones'   => [],   // no repetir el array en cada fila
+        ]);
 
-            $nombreMostrar = !empty($producto->nombre_variante)
-                ? "{$producto->nombre} ({$producto->nombre_variante})"
-                : $producto->nombre;
+        if ($incluirPresentaciones) {
+            foreach ($producto->presentaciones as $pres) {
+                $factor = (float) $pres->factor_conversion ?: 1;
 
-            // Fila del producto base
-            $resultado[] = array_merge($producto->toArray(), [
-                'id_producto'      => $producto->id,
-                'id_presentacion'  => null,
-                'nombre_mostrar'   => $nombreMostrar,
-                'precio'           => $producto->precio,
-                'stock_base_actual'=> $stockBase,
-                'factor_conversion'=> 1,
-                'presentaciones'   => [],   // no repetir el array en cada fila
-            ]);
+                $nombreMostrar = $pres->nombre_comercial;
 
-            if ($incluirPresentaciones) {
-                foreach ($producto->presentaciones as $pres) {
-                    $factor = (float) $pres->factor_conversion ?: 1;
+                $stockEmpaque = $stockBase === null
+                    ? null
+                    : ($factor > 0 ? round($stockBase / $factor, 4) : $stockBase);
 
-                    $nombreMostrar = $pres->nombre_comercial;
-
-                    $stockEmpaque = $stockBase === null
-                        ? null
-                        : ($factor > 0 ? round($stockBase / $factor, 4) : $stockBase);
-
-                    $resultado[] = array_merge($producto->toArray(), [
-                        'id_producto'      => $producto->id,
-                        'id_presentacion'  => $pres->id,
-                        'nombre_mostrar'   => $nombreMostrar,
-                        'precio'           => $pres->precio_venta,
-                        'stock_base_actual'=> $stockEmpaque,
-                        'factor_conversion'=> $factor,
-                        'codigo_barras'    => $pres->codigo_barras,
-                        'presentaciones'   => [],
-                    ]);
-                }
+                $filas[] = array_merge($base, [
+                    'id_producto'      => $producto->id,
+                    'id_presentacion'  => $pres->id,
+                    'nombre_mostrar'   => $nombreMostrar,
+                    'precio'           => $pres->precio_venta,
+                    'stock_base_actual'=> $stockEmpaque,
+                    'factor_conversion'=> $factor,
+                    'codigo_barras'    => $pres->codigo_barras,
+                    'presentaciones'   => [],
+                ]);
             }
         }
 
-        return Response()->json($resultado, 200);
+        return $filas;
+    }
+
+    /**
+     * Carga en bloque lo que los appends pedirían producto por producto
+     * y lo oculta para que el JSON siga sin esas relaciones.
+     */
+    private function prepararRelacionesSearchByQuery($productos): void
+    {
+        foreach ($productos as $producto) {
+            $this->ocultarBodegaInventarios($producto->inventarios);
+
+            foreach ($producto->lotes as $lote) {
+                $lote->setRelation('producto', $producto);
+                $lote->makeHidden(['producto', 'bodega']);
+            }
+
+            foreach ($producto->composiciones as $composicion) {
+                $composicion->makeHidden(['presentacion']);
+
+                foreach ($composicion->opciones as $opcion) {
+                    $opcion->makeHidden(['producto']);
+                }
+
+                $compuesto = $composicion->compuesto;
+                if (!$compuesto) {
+                    continue;
+                }
+
+                $compuesto->makeHidden(['categoria', 'imagenes', 'lotes']);
+                if ($compuesto->relationLoaded('inventarios')) {
+                    $this->ocultarBodegaInventarios($compuesto->inventarios);
+                }
+            }
+        }
+    }
+
+    private function ocultarBodegaInventarios($inventarios): void
+    {
+        foreach ($inventarios as $inventario) {
+            $inventario->makeHidden(['bodega']);
+        }
+    }
+
+    /**
+     * ponytail: usa lotes/inventarios ya cargados. Si la bodega está inactiva no viene
+     * en inventarios(); ahí se delega a calcularStockBaseParaBusqueda.
+     */
+    private function stockSearchByQuery($producto, ?int $id_bodega, $empresa, bool $lotesActivo): ?float
+    {
+        if ($producto->tipo === 'Servicio') {
+            return null;
+        }
+
+        $usaLotes = $producto->inventario_por_lotes && $lotesActivo;
+
+        if ($id_bodega) {
+            if ($usaLotes && $producto->relationLoaded('lotes')) {
+                return (float) $producto->lotes->where('id_bodega', $id_bodega)->sum('stock');
+            }
+
+            if (!$usaLotes && $producto->relationLoaded('inventarios')) {
+                $inventario = $producto->inventarios->first(function ($item) use ($id_bodega) {
+                    return (int) $item->id_bodega === $id_bodega;
+                });
+                if ($inventario) {
+                    return (float) $inventario->stock;
+                }
+            }
+
+            return $this->calcularStockBaseParaBusqueda($producto, $id_bodega, $empresa);
+        }
+
+        if ($usaLotes && $producto->relationLoaded('lotes')) {
+            return (float) $producto->lotes->sum('stock');
+        }
+
+        if (!$usaLotes && $producto->relationLoaded('inventarios')) {
+            return (float) $producto->inventarios->sum('stock');
+        }
+
+        return $this->calcularStockBaseParaBusqueda($producto, $id_bodega, $empresa);
     }
 
     public function searchByQueryWithBodega(Request $request)
@@ -803,11 +927,19 @@ class ProductosController extends Controller
         }
 
 
-        $producto->fill($request->all());
+        $datos = $request->all();
+        if (! Schema::hasColumn($producto->getTable(), 'partida_arancelaria')) {
+            unset($datos['partida_arancelaria']);
+        }
+
+        $producto->fill($datos);
+        $this->sincronizarPrecioCatalogo($producto);
         $producto->save();
 
         if ($request->has('id_impuestos') && Schema::hasTable('producto_impuestos')) {
             $this->syncProductoImpuestos($producto, $request->input('id_impuestos', []));
+            $this->sincronizarPrecioCatalogo($producto);
+            $producto->save();
         }
 
         $migracionLotes = null;
@@ -873,6 +1005,16 @@ class ProductosController extends Controller
         }
 
         return Response()->json($payload, 200);
+    }
+
+    protected function sincronizarPrecioCatalogo(Producto $producto): void
+    {
+        $empresa = Empresa::withoutGlobalScopes()->find($producto->id_empresa);
+        $pct = SincronizarPrecioCatalogo::porcentajeIvaEfectivo(
+            $producto->porcentaje_impuesto !== null ? (float) $producto->porcentaje_impuesto : null,
+            $empresa?->iva !== null ? (float) $empresa->iva : null
+        );
+        SincronizarPrecioCatalogo::aplicar($producto, $pct);
     }
 
     /**
@@ -1468,7 +1610,14 @@ class ProductosController extends Controller
     private function denegarActualizacionMasiva()
     {
         $user = Auth::user();
-        if (!$user || !$user->can('productos.actualizacion_masiva.ejecutar')) {
+        if (!$user) {
+            return response()->json(['mensaje' => 'No tiene permiso para la actualización masiva de productos.'], 403);
+        }
+
+        $puedeEjecutar = $user->hasRole(['admin', 'super_admin'])
+            || $user->can('productos.actualizacion_masiva.ejecutar');
+
+        if (!$puedeEjecutar) {
             return response()->json(['mensaje' => 'No tiene permiso para la actualización masiva de productos.'], 403);
         }
 
@@ -2170,7 +2319,14 @@ class ProductosController extends Controller
         $productos = Producto::where('enable', true)
             ->where('id_empresa', $request->id_empresa)
             ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
-            ->with(['inventarios', 'precios'])
+            ->with([
+                'categoria',
+                'imagenes' => static function ($q) {
+                    $q->select('id', 'id_producto', 'img')->limit(1);
+                },
+                'inventarios',
+                'precios',
+            ])
             ->where(function ($q) use ($termino, $incluirComponenteQuimico, $incluirNombreComercial) {
                 $q->where('nombre', 'like', "%$termino%")
                     ->orWhere('codigo', 'like', "%$termino%")

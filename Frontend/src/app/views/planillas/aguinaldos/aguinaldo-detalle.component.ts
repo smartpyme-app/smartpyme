@@ -1,7 +1,9 @@
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
@@ -16,7 +18,7 @@ import Swal from 'sweetalert2';
   selector: 'app-aguinaldo-detalle',
   templateUrl: './aguinaldo-detalle.component.html',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe]
+  imports: [CommonModule, FormsModule, RouterModule, TooltipModule, CurrencyPipe]
 })
 export class AguinaldoDetalleComponent implements OnInit {
   public aguinaldo: any = {};
@@ -146,7 +148,8 @@ export class AguinaldoDetalleComponent implements OnInit {
 
   public empleadoInfo: any = null;
 
-  public onEmpleadoSeleccionado() {
+  public onEmpleadoSeleccionado(id: any = this.empleadoSeleccionado) {
+    this.empleadoSeleccionado = id;
     if (!this.empleadoSeleccionado) {
       this.sugerenciaAguinaldo = 0;
       this.mesesTrabajados = 0;
@@ -156,7 +159,9 @@ export class AguinaldoDetalleComponent implements OnInit {
     }
 
     // Guardar información del empleado seleccionado
-    this.empleadoInfo = this.empleadosDisponibles.find((e: any) => e.id === this.empleadoSeleccionado);
+    this.empleadoInfo = this.empleadosDisponibles.find(
+      (e: any) => String(e.id) === String(this.empleadoSeleccionado)
+    );
 
     this.cargandoSugerencia = true;
     this.apiService.store('aguinaldos/sugerencia', {

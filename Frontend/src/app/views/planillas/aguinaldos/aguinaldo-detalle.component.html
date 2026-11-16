@@ -241,13 +241,13 @@
           id="empleado"
           name="empleado"
           [(ngModel)]="empleadoSeleccionado"
-          (change)="onEmpleadoSeleccionado()"
+          (ngModelChange)="onEmpleadoSeleccionado($event)"
           required
         >
-          <option value="">Seleccione un empleado</option>
+          <option [ngValue]="null">Seleccione un empleado</option>
           <option
             *ngFor="let empleado of empleadosDisponibles"
-            [value]="empleado.id"
+            [ngValue]="empleado.id"
           >
             {{ empleado.nombres }} {{ empleado.apellidos }} -
             {{ empleado.codigo }}

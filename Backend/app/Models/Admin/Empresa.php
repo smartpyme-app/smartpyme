@@ -975,7 +975,7 @@ class Empresa extends Model
         }
 
         if ($section === 'configuraciones' && in_array($key, ['fidelizacion_activa', 'fidelizacion_completa', 'fidelizacion_enviar_correos'])) {
-            cache()->forget("empresa_fidelizacion_{$this->id}");
+            $this->invalidarCacheFidelizacion();
         }
 
         return $this;
@@ -1015,6 +1015,20 @@ class Empresa extends Model
 
             $service->set((int) $this->id, $modulo, array_merge($current, $incoming), $pais);
         }
+
+        $this->invalidarCacheFidelizacion();
+    }
+
+    /**
+     * Cache de acumulación de puntos (VentaObserver / ConsumoPuntosService).
+     */
+    public function invalidarCacheFidelizacion(): void
+    {
+        if (!$this->id) {
+            return;
+        }
+
+        cache()->forget("empresa_fidelizacion_{$this->id}");
     }
 
     /**
@@ -1173,6 +1187,18 @@ class Empresa extends Model
         return (bool) $this->getCustomConfigValue('configuraciones', 'inventario_reporte_analisis_ventas_mensual', false);
     }
 
+    /**
+     * Reporte automático «Ventas por categoría y vendedor»: sumar IVA de línea (total + iva del detalle).
+     */
+    public function isReporteVentasCategoriaVendedorIncluirIvaHabilitado(): bool
+    {
+        return (bool) $this->getCustomConfigValue(
+            'configuraciones',
+            'reporte_ventas_categoria_vendedor_incluir_iva',
+            false
+        );
+    }
+
     public function isActualizacionMasivaProductosActiva(): bool
     {
         return (bool) $this->getCustomConfigValue('configuraciones', 'actualizacion_masiva_productos', false);
@@ -1227,18 +1253,40 @@ class Empresa extends Model
      */
     public function tieneFidelizacionHabilitada()
     {
-        $globalEnabled = $this->hasMany(\App\Models\Admin\EmpresaFuncionalidad::class, 'id_empresa')
-                    ->whereHas('funcionalidad', function($query) {
+        $funcionalidadActiva = $this->hasMany(\App\Models\Admin\EmpresaFuncionalidad::class, 'id_empresa')
+            ->whereHas('funcionalidad', function ($query) {
+                $query->where('slug', 'fidelizacion-clientes');
+            })
+            ->where('activo', true)
+            ->exists();
+
+        if (!$funcionalidadActiva && $this->esEmpresaHija()) {
+            $padre = $this->getEmpresaPadre();
+            if ($padre) {
+                $funcionalidadActiva = $padre->hasMany(\App\Models\Admin\EmpresaFuncionalidad::class, 'id_empresa')
+                    ->whereHas('funcionalidad', function ($query) {
                         $query->where('slug', 'fidelizacion-clientes');
                     })
                     ->where('activo', true)
                     ->exists();
+            }
+        }
 
-        if (!$globalEnabled) {
+        if (!$funcionalidadActiva) {
             return false;
         }
 
-        return (bool) $this->getCustomConfigValue('configuraciones', 'fidelizacion_completa', false);
+        $configEmpresa = $this->esEmpresaHija() ? $this->getEmpresaPadre() : $this;
+        if (!$configEmpresa) {
+            $configEmpresa = $this;
+        }
+
+        // ponytail: sin clave explícita, cuentas legacy con solo fidelizacion_completa siguen activas
+        if (!$configEmpresa->getCustomConfigValue('configuraciones', 'fidelizacion_activa', true)) {
+            return false;
+        }
+
+        return (bool) $configEmpresa->getCustomConfigValue('configuraciones', 'fidelizacion_completa', false);
     }
 
     public function tieneFuncionalidad(string $slug): bool

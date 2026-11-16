@@ -16,6 +16,7 @@ describe('GastoComponent - campos condicionales', () => {
   describe('setCredito', () => {
     it('deja el gasto pendiente y conserva la fecha de pago al activar crédito', () => {
       const ctx = { gasto: { credito: true, estado: 'Confirmado', fecha_pago: '2026-09-01' } };
+      Object.defineProperty(ctx, 'gastoEnEstadoAnulado', { get: () => false });
 
       invocar('setCredito', ctx);
 
@@ -23,8 +24,20 @@ describe('GastoComponent - campos condicionales', () => {
       expect(ctx.gasto.fecha_pago).toBe('2026-09-01');
     });
 
+    it('no cambia el estado si el gasto está anulado', () => {
+      const ctx = { gasto: { credito: false, estado: 'Anulada', fecha_pago: '2026-09-01' } };
+      Object.defineProperty(ctx, 'gastoEnEstadoAnulado', {
+        get: () => ['Anulada', 'Anulado', 'Cancelado'].includes(ctx.gasto.estado),
+      });
+
+      invocar('setCredito', ctx);
+
+      expect(ctx.gasto.estado).toBe('Anulada');
+    });
+
     it('limpia la fecha de pago al desactivar crédito', () => {
       const ctx = { gasto: { credito: false, estado: 'Pendiente', fecha_pago: '2026-09-01' } };
+      Object.defineProperty(ctx, 'gastoEnEstadoAnulado', { get: () => false });
 
       invocar('setCredito', ctx);
 
@@ -135,6 +148,33 @@ describe('GastoComponent - campos condicionales', () => {
       expect(ctx.gasto.exchange_rate).toBe(1);
       expect(ctx.tcPreview.rate).toBe(1);
       expect(ctx.tcPreview.error).toBeNull();
+    });
+  });
+
+  describe('recalcularDesdePrecio', () => {
+    it('resta el descuento y calcula el impuesto sobre la base neta', () => {
+      const d: any = {
+        cantidad: 21,
+        precio_unitario: 2632.75,
+        descuento: 27643.87,
+        sub_total: 0,
+        tipo_gravado: 'gravada',
+        aplica_renta: false,
+        aplica_retencion_iva: false,
+        aplica_percepcion: false,
+      };
+      const ctx: any = {
+        detalles: [d],
+        gasto: {},
+        apiService: { auth_user: () => ({ empresa: { iva: 13 } }) },
+        recalcularTotalesDetalles() {},
+      };
+
+      (GastoComponent.prototype.recalcularDesdePrecio as any).call(ctx, 0);
+
+      expect(d.sub_total).toBe(27643.88);
+      expect(d.iva).toBe(3593.7);
+      expect(d.total).toBe(31237.58);
     });
   });
 });

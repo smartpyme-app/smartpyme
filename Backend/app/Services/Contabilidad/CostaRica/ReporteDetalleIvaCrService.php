@@ -3,7 +3,9 @@
 namespace App\Services\Contabilidad\CostaRica;
 
 use App\Models\Compras\Compra;
+use App\Models\Compras\Devoluciones\Devolucion as DevolucionCompra;
 use App\Models\Compras\Gastos\Gasto;
+use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Ventas\Venta;
 use Carbon\Carbon;
 
@@ -44,8 +46,26 @@ final class ReporteDetalleIvaCrService
         }
 
         $rows = [];
-        foreach ($q->cursor() as $venta) {
+        foreach ($q->lazy() as $venta) {
             $row = $this->filaDesdeVenta($venta);
+            if ($row !== null) {
+                $rows[] = $row;
+            }
+        }
+
+        $qd = DevolucionVenta::query()
+            ->with(['cliente', 'empresa', 'venta.impuestos.impuesto'])
+            ->withCount('detalles')
+            ->where('enable', true)
+            ->whereHas('venta', fn ($v) => $v->where('estado', '!=', 'Anulada'))
+            ->whereBetween('fecha', [$inicio, $fin])
+            ->orderBy('fecha')
+            ->orderBy('id');
+        if ($idSucursal) {
+            $qd->where('id_sucursal', $idSucursal);
+        }
+        foreach ($qd->lazy() as $devolucion) {
+            $row = $this->mapearDocumento($this->documentoDesdeDevolucionVenta($devolucion), $devolucion, -1, true, false);
             if ($row !== null) {
                 $rows[] = $row;
             }
@@ -74,7 +94,7 @@ final class ReporteDetalleIvaCrService
         $rows = [];
 
         $qc = Compra::query()
-            ->with(['proveedor', 'empresa'])
+            ->with(['proveedor', 'empresa', 'impuestos.impuesto'])
             ->withCount('detalles')
             ->where('estado', '!=', 'Anulada')
             ->where('cotizacion', 0)
@@ -84,10 +104,27 @@ final class ReporteDetalleIvaCrService
         if ($idSucursal) {
             $qc->where('id_sucursal', $idSucursal);
         }
-        foreach ($qc->cursor() as $compra) {
+        foreach ($qc->lazy() as $compra) {
             $row = $this->filaDesdeCompra($compra);
             if ($row !== null) {
-                $rows[] = $row;
+                $rows[] = $row + ['origen' => 'compra'];
+            }
+        }
+
+        $qd = DevolucionCompra::query()
+            ->with(['proveedor', 'empresa'])
+            ->withCount('detalles')
+            ->where('enable', true)
+            ->whereBetween('fecha', [$inicio, $fin])
+            ->orderBy('fecha')
+            ->orderBy('id');
+        if ($idSucursal) {
+            $qd->where('id_sucursal', $idSucursal);
+        }
+        foreach ($qd->lazy() as $devolucion) {
+            $row = $this->mapearDocumento($this->documentoDesdeDevolucionCompra($devolucion), $devolucion, -1, true, true);
+            if ($row !== null) {
+                $rows[] = $row + ['origen' => 'devolucion'];
             }
         }
 
@@ -101,10 +138,10 @@ final class ReporteDetalleIvaCrService
         if ($idSucursal) {
             $qg->where('id_sucursal', $idSucursal);
         }
-        foreach ($qg->cursor() as $gasto) {
+        foreach ($qg->lazy() as $gasto) {
             $row = $this->filaDesdeGasto($gasto);
             if ($row !== null) {
-                $rows[] = $row;
+                $rows[] = $row + ['origen' => 'gasto'];
             }
         }
 
@@ -244,6 +281,90 @@ final class ReporteDetalleIvaCrService
         ];
     }
 
+    /** @return array<string, mixed> */
+    private function documentoDesdeDevolucionVenta(DevolucionVenta $devolucion): array
+    {
+        $empresa = $devolucion->empresa;
+        [$nombreReceptor, $idReceptor] = $this->datosTercero($devolucion->cliente, 'Consumidor final');
+        $tasa = $this->tasaCambioCr($devolucion);
+        $iva = abs((float) $devolucion->iva);
+
+        $lineasVenta = optional($devolucion->venta)->impuestos ?? collect();
+        $ivaVenta = (float) $lineasVenta->sum('monto');
+        $impuestos = abs($ivaVenta) > 0.00001
+            ? $lineasVenta->map(fn ($l) => (object) [
+                'impuesto' => $l->impuesto,
+                'monto' => $iva * (float) $l->monto / $ivaVenta,
+            ])->all()
+            : [];
+
+        return [
+            'date' => $devolucion->fecha,
+            'sequential' => (string) ($devolucion->correlativo ?? ''),
+            'tipo_doc' => 'Nota de crédito',
+            'issuer' => [
+                'name' => (string) (optional($empresa)->nombre ?? ''),
+                'identification_number' => preg_replace('/\D/', '', (string) (optional($empresa)->nit ?? '')),
+            ],
+            'receiver' => [
+                'name' => $nombreReceptor,
+                'identification_number' => $idReceptor,
+            ],
+            'summary' => $this->resumenDesdeMontos(
+                $impuestos,
+                $iva,
+                abs((float) $devolucion->sub_total),
+                abs((float) ($devolucion->exenta ?? 0)),
+                abs((float) ($devolucion->no_sujeta ?? 0)),
+                null,
+                $tasa
+            ),
+            'line_items' => array_fill(0, max(0, (int) ($devolucion->detalles_count ?? 0)), []),
+            'currency' => [
+                'currency_code' => $this->codigoMonedaCr($devolucion),
+                'exchange_rate' => $tasa,
+            ],
+            'payments' => [],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function documentoDesdeDevolucionCompra(DevolucionCompra $devolucion): array
+    {
+        $empresa = $devolucion->empresa;
+        [$nombreEmisor, $idEmisor] = $this->datosTercero($devolucion->proveedor, 'Proveedor');
+        $tasa = $this->tasaCambioCr($devolucion);
+
+        return [
+            'date' => $devolucion->fecha,
+            'sequential' => trim((string) ($devolucion->referencia ?? '')),
+            'tipo_doc' => 'Nota de crédito',
+            'issuer' => [
+                'name' => $nombreEmisor,
+                'identification_number' => $idEmisor,
+            ],
+            'receiver' => [
+                'name' => (string) (optional($empresa)->nombre ?? ''),
+                'identification_number' => preg_replace('/\D/', '', (string) (optional($empresa)->nit ?? '')),
+            ],
+            'summary' => $this->resumenDesdeMontos(
+                [],
+                abs((float) $devolucion->iva),
+                abs((float) $devolucion->sub_total),
+                0.0,
+                0.0,
+                null,
+                $tasa
+            ),
+            'line_items' => array_fill(0, max(0, (int) ($devolucion->detalles_count ?? 0)), []),
+            'currency' => [
+                'currency_code' => $this->codigoMonedaCr($devolucion),
+                'exchange_rate' => $tasa,
+            ],
+            'payments' => [],
+        ];
+    }
+
     /**
      * Tipo de cambio a colones del documento. CRC (o moneda no seteada, p. ej. `devoluciones_compra`
      * que aún no tiene columnas de moneda — Task 2 solo cubrió ventas/compras/egresos/devoluciones_venta)
@@ -372,8 +493,12 @@ final class ReporteDetalleIvaCrService
     /** @return array<string, mixed> */
     private function resumenDesdeCompra(Compra $compra, float $tasaCambio = 1.0): array
     {
+        $impuestos = ($compra->relationLoaded('impuestos') && $compra->impuestos->isNotEmpty())
+            ? $compra->impuestos
+            : [];
+
         return $this->resumenDesdeMontos(
-            [],
+            $impuestos,
             (float) $compra->iva,
             (float) $compra->sub_total,
             (float) ($compra->exenta ?? 0) + (float) ($compra->otros_cargos ?? 0),
@@ -513,8 +638,8 @@ final class ReporteDetalleIvaCrService
             $fechaDisplay = '';
         }
 
-        $tipoNombre = '';
-        if (is_object($model) && property_exists($model, 'nombre_documento')) {
+        $tipoNombre = (string) ($doc['tipo_doc'] ?? '');
+        if ($tipoNombre === '' && is_object($model) && property_exists($model, 'nombre_documento')) {
             $tipoNombre = (string) ($model->nombre_documento ?? '');
         }
         if ($tipoNombre === '' && is_object($model) && method_exists($model, 'documento')) {
@@ -545,15 +670,8 @@ final class ReporteDetalleIvaCrService
 
         $tasaCambio = (float) ($currency['exchange_rate'] ?? 1);
 
-        $retenciones = 0.0;
-        if (is_object($model) && property_exists($model, 'iva_retenido')) {
-            $retenciones = round((float) ($model->iva_retenido ?? 0) * $tasaCambio * $signe, 5);
-        }
-
-        $ivaDev = 0.0;
-        if (is_object($model) && property_exists($model, 'iva_devuelto')) {
-            $ivaDev = round((float) ($model->iva_devuelto ?? 0) * $tasaCambio * $signe, 5);
-        }
+        $retenciones = round(abs((float) ($model->iva_retenido ?? 0)) * $tasaCambio * $signe, 5);
+        $ivaDev = round(abs((float) ($model->iva_devuelto ?? 0)) * $tasaCambio * $signe, 5);
 
         $folio = isset($doc['sequential']) ? (string) $doc['sequential'] : '';
         $clave = '';
@@ -709,7 +827,7 @@ final class ReporteDetalleIvaCrService
      * Mismas filas que la tabla de pantalla. El exento es la tarifa 0%.
      *
      * @param  array<string, float|int>  $totales
-     * @return array<int, array{etiqueta: string, base: float, iva: float}>
+     * @return array<int, array{etiqueta: string, base: float, iva: float, tarifa: string, columna: string}>
      */
     public static function resumenTarifas(array $totales): array
     {
@@ -720,12 +838,92 @@ final class ReporteDetalleIvaCrService
                 'etiqueta' => 'IVA '.$tarifa.'%',
                 'base' => $n('subtotal_'.$tarifa),
                 'iva' => $n('iva_'.$tarifa),
+                'tarifa' => $tarifa.'%',
+                'columna' => (string) $tarifa,
             ];
         }
-        $rows[] = ['etiqueta' => 'Exento (IVA 0%)', 'base' => $n('subtotal_exento'), 'iva' => 0.0];
-        $rows[] = ['etiqueta' => 'Exonerado', 'base' => $n('subtotal_exonerado'), 'iva' => 0.0];
+        $rows[] = ['etiqueta' => 'Exento (IVA 0%)', 'base' => $n('subtotal_exento'), 'iva' => 0.0, 'tarifa' => '0%', 'columna' => 'exento'];
+        $rows[] = ['etiqueta' => 'Exonerado', 'base' => $n('subtotal_exonerado'), 'iva' => 0.0, 'tarifa' => '', 'columna' => 'exonerado'];
 
         return $rows;
+    }
+
+    /**
+     * Bloque fiscal del resumen CR calculado sobre las mismas filas del libro (pantalla, Excel, CSV y PDF).
+     *
+     * @param  array<int, array<string, mixed>>  $filasVentas
+     * @param  array<int, array<string, mixed>>  $filasCompras  con `origen`: compra|gasto|devolucion
+     * @return array{ventas_por_impuesto: list<array<string, mixed>>, compras_por_impuesto: list<array<string, mixed>>, iva: array<string, float>}
+     */
+    public static function resumenFiscal(array $filasVentas, array $filasCompras): array
+    {
+        $ivaFila = static fn (array $f): float => array_sum(array_map(
+            static fn (int $t): float => (float) ($f['iva_'.$t] ?? 0),
+            [13, 8, 4, 2, 1]
+        ));
+
+        $credito = ['compra' => 0.0, 'gasto' => 0.0, 'devolucion' => 0.0];
+        foreach ($filasCompras as $f) {
+            $credito[$f['origen'] ?? 'compra'] += $ivaFila($f);
+        }
+        $credito = array_map(static fn (float $v): float => round($v, 2), $credito);
+        $ivaAFavor = round(array_sum($credito), 2);
+
+        $ivaDevuelto = round((float) array_sum(array_column($filasVentas, 'iva_devuelto')), 2);
+        $ivaEnContra = round(array_sum(array_map($ivaFila, $filasVentas)) - $ivaDevuelto, 2);
+
+        $ventasPorImpuesto = self::desgloseFiscal($filasVentas);
+        if (abs($ivaDevuelto) > 0.00001) {
+            $ventasPorImpuesto[] = [
+                'tarifa' => '',
+                'etiqueta' => 'IVA devuelto',
+                'impuesto' => 'IVA devuelto',
+                'base' => 0.0,
+                'iva' => -$ivaDevuelto,
+                'documentos' => count(array_filter($filasVentas, static fn (array $f): bool => abs((float) ($f['iva_devuelto'] ?? 0)) > 0.00001)),
+            ];
+        }
+
+        return [
+            'ventas_por_impuesto' => $ventasPorImpuesto,
+            'compras_por_impuesto' => self::desgloseFiscal($filasCompras),
+            'iva' => [
+                'iva_a_favor' => $ivaAFavor,
+                'credito_fiscal_compras' => $credito['compra'],
+                'credito_fiscal_gastos' => $credito['gasto'],
+                'credito_fiscal_devoluciones_compras' => $credito['devolucion'],
+                'iva_en_contra' => $ivaEnContra,
+                'diferencia_estimada_pago_iva' => round($ivaEnContra - $ivaAFavor, 2),
+            ],
+        ];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $filas
+     * @return list<array{tarifa: string, etiqueta: string, impuesto: string, base: float, iva: float, documentos: int}>
+     */
+    private static function desgloseFiscal(array $filas): array
+    {
+        $out = [];
+        foreach (self::resumenTarifas((new self())->totales($filas)) as $t) {
+            $base = round($t['base'], 2);
+            $iva = round($t['iva'], 2);
+            if (abs($base) < 0.005 && abs($iva) < 0.005) {
+                continue;
+            }
+            $c = $t['columna'];
+            $out[] = [
+                'tarifa' => $t['tarifa'],
+                'etiqueta' => $t['etiqueta'],
+                'impuesto' => $t['etiqueta'],
+                'base' => $base,
+                'iva' => $iva,
+                'documentos' => count(array_filter($filas, static fn (array $f): bool => abs((float) ($f['subtotal_'.$c] ?? 0)) > 0.00001
+                    || abs((float) ($f['iva_'.$c] ?? 0)) > 0.00001)),
+            ];
+        }
+
+        return $out;
     }
 
     /**

@@ -118,6 +118,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     }
     return (
       this.apiService.canVerCostosInventario() ||
+      this.apiService.hasPermission('productos.inventario.ver') ||
       this.apiService.canEditTest('productos.editar') ||
       this.apiService.isAdminCreate()
     );
@@ -168,7 +169,11 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
           this.cabysLoading = true;
           this.cdr.markForCheck();
 
-          return this.haciendaCabys.getCabysByQuery(t, 20).pipe(
+          const busqueda$ = /^\d{3,13}$/.test(t)
+            ? this.haciendaCabys.getCabysByCodigo(t, 50)
+            : this.haciendaCabys.getCabysByQuery(t, 50);
+
+          return busqueda$.pipe(
             map((body) => mapCabysApiResponseToOptions(body)),
             catchError(() => of([])),
             finalize(() => {
@@ -225,7 +230,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
 
     this.intentarCargarBarcodeSugerido();
 
-    this.apiService.getAll('proveedores/list')
+    this.apiService.getAll('proveedores/list', { minimal: 1 })
       .pipe(this.untilDestroyed())
       .subscribe(
       (proveedores) => {
@@ -729,8 +734,24 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     this.cdr.markForCheck();
     const esNuevo = !this.producto.id;
 
+    if (this.producto.precio_final != null && this.producto.precio_final !== '') {
+      this.calPrecioBase();
+    } else {
+      this.calPrecioFinal();
+    }
+
+    const pctGuardar = this.getPorcentajeProducto();
+    const precioSinIva = Number(this.producto.precio) || 0;
+    const precioConIva =
+      pctGuardar > 0
+        ? Math.round(precioSinIva * (1 + pctGuardar / 100) * 100) / 100
+        : precioSinIva;
+
     const payload = {
       ...this.producto,
+      precio: precioSinIva,
+      precio_sin_iva: precioSinIva,
+      precio_con_iva: precioConIva,
       partida_arancelaria: partidaNorm,
       id_impuestos: Array.isArray(this.producto.id_impuestos) ? this.producto.id_impuestos : [],
     };

@@ -18,6 +18,7 @@ use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Kardex;
 use App\Models\Admin\Empresa;
 use App\Support\FacturacionElectronica\CostaRica\DocumentoMoneda;
+use App\Services\Moneda\MonedaPaisService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
@@ -144,6 +145,10 @@ class ComprasController extends Controller
             return $bloqueado;
         }
 
+        $orden = $compra->num_orden_compra
+            ? \App\Models\OrdenCompra::where('id', $compra->num_orden_compra)->with('detalles')->first()
+            : null;
+
             // Ajustar stocks
             foreach ($compra->detalles as $detalle) {
 
@@ -176,6 +181,16 @@ class ComprasController extends Controller
                         $inventario->stock -= $cantidadBase;
                         $inventario->save();
                         $inventario->kardex($compra, $cantidadBase * -1);
+                    }
+
+                    if ($orden) {
+                        $detalleOrden = $orden->detalles->where('id_producto', $detalle->id_producto)->first();
+                        if ($detalleOrden) {
+                            $detalleOrden->cantidad_procesada = max(0, (float) $detalleOrden->cantidad_procesada - (float) $detalle->cantidad);
+                            $detalleOrden->save();
+                        }
+                        $orden->estado = 'Pendiente';
+                        $orden->save();
                     }
 
                     // Abonos
@@ -296,7 +311,7 @@ class ComprasController extends Controller
             if ($compra->estado === 'Consigna') {
                 $compra->es_consigna = true;
             }
-            $this->resolverMonedaCr($compra, $request);
+            $this->resolverMonedaDocumento($compra, $request);
             $compra->save();
 
             if ($request->has('impuestos')) {
@@ -456,6 +471,10 @@ class ComprasController extends Controller
 
 
 
+            }
+
+            if ($compra->num_orden_compra) {
+                app(\App\Services\Compras\OrdenCompraService::class)->actualizarDesdeCompra($compra, $request->detalles);
             }
 
         // SE CAMBIO PARA IMPORTACIÓN MASIVA JSON: Correlativo en catálogo `documentos`: (1) flujo legado sin cambios, (2) importación masiva JSON (flag explícito).
@@ -1033,10 +1052,13 @@ class ComprasController extends Controller
                 }, 'cliente')
                 ->firstOrFail();
             
-            $orden_compra = Compra::withoutGlobalScope('empresa')->where('id', $request->num_orden)
-                ->where('cotizacion', 1)
+            $orden_compra = \App\Models\OrdenCompra::withoutGlobalScope('empresa')->where('id', $request->num_orden)
                 ->with('detalles', 'proveedor')
-                ->firstOrFail();
+                ->first()
+                ?? Compra::withoutGlobalScope('empresa')->where('id', $request->num_orden)
+                    ->where('cotizacion', 1)
+                    ->with('detalles', 'proveedor')
+                    ->firstOrFail();
 
             // Buscar si ya existe una compra con el mismo tipo de documento, proveedor y correlativo
             $compraExistente = Compra::withoutGlobalScope('empresa')->where('tipo_documento', $venta->nombre_documento)
@@ -1255,31 +1277,49 @@ class ComprasController extends Controller
     }
 
     /**
-     * Resuelve currency_code/exchange_rate/CRC equivalent (§7.4).
-     * Requiere funcionalidad `multimoneda`; sin ella fuerza CRC. Compras no editan TC (siempre BCCR).
+     * Resuelve currency_code / exchange_rate / equivalent_* según pais_configuracion (módulo moneda).
+     * Sin funcionalidad `multimoneda` fuerza moneda funcional del país.
+     * Override de TC: empresa `facturacion_fe.permitir_editar_tipo_cambio` o país `permitir_editar`.
      */
-    private function resolverMonedaCr(Compra $compra, Request $request): void
+    private function resolverMonedaDocumento(Compra $compra, Request $request): void
     {
         $empresa = Empresa::find($compra->id_empresa);
         if (! $empresa) {
             return;
         }
 
-        $currencyCode = $empresa->tieneFuncionalidadMultimoneda()
-            ? $request->input('currency_code', $compra->currency_code ?? DocumentoMoneda::MONEDA_CRC)
-            : DocumentoMoneda::MONEDA_CRC;
+        /** @var MonedaPaisService $monedaService */
+        $monedaService = app(MonedaPaisService::class);
+        $cfg = $monedaService->configForEmpresa($empresa);
+        $funcional = strtoupper((string) ($cfg['moneda_funcional'] ?? 'USD'));
+        $fecha = Carbon::parse($compra->fecha ?: now());
 
-        $moneda = app(DocumentoMoneda::class)->resolve(
+        if (! $empresa->tieneFuncionalidadMultimoneda()) {
+            $compra->fill($monedaService->resolveDocumento(
+                $empresa,
+                ['currency_code' => $funcional, 'total' => (float) $compra->total, 'iva' => (float) $compra->iva],
+                $fecha
+            ));
+
+            return;
+        }
+
+        $allowManualRate = empty($compra->dte) && (
+            (bool) $empresa->getCustomConfigValue('facturacion_fe', 'permitir_editar_tipo_cambio', false)
+            || (bool) ($cfg['permitir_editar'] ?? false)
+        );
+
+        $compra->fill($monedaService->resolveDocumento(
+            $empresa,
             [
-                'currency_code' => $currencyCode,
+                'currency_code' => $request->input('currency_code', $compra->currency_code ?? $funcional),
+                'exchange_rate' => $request->input('exchange_rate'),
                 'total' => (float) $compra->total,
                 'iva' => (float) $compra->iva,
             ],
-            $empresa,
-            Carbon::parse($compra->fecha ?: now())
-        );
-
-        $compra->fill($moneda);
+            $fecha,
+            $allowManualRate
+        ));
     }
 
     private function incrementarCorrelativoDocumentoCompraSiAplica(Compra $compra): void

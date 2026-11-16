@@ -127,7 +127,7 @@
                         }
                         <td>{{venta.nombre_cliente | truncate:30 }}@if (venta.id_cliente && venta.id_cliente != 1) {<a class="float-end d-none"  tooltip="Ver información del cliente" [routerLink]="['/cliente/editar', venta.id_cliente]"><i class="fa fa-edit"></i></a>}</td>
                         <td>
-                            <a class="text-decoration-none text-dark"  tooltip="Ver información de la venta" [routerLink]="['/venta', venta.id]">
+                            <a class="text-decoration-none text-dark" [tooltip]="venta.numero_control ? 'Ver información de la venta · ' + ('country.tax.fe.detailControlNumberLabel' | translate) + ': ' + venta.numero_control : 'Ver información de la venta'" [routerLink]="['/venta', venta.id]">
                                 {{venta.nombre_documento}} {{venta.correlativo ? ' #' + venta.correlativo : ''}}
                             </a>
                         </td>
@@ -509,7 +509,12 @@
                     <label for="detalle_banco">Bancos</label>
                     <select name="detalle_banco" [(ngModel)]="venta.detalle_banco" class="form-select">
                         <option value="">Seleccione aquí</option>
-                        <option *ngFor="let banco of bancos" [value]="banco.nombre_banco">{{ banco.nombre_banco }}<ng-container *ngIf="banco.numero"> — {{ banco.numero }}</ng-container></option>
+                        <ng-container *ngIf="apiService.isModuloBancos()">
+                            <option *ngFor="let banco of bancos" [value]="banco.nombre_banco">{{ banco.nombre_banco }}<ng-container *ngIf="banco.numero"> — {{ banco.numero }}</ng-container></option>
+                        </ng-container>
+                        <ng-container *ngIf="!apiService.isModuloBancos()">
+                            <option *ngFor="let banco of bancos" [value]="banco.nombre">{{ banco.nombre }}</option>
+                        </ng-container>
                     </select>
                 </div>
                 <div class="form-group col-md-4">

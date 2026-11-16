@@ -187,10 +187,24 @@ class FacturacionService
                 $venta->id_usuario_autorizo_descuento = $request->attributes->get('id_usuario_autorizo_descuento');
 
                 if (empty($venta->referencia_shopify) && !empty($venta->num_cotizacion)) {
-                    $cotizacionOrigen = Venta::withoutGlobalScopes()->find($venta->num_cotizacion);
+                    $cotizacionOrigen = CotizacionVenta::withoutGlobalScopes()->find($venta->num_cotizacion);
+                    if ($cotizacionOrigen && empty($cotizacionOrigen->referencia_shopify)) {
+                        $legacy = Venta::withoutGlobalScopes()
+                            ->where('id', $cotizacionOrigen->id)
+                            ->where('id_empresa', $cotizacionOrigen->id_empresa)
+                            ->where('cotizacion', 1)
+                            ->first();
+                        if ($legacy && !empty($legacy->referencia_shopify)) {
+                            $cotizacionOrigen->referencia_shopify = $legacy->referencia_shopify;
+                            if (empty($cotizacionOrigen->num_orden) && !empty($legacy->num_orden)) {
+                                $cotizacionOrigen->num_orden = $legacy->num_orden;
+                            }
+                            $cotizacionOrigen->save();
+                        }
+                    }
                     if ($cotizacionOrigen && !empty($cotizacionOrigen->referencia_shopify)) {
                         $venta->referencia_shopify = $cotizacionOrigen->referencia_shopify;
-                        if (empty($venta->num_orden)) {
+                        if (empty($venta->num_orden) && !empty($cotizacionOrigen->num_orden)) {
                             $venta->num_orden = $cotizacionOrigen->num_orden;
                         }
                     }

@@ -110,7 +110,7 @@
 
         <footer>
             <p style="margin: 5px;">SmartPyme &copy; {{ date('Y') }}</p>
-            <p style="margin: 5px;"><a href="https://smartpyme.sv" target="_blank" style="color: #1775e5; text-decoration: none;">smartpyme.sv</a></p>
+            <p style="margin: 5px;"><a href="https://smartpyme.app" target="_blank" style="color: #1775e5; text-decoration: none;">smartpyme.app</a></p>
             <p style="margin: 10px 5px 5px; font-size: 12px; color: #888;">Este correo y cualquier archivo adjunto son confidenciales y para uso exclusivo del destinatario previsto.</p>
         </footer>
     </section>

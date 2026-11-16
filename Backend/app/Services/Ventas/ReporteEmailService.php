@@ -23,7 +23,7 @@ class ReporteEmailService
      * @param array $destinatarios
      * @return array
      */
-    public function enviarReporteDiario(array $destinatarios = ['cristian.g@smartpyme.sv']): array
+    public function enviarReporteDiario(array $destinatarios = ['cristian.g@smartpyme.app']): array
     {
         try {
             $fecha = Carbon::today()->format('Y-m-d');

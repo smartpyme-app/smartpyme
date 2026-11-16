@@ -1,12 +1,12 @@
 @if (!enComisiones && !enBonos && !enIncentivos) {
 <div class="d-flex flex-wrap gap-2 mb-3">
-    @if (apiService.hasPermission('planilla.registros.ver')) {
+    @if (puedeVerRegistros()) {
         <a class="btn" routerLink="/planilla" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}">Planillas</a>
     }
-    @if (apiService.hasPermission('planilla.empleados.ver')) {
+    @if (puedeVerEmpleados()) {
         <a class="btn" routerLink="/planilla/empleados" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}">Empleados</a>
     }
-    @if (apiService.hasPermission('planilla.configuracion.ver')) {
+    @if (puedeVerConfiguracion()) {
         <a class="btn" routerLink="/planilla/configuracion-planilla" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}">Configuración</a>
     }
 </div>

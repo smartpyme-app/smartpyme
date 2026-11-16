@@ -29,13 +29,13 @@ class CostaRicaFeCatalogController extends Controller
 
         if (($codigo === '' && $q === '') || ($codigo !== '' && $q !== '')) {
             return response()->json([
-                'error' => 'Debe enviar solo el parámetro codigo (13 dígitos CABYS) o solo q (texto de búsqueda, mínimo 3 caracteres).',
+                'error' => 'Debe enviar solo el parámetro codigo (3 a 13 dígitos CABYS) o solo q (texto de búsqueda, mínimo 3 caracteres).',
             ], 422);
         }
 
-        if ($codigo !== '' && strlen($codigo) !== 13) {
+        if ($codigo !== '' && (strlen($codigo) < 3 || strlen($codigo) > 13)) {
             return response()->json([
-                'error' => 'codigo debe ser un CABYS de 13 dígitos.',
+                'error' => 'codigo debe tener entre 3 y 13 dígitos CABYS.',
             ], 422);
         }
 

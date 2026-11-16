@@ -13,7 +13,7 @@
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(15,23,42,0.08);">
                 <tr>
                     <td style="background:#ffffff;padding:28px 32px 20px;text-align:center;border-bottom:1px solid #e2e8f0;">
-                        <img width="150" src="https://www.smartpyme.sv/wp-content/uploads/2022/09/logo-web-smartpyme-2022-new.png" alt="SmartPyme" style="display:block;margin:0 auto 14px;">
+                        <img width="150" src="https://www.smartpyme.app/wp-content/uploads/2022/09/logo-web-smartpyme-2022-new.png" alt="SmartPyme" style="display:block;margin:0 auto 14px;">
                         <p style="margin:0;color:#1775e5;font-size:14px;font-weight:600;letter-spacing:0.04em;">Portal de contadores</p>
                     </td>
                 </tr>
@@ -74,8 +74,8 @@
                     <td style="padding:20px 32px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
                         <p style="margin:0 0 4px;font-size:12px;color:#64748b;">SmartPyme &copy; {{ date('Y') }}</p>
                         <p style="margin:0;font-size:12px;color:#94a3b8;">
-                            <a href="https://smartpyme.sv" style="color:#1775e5;text-decoration:none;">smartpyme.sv</a>
-                            · contact@smartpyme.sv
+                            <a href="https://smartpyme.app" style="color:#1775e5;text-decoration:none;">smartpyme.app</a>
+                            · contact@smartpyme.app
                         </p>
                     </td>
                 </tr>

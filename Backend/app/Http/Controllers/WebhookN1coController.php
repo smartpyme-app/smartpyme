@@ -617,7 +617,7 @@ class WebhookN1coController extends Controller
 
     private function enviarCorreoSuscripcion($user, $suscripcion, $empresa)
     {
-        // $emailDestino = app()->environment('production') ? $user->email : 'jose.e@smartpyme.sv';
+        // $emailDestino = app()->environment('production') ? $user->email : 'jose.e@smartpyme.app';
         $emailDestino = $user->email;
 
         try {
@@ -627,7 +627,7 @@ class WebhookN1coController extends Controller
                 'usuario' => $user
             ], function ($m) use ($emailDestino, $empresa) {
                 // $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
-                $m->from('noreply@smartpyme.sv', 'SmartPyme')
+                $m->from(config('mail.from.address', 'no-reply@smartpyme.app'), 'SmartPyme')
                     ->to($emailDestino)
                     ->subject('Confirmación de Suscripción - ' . $empresa->nombre);
             });
@@ -657,7 +657,7 @@ class WebhookN1coController extends Controller
         ];
 
         // $fromAddress = env('MAIL_FROM_ADDRESS');
-        $fromAddress = 'noreply@smartpyme.sv';
+        $fromAddress = config('mail.from.address', 'no-reply@smartpyme.app');
 
         try {
             foreach ($adminEmails as $adminEmail) {
@@ -721,35 +721,27 @@ class WebhookN1coController extends Controller
      */
     private function calcularFechaProximoPagoWebhook($tipoPlan, $suscripcionExistente = null)
     {
-        // Si hay suscripción existente y aún no ha vencido, extender desde la fecha actual
-        if ($suscripcionExistente && $suscripcionExistente->fecha_proximo_pago && $suscripcionExistente->fecha_proximo_pago->isFuture()) {
-            $fechaBase = $suscripcionExistente->fecha_proximo_pago;
-            
-            Log::channel('payments_success')->info('Renovación anticipada, extendiendo desde la fecha de vencimiento actual', [
-                'tipo_plan' => $tipoPlan,
-                'fecha_vencimiento_actual' => $fechaBase->format('Y-m-d'),
-            ]);
-        } else {
-            // Si no hay suscripción o ya venció, calcular desde hoy
-            $fechaBase = now();
-            
-            Log::channel('payments_success')->info('Nueva suscripción o renovación desde hoy', [
-                'tipo_plan' => $tipoPlan,
-                'fecha_actual' => $fechaBase->format('Y-m-d'),
-            ]);
-        }
+        // Laravel 12 ignora $dates: fecha_proximo_pago llega como string.
+        // Un pago suma un ciclo sobre la fecha que ya tenía, aunque haya vencido.
+        $fechaBase = ($suscripcionExistente && $suscripcionExistente->fecha_proximo_pago)
+            ? Carbon::parse($suscripcionExistente->fecha_proximo_pago)
+            : now();
 
-        // Calcular según el tipo de plan
+        Log::channel('payments_success')->info('Fecha base del próximo pago', [
+            'tipo_plan' => $tipoPlan,
+            'fecha_base' => $fechaBase->format('Y-m-d'),
+        ]);
+
         switch ($tipoPlan) {
             case 'Trimestral':
-                $fechaProximoPago = $fechaBase->copy()->addMonths(3);
+                $fechaProximoPago = $fechaBase->copy()->addMonthsNoOverflow(3);
                 break;
             case 'Anual':
-                $fechaProximoPago = $fechaBase->copy()->addMonths(12);
+                $fechaProximoPago = $fechaBase->copy()->addMonthsNoOverflow(12);
                 break;
             case 'Mensual':
             default:
-                $fechaProximoPago = $fechaBase->copy()->addMonth();
+                $fechaProximoPago = $fechaBase->copy()->addMonthsNoOverflow(1);
                 break;
         }
 

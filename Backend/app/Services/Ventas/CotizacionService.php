@@ -21,17 +21,20 @@ class CotizacionService
     public function crearOActualizarCotizacion(array $data): CotizacionVenta
     {
         $user = Auth::user();
-        if (CotizacionConstants::esVentasLimitado($user)) {
-            $creando = empty($data['id']);
-            if (! $creando || ! CotizacionConstants::puedeCrearCotizacion($user)) {
-                abort(403, $creando
-                    ? 'No autorizado a crear cotizaciones'
-                    : 'No autorizado a modificar la cotización');
-            }
+        $creando = empty($data['id']);
+        if (! CotizacionConstants::puedeGuardarCotizacion($user, $creando)) {
+            abort(403, $creando
+                ? 'No autorizado a crear cotizaciones'
+                : 'No autorizado a modificar la cotización');
         }
 
         if (isset($data['id'])) {
             $cotizacion = CotizacionVenta::findOrFail($data['id']);
+            if (CotizacionConstants::esVentasLimitado($user)
+                && ((int) $cotizacion->id_usuario !== (int) $user->id
+                    || CotizacionConstants::normalizarEstado($cotizacion->estado) !== CotizacionConstants::ESTADO_PENDIENTE)) {
+                abort(403, 'No autorizado a modificar la cotización');
+            }
         } else {
             $cotizacion = new CotizacionVenta();
         }

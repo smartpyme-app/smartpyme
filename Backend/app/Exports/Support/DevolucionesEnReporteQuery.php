@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 
 class DevolucionesEnReporteQuery
 {
-    public static function porCategoriaVendedor($idEmpresa, $inicio, $fin, ?array $sucursales, array $categoriasIds)
+    public static function porCategoriaVendedor($idEmpresa, $inicio, $fin, ?array $sucursales, array $categoriasIds, bool $incluirIva = false)
     {
         $query = DB::table('detalles_devolucion_venta as ddv')
             ->join('devoluciones_venta as d', 'd.id', '=', 'ddv.id_devolucion_venta')
@@ -32,7 +32,7 @@ class DevolucionesEnReporteQuery
             'cat.nombre as nombre_categoria',
             DB::raw("COALESCE(us.name, 'Sin vendedor') as nombre_vendedor"),
             DB::raw('COALESCE(us.id, 0) as id_vendedor'),
-            DB::raw('SUM(-ABS(ddv.total)) as total_ventas')
+            DB::raw(MontoLineaVentasEnReporte::sqlSumDetalleDevolucionVenta('ddv', $incluirIva) . ' as total_ventas')
         )
             ->groupBy('cat.id', 'cat.nombre', DB::raw("COALESCE(us.name, 'Sin vendedor')"), DB::raw('COALESCE(us.id, 0)'))
             ->get();

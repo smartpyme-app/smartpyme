@@ -133,21 +133,15 @@ class MHSujetoExcluidoCompra extends Model
         $tributos = NULL;
         $apendice = NULL;
 
-        if (TipoIdentificacionReceptor::tipoGuardado($this->compra->proveedor->tipo_documento)) {
-            $this->compra->proveedor->num_documento = TipoIdentificacionReceptor::numeroElSalvador(
-                $this->compra->proveedor->tipo_documento,
-                $this->compra->proveedor->nit,
-                $this->compra->proveedor->dui
-            );
-        } else {
-            if ($this->compra->proveedor->nit) {
-                $this->compra->proveedor->tipo_documento = '36';
-                $this->compra->proveedor->num_documento = $this->compra->proveedor->nit ? str_replace('-', '', $this->compra->proveedor->nit) : NULL;
-            }
-            if ($this->compra->proveedor->dui) {
-                $this->compra->proveedor->tipo_documento = '13';
-                $this->compra->proveedor->num_documento = $this->compra->proveedor->dui ? str_replace('-', '', $this->compra->proveedor->dui) : NULL;
-            }
+        // Sujeto excluido: NIT (36) y DUI (13) van sin guiones (el MH lo acepta así en ambiente 00 y 01).
+        // Pasaporte (03), carnet (02) y otro (37) se envían tal cual los guardó el usuario.
+        $proveedor = $this->compra->proveedor;
+        $proveedor->tipo_documento = TipoIdentificacionReceptor::elSalvador($proveedor->tipo_documento, $proveedor->nit, $proveedor->dui);
+        $proveedor->num_documento = $proveedor->tipo_documento
+            ? TipoIdentificacionReceptor::numeroElSalvador($proveedor->tipo_documento, $proveedor->nit, $proveedor->dui)
+            : NULL;
+        if (in_array($proveedor->tipo_documento, ['13', '36'], true) && $proveedor->num_documento) {
+            $proveedor->num_documento = str_replace('-', '', $proveedor->num_documento);
         }
 
         return 

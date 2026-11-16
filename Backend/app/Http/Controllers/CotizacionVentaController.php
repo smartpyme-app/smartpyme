@@ -15,13 +15,11 @@ class CotizacionVentaController extends Controller
 {
     public function store(StoreCotizacionVentaRequest $request, CotizacionService $cotizacionService)
     {
-        if (CotizacionConstants::esVentasLimitado($request->user())) {
-            $creando = ! $request->filled('id');
-            if (! $creando || ! CotizacionConstants::puedeCrearCotizacion($request->user())) {
-                abort(403, $creando
-                    ? 'No autorizado a crear cotizaciones'
-                    : 'No autorizado a modificar la cotización');
-            }
+        $creando = ! $request->filled('id');
+        if (! CotizacionConstants::puedeGuardarCotizacion($request->user(), $creando)) {
+            abort(403, $creando
+                ? 'No autorizado a crear cotizaciones'
+                : 'No autorizado a modificar la cotización');
         }
 
         DB::beginTransaction();
@@ -63,6 +61,9 @@ class CotizacionVentaController extends Controller
         $ordenes = CotizacionVenta::with(
             'cliente:id,nombre,apellido,tipo,nombre_empresa',
             'usuario:id,name',
+            'vendedor:id,name',
+            'documento:id,nombre',
+            'sucursal:id,nombre',
             'tieneOrdenProduccion'
         )->when($request->inicio, function ($query) use ($request) {
             return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
@@ -100,6 +101,7 @@ class CotizacionVentaController extends Controller
                 $b = trim($request->buscador);
                 $q->where(function ($qq) use ($b) {
                     $qq->where('correlativo', 'like', "%{$b}%")
+                       ->orWhere('num_orden', 'like', "%{$b}%")
                        ->orWhere('estado', 'like', "%{$b}%")
                        ->orWhere('observaciones', 'like', "%{$b}%")
                        ->orWhereHas('cliente', function ($qc) use ($b) {

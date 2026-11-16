@@ -11,8 +11,11 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:browser",
+          "builder": "@angular-builders/custom-webpack:browser",
           "options": {
+            "customWebpackConfig": {
+              "path": "./webpack.sentry.config.js"
+            },
             "outputPath": "dist/Frontend",
             "index": "src/index.html",
             "main": "src/main.ts",
@@ -83,7 +86,12 @@
                 },
                 "fonts": true
               },
-              "sourceMap": false,
+              "sourceMap": {
+                "scripts": true,
+                "styles": false,
+                "hidden": true,
+                "vendor": true
+              },
               "namedChunks": false,
               "aot": true,
               "extractLicenses": true,

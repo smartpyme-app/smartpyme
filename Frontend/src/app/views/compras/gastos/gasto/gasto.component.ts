@@ -25,6 +25,11 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
 import { firstValueFrom, forkJoin } from 'rxjs';
 import { DocumentoImportService } from '@services/compras/documento-import.service';
 import {
+  descuentoImplicitoLinea,
+  lineaGastoTieneDesglose,
+  montosLineaGastoDesdeDte,
+} from '@services/compras/compra-detalle-desde-dte.util';
+import {
   esErrorCodigoGeneracionDuplicado,
   mensajeErrorDocumentoImport,
   TITULO_CODIGO_GENERACION_DUPLICADO,
@@ -329,6 +334,45 @@ export class GastoComponent implements OnInit {
     return !Number.isFinite(rate) || rate <= 0 || rate === 1;
   }
 
+  public exchangeRateDraft: number | null = null;
+  private modalTipoCambioRef?: BsModalRef;
+
+  get puedeEditarTipoCambioGasto(): boolean {
+    return this.tieneMultimoneda
+      && this.monedaGasto === 'USD'
+      && this.monedaGasto !== this.monedaFuncional
+      && !this.gastoYaTieneDte
+      && (!!this.apiService.auth_user()?.empresa?.custom_empresa?.facturacion_fe?.permitir_editar_tipo_cambio
+        || !!this.monedaConfig?.permitir_editar);
+  }
+
+  public abrirModalTipoCambioGasto(template: TemplateRef<any>): void {
+    if (!this.puedeEditarTipoCambioGasto) {
+      return;
+    }
+    const actual = parseFloat(this.gasto?.exchange_rate);
+    this.exchangeRateDraft = (Number.isFinite(actual) && actual > 0 && actual !== 1)
+      ? actual
+      : (this.tcPreview.rate ?? null);
+    this.modalTipoCambioRef = this.modalService.show(template, { class: 'modal-sm', backdrop: 'static' });
+  }
+
+  public cerrarModalTipoCambioGasto(): void {
+    this.modalTipoCambioRef?.hide();
+    this.modalTipoCambioRef = undefined;
+  }
+
+  public aplicarTipoCambioManualGasto(): void {
+    const rate = parseFloat(String(this.exchangeRateDraft ?? ''));
+    if (!Number.isFinite(rate) || rate <= 0 || rate === 1) {
+      this.alertService.error('Ingrese un tipo de cambio válido mayor a 0 y distinto de 1.');
+      return;
+    }
+    this.gasto.exchange_rate = rate;
+    this.cerrarModalTipoCambioGasto();
+    this.cdr.markForCheck();
+  }
+
 	ngOnInit(){
         this.loadAll();
         this.loadDepartamentos();
@@ -509,19 +553,21 @@ export class GastoComponent implements OnInit {
             this.gasto.id_categoria = Number(this.gasto.id_categoria);
           }
 
-          if (this.gasto.detalles && this.gasto.detalles.length > 1) {
+          const lineas = this.gasto.detalles ?? [];
+          const abrirVarios =
+            lineas.length > 1 ||
+            (lineas.length === 1 && lineaGastoTieneDesglose(lineas[0]));
+          if (abrirVarios) {
             this.varios_items = true;
-            this.detalles = this.gasto.detalles.map((d: any) => ({
+            this.detalles = lineas.map((d: any) => ({
               ...d,
               tipo_gravado: d.tipo_gravado || (d.aplica_iva ? 'gravada' : 'no_sujeta'),
+              descuento: descuentoImplicitoLinea(d.cantidad, d.precio_unitario, d.sub_total),
               id_categoria:
                 d.id_categoria != null && d.id_categoria !== ''
                   ? Number(d.id_categoria)
                   : null,
             }));
-          } else if (this.gasto.detalles && this.gasto.detalles.length === 1) {
-            this.varios_items = false;
-            this.detalles = [];
           } else {
             this.varios_items = false;
             this.detalles = [];
@@ -801,7 +847,16 @@ export class GastoComponent implements OnInit {
     return this.gasto?.forma_pago !== 'Efectivo' && this.gasto?.forma_pago !== 'Wompi';
   }
 
+  /** Gasto anulado/cancelado: no usar switch Pendiente (evita sobrescribir con Confirmado). */
+  get gastoEnEstadoAnulado(): boolean {
+    const e = this.gasto?.estado;
+    return e === 'Anulada' || e === 'Anulado' || e === 'Cancelado';
+  }
+
   public setCredito() {
+    if (this.gastoEnEstadoAnulado) {
+      return;
+    }
     if (this.gasto.credito) {
       this.gasto.estado = 'Pendiente';
     } else {
@@ -953,6 +1008,7 @@ export class GastoComponent implements OnInit {
       tipo_gravado: 'gravada',
       cantidad: 1,
       precio_unitario: 0,
+      descuento: 0,
       sub_total: 0,
       iva: 0,
       renta_retenida: 0,
@@ -1020,7 +1076,8 @@ export class GastoComponent implements OnInit {
     const d = this.detalles[idx];
     const cant = parseFloat(d.cantidad) || 1;
     const precio = parseFloat(d.precio_unitario) || 0;
-    d.sub_total = parseFloat((cant * precio).toFixed(2));
+    const descuento = parseFloat(d.descuento) || 0;
+    d.sub_total = parseFloat(Math.max(0, cant * precio - descuento).toFixed(2));
     this.recalcularDetalleLinea(idx);
   }
 
@@ -1474,39 +1531,26 @@ export class GastoComponent implements OnInit {
           const tipoDte = jsonData.identificacion?.tipoDte || '01';
 
           this.detalles = items.map((item: any) => {
-            const cant = parseFloat(item.cantidad) || 1;
-            const precio = parseFloat(item.precioUni) || 0;
-            const montoItem = parseFloat(item.ventaGravada) || parseFloat(item.compra) || (cant * precio);
-
-            let sub = 0;
-            let iva = 0;
-            let total = 0;
-
-            if (tipoDte === '03') {
-              sub = montoItem;
-              iva = sub * ivaRate;
-              total = sub + iva;
-            } else {
-              total = montoItem;
-              sub = ivaRate > 0 ? total / (1 + ivaRate) : total;
-              iva = total - sub;
-            }
-
-            const esGravada = iva > 0;
+            const montos = montosLineaGastoDesdeDte(item, {
+              ivaRate,
+              precioSinImpuesto: this.esFeCostaRicaGasto(),
+              tipoDte,
+            });
 
             return {
               concepto: item.descripcion || '',
               tipo: '',
-              tipo_gravado: esGravada ? 'gravada' : 'no_sujeta',
-              cantidad: cant,
-              precio_unitario: precio,
-              sub_total: parseFloat(sub.toFixed(2)),
-              iva: parseFloat(iva.toFixed(2)),
+              tipo_gravado: montos.tipo_gravado,
+              cantidad: montos.cantidad,
+              precio_unitario: montos.precio_unitario,
+              descuento: montos.descuento,
+              sub_total: montos.sub_total,
+              iva: montos.iva,
               renta_retenida: 0,
               iva_retenido: 0,
               iva_percibido: 0,
-              total: parseFloat(total.toFixed(2)),
-              aplica_iva: esGravada,
+              total: montos.total,
+              aplica_iva: montos.tipo_gravado === 'gravada',
               aplica_renta: false,
               aplica_retencion_iva: false,
               aplica_percepcion: false,
@@ -2064,21 +2108,11 @@ export class GastoComponent implements OnInit {
   }
 
   cargarBancos() {
-    const endpoint = this.contabilidadHabilitada ? 'banco/cuentas/list' : 'bancos';
-    this.apiService.getAll(endpoint)
+    this.apiService.loadBancosParaAbono()
       .pipe(this.untilDestroyed())
       .subscribe(
-        (bancos) => {
-          if (!this.contabilidadHabilitada) {
-            // Filtrar solo bancos activos y transformar estructura
-            this.bancos = bancos
-              .filter((banco: any) => banco.activo === true || banco.activo === 1)
-              .map((banco: any) => ({
-                nombre: banco.nombre
-              }));
-          } else {
-            this.bancos = bancos;
-          }
+        ({ bancos }) => {
+          this.bancos = bancos;
           this.cdr.markForCheck();
         },
         (error) => {

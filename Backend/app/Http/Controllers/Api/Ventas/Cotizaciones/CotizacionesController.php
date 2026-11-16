@@ -342,8 +342,7 @@ class CotizacionesController extends Controller
             if ($this->esUsuarioRolVentasCotizaciones() && (int) $venta->id_usuario !== (int) Auth::id()) {
                 abort(403, 'No autorizado');
             }
-            if (CotizacionConstants::esVentasLimitado(Auth::user())
-                && CotizacionConstants::accionVentasLimitado($venta->estado) !== 'imprimir') {
+            if (! CotizacionConstants::puedeImprimirCotizacion(Auth::user())) {
                 abort(403, 'No autorizado a imprimir esta cotización');
             }
 

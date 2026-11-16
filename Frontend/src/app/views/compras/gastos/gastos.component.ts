@@ -156,7 +156,7 @@ export class GastosComponent implements OnInit {
             this.filtrarGastos(false);
         });
 
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
+        this.apiService.getAll('proveedores/list', { minimal: 1 }).subscribe(proveedores => { 
             this.proveedores = proveedores;
         }, error => {this.alertService.error(error); });
 
@@ -260,6 +260,15 @@ export class GastosComponent implements OnInit {
     public setEstado(gasto:any){
         this.gasto = gasto;
         this.onSubmit();
+    }
+
+    public cancelar(gasto:any){
+        if (gasto.tipo_documento == 'Sujeto excluido' && gasto.sello_mh && !gasto.dte_invalidacion) {
+            this.anularDTE(gasto);
+            return;
+        }
+        gasto.estado = 'Cancelado';
+        this.setEstado(gasto);
     }
 
     public openAbono(template: TemplateRef<any>, gasto: any) {
@@ -404,12 +413,12 @@ export class GastosComponent implements OnInit {
         }
     }
 
-    imprimirDTEPDF(gasto:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + gasto.id + '/14/' + '?tipo=gasto&token=' + this.apiService.auth_token(), 'hola', 'width=400');
+    imprimirDTEPDF(gasto:any, anulado = false){
+        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + gasto.id + '/14/' + '?tipo=gasto&token=' + this.apiService.auth_token() + (anulado ? '&documento=anulado' : ''), 'hola', 'width=400');
     }
 
-    imprimirDTEJSON(gasto:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + gasto.id + '/14/' + '?tipo=gasto&token=' + this.apiService.auth_token(), 'hola', 'width=400');
+    imprimirDTEJSON(gasto:any, anulado = false){
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + gasto.id + '/14/' + '?tipo=gasto&token=' + this.apiService.auth_token() + (anulado ? '&documento=anulado' : ''), 'hola', 'width=400');
     }
 
     emitirDTE(){
@@ -461,16 +470,16 @@ export class GastosComponent implements OnInit {
                                 this.gasto.dte_invalidacion.sello = dte.selloRecibido;
                                 this.gasto.estado = 'Anulada';
                                 this.apiService.store('gasto', this.gasto).subscribe(data => {
-                                    // this.alertService.success('Compra guardada.');
+                                    this.saving = false;
                                 },error => {this.alertService.error(error); this.saving = false; });
                             }
 
                             this.alertService.success(this.countryI18n.fe('annulSuccessTitle'), this.countryI18n.fe('annulSuccessBody'));
                         },error => {
-                            if(error.error.descripcionMsg){
+                            if(error.error?.descripcionMsg){
                                 this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
                             }
-                            if(error.error.observaciones.length > 0){
+                            if(error.error?.observaciones?.length > 0){
                                 this.alertService.warning('Hubo un problema', error.error.observaciones);
                             }
                             this.saving = false;
@@ -547,16 +556,9 @@ export class GastosComponent implements OnInit {
             }
         );
 
-        const endpoint = this.contabilidadHabilitada ? 'banco/cuentas/list' : 'bancos';
-        this.apiService.getAll(endpoint).subscribe(
-            (bancos) => {
-                if (!this.contabilidadHabilitada) {
-                    this.bancosBulk = (bancos || [])
-                        .filter((b: any) => b.activo === true || b.activo === 1)
-                        .map((b: any) => ({ nombre: b.nombre }));
-                } else {
-                    this.bancosBulk = bancos || [];
-                }
+        this.apiService.loadBancosParaAbono().subscribe(
+            ({ bancos }) => {
+                this.bancosBulk = bancos || [];
                 finish();
             },
             (error) => {
@@ -808,7 +810,7 @@ export class GastosComponent implements OnInit {
         }
         if (
             this.bulkRequiereBanco(item)
-            && this.apiService.usarCuentasBancarias(this.contabilidadHabilitada)
+            && this.apiService.isModuloBancos()
             && !String(item.gasto.detalle_banco || '').trim()
         ) {
             return false;
@@ -839,7 +841,7 @@ export class GastosComponent implements OnInit {
         }
         if (
             this.bulkRequiereBanco(item)
-            && this.apiService.usarCuentasBancarias(this.contabilidadHabilitada)
+            && this.apiService.isModuloBancos()
             && !String(item.gasto.detalle_banco || '').trim()
         ) {
             this.alertService.warning(

@@ -10,9 +10,22 @@ final class ReferenciaComprobanteCr
 
     public const MOTIVO_ANULA = 'anula';
 
+    public const MOTIVO_ANULA_ERROR_MATERIAL = 'anula_error_material';
+
     public const MOTIVO_CORRIGE_MONTO = 'corrige_monto';
 
+    public const MOTIVO_CORRIGE_MONTO_ERROR_MATERIAL = 'corrige_monto_error_material';
+
     public const MOTIVO_EXONERACION_POSTERIOR = 'exoneracion_posterior';
+
+    public const MOTIVOS_NOTA_CREDITO = [
+        self::MOTIVO_DEVOLUCION,
+        self::MOTIVO_ANULA,
+        self::MOTIVO_ANULA_ERROR_MATERIAL,
+        self::MOTIVO_CORRIGE_MONTO,
+        self::MOTIVO_CORRIGE_MONTO_ERROR_MATERIAL,
+        self::MOTIVO_EXONERACION_POSTERIOR,
+    ];
 
     public const CODIGO_RECHAZADO = '16';
 
@@ -24,13 +37,18 @@ final class ReferenciaComprobanteCr
 
     public const TIPO_RECIBO_PAGO = '20';
 
-    public static function codigoNota(string $motivo, \DateTimeInterface $fechaOriginal, \DateTimeInterface $fechaNota): string
+    /**
+     * Nota 9, anexos 4.4: 13 y 14 se eligen por error material, no por la fecha de la factura.
+     */
+    public static function codigoNota(string $motivo): string
     {
         return match ($motivo) {
+            self::MOTIVO_ANULA => '01',
+            self::MOTIVO_CORRIGE_MONTO => '02',
             self::MOTIVO_DEVOLUCION => '06',
             self::MOTIVO_EXONERACION_POSTERIOR => '12',
-            self::MOTIVO_ANULA => self::esPeriodoAnterior($fechaOriginal, $fechaNota) ? '13' : '01',
-            self::MOTIVO_CORRIGE_MONTO => self::esPeriodoAnterior($fechaOriginal, $fechaNota) ? '14' : '02',
+            self::MOTIVO_ANULA_ERROR_MATERIAL => '13',
+            self::MOTIVO_CORRIGE_MONTO_ERROR_MATERIAL => '14',
             default => throw new InvalidArgumentException("Motivo de nota desconocido: {$motivo}"),
         };
     }
@@ -95,23 +113,11 @@ final class ReferenciaComprobanteCr
         return $fecha->format('Y-m-d\TH:i:sP');
     }
 
-    public static function esPeriodoAnterior(\DateTimeInterface $fechaOriginal, \DateTimeInterface $fechaNota): bool
-    {
-        return self::periodoEnCostaRica($fechaOriginal) < self::periodoEnCostaRica($fechaNota);
-    }
-
     /**
      * @return list<string>
      */
     public static function tiposPermitidosEnReciboPago(): array
     {
         return ['01', '04', '07', '08', '10', '20'];
-    }
-
-    private static function periodoEnCostaRica(\DateTimeInterface $fecha): string
-    {
-        return \DateTimeImmutable::createFromInterface($fecha)
-            ->setTimezone(new \DateTimeZone('America/Costa_Rica'))
-            ->format('Y-m');
     }
 }

@@ -15,16 +15,16 @@ export class PermissionGuard  {
     ) {}
 
     canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
-        // Obtener el permiso requerido de la ruta
-        const requiredPermission = route.data['permission'];
+        const requiredList = route.data['permissions'] as string[] | undefined;
+        const requiredPermission = route.data['permission'] as string | undefined;
 
-        // Si no se requiere permiso específico, permitir acceso
-        if (!requiredPermission) {
+        if (requiredList?.length) {
+            if (requiredList.some((p) => this.apiService.hasPermission(p))) {
+                return true;
+            }
+        } else if (!requiredPermission) {
             return true;
-        }
-
-        // Verificar si el usuario tiene el permiso
-        if (this.apiService.hasPermission(requiredPermission)) {
+        } else if (this.apiService.hasPermission(requiredPermission)) {
             return true;
         }
 

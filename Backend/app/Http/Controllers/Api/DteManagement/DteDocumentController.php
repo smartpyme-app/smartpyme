@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Api\DteManagement;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Sucursal;
+use App\Models\Compras\Compra;
+use App\Models\Compras\Detalle as DetalleCompra;
 use App\Models\DteManagement\DteDocument;
 use App\Models\DteManagement\UserEmailAccount;
 use App\Models\Inventario\Bodega;
+use App\Models\Inventario\Producto;
 use App\Services\Dte\DteProcesoOpciones;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -114,8 +117,12 @@ class DteDocumentController extends Controller
 
         $payload = $document->toArray();
         $jsonData = $this->jsonData($document);
-        $payload['line_items'] = $this->parseLineItemsFromJson($jsonData);
+        $payload['line_items'] = $this->enrichLineItemsWithCompra(
+            $document,
+            $this->parseLineItemsFromJson($jsonData)
+        );
         $payload['pago_sugerido'] = DteProcesoOpciones::pagoSugeridoDesdeJson($jsonData);
+        $payload['compra_id'] = $this->compraIdForDocument($document);
 
         return response()->json($payload);
     }
@@ -262,9 +269,7 @@ class DteDocumentController extends Controller
             return response()->json(['error' => 'No autorizado'], 403);
         }
 
-        if ($document->processing_status === 'processed') {
-            return response()->json(['success' => true, 'message' => 'Ya procesado', 'document' => $document->fresh()]);
-        }
+        $yaProcesado = $document->processing_status === 'processed';
 
         if ($document->processing_status === 'anulado') {
             return response()->json(['error' => 'No se puede procesar un DTE anulado'], 422);
@@ -283,10 +288,27 @@ class DteDocumentController extends Controller
             return $this->metadataSaveErrorResponse($e);
         }
 
-        $document->refresh();
+        if (!$yaProcesado) {
+            $document->refresh();
+        }
         $document->load('userEmailAccount');
 
         $opciones = DteProcesoOpciones::fromArray($request->all());
+        if ($opciones->actualizarInventario === null) {
+            // ponytail: proceso manual desde la UI asume entrada a inventario salvo opt-out explícito
+            $opciones = new DteProcesoOpciones(
+                formaPago: $opciones->formaPago,
+                credito: $opciones->credito,
+                fechaPago: $opciones->fechaPago,
+                detalleBanco: $opciones->detalleBanco,
+                esRetaceo: $opciones->esRetaceo,
+                lineMappings: $opciones->lineMappings,
+                idSucursal: $opciones->idSucursal,
+                idBodega: $opciones->idBodega,
+                actualizarInventario: true,
+            );
+        }
+
         try {
             $opciones->validarPago();
             $destino = $document->destino ?? $request->input('destino');
@@ -301,6 +323,29 @@ class DteDocumentController extends Controller
         }
 
         $dteToIva = app(\App\Services\Dte\DteToIvaService::class);
+
+        if ($yaProcesado) {
+            if (($document->destino ?? $request->input('destino')) !== 'compra') {
+                return response()->json(['success' => true, 'message' => 'Ya procesado', 'document' => $document->fresh()]);
+            }
+            try {
+                $result = $this->sincronizarCompraProcesada($document, $opciones, $dteToIva);
+            } catch (\InvalidArgumentException $e) {
+                return response()->json(['error' => $e->getMessage()], 422);
+            }
+            $document->refresh();
+            $mensaje = !empty($result['repaired']) || !empty($result['compra_id'])
+                ? 'Compra actualizada con productos e inventario'
+                : 'Compra creada con productos e inventario';
+
+            return response()->json([
+                'success' => true,
+                'message' => $mensaje,
+                'compra_id' => $result['compra_id'] ?? null,
+                'document' => $document,
+            ]);
+        }
+
         try {
             $result = $dteToIva->insertFromDteDocument($document, $opciones);
         } catch (\InvalidArgumentException $e) {
@@ -309,7 +354,24 @@ class DteDocumentController extends Controller
 
         if (!empty($result['skipped'])) {
             if ($result['skipped'] === 'duplicate') {
+                $destino = $document->destino ?? $request->input('destino');
+                if ($destino === 'compra' && $opciones->lineMappings !== []) {
+                    try {
+                        $result = $dteToIva->actualizarCompraDesdeDte($document, $opciones);
+                        $document->refresh();
+
+                        return response()->json([
+                            'success' => true,
+                            'message' => 'Compra existente actualizada con los productos seleccionados',
+                            'compra_id' => $result['compra_id'] ?? null,
+                            'document' => $document,
+                        ]);
+                    } catch (\InvalidArgumentException $e) {
+                        return response()->json(['error' => $e->getMessage()], 422);
+                    }
+                }
                 $document->update(['processing_status' => 'processed']);
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Este DTE ya fue procesado anteriormente (existe en Compras o Gastos)',
@@ -325,6 +387,7 @@ class DteDocumentController extends Controller
 
         if ($result['success']) {
             $document->refresh();
+
             return response()->json([
                 'success' => true,
                 'message' => isset($result['compra_id']) ? 'Compra creada' : 'Gasto creado',
@@ -446,6 +509,80 @@ class DteDocumentController extends Controller
         return response()->streamDownload(function () use ($path) {
             echo Storage::disk('dtes')->get($path);
         }, $filename, ['Content-Type' => $contentType]);
+    }
+
+    /**
+     * @return array{success: bool, compra_id?: int, repaired?: bool, skipped?: string}
+     */
+    protected function sincronizarCompraProcesada(
+        DteDocument $document,
+        DteProcesoOpciones $opciones,
+        \App\Services\Dte\DteToIvaService $dteToIva
+    ): array {
+        if ($this->compraIdForDocument($document) === null) {
+            $result = $dteToIva->insertFromDteDocument($document, $opciones);
+            if (!empty($result['skipped']) && $result['skipped'] === 'duplicate') {
+                return $dteToIva->actualizarCompraDesdeDte($document, $opciones);
+            }
+
+            return $result;
+        }
+
+        return $dteToIva->actualizarCompraDesdeDte($document, $opciones);
+    }
+
+    protected function compraIdForDocument(DteDocument $document): ?int
+    {
+        if (($document->destino ?? '') !== 'compra') {
+            return null;
+        }
+
+        return Compra::withoutGlobalScopes()
+            ->where('id_empresa', $document->id_empresa)
+            ->where('codigo_generacion', $document->dte_uuid)
+            ->value('id');
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $lines
+     * @return array<int, array<string, mixed>>
+     */
+    protected function enrichLineItemsWithCompra(DteDocument $document, array $lines): array
+    {
+        if ($lines === [] || ($document->destino ?? '') !== 'compra') {
+            return $lines;
+        }
+
+        $compra = Compra::withoutGlobalScopes()
+            ->where('id_empresa', $document->id_empresa)
+            ->where('codigo_generacion', $document->dte_uuid)
+            ->first();
+
+        if (!$compra) {
+            return $lines;
+        }
+
+        $detalles = DetalleCompra::withoutGlobalScopes()
+            ->where('id_compra', $compra->id)
+            ->orderBy('id')
+            ->get();
+
+        foreach ($lines as $index => &$line) {
+            $detalle = $detalles[$index] ?? null;
+            if (!$detalle || !$detalle->id_producto) {
+                continue;
+            }
+
+            $producto = Producto::withoutGlobalScopes()->find($detalle->id_producto);
+            $line['id_producto'] = $detalle->id_producto;
+            $line['cantidad'] = (float) $detalle->cantidad;
+            $line['producto'] = $producto
+                ? ['id' => $producto->id, 'nombre' => $producto->nombre]
+                : null;
+        }
+        unset($line);
+
+        return $lines;
     }
 
     protected function applyDocumentMetadata(DteDocument $document, Request $request): void

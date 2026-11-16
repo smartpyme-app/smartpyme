@@ -37,7 +37,6 @@ class StoreAbonoCompraRequest extends FormRequest
                 'string',
                 'max:255',
                 Rule::requiredIf(fn () => $this->input('forma_pago') === 'Cheque'),
-                Rule::when($this->input('forma_pago') === 'Cheque', ['regex:/^\d+$/']),
             ],
             'mora' => ['nullable', 'numeric', 'min:0'],
             'comision' => ['nullable', 'numeric', 'min:0'],
@@ -76,7 +75,6 @@ class StoreAbonoCompraRequest extends FormRequest
             'comision.numeric' => 'La comisión debe ser un número.',
             'comision.min' => 'La comisión no puede ser negativa.',
             'referencia.required' => 'La referencia (número de cheque) es obligatoria cuando la forma de pago es Cheque.',
-            'referencia.regex' => 'La referencia debe ser el número de cheque (solo dígitos).',
             'referencia.max' => 'La referencia no puede exceder 255 caracteres.',
         ];
     }

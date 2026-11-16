@@ -55,10 +55,6 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
     return canonicoEstadoCotizacion(estado) === 'Pendiente' && puedeFacturarDesdeCotizacion(this.perm);
   }
 
-  public puedeImprimirCotizacionEstado(estado: string): boolean {
-    return canonicoEstadoCotizacion(estado) === 'Facturada' && puedeImprimirCotizacion(this.perm);
-  }
-
   public puedeVerDetalleCotizacion(): boolean {
     return puedeVerDetalleCotizacion(this.perm);
   }
@@ -67,17 +63,15 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
     return puedeEditarCotizacion(this.perm);
   }
 
-  public puedeImprimirFilaCotizacion(estado: string): boolean {
-    if (this.apiService.isVentasLimitado()) {
-      return this.puedeImprimirCotizacionEstado(estado);
-    }
+  public puedeImprimirFilaCotizacion(): boolean {
     return puedeImprimirCotizacion(this.perm);
   }
 
   public mostrarMenuAccionesCotizacion(estado: string): boolean {
     return this.puedeFacturarCotizacion(estado)
-      || this.puedeImprimirFilaCotizacion(estado)
-      || (!this.apiService.isVentasLimitado() && (this.puedeVerDetalleCotizacion() || this.puedeEditarCotizacion()));
+      || this.puedeImprimirFilaCotizacion()
+      || this.puedeEditarCotizacion()
+      || (!this.apiService.isVentasLimitado() && this.puedeVerDetalleCotizacion());
   }
 
   constructor(

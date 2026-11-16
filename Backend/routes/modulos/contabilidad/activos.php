@@ -22,6 +22,12 @@ Route::middleware(['verificar.funcionalidad:contabilidad'])->group(function () {
 
 
 
+    Route::get('/activos/import/plantilla',        [ActivosController::class, 'descargarPlantillaImport']);
+
+    Route::post('/activos/import',                 [ActivosController::class, 'importarMasivo']);
+
+
+
     Route::get('/activos',             [ActivosController::class, 'index']);
 
     Route::get('/activos/prefill-egreso/{id}',     [ActivosController::class, 'prefillFromEgreso']);

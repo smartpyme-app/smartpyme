@@ -81,11 +81,7 @@ final class CostaRicaCreditNoteFromDevolucionMapper
             'document_type' => $referencia['document_type'],
             'document_number' => $referencia['document_number'],
             'emission_date' => $fechaReferencia,
-            'referenced_code' => ReferenciaComprobanteCr::codigoNota(
-                $motivo,
-                Carbon::parse($facturaOriginal->fecha)->timezone('America/Costa_Rica'),
-                Carbon::now('America/Costa_Rica'),
-            ),
+            'referenced_code' => ReferenciaComprobanteCr::codigoNota($motivo),
             'reason' => mb_substr(strip_tags((string) ($devolucion->observaciones ?: 'Devolución de mercancía')), 0, 180),
         ]];
 

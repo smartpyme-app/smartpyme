@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Contabilidad\Activos;
 
+use App\Exports\Contabilidad\Activos\PlantillaActivosMasivoExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Contabilidad\StoreActivoBajaRequest;
 use App\Http\Requests\Contabilidad\StoreActivoRequest;
@@ -12,6 +13,8 @@ use App\Services\Contabilidad\BajaActivoService;
 use App\Services\Contabilidad\DepreciacionService;
 use Illuminate\Http\Request;
 use JWTAuth;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\ActivosMasivoImport;
 use RuntimeException;
 
 class ActivosController extends Controller
@@ -228,5 +231,29 @@ class ActivosController extends Controller
         $activo->delete();
 
         return response()->json($activo, 201);
+    }
+
+    public function descargarPlantillaImport()
+    {
+        return Excel::download(
+            new PlantillaActivosMasivoExport(),
+            'plantilla_activos_fijos.xlsx'
+        );
+    }
+
+    public function importarMasivo(Request $request)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls'],
+        ], [
+            'file.required' => 'El archivo es obligatorio.',
+            'file.mimes' => 'El archivo debe ser Excel (.xlsx o .xls).',
+        ]);
+
+        $usuario = JWTAuth::parseToken()->authenticate();
+        $import = new ActivosMasivoImport($usuario->id_empresa, $usuario->id);
+        Excel::import($import, $request->file('file'));
+
+        return response()->json($import->resultado, 200);
     }
 }

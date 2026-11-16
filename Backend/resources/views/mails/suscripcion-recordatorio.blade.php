@@ -9,7 +9,7 @@
     <section style="width: 95%; text-align: center; border-radius: 15px; background-color: #fff; margin: auto; padding: 10px;">
         <header>
             <div style="text-align: center; padding: 20px 0;">
-                <img width="150px" src="https://www.smartpyme.sv/wp-content/uploads/2022/09/logo-web-smartpyme-2022-new.png" alt="Logo SmartPyme">
+                <img width="150px" src="https://www.smartpyme.app/wp-content/uploads/2022/09/logo-web-smartpyme-2022-new.png" alt="Logo SmartPyme">
                 <div style="margin-top: 15px; border-bottom: 1px solid #cecece;"></div>
             </div>
             <h2>{{ $empresa->nombre }}</h2>
@@ -36,8 +36,8 @@
         <footer>
             <p style="margin: 5px;">SmartPyme &copy; {{ date('Y') }}</p>
             <p><b>Teléfono: </b>+503 7767-5850</p>
-            <p><b>Correo: </b>contact@smartpyme.sv</p>
-            <p><a href="https://smartpyme.sv" target="_blank" style="color: #1775e5; text-decoration: none;">smartpyme.sv</a></p>
+            <p><b>Correo: </b>contact@smartpyme.app</p>
+            <p><a href="https://smartpyme.app" target="_blank" style="color: #1775e5; text-decoration: none;">smartpyme.app</a></p>
         </footer>
     </section>
 </body>

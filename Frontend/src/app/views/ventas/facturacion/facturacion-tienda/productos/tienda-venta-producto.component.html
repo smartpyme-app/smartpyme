@@ -36,13 +36,19 @@
             </div>
             <div class="mb-3 d-flex justify-content-between">
                 <button class="btn btn-primary" (click)="loadAll()">Todos</button>
-                <ng-select style="width: 300px;" name="id_categoria" [searchable]="true" [clearable]="true" (change)="filtrarProductos()" [(ngModel)]="filtros.id_categoria" class="form-select p-0 border-0 bg-default">
-                    <ng-option value="">Categoria</ng-option>
-                    @for (categoria of categorias; track categoria.id) {
-                        <ng-option [value]="categoria.id">
-                            {{categoria.nombre}}
-                        </ng-option>
-                    }
+                <ng-select
+                    style="width: 300px;"
+                    appendTo="body"
+                    [items]="categorias"
+                    bindLabel="nombre"
+                    bindValue="id"
+                    placeholder="Categoria"
+                    name="id_categoria"
+                    [searchable]="true"
+                    [clearable]="true"
+                    (change)="filtrarProductos()"
+                    [(ngModel)]="filtros.id_categoria"
+                    class="form-select p-0 border-0 bg-default">
                 </ng-select>
             </div>
             <div class="row">
@@ -74,7 +80,7 @@
                                 </tr>
                             }
                             @for (producto of productosData?.data; track producto.id) {
-                                <tr class="click" [ngClass]="{'table-primary' : detalle.id_producto == producto.id}">
+                                <tr class="click" [ngClass]="{'table-primary' : detalle.id_producto == producto.id}" (click)="onClickFila($event, producto)">
                                 <!-- <td>
                                     <input type="radio" name="producto" id="producto{{producto.id}}" class="form-check" (click)="onCheckProducto(producto)">
                                 </td> -->
@@ -95,7 +101,8 @@
                             {{ producto.lotes | sum:'stock' }}
                             </span>
                         </div>
-                        <div *ngIf="!producto.inventario_por_lotes || !producto.lotes || producto.lotes.length == 0">
+                        <span *ngIf="producto.tipo == 'Servicio'" class="text-muted">Servicio</span>
+                        <div *ngIf="producto.tipo != 'Servicio' && (!producto.inventario_por_lotes || !producto.lotes || producto.lotes.length == 0)">
                             <!-- Si no tiene lotes, mostrar stock tradicional -->
                             <div *ngIf="apiService.auth_user().tipo == 'Ventas' || apiService.auth_user().tipo == 'Ventas Limitado' ">
                             {{ producto.inventarios | filter:'id_bodega': apiService.auth_user().id_bodega | sum:'stock' }}

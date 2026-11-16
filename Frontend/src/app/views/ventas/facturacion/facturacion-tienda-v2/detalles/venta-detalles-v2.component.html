@@ -137,7 +137,19 @@
                                     height="50px" width="50px">
                             </div>
                             <div>
-                                {{ detalle.descripcion }} <br>
+                                <span class="product-name">
+                                    <a *ngIf="rutaEditarProductoDetalle(detalle) as ruta" [routerLink]="ruta"
+                                        target="_blank" rel="noopener noreferrer"
+                                        class="text-decoration-none text-dark">
+                                        {{ detalle.descripcion }}
+                                        <span class="product-eye-wrap ms-2">
+                                            <i class="fa fa-eye fa-fw text-info product-eye"></i>
+                                            <span class="eye-tooltip">Editar producto</span>
+                                        </span>
+                                    </a>
+                                    <ng-container *ngIf="!rutaEditarProductoDetalle(detalle)">{{ detalle.descripcion }}</ng-container>
+                                </span>
+                                <br>
                                 <small class="text-muted text-tiny">{{ detalle?.tipo }} <span
                                         *ngIf="detalle.id_presentacion" class="badge bg-success ms-1"
                                         style="font-size: 10px;"><i class="fa fa-box me-1"></i>Presentación</span></small>

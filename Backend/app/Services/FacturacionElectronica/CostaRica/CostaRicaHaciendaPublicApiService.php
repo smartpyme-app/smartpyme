@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 final class CostaRicaHaciendaPublicApiService
 {
     /**
-     * CABYS: por código 13 dígitos o búsqueda por texto q (mín. 3 caracteres).
+     * CABYS: por código o prefijo (3–13 dígitos) o búsqueda por texto q (mín. 3 caracteres).
      *
      * @return array{ok: bool, status: int, data: mixed}
      */
@@ -25,11 +25,12 @@ final class CostaRicaHaciendaPublicApiService
 
         if ($codigo !== null && $codigo !== '') {
             $codigo = preg_replace('/\D/', '', $codigo);
-            $key = 'fe_cr:hacienda:cabys:cod:'.$codigo;
+            $key = 'fe_cr:hacienda:cabys:cod:'.$codigo.':'.$top;
             $ttl = (int) config('services.hacienda_cr.cache.cabys_codigo_seconds', 21600);
 
-            return $this->rememberSuccessful($key, $ttl, function () use ($base, $codigo) {
-                return $this->requestJson($base.'/fe/cabys', ['codigo' => $codigo]);
+            // Hacienda responde 400 a un código parcial (prefijo) si no se envía top.
+            return $this->rememberSuccessful($key, $ttl, function () use ($base, $codigo, $top) {
+                return $this->requestJson($base.'/fe/cabys', ['codigo' => $codigo, 'top' => $top]);
             });
         }
 

@@ -346,3 +346,9 @@ a.fc-col-header-cell-cushion{
   z-index: 10600 !important;
 }
 
+/* ng-select dentro del modal (sin appendTo body): evita focus-trap y recorte */
+.modal-ng-select-overflow .modal-content,
+.modal-ng-select-overflow .modal-body {
+  overflow: visible;
+}
+

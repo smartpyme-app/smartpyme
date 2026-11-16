@@ -81,11 +81,21 @@ class LibroConsumidoresFilas
 
         return [
             'exenta' => LibroIvaMontosHelper::ventasExentas($venta),
-            'gravada' => LibroIvaMontosHelper::ventasGravadas($venta),
+            'gravada' => self::ventasGravadasConsumidor($venta),
             'no_sujeta' => LibroIvaMontosHelper::ventasNoSujetas($venta),
             'total_propio' => $totalPropio,
             'exportacion' => 0.0,
         ];
+    }
+
+    private static function ventasGravadasConsumidor(object $venta): float
+    {
+        $gravada = LibroIvaMontosHelper::ventasGravadas($venta);
+        if ($gravada <= 0) {
+            return 0.0;
+        }
+
+        return round($gravada + (float) ($venta->iva ?? 0), 2);
     }
 
     private static function queryConsumidor(object $request, bool $facturacionElectronica): EloquentBuilder
@@ -151,7 +161,7 @@ class LibroConsumidoresFilas
                         return 0;
                     }
 
-                    return LibroIvaMontosHelper::ventasGravadas($venta);
+                    return self::ventasGravadasConsumidor($venta);
                 });
 
                 $ventasTerceros = $ventasDia->sum(function ($venta) {

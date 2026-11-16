@@ -43,8 +43,8 @@ import { SafeResourceUrl, DomSanitizer } from '@angular/platform-browser';
       width: 100%;
       height: 100%;
       background: rgba(0,0,0,0.5);
-       z-index: 9999;
-
+      /* Por encima de .modal-dialog del pago (10001) y debajo de SweetAlert (20000). */
+      z-index: 15000 !important;
     }
     .modal-container {
       position: fixed;
@@ -54,7 +54,7 @@ import { SafeResourceUrl, DomSanitizer } from '@angular/platform-browser';
       background: white;
       padding: 20px;
       border-radius: 8px;
-      z-index: 10000;
+      z-index: 15001 !important;
       width: 90%;
       max-width: 600px;
     }

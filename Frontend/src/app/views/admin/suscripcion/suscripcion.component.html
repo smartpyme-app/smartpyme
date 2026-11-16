@@ -452,8 +452,10 @@
               </div>
               @if (!showPaymentForm) {
                 <button
+                  type="button"
                   class="btn btn-outline-primary btn-sm"
                   (click)="showPaymentForm = true"
+                  [disabled]="saving"
                 >
                   <i class="fas fa-edit me-1"></i> Usar otra tarjeta
                 </button>
@@ -639,8 +641,14 @@
             (click)="payWithSavedMethod()"
             [disabled]="saving"
           >
-            <i class="fas fa-credit-card me-2"></i>
-            {{ saving ? "Procesando..." : "Pagar con tarjeta guardada" }}
+            @if (!saving) {
+              <i class="fas fa-credit-card me-2"></i>
+              Pagar con tarjeta guardada
+            }
+            @if (saving) {
+              <i class="fas fa-spinner fa-spin me-2"></i>
+              Procesando...
+            }
           </button>
         }
 
@@ -651,8 +659,14 @@
             class="btn btn-primary"
             [disabled]="!paymentForm?.valid || saving"
           >
-            <i class="fas fa-save me-2"></i>
-            {{ saving ? "Procesando..." : "Pagar con nueva tarjeta" }}
+            @if (!saving) {
+              <i class="fas fa-save me-2"></i>
+              Pagar con nueva tarjeta
+            }
+            @if (saving) {
+              <i class="fas fa-spinner fa-spin me-2"></i>
+              Procesando...
+            }
           </button>
         }
 

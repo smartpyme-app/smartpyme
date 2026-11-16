@@ -27,7 +27,7 @@ class CotizacionSmartpymeBladeTest extends TestCase
         $this->assertStringNotContainsString('Cantidades', $html);
         $this->assertStringContainsString('Edificio Colabora loca 1-2', $html);
         $this->assertStringContainsString('bg_smarpyme_cotizacion.png', $html);
-        $this->assertStringContainsString('contact@smartpyme.sv', $html);
+        $this->assertStringContainsString('contact@smartpyme.app', $html);
         $this->assertStringContainsString('$venta->nombre_cliente', $html);
         $this->assertStringContainsString('$venta->fecha', $html);
         $this->assertStringContainsString('$venta->fecha_expiracion', $html);

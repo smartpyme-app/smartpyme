@@ -78,7 +78,7 @@
         <div class="margin" style="width: 75%; margin: 30px auto; border: .1px solid #eee;"></div>
         <footer>
             <p style="margin: 5px;">SmartPyme &copy; {{ date('Y') }}</p>
-            <p><a href="https://smartpyme.sv" target="_blank" style="color: #1775e5; text-decoration: none;">smartpyme.sv</a></p>
+            <p><a href="https://smartpyme.app" target="_blank" style="color: #1775e5; text-decoration: none;">smartpyme.app</a></p>
         </footer>
     </section>
 

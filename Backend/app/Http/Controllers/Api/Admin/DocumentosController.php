@@ -41,7 +41,8 @@ class DocumentosController extends Controller
     public function list()
     {
 
-        $documentos = Documento::where('activo', true)->get();
+        // ponytail: append nombre_sucursal without N+1
+        $documentos = Documento::with('sucursal:id,nombre')->where('activo', true)->get();
 
         return Response()->json($documentos, 200);
     }

@@ -9,6 +9,9 @@ import { ApiService } from '@services/api.service';
     templateUrl: './activos-nav-tabs.component.html',
 })
 export class ActivosNavTabsComponent {
+    /** ponytail: ocultar pestaña Configuración hasta habilitar la pantalla */
+    public mostrarConfiguracion = false;
+
     @Input() todosClickable = false;
     @Output() todosClick = new EventEmitter<void>();
 

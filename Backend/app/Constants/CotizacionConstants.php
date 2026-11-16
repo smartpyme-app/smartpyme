@@ -38,16 +38,6 @@ class CotizacionConstants
         };
     }
 
-    /** Ventas Limitado: pendiente factura, facturada imprime, el resto no actúa. */
-    public static function accionVentasLimitado(?string $estado): ?string
-    {
-        return match (self::normalizarEstado($estado)) {
-            self::ESTADO_PENDIENTE => 'facturar',
-            self::ESTADO_FACTURADA => 'imprimir',
-            default => null,
-        };
-    }
-
     public static function esVentasLimitado($user): bool
     {
         if (! $user) {
@@ -76,8 +66,8 @@ class CotizacionConstants
         return ($user->tipo ?? null) === 'Ventas';
     }
 
-    /** Crear sí, si el rol tiene ventas.cotizaciones.crear. Editar sigue bloqueado en el llamador. */
-    public static function puedeCrearCotizacion($user): bool
+    /** Ventas Limitado crea/edita solo con ventas.cotizaciones.crear / ventas.cotizaciones.editar. */
+    public static function puedeGuardarCotizacion($user, bool $creando): bool
     {
         if (! self::esVentasLimitado($user)) {
             return true;
@@ -85,7 +75,19 @@ class CotizacionConstants
 
         return is_object($user)
             && method_exists($user, 'can')
-            && $user->can('ventas.cotizaciones.crear');
+            && $user->can($creando ? 'ventas.cotizaciones.crear' : 'ventas.cotizaciones.editar');
+    }
+
+    /** Ventas Limitado imprime solo con ventas.cotizaciones.ver o ventas.cotizaciones.editar. */
+    public static function puedeImprimirCotizacion($user): bool
+    {
+        if (! self::esVentasLimitado($user)) {
+            return true;
+        }
+
+        return is_object($user)
+            && method_exists($user, 'can')
+            && ($user->can('ventas.cotizaciones.ver') || $user->can('ventas.cotizaciones.editar'));
     }
 
     const ESTADO_PRODUCCION_CREADA = 'creada';

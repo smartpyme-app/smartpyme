@@ -13,6 +13,7 @@ use App\Models\DteManagement\DteTipoMapeo;
 use App\Models\DteManagement\UserEmailAccount;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
+use App\Services\Compras\CompraInventarioAplicacionService;
 use App\Services\Inventario\ConversionInventarioService;
 use App\Services\Inventario\LoteAsignacionService;
 use App\Services\Inventario\LoteEnDescripcionDte;
@@ -122,7 +123,8 @@ class DteToIvaService
         $idBodega = $opciones->idBodega
             ?? $account->id_bodega
             ?? $this->getDefaultBodegaId($document->id_empresa);
-        $actualizarInventario = (bool) ($account->actualizar_inventario ?? false);
+        $actualizarInventario = $opciones->actualizarInventario
+            ?? (bool) ($account->actualizar_inventario ?? false);
         $idUsuario = $account->user_id ?? 1;
 
         if ($destino === 'compra') {
@@ -323,6 +325,100 @@ class DteToIvaService
             $document->update(['processing_status' => 'processed']);
 
             return ['success' => true, 'compra_id' => $compra->id];
+        });
+    }
+
+    /**
+     * Repara la compra ya vinculada al DTE (p. ej. procesada sin líneas o duplicado sin mappings).
+     *
+     * @return array{success: bool, compra_id?: int, repaired?: bool}
+     */
+    public function actualizarCompraDesdeDte(DteDocument $document, DteProcesoOpciones $opciones): array
+    {
+        $compra = Compra::withoutGlobalScopes()
+            ->where('id_empresa', $document->id_empresa)
+            ->where('codigo_generacion', $document->dte_uuid)
+            ->first();
+
+        if (!$compra) {
+            throw new \InvalidArgumentException('No hay compra vinculada a este DTE.');
+        }
+
+        if (!$document->json_path || !Storage::disk('dtes')->exists($document->json_path)) {
+            throw new \InvalidArgumentException('No se encontró el JSON del DTE.');
+        }
+
+        $jsonData = json_decode(Storage::disk('dtes')->get($document->json_path), true);
+        if (!is_array($jsonData)) {
+            throw new \InvalidArgumentException('JSON del DTE inválido.');
+        }
+
+        $cuerpoDocumento = $jsonData['cuerpoDocumento'] ?? [];
+        $opciones->validarLineasCompra(count($cuerpoDocumento));
+        $mappings = $opciones->mappingPorIndex();
+        $actualizarInventario = $opciones->actualizarInventario ?? true;
+        /** @var CompraInventarioAplicacionService $inventarioAplicacion */
+        $inventarioAplicacion = app(CompraInventarioAplicacionService::class);
+
+        return DB::transaction(function () use (
+            $compra,
+            $document,
+            $cuerpoDocumento,
+            $mappings,
+            $opciones,
+            $actualizarInventario,
+            $inventarioAplicacion
+        ) {
+            $compra->load('detalles');
+            foreach ($compra->detalles as $detalle) {
+                if ($inventarioAplicacion->tieneEntradaKardexCompra($compra, (int) $detalle->id_producto)) {
+                    throw new \InvalidArgumentException(
+                        'La compra ya tiene movimientos de inventario; ajuste desde el módulo de compras.'
+                    );
+                }
+            }
+
+            if ($opciones->idSucursal) {
+                $compra->id_sucursal = $opciones->idSucursal;
+            }
+            if ($opciones->idBodega) {
+                $compra->id_bodega = $opciones->idBodega;
+            }
+            $compra->save();
+
+            DetalleCompra::withoutGlobalScopes()->where('id_compra', $compra->id)->delete();
+
+            foreach ($cuerpoDocumento as $index => $item) {
+                if (!is_array($item)) {
+                    continue;
+                }
+
+                $producto = $this->productoDesdeMapping($document->id_empresa, $mappings[$index] ?? null);
+                $detalleData = $this->buildDetalleCompraFromItem($item, $producto);
+                if (isset($mappings[$index]['cantidad'])) {
+                    $detalleData['cantidad'] = $mappings[$index]['cantidad'];
+                }
+
+                DetalleCompra::withoutGlobalScopes()->create([
+                    'id_compra' => $compra->id,
+                    'id_producto' => $producto->id,
+                    'cantidad' => $detalleData['cantidad'],
+                    'costo' => $detalleData['costo'],
+                    'total' => $detalleData['total'],
+                    'iva' => $detalleData['iva'],
+                    'no_sujeta' => $detalleData['no_sujeta'],
+                    'exenta' => $detalleData['exenta'],
+                    'descuento' => $detalleData['descuento'],
+                ]);
+            }
+
+            if ($actualizarInventario && $compra->id_bodega) {
+                $inventarioAplicacion->aplicar((int) $compra->id);
+            }
+
+            $document->update(['processing_status' => 'processed', 'destino' => 'compra']);
+
+            return ['success' => true, 'compra_id' => $compra->id, 'repaired' => true];
         });
     }
 

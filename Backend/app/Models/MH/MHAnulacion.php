@@ -2,6 +2,8 @@
 
 namespace App\Models\MH;
 
+use App\Services\Dte\DteJsonHelper;
+use App\Support\FacturacionElectronica\TipoIdentificacionReceptor;
 use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
 
@@ -20,13 +22,28 @@ class MHAnulacion extends Model
         $this->empresa = $this->venta->empresa()->first();
         $this->sucursal = $this->venta->sucursal()->first();
 
-        $codigoGeneracion = strtoupper(Uuid::uuid4()->toString());
+        if (!is_array($DTE)) {
+            $DTE = is_string($DTE) ? json_decode($DTE, true) : [];
+        }
+        $DTE = $DTE ?: [];
+
+        $selloRecibido = DteJsonHelper::extractSelloRecibido($DTE);
+        if ($selloRecibido === null && !empty($this->venta->sello_mh)) {
+            $selloRecibido = (string) $this->venta->sello_mh;
+        }
+        if ($selloRecibido === null || $selloRecibido === '') {
+            throw new \InvalidArgumentException(
+                'No hay sello de recepción del MH para invalidar este documento. Verifique el DTE emitido o anule solo en el sistema.'
+            );
+        }
+
+        $codigoGeneracionAnula = strtoupper(Uuid::uuid4()->toString());
         $this->caja_codigo = 'P001';
 
         $identificacion = [
             "version" => 2,
             "ambiente" => $DTE['identificacion']['ambiente'],
-            "codigoGeneracion" => $codigoGeneracion,
+            "codigoGeneracion" => $codigoGeneracionAnula,
             "fecAnula" => $this->venta->fecha_anulacion ? \Carbon\Carbon::parse($this->venta->fecha_anulacion)->format('Y-m-d') : \Carbon\Carbon::now()->format('Y-m-d'),
             "horAnula" => \Carbon\Carbon::now()->format('H:i:s'),
         ];
@@ -47,12 +64,38 @@ class MHAnulacion extends Model
         }
 
 
-        if (isset($DTE['sujetoExcluido']) && $DTE['identificacion']['tipoDte'] == '14') {
-            $tipo_documento = $DTE['sujetoExcluido']['tipoDocumento'];
-            $num_documento = $DTE['sujetoExcluido']['numDocumento'];
-            $nombre = $DTE['sujetoExcluido']['nombre'];
-            $correo = $DTE['sujetoExcluido']['correo'];
-            $telefono = $DTE['sujetoExcluido']['telefono'];
+        if (($DTE['identificacion']['tipoDte'] ?? null) == '14') {
+            $sujeto = $DTE['sujetoExcluido'] ?? null;
+            if (!$sujeto && method_exists($this->venta, 'proveedor') && $this->venta->proveedor) {
+                $proveedor = $this->venta->proveedor;
+                $tipoDoc = TipoIdentificacionReceptor::elSalvador(
+                    $proveedor->tipo_documento,
+                    $proveedor->nit,
+                    $proveedor->dui
+                );
+                $numDoc = $tipoDoc
+                    ? TipoIdentificacionReceptor::numeroElSalvador($tipoDoc, $proveedor->nit, $proveedor->dui)
+                    : null;
+                if (in_array($tipoDoc, ['13', '36'], true) && $numDoc) {
+                    $numDoc = str_replace('-', '', $numDoc);
+                }
+                $sujeto = [
+                    'tipoDocumento' => $tipoDoc,
+                    'numDocumento' => $numDoc,
+                    'nombre' => method_exists($this->venta, 'nombreProveedorFiscal')
+                        ? $this->venta->nombreProveedorFiscal()
+                        : ($proveedor->nombre ?? ''),
+                    'correo' => $proveedor->correo ?? null,
+                    'telefono' => $proveedor->telefono ?? null,
+                ];
+            }
+            if ($sujeto) {
+                $tipo_documento = $sujeto['tipoDocumento'] ?? null;
+                $num_documento = $sujeto['numDocumento'] ?? null;
+                $nombre = $sujeto['nombre'] ?? null;
+                $correo = $sujeto['correo'] ?? null;
+                $telefono = $sujeto['telefono'] ?? null;
+            }
         }
 
         if ($DTE['identificacion']['tipoDte'] == '11') {
@@ -78,10 +121,19 @@ class MHAnulacion extends Model
         // Usar valores directamente de la venta (ya están guardados)
         $tipoAnulacion = $this->venta->tipo_anulacion ? +$this->venta->tipo_anulacion : 2;
 
+        $codigoGeneracionDoc = $DTE['identificacion']['codigoGeneracion']
+            ?? $this->venta->codigo_generacion
+            ?? null;
+        if (!$codigoGeneracionDoc) {
+            throw new \InvalidArgumentException(
+                'Falta el código de generación del DTE a invalidar.'
+            );
+        }
+
         $documento = [
             "tipoDte" => $DTE['identificacion']['tipoDte'],
-            "codigoGeneracion" => $DTE['identificacion']['codigoGeneracion'],
-            "selloRecibido" => $DTE['sello'],
+            "codigoGeneracion" => $codigoGeneracionDoc,
+            "selloRecibido" => $selloRecibido,
             "numeroControl" => $DTE['identificacion']['numeroControl'],
             "fecEmi" => $DTE['identificacion']['fecEmi'],
             "montoIva" => isset($DTE['resumen']['totalIva']) ? $DTE['resumen']['totalIva'] : NULL,
@@ -122,10 +174,10 @@ class MHAnulacion extends Model
             "motivoAnulacion" => $motivoTexto,
             "nombreResponsable" => $DTE['emisor']['nombre'],
             "tipDocResponsable" => '36',
-            "numDocResponsable" => $DTE['emisor']['nit'],
+            "numDocResponsable" => str_replace('-', '', (string) ($DTE['emisor']['nit'] ?? '')),
             "nombreSolicita" => $DTE['emisor']['nombre'],
             "tipDocSolicita" =>  '36',
-            "numDocSolicita" => $DTE['emisor']['nit'],
+            "numDocSolicita" => str_replace('-', '', (string) ($DTE['emisor']['nit'] ?? '')),
         ];
 
         switch ($this->empresa->tipo_establecimiento) {

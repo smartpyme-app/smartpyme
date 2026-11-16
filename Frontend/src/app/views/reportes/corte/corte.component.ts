@@ -8,6 +8,14 @@ import { AlertService } from '@services/alert.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 
+interface ParamsCorte {
+    fecha: string;
+    id_usuario?: number;
+    id_canal?: number;
+    id_bodega?: number;
+    id_sucursal?: number;
+}
+
 @Component({
     selector: 'app-corte',
     templateUrl: './corte.component.html',
@@ -71,7 +79,7 @@ export class CorteComponent implements OnInit {
             .pipe(this.untilDestroyed())
             .subscribe(usuarios => {
                 this.usuarios = usuarios;
-                if((this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) && this.apiService.validateRole('usuario_supervisor', false) ){
+                if (!this.puedeVerCierresDeTodos()) {
                     this.usuarios = this.usuarios.filter((item:any) => item.id == this.apiService.auth_user().id );
                 }
                 this.cdr.markForCheck();
@@ -89,6 +97,16 @@ export class CorteComponent implements OnInit {
 
     public esUsuarioVentas(): boolean {
         return this.usuario.tipo == 'Ventas' || this.usuario.tipo == 'Ventas Limitado';
+    }
+
+    public puedeVerCierresDeTodos(): boolean {
+        const tipo = this.usuario?.tipo;
+        if (tipo === 'Administrador' || tipo === 'Super Administrador') {
+            return true;
+        }
+        return this.apiService.validateRole('admin')
+            || this.apiService.validateRole('super_admin')
+            || this.apiService.validateRole('usuario_supervisor');
     }
 
     public onCriterioChange(){
@@ -115,16 +133,22 @@ export class CorteComponent implements OnInit {
         this.filtrar();
     }
 
-    public paramsCorte(): any {
-        const params:any = {
+    public paramsCorte(): ParamsCorte {
+        const params: ParamsCorte = {
             fecha: this.filtros.fecha,
-            id_usuario: this.filtros.id_usuario,
-            id_canal: this.filtros.id_canal
         };
-        if(this.filtros.criterio === 'bodega'){
-            params.id_bodega = this.filtros.id_bodega;
-        }else{
-            params.id_sucursal = this.filtros.id_sucursal;
+        if (this.filtros.id_usuario !== '' && this.filtros.id_usuario != null) {
+            params.id_usuario = Number(this.filtros.id_usuario);
+        }
+        if (this.filtros.id_canal !== '' && this.filtros.id_canal != null) {
+            params.id_canal = Number(this.filtros.id_canal);
+        }
+        if (this.filtros.criterio === 'bodega') {
+            if (this.filtros.id_bodega !== '' && this.filtros.id_bodega != null) {
+                params.id_bodega = Number(this.filtros.id_bodega);
+            }
+        } else if (this.filtros.id_sucursal !== '' && this.filtros.id_sucursal != null) {
+            params.id_sucursal = Number(this.filtros.id_sucursal);
         }
         return params;
     }

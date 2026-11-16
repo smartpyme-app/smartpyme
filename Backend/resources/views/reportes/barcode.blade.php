@@ -1,6 +1,6 @@
 <center>
     <br>
-    {!! '<img id="barcode" src="data:image/png;base64,' . DNS1D::getBarcodePNG($codigo, 'C39', 2, 50, array(0,0,0), true) . '" alt="barcode"   />' !!}
+    {!! '<img id="barcode" src="data:image/png;base64,' . DNS1D::getBarcodePNG($codigo, 'C39', 2, 50, array(0,0,0), false, true) . '" alt="barcode"   />' !!}
     <br><br>
     <button onclick="descargarImagen()">Guardar imagen</button>
 </center>
@@ -8,7 +8,7 @@
 <br> <br> 
 <center>
     <br>
-    {!! '<img id="qrcode" src="data:image/png;base64,' . DNS2D::getBarcodePNG($codigo, 'QRCODE', 10, 10, array(0,0,0), true) . '" alt="barcode"   />' !!}
+    {!! '<img id="qrcode" src="data:image/png;base64,' . DNS2D::getBarcodePNG($codigo, 'QRCODE', 10, 10, array(0,0,0), false, true) . '" alt="barcode"   />' !!}
     <br><br>
     <button onclick="descargarImagen2()">Guardar imagen</button>
 </center>

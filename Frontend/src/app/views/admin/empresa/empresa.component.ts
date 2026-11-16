@@ -1933,6 +1933,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
                 bloquear_cotizaciones_vendedores: false, // Restringir cotizaciones a usuarios Ventas / Ventas Limitado (solo propias, sin facturar/editar desde listado)
                 bloquear_edicion_correlativo: false, // Impide editar correlativo (ventas) / referencia (compras) en modales de edición
                 ventas_puede_cambiar_vendedor_facturacion: false, // Ventas/Limitado pueden elegir vendedor al facturar
+                reporte_ventas_categoria_vendedor_incluir_iva: false, // Reporte automático ventas por categoría y vendedor: total + IVA por línea
                 dte_mostrar_descripcion_producto: true, // Descripción extendida del catálogo en PDF de factura y CCF (DTE)
                 fidelizacion_activa: false, // Activar fidelización de clientes para configurar
                 fidelizacion_completa: false, // Activar completamente la fidelización (ganar/consumir puntos)
@@ -2583,6 +2584,30 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
             this.alertService.success(
                 'Configuración actualizada',
                 `Transformación de productos ${activo ? 'habilitada' : 'deshabilitada'} correctamente`
+            );
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
+        });
+    }
+
+    public isReporteVentasCategoriaVendedorIncluirIva(): boolean {
+        return this.getCustomConfig('configuraciones', 'reporte_ventas_categoria_vendedor_incluir_iva', false);
+    }
+
+    public toggleReporteVentasCategoriaVendedorIncluirIva(): void {
+        this.updateReporteVentasCategoriaVendedorIncluirIva(!this.isReporteVentasCategoriaVendedorIncluirIva());
+    }
+
+    public updateReporteVentasCategoriaVendedorIncluirIva(activo: boolean): void {
+        this.addCustomConfig('configuraciones', 'reporte_ventas_categoria_vendedor_incluir_iva', activo);
+
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Incluir IVA en reporte por categoría y vendedor ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
             );
             const authUser = this.apiService.auth_user();
             if (authUser?.empresa?.id === this.empresa?.id) {

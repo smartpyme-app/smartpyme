@@ -309,7 +309,8 @@ export class InventarioEntradasComponent extends BaseCrudComponent<any> implemen
      * Verifica si el usuario puede crear entradas
      */
     public puedeCrearEntrada(): boolean {
-        return this.apiService.puedeCrearOperacionesInventarioEnUi();
+        return this.apiService.canCrearOtraEntradaInventario()
+            || this.apiService.canCreateTest('productos.inventario.crear');
     }
 
 }

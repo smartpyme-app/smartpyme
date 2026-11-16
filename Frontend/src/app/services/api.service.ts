@@ -14,7 +14,7 @@ import { AuthService } from '@services/auth.service';
 import { PermissionService } from '@services/permission.service';
 import { UtilityService } from '@services/utility.service';
 import { HttpClient, HttpHeaders, HttpResponse, HttpErrorResponse } from '@angular/common/http';
-import { map, catchError, retry, timeout, switchMap } from 'rxjs/operators';
+import { map, catchError, retry, timeout } from 'rxjs/operators';
 import { normalizeBancosListResponse } from '@shared/utils/abono-bancos.util';
 import { Observable, throwError, from, of, Subject } from 'rxjs';
 import { AlertService } from '@services/alert.service';
@@ -359,8 +359,56 @@ export class ApiService {
   }
 
   canEmitirFacturaElectronica(): boolean {
-    // ponytail: temporal — misma regla que menú ventas; volver a hasPermission('ventas.facturacion_electronica.emitir') tras sembrar roles.
+    // ponytail: emisión FE no va por permiso granular; la UI ya exige empresa.facturacion_electronica y jwt.
     return true;
+  }
+
+  /** SPT-648: crear movimiento en «Otras entradas» (independiente de otros submódulos de inventario). */
+  canCrearOtraEntradaInventario(): boolean {
+    if (!this.esEmpresaInventarioOperacionesSoloAdministrador()) {
+      return this.canCreateTest('productos.otras_entradas_salidas.entradas.crear');
+    }
+    return this.auth_user()?.tipo === 'Administrador';
+  }
+
+  /** SPT-648: ver listado/detalle de «Otras entradas». */
+  canVerOtraEntradaInventario(): boolean {
+    if (!this.esEmpresaInventarioOperacionesSoloAdministrador()) {
+      return this.hasPermission('productos.otras_entradas_salidas.entradas.ver');
+    }
+    return this.auth_user()?.tipo === 'Administrador';
+  }
+
+  /** SPT-648: aprobar/anular/partidas y líneas en «Otras entradas». */
+  canEditarOtraEntradaInventario(): boolean {
+    if (!this.esEmpresaInventarioOperacionesSoloAdministrador()) {
+      return this.canEditTest('productos.otras_entradas_salidas.entradas.editar');
+    }
+    return this.auth_user()?.tipo === 'Administrador';
+  }
+
+  /** SPT-648: crear movimiento en «Otras salidas». */
+  canCrearOtraSalidaInventario(): boolean {
+    if (!this.esEmpresaInventarioOperacionesSoloAdministrador()) {
+      return this.canCreateTest('productos.otras_entradas_salidas.salidas.crear');
+    }
+    return this.auth_user()?.tipo === 'Administrador';
+  }
+
+  /** SPT-648: ver listado/detalle de «Otras salidas». */
+  canVerOtraSalidaInventario(): boolean {
+    if (!this.esEmpresaInventarioOperacionesSoloAdministrador()) {
+      return this.hasPermission('productos.otras_entradas_salidas.salidas.ver');
+    }
+    return this.auth_user()?.tipo === 'Administrador';
+  }
+
+  /** SPT-648: aprobar/anular/partidas y líneas en «Otras salidas». */
+  canEditarOtraSalidaInventario(): boolean {
+    if (!this.esEmpresaInventarioOperacionesSoloAdministrador()) {
+      return this.canEditTest('productos.otras_entradas_salidas.salidas.editar');
+    }
+    return this.auth_user()?.tipo === 'Administrador';
   }
 
   canVerCostosInventario(): boolean {
@@ -532,24 +580,20 @@ export class ApiService {
         return this.funcionalidadesService.tieneAccesoCacheado('contabilidad');
     }
 
-    /** Igual criterio que ventas/gastos: contabilidad en plan o módulo bancos en empresa. */
+    /** Selects de abono/pago: mismo criterio que facturación (solo módulo bancos). */
     usarCuentasBancariasEnPagos(): boolean {
-        return this.usarCuentasBancarias(this.tieneContabilidadActivaEnSesion());
+        return this.isModuloBancos();
     }
 
-    /** Cuentas de la empresa (contabilidad/módulo bancos) o bancos activados en Ventas → Bancos. */
+    /** Catálogo viejo o cuentas: solo el switch de módulo, no contabilidad. */
     loadBancosParaAbono(): Observable<{ bancos: any[]; usarCuentas: boolean }> {
-        return this.funcionalidadesService.verificarAcceso('contabilidad').pipe(
-            switchMap((contabilidad) => {
-                const usarCuentas = this.usarCuentasBancarias(!!contabilidad);
-                const url = usarCuentas ? 'banco/cuentas/list' : 'bancos/list';
-                return this.getAll(url).pipe(
-                    map((raw) => ({
-                        bancos: normalizeBancosListResponse(raw),
-                        usarCuentas,
-                    })),
-                );
-            }),
+        const usarCuentas = this.isModuloBancos();
+        const url = usarCuentas ? 'banco/cuentas/list' : 'bancos/list';
+        return this.getAll(url).pipe(
+            map((raw) => ({
+                bancos: normalizeBancosListResponse(raw),
+                usarCuentas,
+            })),
         );
     }
 
@@ -821,6 +865,16 @@ export class ApiService {
       return this.canCreate();
     }
     return usuario?.tipo === 'Administrador';
+  }
+
+  /**
+   * Crear en ajustes / traslados (empresa 324 solo admin; resto: tipo legacy o granular productos.inventario.crear).
+   */
+  puedeCrearAjustesTrasladosEnUi(): boolean {
+    if (!this.esEmpresaInventarioOperacionesSoloAdministrador()) {
+      return this.canCreate() || this.canCreateTest('productos.inventario.crear');
+    }
+    return this.auth_user()?.tipo === 'Administrador';
   }
 
   /** Empresa activó bloquear facturar/editar/gestionar cotizaciones para vendedores (Mi cuenta). */

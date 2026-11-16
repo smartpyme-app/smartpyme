@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Constants\CotizacionConstants;
 use App\Constants\ShopifyConstant;
 use App\Helpers\ShopifyHelper;
 use App\Models\Admin\Empresa;
@@ -256,6 +257,77 @@ class ShopifyTransformer
             'id_canal' => $shopifyData['id_canal'],
             'num_orden' => $shopifyData['order_number'] ?? $shopifyData['name'] ?? null,
             'referencia_shopify' => 'SHOPIFY-' . $shopifyData['id'],
+        ];
+    }
+
+    /**
+     * Campos de cotizacion_ventas a partir de una venta ya transformada.
+     * No incluye id_canal ni el flag cotizacion de la tabla ventas.
+     */
+    public function transformarCotizacion(array $ventaData, ?int $idDocumento = null): array
+    {
+        $estado = ($ventaData['estado'] ?? '') === 'Anulada'
+            ? CotizacionConstants::ESTADO_ANULADA
+            : CotizacionConstants::ESTADO_PENDIENTE;
+
+        $nota = trim((string) ($ventaData['observaciones_shopify'] ?? ''));
+        $orden = $ventaData['num_orden'] ?? null;
+        $observaciones = array_filter([
+            $orden ? 'Pedido Shopify #'.$orden : null,
+            $nota !== '' ? $nota : null,
+        ]);
+
+        return [
+            'estado' => $estado,
+            'forma_pago' => $ventaData['forma_pago'] ?? null,
+            'observaciones' => $observaciones ? implode(' — ', $observaciones) : null,
+            'fecha' => $ventaData['fecha'],
+            'total_costo' => $ventaData['total_costo'] ?? 0,
+            'total' => $ventaData['total'] ?? 0,
+            'sub_total' => $ventaData['sub_total'] ?? 0,
+            'no_sujeta' => $ventaData['no_sujeta'] ?? 0,
+            'exenta' => $ventaData['exenta'] ?? 0,
+            'gravada' => $ventaData['gravada'] ?? 0,
+            'cuenta_a_terceros' => $ventaData['cuenta_a_terceros'] ?? 0,
+            'iva' => $ventaData['iva'] ?? 0,
+            'iva_retenido' => $ventaData['iva_retenido'] ?? 0,
+            'iva_percibido' => $ventaData['iva_percibido'] ?? 0,
+            'descuento' => $ventaData['descuento'] ?? 0,
+            'id_documento' => $idDocumento,
+            'id_cliente' => $ventaData['id_cliente'],
+            'id_bodega' => $ventaData['id_bodega'],
+            'id_usuario' => $ventaData['id_usuario'],
+            'id_empresa' => $ventaData['id_empresa'],
+            'id_sucursal' => $ventaData['id_sucursal'],
+            'referencia_shopify' => $ventaData['referencia_shopify'] ?? null,
+            'num_orden' => $orden,
+            'cobrar_impuestos' => ((float) ($ventaData['iva'] ?? 0)) > 0,
+        ];
+    }
+
+    public function transformarDetalleCotizacion(array $detalleData, int $cotizacionId): array
+    {
+        $descripcion = trim((string) ($detalleData['descripcion'] ?? ''));
+        if ($descripcion === '') {
+            $descripcion = 'Producto';
+        }
+
+        return [
+            'cantidad' => $detalleData['cantidad'],
+            'costo' => $detalleData['costo'] ?? 0,
+            'precio' => $detalleData['precio'],
+            'total' => $detalleData['total'],
+            'total_costo' => $detalleData['total_costo'] ?? 0,
+            'descuento' => $detalleData['descuento'] ?? 0,
+            'no_sujeta' => $detalleData['no_sujeta'] ?? 0,
+            'exenta' => $detalleData['exenta'] ?? 0,
+            'cuenta_a_terceros' => $detalleData['cuenta_a_terceros'] ?? 0,
+            'subtotal' => $detalleData['subtotal'] ?? $detalleData['total'],
+            'gravada' => $detalleData['gravada'] ?? 0,
+            'iva' => $detalleData['iva'] ?? 0,
+            'descripcion' => mb_substr($descripcion, 0, 255),
+            'id_producto' => $detalleData['id_producto'],
+            'id_cotizacion_venta' => $cotizacionId,
         ];
     }
 

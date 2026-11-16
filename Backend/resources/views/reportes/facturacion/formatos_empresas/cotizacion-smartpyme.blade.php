@@ -145,7 +145,7 @@
     $munCliente = trim((string) data_get($venta, 'cliente.municipio'));
     $depCliente = trim((string) data_get($venta, 'cliente.departamento'));
     $dirClienteCompleta = trim($dirCliente . (($munCliente !== '' || $depCliente !== '') ? ', ' . trim($munCliente . ($munCliente && $depCliente ? ', ' : '') . $depCliente) : ''));
-    $pieContacto = 'San Salvador, El Salvador +503 7732-5932 contact@smartpyme.sv www.smartpyme.sv Guatemala +502 5691 2718 Honduras +504 9313-2759';
+    $pieContacto = 'San Salvador, El Salvador +503 7732-5932 contact@smartpyme.app www.smartpyme.app Guatemala +502 5691 2718 Honduras +504 9313-2759';
 @endphp
 
 @if($bgSrc)
@@ -157,7 +157,7 @@
     <table style="height:2.15cm;color:#fff;">
         <tr>
             <td style="color:#fff;font-size:8px;text-align:center;">San Salvador, El Salvador<br>+503 7732-5932</td>
-            <td style="color:#fff;font-size:8px;text-align:center;">contact@smartpyme.sv<br>www.smartpyme.sv</td>
+            <td style="color:#fff;font-size:8px;text-align:center;">contact@smartpyme.app<br>www.smartpyme.app</td>
             <td style="color:#fff;font-size:8px;text-align:center;">Guatemala<br>+502 5691 2718</td>
             <td style="color:#fff;font-size:8px;text-align:center;">Honduras<br>+504 9313-2759</td>
         </tr>

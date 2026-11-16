@@ -7,6 +7,7 @@ import { ApiService } from '@services/api.service';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { BaseComponent } from '@shared/base/base.component';
 import { ActivosNavTabsComponent } from '@views/contabilidad/activos/activos-nav-tabs/activos-nav-tabs.component';
+import Swal from 'sweetalert2';
 
 @Component({
     selector: 'app-activos-depreciacion',
@@ -58,20 +59,62 @@ export class ActivosDepreciacionComponent extends BaseComponent implements OnIni
         if (!this.preview?.cantidad || this.preview?.ya_aplicada) {
             return;
         }
-        if (!confirm(`¿Aplicar depreciación de ${this.periodo} por ${this.preview.total}?`)) {
-            return;
-        }
-        this.ejecutando = true;
-        this.apiService.store('activos/depreciacion/ejecutar', { periodo: this.periodo })
-            .pipe(this.untilDestroyed())
-            .subscribe(result => {
-                this.alertService.success('Corrida aplicada', `Egreso #${result.id_egreso} creado.`);
-                this.ejecutando = false;
-                this.cargarPreview();
-            }, error => {
-                this.alertService.error(error);
-                this.ejecutando = false;
-                this.cdr.markForCheck();
-            });
+
+        const totalFmt = this.preview.total;
+        const periodo = this.periodo;
+        const partidaDisponible = !!this.preview.partida_contable_disponible;
+        const partidaMotivo = this.preview.partida_contable_motivo ?? '';
+
+        Swal.fire({
+            title: '¿Aplicar depreciación?',
+            html: `
+                <p class="mb-2">Período <strong>${periodo}</strong> — ${this.preview.cantidad} activo(s) — Total: <strong>${totalFmt}</strong></p>
+                <div class="form-check text-start">
+                    <input class="form-check-input" type="checkbox" id="swal-generar-partida" ${partidaDisponible ? 'checked' : 'disabled'}>
+                    <label class="form-check-label" for="swal-generar-partida">Generar partida contable del gasto</label>
+                </div>
+                ${!partidaDisponible && partidaMotivo ? `<p class="text-muted small text-start mt-2 mb-0">${partidaMotivo}</p>` : ''}
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ejecutar corrida',
+            cancelButtonText: 'Cancelar',
+            focusConfirm: false,
+            preConfirm: () => {
+                const el = document.getElementById('swal-generar-partida') as HTMLInputElement | null;
+                return { generarPartida: !!(el && el.checked && partidaDisponible) };
+            },
+        }).then(result => {
+            if (!result.isConfirmed || !result.value) {
+                return;
+            }
+            this.ejecutando = true;
+            this.cdr.markForCheck();
+            this.apiService.store('activos/depreciacion/ejecutar', {
+                periodo,
+                generar_partida: result.value.generarPartida,
+            })
+                .pipe(this.untilDestroyed())
+                .subscribe(res => {
+                    let msg = `Gasto #${res.id_egreso} creado.`;
+                    if (result.value.generarPartida) {
+                        if (res.partida_generada) {
+                            msg += ` Partida #${res.partida_id} generada.`;
+                        } else if (res.partida_error) {
+                            this.alertService.warning('Corrida aplicada', `${msg} No se generó la partida: ${res.partida_error}`);
+                            this.ejecutando = false;
+                            this.cargarPreview();
+                            return;
+                        }
+                    }
+                    this.alertService.success('Corrida aplicada', msg);
+                    this.ejecutando = false;
+                    this.cargarPreview();
+                }, error => {
+                    this.alertService.error(error);
+                    this.ejecutando = false;
+                    this.cdr.markForCheck();
+                });
+        });
     }
 }

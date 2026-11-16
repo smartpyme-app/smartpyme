@@ -39,5 +39,5 @@
 <p>
     SmartPyme Technologies S.A DE S.V
     <br>
-    <a href="{{env('APP_URL')}}">smartpyme.sv</a>
+    <a href="{{env('APP_URL')}}">smartpyme.app</a>
 </p>

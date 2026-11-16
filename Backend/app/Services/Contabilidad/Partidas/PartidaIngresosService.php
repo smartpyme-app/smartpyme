@@ -12,6 +12,7 @@ use App\Models\Ventas\Abono as AbonoVenta;
 use App\Models\Admin\FormaDePago;
 use App\Services\Contabilidad\CuentaContableDesdePagoResolver;
 use App\Services\Contabilidad\Partidas\PartidaService;
+use App\Services\Contabilidad\Partidas\ReglaLineasDebeIngresoVenta;
 use App\Services\Contabilidad\Partidas\ReglaMontoIngresoVentaDetalle;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -80,7 +81,10 @@ class PartidaIngresosService
                             },
                             'detalles.producto' => function($query) {
                                 $query->select(['id', 'id_categoria']);
-                            }
+                            },
+                            'metodos_de_pago' => function ($query) {
+                                $query->select(['id', 'id_venta', 'nombre', 'total']);
+                            },
                         ])
                         ->get();
 
@@ -143,7 +147,7 @@ class PartidaIngresosService
             }
 
             // OPTIMIZACIÓN 3: Cargar todas las formas de pago con banco de una vez
-            $formasPagoNombres = $ingresos->pluck('forma_pago')->unique()->filter();
+            $formasPagoNombres = collect(ReglaLineasDebeIngresoVenta::nombresFormasPagoDesdeIngresos($ingresos));
             Log::info('Formas de pago únicas', [
                 'cantidad' => $formasPagoNombres->count(),
                 'nombres' => $formasPagoNombres->toArray()
@@ -301,35 +305,58 @@ class PartidaIngresosService
                 if (($ingreso->tipo ?? '') === 'abono') {
                     $cuenta = CuentaContableDesdePagoResolver::resolve($ingreso);
                     $cuentasContables->put($cuenta->id, $cuenta);
+
+                    $detalles[] = [
+                        'id_cuenta' => $cuenta->id,
+                        'codigo' => $cuenta->codigo,
+                        'nombre_cuenta' => $cuenta->nombre,
+                        'concepto' => 'Ingresos por ' . $ingreso->tipo . ' ' . $refDoc,
+                        'debe' => $ingreso->total,
+                        'haber' => NULL,
+                        'saldo' => 0,
+                    ];
                 } else {
-                    $formapago = $formasPago->get($ingreso->forma_pago);
+                    $lineasDebe = ReglaLineasDebeIngresoVenta::lineasDebe($ingreso);
+                    $variasLineas = count($lineasDebe) > 1;
+                    $refVenta = ($ingreso->nombre_documento ?? 'N/A') . ' #' . ($ingreso->correlativo ?? 'N/A');
 
-                    if(!$formapago || !$formapago->banco || !$formapago->banco->id_cuenta_contable){
-                        throw new \Exception('La forma de pago ' . $ingreso->forma_pago . ' no tiene cuenta contable. Venta: ' . $ingreso->nombre_documento . ' #' . $ingreso->correlativo);
-                    }
+                    foreach ($lineasDebe as $linea) {
+                        $formapago = $formasPago->get($linea['nombre']);
 
-                    $cuenta = $cuentasContables->get($formapago->banco->id_cuenta_contable);
-                    if (!$cuenta) {
-                        $cuenta = Cuenta::find($formapago->banco->id_cuenta_contable);
-                        if ($cuenta) {
-                            $cuentasContables->put($cuenta->id, $cuenta);
+                        if (!$formapago || !$formapago->banco || !$formapago->banco->id_cuenta_contable) {
+                            throw new \Exception(
+                                'La forma de pago ' . $linea['nombre'] . ' no tiene cuenta contable. Venta: ' . $refVenta
+                            );
                         }
-                    }
 
-                    if (!$cuenta) {
-                        throw new \Exception('La cuenta contable no existe. Forma de pago: ' . $ingreso->forma_pago);
+                        $cuenta = $cuentasContables->get($formapago->banco->id_cuenta_contable);
+                        if (!$cuenta) {
+                            $cuenta = Cuenta::find($formapago->banco->id_cuenta_contable);
+                            if ($cuenta) {
+                                $cuentasContables->put($cuenta->id, $cuenta);
+                            }
+                        }
+
+                        if (!$cuenta) {
+                            throw new \Exception('La cuenta contable no existe. Forma de pago: ' . $linea['nombre']);
+                        }
+
+                        $conceptoDebe = 'Ingresos por ' . $ingreso->tipo . ' ' . $refDoc;
+                        if ($variasLineas) {
+                            $conceptoDebe .= ' (' . $linea['nombre'] . ')';
+                        }
+
+                        $detalles[] = [
+                            'id_cuenta' => $cuenta->id,
+                            'codigo' => $cuenta->codigo,
+                            'nombre_cuenta' => $cuenta->nombre,
+                            'concepto' => $conceptoDebe,
+                            'debe' => $linea['monto'],
+                            'haber' => NULL,
+                            'saldo' => 0,
+                        ];
                     }
                 }
-
-                $detalles[] = [
-                    'id_cuenta' => $cuenta->id,
-                    'codigo' => $cuenta->codigo,
-                    'nombre_cuenta' => $cuenta->nombre,
-                    'concepto' => 'Ingresos por ' . $ingreso->tipo . ' ' . $refDoc,
-                    'debe' => $ingreso->total,
-                    'haber' => NULL,
-                    'saldo' => 0,
-                ];
 
                 if($ingreso->tipo == 'venta'){
                     // Los detalles ya están cargados con eager loading

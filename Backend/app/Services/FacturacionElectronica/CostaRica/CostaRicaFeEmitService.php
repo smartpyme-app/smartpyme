@@ -251,15 +251,14 @@ final class CostaRicaFeEmitService
     }
 
     /**
-     * Código de referencia de la nota de débito. Motivo fijo: corrige monto.
-     * Mismo mes → 02. Mes anterior → 14.
+     * Código de referencia de la nota de débito: corrige monto (02) o corrige monto por error material (14).
      */
-    public static function codigoReferenciaNotaDebito(\DateTimeInterface $fechaFactura, \DateTimeInterface $fechaNota): string
+    public static function codigoReferenciaNotaDebito(bool $errorMaterial): string
     {
         return ReferenciaComprobanteCr::codigoNota(
-            ReferenciaComprobanteCr::MOTIVO_CORRIGE_MONTO,
-            $fechaFactura,
-            $fechaNota,
+            $errorMaterial
+                ? ReferenciaComprobanteCr::MOTIVO_CORRIGE_MONTO_ERROR_MATERIAL
+                : ReferenciaComprobanteCr::MOTIVO_CORRIGE_MONTO
         );
     }
 
@@ -269,7 +268,7 @@ final class CostaRicaFeEmitService
      *
      * @return array{clave: string, aceptada: bool, detalle_estado: array, venta: Venta, devolucion?: Devolucion}
      */
-    public function emitirNotaDebitoDesdeVenta(int $ventaFacturaId, string $motivo, float $montoLinea): array
+    public function emitirNotaDebitoDesdeVenta(int $ventaFacturaId, string $motivo, float $montoLinea, bool $errorMaterial = false): array
     {
         $venta = $this->cargarVenta($ventaFacturaId);
         $empresa = $venta->empresa;
@@ -386,10 +385,7 @@ final class CostaRicaFeEmitService
                 'document_type' => $referenciaNd['document_type'],
                 'document_number' => $referenciaNd['document_number'],
                 'emission_date' => $fechaFactura,
-                'referenced_code' => self::codigoReferenciaNotaDebito(
-                    \Carbon\Carbon::parse($venta->fecha)->timezone('America/Costa_Rica'),
-                    \Carbon\Carbon::now('America/Costa_Rica'),
-                ),
+                'referenced_code' => self::codigoReferenciaNotaDebito($errorMaterial),
                 'reason' => mb_substr(strip_tags($motivo ?: 'Corrección de montos'), 0, 180),
             ]],
         ]);
@@ -747,6 +743,7 @@ final class CostaRicaFeEmitService
                     $data,
                     function (string $clave, array $estado) use ($client, $venta, $tipoDte): array {
                         $venta->codigo_generacion = $clave;
+                        $venta->numero_control = self::consecutivoDesdeClave($clave);
                         $venta->tipo_dte = $tipoDte;
                         $venta->sello_mh = $clave;
                         $venta->dte = $this->persistirDteCrAceptado($client, $estado);
@@ -791,6 +788,7 @@ final class CostaRicaFeEmitService
         }
 
         $venta->codigo_generacion = $clave;
+        $venta->numero_control = self::consecutivoDesdeClave($clave);
         $venta->tipo_dte = $tipoDte;
         /** Igual criterio práctico que FE SV: sello_mh informado para listados/UI; valor = clave DGT (50 caracteres). */
         $venta->sello_mh = $clave;
@@ -1646,6 +1644,12 @@ final class CostaRicaFeEmitService
         ];
     }
 
+    /** Clave DGT (50): 506 + DDMMAA + cédula (12) + consecutivo (20) + situación (1) + seguridad (8). */
+    public static function consecutivoDesdeClave(string $clave): ?string
+    {
+        return strlen($clave) === 50 ? substr($clave, 21, 20) : null;
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -1666,6 +1670,7 @@ final class CostaRicaFeEmitService
         if ($status === 'rechazado') {
             if ($model instanceof Venta) {
                 $this->guardarClaveRechazada($model, $clave);
+                $model->numero_control = null;
             }
             $model->codigo_generacion = null;
             $model->sello_mh = null;
@@ -1681,6 +1686,9 @@ final class CostaRicaFeEmitService
         }
 
         $model->sello_mh = $clave;
+        if ($model instanceof Venta) {
+            $model->numero_control = self::consecutivoDesdeClave($clave);
+        }
         $model->save();
 
         return [

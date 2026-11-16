@@ -15,7 +15,7 @@ use Maatwebsite\Excel\Facades\Excel;
 class EnviarReporteVentasPorCategoriaSucursal extends Command
 {
     private const DESTINATARIOS = [
-        'david.c@smartpyme.sv',
+        'david.c@smartpyme.app',
         'joseabrego201291@gmail.com',
     ];
 

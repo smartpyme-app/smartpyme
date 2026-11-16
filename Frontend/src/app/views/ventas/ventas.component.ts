@@ -726,10 +726,10 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
               return;
             }
             this.apiService
-              .getAll('banco/cuentas/list')
+              .loadBancosParaAbono()
               .pipe(this.untilDestroyed())
               .subscribe({
-                next: (bancos) => {
+                next: ({ bancos }) => {
                   this.bancos = bancos;
                   this.cdr.markForCheck();
                   next();
@@ -1515,7 +1515,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       }
     };
 
-    if (venta.dte_en_s3 && !venta.dte) {
+    if ((venta.dte_en_s3 || venta.sello_mh) && !venta.dte) {
       this.apiService.read('venta/', venta.id)
         .pipe(this.untilDestroyed())
         .subscribe({
@@ -1745,6 +1745,15 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   anularDTE(venta: any) {
     // ponytail: en CR no hay invalidación MH; anulación de venta no aplica en UI
     if (this.esFeCostaRica()) {
+      return;
+    }
+    if (venta.sello_mh && !('dte_invalidacion' in venta)) {
+      this.apiService.read('venta/', venta.id)
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (v: any) => this.anularDTE(v),
+          error: (e) => this.alertService.error(e),
+        });
       return;
     }
     this.venta = venta;
@@ -2461,6 +2470,8 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       return;
     }
 
+    const contenido = this.contenidoDescripcionBoxfulVenta(venta);
+
     this.boxfulVentaId = venta.id;
     this.boxfulClienteId = venta.id_cliente;
     this.boxfulSugerirCod = venta.condicion === 'Crédito' || !!venta.credito;
@@ -2472,6 +2483,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       ancho: 43,
       largo: 47.5,
       es_fragil: false,
+      contenido,
       parcels: [{
         id: null,
         peso: paquete.peso || 1,
@@ -2479,11 +2491,28 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
         ancho: 43,
         largo: 47.5,
         es_fragil: false,
-        contenido: '',
+        contenido,
         valor: parseFloat(venta.total || 50)
       }]
     };
     this.mostrarModalBoxful = true;
+  }
+
+  private contenidoDescripcionBoxfulVenta(venta: any): string {
+    const fuente = venta?.detalles;
+    if (!Array.isArray(fuente) || !fuente.length) {
+      return 'Productos varios';
+    }
+    const nombres = fuente
+      .map((d: any) =>
+        String(d.descripcion || d.nombre || d.producto?.nombre || '').trim()
+      )
+      .filter(Boolean);
+    if (!nombres.length) {
+      return 'Productos varios';
+    }
+    const texto = nombres.join(', ');
+    return texto.length > 500 ? `${texto.slice(0, 497)}...` : texto;
   }
 
   verDetallesEnvioBoxful(venta: any): void {

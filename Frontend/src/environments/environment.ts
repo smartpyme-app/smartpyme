@@ -5,12 +5,11 @@
 /** Mantener alineado con src/manifest.webmanifest → version */
 export const environment = {
   production: false,
-  appVersion: '26.10.26',
+  appVersion: '13.11.26',
   // API_URL: 'http://localhost:8000',
    API_URL: 'https://api.smartpyme.bk.test',
   // API_URL: 'https://api.smartpyme.bk.test',
   //API_URL: 'https://apiunificado.smartpyme.site',
-  // API_URL: 'https://apiconta.smartpyme.site',
   // API_URL: 'https://apitest.smartpyme.site',
   APP_URL: 'http://localhost:4200',
   productImagesUrl: 'https://sp-imagenes-productos.s3.us-east-2.amazonaws.com',
@@ -28,6 +27,18 @@ export const environment = {
     wsPort: 8080,
     wssPort: 443,
     forceTLS: false,
+  },
+  sentry: {
+    enabled: false,
+    dsn: '',
+    environment: 'development',
+    release: '',
+    tracesSampleRate: 0,
+    tracePropagationTargets: [
+      'localhost',
+      /^https:\/\/api\.smartpyme\.test/,
+      /^https:\/\/api.*\.smartpyme\.site/,
+    ],
   },
 };
 
