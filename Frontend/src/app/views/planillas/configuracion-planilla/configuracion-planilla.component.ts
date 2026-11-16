@@ -112,6 +112,9 @@ export class ConfiguracionPlanillaComponent implements OnInit {
         this.poblarFormulario();
       }
       this.loading = false;
+      if (this.esElSalvador) {
+        this.cargarEmpleadorSpu();
+      }
       this.cdr.markForCheck();
     },
     error: (error) => {
@@ -588,9 +591,6 @@ guardarConcepto(): void {
 
   cambiarTab(tab: string): void {
     this.tabActiva = tab;
-    if (tab === 'isss' && this.esElSalvador) {
-      this.cargarEmpleadorSpu();
-    }
     this.cdr.markForCheck();
   }
 
