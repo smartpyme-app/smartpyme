@@ -81,9 +81,7 @@ export class AlertService {
             const messageRaw = body['message'];
             const errorRaw = body['error'];
             const tituloRaw = body['titulo'];
-            const mensaje =
-                (typeof messageRaw === 'string' ? messageRaw : undefined)
-                ?? (typeof errorRaw === 'string' ? errorRaw : undefined);
+            const mensaje = this.mensajeDeError400(messageRaw, errorRaw);
             const titulo = (typeof tituloRaw === 'string' && tituloRaw.trim()) ? tituloRaw : 'Lo sentimos';
             const tipo = tituloRaw ? 'alert-warning' : 'alert-danger';
             this.alertSubject.next({
@@ -168,6 +166,16 @@ export class AlertService {
             const mensaje = sanitizeApiErrorMessage(this.normalizeUnknownError(message));
             this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Lo sentimos', 'mensaje' : mensaje});
         }
+    }
+
+    /** 400 suele traer message genérico y el detalle real en error (p. ej. import de catálogo). */
+    private mensajeDeError400(messageRaw: unknown, errorRaw: unknown): string | undefined {
+        const message = typeof messageRaw === 'string' ? messageRaw.trim() : '';
+        const error = typeof errorRaw === 'string' ? errorRaw.trim() : '';
+        if (message && error && message !== error) {
+            return `${message} — ${error}`;
+        }
+        return message || error || undefined;
     }
 
     /** Cuerpo de error API (objeto o JSON string, p. ej. respuestas text de storeWithTimeout). */

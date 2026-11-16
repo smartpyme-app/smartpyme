@@ -819,12 +819,12 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
             this.correoEnvioDte = '';
             this.modalRef = this.modalService.show(template);
             this.alertService.modal = true;
-            if (!this.compra.dte && !this.compra.dte_en_s3) {
+            if (!this.compra.dte && !this.compra.dte_en_s3 && !this.compra.sello_mh) {
                 this.emitirDTE();
             }
         };
 
-        if (compra.dte_en_s3 && !compra.dte) {
+        if ((compra.dte_en_s3 || compra.sello_mh) && !compra.dte) {
             this.apiService.read('compra/', compra.id)
                 .pipe(this.untilDestroyed())
                 .subscribe({
@@ -1094,7 +1094,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
             }
         };
 
-        if (compra.dte_en_s3 && !compra.dte) {
+        if ((compra.dte_en_s3 || compra.sello_mh) && !compra.dte) {
             this.apiService.read('compra/', compra.id)
                 .pipe(this.untilDestroyed())
                 .subscribe({
