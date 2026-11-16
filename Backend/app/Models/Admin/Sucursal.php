@@ -30,6 +30,7 @@ class Sucursal extends AuditableModel {
         'codigo_punto_venta',
         'cod_actividad_economica',
         'giro',
+        'correlativo_centro_trabajo_isss',
         'activo',
         'id_empresa',
         'shopify_location_id',

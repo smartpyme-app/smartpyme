@@ -45,6 +45,16 @@
         >
           <img src="/assets/icons/upload.png" class="icon" />
         </button>
+        @if (esElSalvador) {
+          <button
+            type="button"
+            (click)="abrirModalSpu(mspu)"
+            class="btn btn-default"
+            tooltip="Descargar Planilla Única SPU"
+          >
+            <img src="/assets/icons/download.png" class="icon" />
+          </button>
+        }
         <!-- <button
           tooltip="Descargar planillas"
           (click)="openModal(mexportar)"
@@ -697,6 +707,89 @@
         </div>
       </div>
     </form>
+  </div>
+</ng-template>
+
+<!-- Modal Planilla Única SPU -->
+<ng-template #mspu>
+  <div class="modal-header">
+    <h4 class="modal-title">Planilla Única SPU</h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <p class="text-muted small">
+      Suma planillas aprobadas o pagadas del mes y sucursal. Los datos ISSS del empleador se configuran en Configuración.
+    </p>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label for="spu_mes" class="form-label">Mes</label>
+        <select id="spu_mes" name="spu_mes" class="form-select" [(ngModel)]="filtrosSpu.mes" (ngModelChange)="cambioFiltrosSpu()">
+          @for (nombre of mesesSpu; track $index) {
+            <option [ngValue]="$index + 1">{{ nombre }}</option>
+          }
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label for="spu_anio" class="form-label">Año</label>
+        <input id="spu_anio" name="spu_anio" type="number" class="form-control" min="2006"
+          [(ngModel)]="filtrosSpu.anio" (ngModelChange)="cambioFiltrosSpu()" />
+      </div>
+      <div class="col-md-4">
+        <label for="spu_sucursal" class="form-label">Sucursal</label>
+        <select id="spu_sucursal" name="spu_sucursal" class="form-select" [(ngModel)]="filtrosSpu.id_sucursal"
+          (ngModelChange)="cambioFiltrosSpu()">
+          @for (sucursal of sucursalesSpu; track sucursal.id) {
+            <option [ngValue]="sucursal.id">{{ sucursal.nombre }}</option>
+          }
+        </select>
+      </div>
+      <div class="col-12 form-check ms-1">
+        <input id="spu_complementaria" name="spu_complementaria" type="checkbox" class="form-check-input"
+          [(ngModel)]="filtrosSpu.complementaria" (ngModelChange)="cambioFiltrosSpu()" />
+        <label for="spu_complementaria" class="form-check-label">Planilla complementaria</label>
+      </div>
+    </div>
+
+    @if (erroresSpu.length) {
+      <div class="alert alert-danger mt-3 mb-0">
+        <div class="fw-bold mb-1">{{ erroresSpu.length }} error(es) de validación</div>
+        <ul class="mb-0 ps-3">
+          @for (error of erroresSpu; track $index) {
+            <li>
+              @if (error.empleado) {
+                <strong>{{ error.empleado }}</strong> —
+              }
+              {{ error.columna }}: {{ error.mensaje }}
+            </li>
+          }
+        </ul>
+      </div>
+    }
+
+    @if (validadoSpu) {
+      <div class="alert alert-success mt-3 mb-0">
+        Sin errores. {{ totalFilasSpu }} empleado(s) listos para descargar.
+      </div>
+    }
+
+    @if (!validadoSpu && !erroresSpu.length && totalFilasSpu === 0 && !procesandoSpu) {
+      <div class="alert alert-light border mt-3 mb-0">
+        Valida el período para revisar errores antes de descargar el CSV.
+      </div>
+    }
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-default" (click)="modalRef.hide()">Cerrar</button>
+    <button type="button" class="btn btn-outline-primary" [disabled]="procesandoSpu || !filtrosSpu.id_sucursal"
+      (click)="validarSpu()">
+      @if (procesandoSpu) {
+        <span class="spinner-border spinner-border-sm me-1"></span>
+      }
+      Validar
+    </button>
+    <button type="button" class="btn btn-success" [disabled]="procesandoSpu || !validadoSpu" (click)="descargarSpu()">
+      <i class="fa fa-download me-1"></i> Descargar CSV
+    </button>
   </div>
 </ng-template>
 
