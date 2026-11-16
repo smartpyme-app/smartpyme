@@ -79,7 +79,8 @@ class MHPruebasMasivasController extends Controller
                 'notasCredito' => '05',
                 'notasDebito' => '06',
                 'facturasExportacion' => '11',
-                'sujetoExcluido' => '14'
+                'sujetoExcluido' => '14',
+                'eventosRetorno' => '18'
             ];
 
             $tiposDescriptivos = [
@@ -88,7 +89,8 @@ class MHPruebasMasivasController extends Controller
                 '05' => 'Notas de Crédito',
                 '06' => 'Notas de Débito',
                 '11' => 'Facturas de Exportación',
-                '14' => 'Facturas de Sujeto Excluido'
+                '14' => 'Facturas de Sujeto Excluido',
+                '18' => 'Eventos de Retorno'
             ];
 
             $tipoDTE = $tiposDTE[$request->tipo];
@@ -221,7 +223,8 @@ class MHPruebasMasivasController extends Controller
                 'notasCredito' => '03', // Las notas usan CCF como base
                 'notasDebito' => '03',  // Las notas usan CCF como base
                 'facturasExportacion' => '11',
-                'sujetoExcluido' => '14'
+                'sujetoExcluido' => '14',
+                'eventosRetorno' => '01' // El evento de retorno usa Factura como base
             ];
 
             $tipoDTE = $tiposDTE[$tipo] ?? null;

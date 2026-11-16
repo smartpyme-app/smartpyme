@@ -28,7 +28,11 @@ class Devolucion extends Model {
         'id_bodega',
         'id_sucursal',
         'id_empresa',
-
+        'tipo_dte',
+        'codigo_generacion',
+        'sello_mh',
+        'dte',
+        'dte_invalidacion',
     );
 
     protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal'];
@@ -43,6 +47,26 @@ class Devolucion extends Model {
                 $builder->where('id_empresa', $usuario->id_empresa);
             });
         }
+    }
+
+    public function getDteAttribute($value)
+    {
+        return is_string($value) ? json_decode($value, true) : $value;
+    }
+
+    public function setDteAttribute($value): void
+    {
+        $this->attributes['dte'] = is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : $value;
+    }
+
+    public function getDteInvalidacionAttribute($value)
+    {
+        return is_string($value) ? json_decode($value, true) : $value;
+    }
+
+    public function setDteInvalidacionAttribute($value): void
+    {
+        $this->attributes['dte_invalidacion'] = is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : $value;
     }
 
     public function getNombreProveedorAttribute()

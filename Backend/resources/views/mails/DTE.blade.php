@@ -21,19 +21,14 @@
 
             <p>Adjuntamos el Documento Tributario Electrónico con el siguiente detalle:</p>
 
+            @php($tipoDte = $DTE['identificacion']['tipoDte'] ?? $DTE['identificacion']['tipoEvento'] ?? null)
             <p><b>Tipo de documento:</b> <br>
-                @if($DTE['identificacion']['tipoDte'] == '01')
-                    Factura
-                @endif
-                @if($DTE['identificacion']['tipoDte'] == '03')
-                    Crédito Fiscal
-                @endif
-                @if($DTE['identificacion']['tipoDte'] == '14')
-                    Factura Sujeto Excluido
-                @endif
+                {{ ['01' => 'Factura', '03' => 'Crédito Fiscal', '05' => 'Nota de Crédito', '06' => 'Nota de Débito', '11' => 'Factura de Exportación', '14' => 'Factura Sujeto Excluido', '18' => 'Evento de Retorno'][$tipoDte] ?? '' }}
             </p>
             <p><b>Código de Generación:</b><br> {{ $DTE['identificacion']['codigoGeneracion'] }}</p>
+            @if (!empty($DTE['identificacion']['numeroControl']))
             <p><b>Número de Control:</b><br> {{ $DTE['identificacion']['numeroControl'] }}</p>
+            @endif
             <p><b>Sello de Recepción:</b><br> {{ $DTE['sello'] }}</p>
             <p><b>Fecha y Hora de Generación:</b><br> {{ \Carbon\Carbon::parse($DTE['identificacion']['fecEmi'] . ' ' . $DTE['identificacion']['horEmi'])->format('d/m/Y H:i:s') }}</p>
 

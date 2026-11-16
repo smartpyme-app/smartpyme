@@ -3,8 +3,6 @@
 namespace App\Services\FacturacionElectronica\ElSalvador;
 
 use App\Http\Controllers\Api\Admin\MHDTEController;
-use App\Http\Requests\MH\AnularDTERequest;
-use App\Http\Requests\MH\AnularDTESujetoExcluidoRequest;
 use App\Http\Requests\MH\ConsultarDTERequest;
 use App\Http\Requests\MH\EnviarDTERequest;
 use App\Http\Requests\MH\GenerarContingenciaRequest;
@@ -14,10 +12,12 @@ use App\Http\Requests\MH\GenerarDTEPDFRequest;
 use App\Models\Admin\Empresa;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Gastos\Gasto;
-use App\Models\MH\MH;
 use App\Models\MH\MHAnulacion;
 use App\Models\MH\MHCCF;
 use App\Models\MH\MHContingencia;
+use App\Models\MH\MHEventoRetorno;
+use App\Models\MH\MHEventoRetornoCompra;
+use App\Models\Compras\Devoluciones\Devolucion as DevolucionCompra;
 use App\Models\MH\MHFactura;
 use App\Models\MH\MHFacturaExportacion;
 use App\Models\MH\MHNotaCredito;
@@ -51,6 +51,20 @@ class ElSalvadorDteService
             return response()->json(['error' => 'Falta configurar los datos de la sucursal.'], 400);
         }
 
+        if ($venta->nombre_documento == 'Factura de exportación' && ! $venta->cliente) {
+            return response()->json(['error' => 'La factura de exportación requiere un cliente.'], 400);
+        }
+
+        if ($venta->nombre_documento == 'Factura de exportación'
+            && (int) $venta->tipo_item_export !== 2
+            && (empty($venta->recinto_fiscal) || empty($venta->regimen))) {
+            return response()->json(['error' => 'La exportación de bienes requiere recinto fiscal y régimen de exportación. Si exporta servicios, seleccione Tipo de Ítem: Servicios.'], 400);
+        }
+
+        if ($error = $this->faltaDistrito($venta->empresa, $venta->cliente, $venta->nombre_documento == 'Crédito fiscal')) {
+            return response()->json(['error' => $error], 400);
+        }
+
         if ($venta->nombre_documento == 'Crédito fiscal') {
             $mh = new MHCCF;
             $DTE = $mh->generarDTE($venta);
@@ -73,6 +87,23 @@ class ElSalvadorDteService
             return response()->json(['error' => 'La devolución no tiene una venta asignada.'], 400);
         }
 
+        if ($devolucion->nombre_documento == 'Evento de retorno') {
+            $original = $devolucion->venta->dte;
+            if (! $devolucion->venta->sello_mh || ! in_array($original['identificacion']['tipoDte'] ?? null, ['01', '11'], true)) {
+                return response()->json(['error' => 'El evento de retorno solo aplica a facturas o facturas de exportación con sello de Hacienda.'], 400);
+            }
+            // Plazo del MH: hasta 3 meses desde la fecha de generación del DTE.
+            if (\Carbon\Carbon::parse($devolucion->fecha)->gt(\Carbon\Carbon::parse($original['identificacion']['fecEmi'])->addMonthsNoOverflow(3))) {
+                return response()->json(['error' => 'El evento de retorno solo puede aplicarse dentro de los 3 meses siguientes a la fecha del documento.'], 400);
+            }
+
+            return response()->json((new MHEventoRetorno)->generarDTE($devolucion), 200);
+        }
+
+        if ($error = $this->faltaDistrito($devolucion->empresa, $devolucion->cliente, true)) {
+            return response()->json(['error' => $error], 400);
+        }
+
         if ($devolucion->nombre_documento == 'Nota de crédito') {
             $mh = new MHNotaCredito;
             $DTE = $mh->generarDTE($devolucion);
@@ -86,8 +117,43 @@ class ElSalvadorDteService
         return response()->json($DTE, 200);
     }
 
+    /** Evento de retorno (18) sobre la Factura de sujeto excluido (14) de una compra. */
+    public function generarDTEEventoRetornoCompra(DevolucionCompra $devolucion): JsonResponse
+    {
+        $compra = $devolucion->compra;
+        $original = $compra ? $compra->dte : null;
+        if (! $compra || ! $compra->sello_mh || ($original['identificacion']['tipoDte'] ?? null) !== '14') {
+            return response()->json(['error' => 'El evento de retorno solo aplica a compras de sujeto excluido con sello de Hacienda.'], 400);
+        }
+        if (\Carbon\Carbon::parse($devolucion->fecha)->gt(\Carbon\Carbon::parse($original['identificacion']['fecEmi'])->addMonthsNoOverflow(3))) {
+            return response()->json(['error' => 'El evento de retorno solo puede aplicarse dentro de los 3 meses siguientes a la fecha del documento.'], 400);
+        }
+        $totalRetornos = DevolucionCompra::where('id_compra', $compra->id)
+            ->where('enable', '1')
+            ->where('tipo_documento', 'Evento de retorno')
+            ->sum('total');
+        if ($totalRetornos > (float) $compra->total + 0.01) {
+            return response()->json(['error' => 'La suma de los eventos de retorno supera el total de la compra.'], 400);
+        }
+
+        return response()->json((new MHEventoRetornoCompra)->generarDTE($devolucion), 200);
+    }
+
+    public function generarDTEAnuladoEventoRetornoCompra(DevolucionCompra $devolucion): JsonResponse
+    {
+        if (! $devolucion->dte || ! $devolucion->sello_mh) {
+            return response()->json(['error' => ['La devolución no tiene un evento de retorno emitido.']], 422);
+        }
+
+        return response()->json((new MHAnulacion)->generarDTE($devolucion, $devolucion->dte), 200);
+    }
+
     public function generarDTESujetoExcluidoGasto(Gasto $gasto): JsonResponse
     {
+        if ($error = $this->faltaDistrito($gasto->empresa, $gasto->proveedor, true)) {
+            return response()->json(['error' => $error], 400);
+        }
+
         $mh = new MHSujetoExcluidoGasto;
         $DTE = $mh->generarDTE($gasto);
 
@@ -96,10 +162,27 @@ class ElSalvadorDteService
 
     public function generarDTESujetoExcluidoCompra(Compra $compra): JsonResponse
     {
+        if ($error = $this->faltaDistrito($compra->empresa, $compra->proveedor, true)) {
+            return response()->json(['error' => $error], 400);
+        }
+
         $mh = new MHSujetoExcluidoCompra;
         $DTE = $mh->generarDTE($compra);
 
         return response()->json($DTE, 200);
+    }
+
+    /** DTE v2+: la dirección exige distrito (CAT-008); se valida antes para no esperar el rechazo del MH. */
+    private function faltaDistrito($empresa, $receptor, bool $receptorObligatorio): ?string
+    {
+        if (empty($empresa?->cod_distrito)) {
+            return 'Falta el distrito en la dirección de la empresa; Hacienda lo exige desde la versión 2.0 del DTE.';
+        }
+        if ($receptorObligatorio && $receptor && empty($receptor->cod_distrito)) {
+            return 'Falta el distrito en la dirección de ' . ($receptor->nombre ?? $receptor->nombre_empresa ?? 'el cliente/proveedor') . '; Hacienda lo exige desde la versión 2.0 del DTE.';
+        }
+
+        return null;
     }
 
     public function generarContingencia(GenerarContingenciaRequest $request): JsonResponse
@@ -141,7 +224,7 @@ class ElSalvadorDteService
 
     public function generarDTEAnulado(GenerarDTEAnuladoRequest $request): JsonResponse
     {
-        if ($request->tipo_dte == '05' || $request->tipo_dte == '06') {
+        if (in_array($request->tipo_dte, ['05', '06', '18'])) {
             $venta = DevolucionVenta::where('id', $request->id)->firstOrFail();
         } else {
             $venta = Venta::where('id', $request->id)->firstOrFail();
@@ -212,106 +295,6 @@ class ElSalvadorDteService
         return view('reportes.DTE-Ticket', compact('venta', 'DTE'));
     }
 
-    public function anularDTE(AnularDTERequest $request): JsonResponse
-    {
-        $venta = Venta::where('id', $request->id)->firstOrFail();
-        $DTE = json_decode($venta->dte, true);
-
-        $mh = new MH;
-
-        $auth = $mh->auth($venta->empresa);
-
-        if ($auth['status'] == 'ERROR') {
-            return response()->json(['error' => [$auth['body']['descripcionMsg']]], 422);
-        }
-
-        $mh->venta = $venta;
-
-        $DTEAnular = $mh->generarDTEAnulado($DTE);
-
-        if (isset($DTEAnular['status']) == 'ERROR') {
-            return response()->json($DTEAnular, 500);
-        }
-
-        $DTEFirmado = $mh->firmarDTE($DTEAnular);
-
-        if ($DTEFirmado['status'] == 'ERROR') {
-            return response()->json($DTEFirmado, 500);
-        }
-
-        $DTEEnviado = $mh->anularDTE($auth, $DTE, $DTEFirmado);
-
-        if (isset($DTEEnviado['estado']) == 'PROCESADO' && isset($DTEEnviado['selloRecibido'])) {
-            $DTEAnular['sello'] = $DTEEnviado['selloRecibido'];
-            $DTEAnular['firmaElectronica'] = $DTEFirmado['body'];
-
-            $v = Venta::findOrFail($venta->id);
-            $v->estado = 'Anulada';
-            $v->dte_invalidacion = $DTEAnular;
-            if ($request->has('fecha_anulacion')) {
-                $v->fecha_anulacion = $request->fecha_anulacion;
-            }
-            if ($request->has('tipo_anulacion')) {
-                $v->tipo_anulacion = $request->tipo_anulacion;
-            }
-            if ($request->has('motivo_anulacion')) {
-                $v->motivo_anulacion = $request->motivo_anulacion;
-            }
-            if ($request->has('codigo_generacion_remplazo')) {
-                $v->codigo_generacion_remplazo = $request->codigo_generacion_remplazo;
-            }
-            $v->save();
-
-            return response()->json($DTEEnviado, 200);
-        }
-
-        return response()->json($DTEEnviado, 500);
-    }
-
-    public function anularDTESujetoExcluido(AnularDTESujetoExcluidoRequest $request): JsonResponse
-    {
-        $gasto = Gasto::where('id', $request->id)->firstOrFail();
-        $DTE = json_decode($gasto->dte, true);
-
-        $mh = new MH;
-
-        $auth = $mh->auth($gasto->empresa);
-
-        if ($auth['status'] == 'ERROR') {
-            return response()->json(['error' => [$auth['body']['descripcionMsg']]], 422);
-        }
-
-        $mh->gasto = $gasto;
-
-        $DTEAnular = $mh->generarDTEAnulado($DTE);
-
-        if (isset($DTEAnular['status']) == 'ERROR') {
-            return response()->json($DTEAnular, 500);
-        }
-
-        $DTEFirmado = $mh->firmarDTE($DTEAnular);
-
-        if ($DTEFirmado['status'] == 'ERROR') {
-            return response()->json($DTEFirmado, 500);
-        }
-
-        $DTEEnviado = $mh->anularDTE($auth, $DTE, $DTEFirmado);
-
-        if (isset($DTEEnviado['estado']) == 'PROCESADO' && isset($DTEEnviado['selloRecibido'])) {
-            $DTEAnular['sello'] = $DTEEnviado['selloRecibido'];
-            $DTEAnular['firmaElectronica'] = $DTEFirmado['body'];
-
-            $c = Gasto::findOrFail($gasto->id);
-            $c->estado = 'Anulada';
-            $c->dte_invalidacion = $DTEAnular;
-            $c->save();
-
-            return response()->json($DTEEnviado, 200);
-        }
-
-        return response()->json($DTEEnviado, 500);
-    }
-
     public function generarDTEPDF(int|string $id, string $tipo, GenerarDTEPDFRequest $request): JsonResponse|Response
     {
         $registro = null;
@@ -327,7 +310,9 @@ class ElSalvadorDteService
             $registro = Venta::findOrFail($id);
         }
 
-        if ($tipo == '05' || $tipo == '06') {
+        if ($tipo == '18' && $request->input('origen') === 'compra') {
+            $registro = DevolucionCompra::findOrFail($id);
+        } elseif (in_array($tipo, ['05', '06', '18'])) {
             $registro = DevolucionVenta::findOrFail($id);
         }
 
@@ -367,28 +352,33 @@ class ElSalvadorDteService
         $registro->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente=' . $DTE['identificacion']['ambiente'] . '&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
 
         $pdf = null;
-        if ($DTE['identificacion']['tipoDte'] == '01') {
+        $tipoDte = $DTE['identificacion']['tipoDte'] ?? $DTE['identificacion']['tipoEvento'] ?? null;
+        if ($tipoDte == '01') {
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
         }
-        if ($DTE['identificacion']['tipoDte'] == '14') {
+        if ($tipoDte == '14') {
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Sujeto-Excluido', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
         }
-        if ($DTE['identificacion']['tipoDte'] == '03') {
+        if ($tipoDte == '03') {
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-CCF', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
         }
-        if ($DTE['identificacion']['tipoDte'] == '11') {
+        if ($tipoDte == '11') {
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura-Exportacion', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
         }
-        if ($DTE['identificacion']['tipoDte'] == '05') {
+        if ($tipoDte == '05') {
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Nota-Credito', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
         }
-        if ($DTE['identificacion']['tipoDte'] == '06') {
+        if ($tipoDte == '06') {
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Nota-Debito', compact('registro', 'DTE'));
+            $pdf->setPaper('US Letter', 'portrait');
+        }
+        if ($tipoDte == '18') {
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Evento-Retorno', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
         }
 
@@ -403,7 +393,9 @@ class ElSalvadorDteService
             $registro = Venta::findOrFail($id);
         }
 
-        if ($tipo == '05' || $tipo == '06') {
+        if ($tipo == '18' && $request->input('origen') === 'compra') {
+            $registro = DevolucionCompra::findOrFail($id);
+        } elseif (in_array($tipo, ['05', '06', '18'])) {
             $registro = DevolucionVenta::findOrFail($id);
         }
 
@@ -439,7 +431,10 @@ class ElSalvadorDteService
             $correo = $registro->cliente ? $registro->cliente->correo : null;
         }
 
-        if ($request->tipo_dte == '05' || $request->tipo_dte == '06') {
+        if ($request->tipo_dte == '18' && $request->input('origen') === 'compra') {
+            $registro = DevolucionCompra::with('proveedor')->where('id', $request->id)->firstOrFail();
+            $correo = $registro->proveedor ? $registro->proveedor->correo : null;
+        } elseif (in_array($request->tipo_dte, ['05', '06', '18'])) {
             $registro = DevolucionVenta::with('cliente')->where('id', $request->id)->firstOrFail();
             $correo = $registro->cliente ? $registro->cliente->correo : null;
         }
@@ -506,27 +501,23 @@ class ElSalvadorDteService
             return response()->json($DTE, 200);
         }
 
-        $pdf = null;
-        if ($DTE['identificacion']['tipoDte'] == '01') {
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura', compact('registro', 'DTE'));
-        } elseif ($DTE['identificacion']['tipoDte'] == '11') {
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura-Exportacion', compact('registro', 'DTE'));
-        } elseif ($DTE['identificacion']['tipoDte'] == '05') {
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Nota-Credito', compact('registro', 'DTE'));
-        } elseif ($DTE['identificacion']['tipoDte'] == '14') {
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Sujeto-Excluido', compact('registro', 'DTE'));
-        } elseif ($DTE['identificacion']['tipoDte'] == '03') {
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-CCF', compact('registro', 'DTE'));
+        $vistas = [
+            '01' => 'DTE-Factura',
+            '03' => 'DTE-CCF',
+            '05' => 'DTE-Nota-Credito',
+            '06' => 'DTE-Nota-Debito',
+            '11' => 'DTE-Factura-Exportacion',
+            '14' => 'DTE-Sujeto-Excluido',
+            '18' => 'DTE-Evento-Retorno',
+        ];
+        $tipoDte = $DTE['identificacion']['tipoDte'] ?? $DTE['identificacion']['tipoEvento'] ?? null;
+        if (! isset($vistas[$tipoDte])) {
+            return response()->json(['error' => 'Tipo de documento sin representación gráfica.'], 400);
         }
+        $pdfContent = app('dompdf.wrapper')->loadView('reportes.facturacion.' . $vistas[$tipoDte], compact('registro', 'DTE'))->output();
 
-        $pdfContent = $pdf->output();
-
-        if ($DTE['identificacion']['tipoDte'] == '01' || $DTE['identificacion']['tipoDte'] == '05' || $DTE['identificacion']['tipoDte'] == '03' || $DTE['identificacion']['tipoDte'] == '11') {
-            $nombre = $DTE['receptor']['nombre'];
-        }
-        if ($DTE['identificacion']['tipoDte'] == '14') {
-            $nombre = $DTE['sujetoExcluido']['nombre'];
-        }
+        // Evento de retorno identifica al receptor en "documento"; FSE v1 en "sujetoExcluido".
+        $nombre = $DTE['receptor']['nombre'] ?? $DTE['sujetoExcluido']['nombre'] ?? $DTE['documento']['nombre'] ?? '';
 
         $fromName = (string) ($DTE['emisor']['nombre'] ?? config('mail.from.name', 'SmartPyme'));
 

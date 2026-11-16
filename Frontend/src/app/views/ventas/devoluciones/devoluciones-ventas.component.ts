@@ -284,14 +284,18 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
         return this.esFeCostaRica() ? '03' : '05';
     }
 
-    imprimirDTEPDF(venta: any) {
+    imprimirDTEPDF(venta: any, anulado = false) {
         const t = this.tipoDteDevolucion(venta);
-        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token() + (anulado ? '&documento=anulado' : ''), 'hola', 'width=400');
     }
 
-    imprimirDTEJSON(venta: any) {
+    imprimirDTEJSON(venta: any, anulado = false) {
         const t = this.tipoDteDevolucion(venta);
-        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token() + (anulado ? '&documento=anulado' : ''), 'hola', 'width=400');
+    }
+
+    tieneDteInvalidacion(venta: any): boolean {
+        return !!(venta?.tiene_dte_invalidacion || venta?.dte_invalidacion || venta?.dte_invalidacion_en_s3);
     }
 
     imprimirDTEXML(venta: any) {
@@ -360,22 +364,20 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
                     ? mensajeErrorHttpFeCr(error)
                     : String(error?.message ?? error);
             }
+            this.venta = {
+                ...this.venta,
+                errores: msg,
+                ...(feCrIntento ? { fe_cr_intento_emision: feCrIntento } : {}),
+            };
+            const idx = this.ventas.data?.findIndex((v: any) => v.id === this.venta.id);
+            if (idx !== undefined && idx !== -1 && this.ventas.data) {
+                this.ventas.data[idx] = { ...this.venta };
+            }
             if (this.esFeCostaRica()) {
-                this.venta = {
-                    ...this.venta,
-                    errores: msg,
-                    ...(feCrIntento ? { fe_cr_intento_emision: feCrIntento } : {}),
-                };
-                const idx = this.ventas.data?.findIndex((v: any) => v.id === this.venta.id);
-                if (idx !== undefined && idx !== -1 && this.ventas.data) {
-                    this.ventas.data[idx] = { ...this.venta };
-                }
                 this.alertService.info(
                     'Comprobante no emitido',
                     'Revise los problemas indicados en esta ventana.'
                 );
-            } else {
-                this.alertService.warning('Comprobante electrónico', msg);
             }
             this.cdr.markForCheck();
         });
@@ -499,12 +501,19 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
                                                         this.apiService.store('devolucion/venta', this.venta)
                                                             .pipe(this.untilDestroyed())
                                                             .subscribe({
-                                                                next: () => {
-                                                                    // this.alertService.success('Venta guardada.');
+                                                                next: (guardada: any) => {
+                                                                    // OnPush: reemplazar el ítem para que el listado muestre "Anulada" sin recargar.
+                                                                    const idx = this.ventas.data?.findIndex((v: any) => v.id === this.venta.id);
+                                                                    if (idx !== undefined && idx !== -1 && this.ventas.data) {
+                                                                        this.ventas.data[idx] = { ...this.venta, ...(guardada ?? {}) };
+                                                                    }
+                                                                    this.saving = false;
+                                                                    this.cdr.markForCheck();
                                                                 },
                                                                 error: (error) => {
                                                                     this.alertService.error(error);
                                                                     this.saving = false;
+                                                                    this.cdr.markForCheck();
                                                                 }
                                                             });
                                                     }
@@ -519,6 +528,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
                                                         this.alertService.warning('Hubo un problema', error.error.observaciones);
                                                     }
                                                     this.saving = false;
+                                                    this.cdr.markForCheck();
                                                 }
                                             });
                                     },

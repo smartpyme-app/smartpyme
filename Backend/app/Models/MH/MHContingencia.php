@@ -20,7 +20,7 @@ class MHContingencia extends Model
         $this->caja_codigo = '0001';
 
         $identificacion = [
-            "version" => 3,
+            "version" => 4,
             "ambiente" => $DTEs[0]['identificacion']['ambiente'],
             "codigoGeneracion" => $codigoGeneracion,
             "fTransmision" => \Carbon\Carbon::now()->format('Y-m-d'),
@@ -63,8 +63,9 @@ class MHContingencia extends Model
             "tipoEstablecimiento" => '02',
             "telefono" => $this->empresa->telefono,
             "correo" => $this->empresa->correo,
-            "codEstableMH" => $this->sucursal->cod_estable_mh ? $this->sucursal->cod_estable_mh : NULL,
-            "codPuntoVenta" => NULL,
+            // Establecimiento y punto de venta de los DTE informados (posiciones 8-15 del número de control).
+            "codEstableMH" => substr((string) $DTEs[0]['identificacion']['numeroControl'], 7, 4) ?: NULL,
+            "codPuntoVentaMH" => substr((string) $DTEs[0]['identificacion']['numeroControl'], 11, 4) ?: NULL,
         ];
 
         return  

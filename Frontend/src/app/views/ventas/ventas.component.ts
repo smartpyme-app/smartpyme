@@ -346,6 +346,13 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_SV;
   }
 
+  /** Con FE SV activa, la devolución de una factura/exportación se documenta con Evento de retorno (no devolución libre). */
+  esFacturaConFeSv(venta: any): boolean {
+    return !!this.apiService.auth_user()?.empresa?.facturacion_electronica
+      && this.esFacturacionElSalvador()
+      && ['Factura', 'Factura de exportación'].includes(venta?.nombre_documento);
+  }
+
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
     this.verificarAccesoContabilidad();
@@ -1590,6 +1597,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     }
     this.saving = true;
     this.cdr.markForCheck();
+    const conCorreoDestino = this.tieneCorreoDestino(this.venta);
     this.facturacionElectronica.emitirDTE(this.venta).then((ventaActualizada) => {
       this.venta = { ...ventaActualizada };
       const index = this.ventas.data.findIndex((v: any) => v.id === ventaActualizada.id);
@@ -1600,7 +1608,9 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       if (this.facturacionElectronica.requiereFlujoEnviarDteSeparado()) {
         this.alertService.success(this.countryI18n.fe('emitSuccessTitle'), this.countryI18n.fe('emitSuccessBody'));
         this.saving = false;
-        this.enviarDTE(this.venta);
+        if (conCorreoDestino) {
+          this.enviarDTE(this.venta);
+        }
       } else {
         const aceptada = ventaActualizada?.dte?.cr?.aceptada;
         if (aceptada === false) {
@@ -1660,12 +1670,15 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
             'Comprobante no emitido',
             'Revise los problemas indicados en esta ventana.'
           );
-        } else {
-          this.alertService.warning('Comprobante electrónico', msg);
         }
       }
       this.cdr.detectChanges();
     });
+  }
+
+  /** Envío automático tras emitir: solo si hay un correo escrito o el cliente tiene correo. */
+  private tieneCorreoDestino(venta: any): boolean {
+    return !!((this.correoEnvioDte ?? '').trim() || (venta?.cliente?.correo ?? '').trim());
   }
 
   enviarDTE(venta: any, anulado = false) {
@@ -1706,7 +1719,8 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   openModalAnulacion(template: TemplateRef<any>, venta: any) {
     const configurarYAbrir = (v: any) => {
       this.venta = { ...v };
-      this.fechaAnulacion = this.apiService.date();
+      // El MH valida la fecha del evento contra la del documento; por defecto se propone la del DTE.
+      this.fechaAnulacion = String(v?.dte?.identificacion?.fecEmi ?? v?.fecha ?? '').substring(0, 10) || this.apiService.date();
       this.tipoAnulacion = 2;
       this.motivoAnulacion = '';
       this.codigoGeneracionRemplazo = '';
@@ -1915,7 +1929,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
               .pipe(this.untilDestroyed())
               .subscribe(data => {
               this.alertService.success(this.countryI18n.fe('stampSuccessTitle'), this.countryI18n.fe('stampSuccessBody'));
-              if (this.venta.cliente_id) {
+              if (this.tieneCorreoDestino(this.venta)) {
                 this.enviarDTE(this.venta);
               }
               setTimeout(() => {

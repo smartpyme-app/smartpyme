@@ -326,7 +326,7 @@ export class CompraJsonBulkService {
                     compra.cobrar_impuestos = true;
                 }
             }
-            const percepcion = parseFloat(jsonData.resumen.ivaPerci1) || 0;
+            const percepcion = parseFloat(jsonData.resumen.ivaPerci ?? jsonData.resumen.ivaPerci1) || 0;
             if (percepcion > 0) {
                 compra.percepcion = percepcion;
                 compra.cobrar_percepcion = true;

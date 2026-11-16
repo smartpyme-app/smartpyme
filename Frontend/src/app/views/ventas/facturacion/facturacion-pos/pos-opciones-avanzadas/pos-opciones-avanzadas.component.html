@@ -12,7 +12,18 @@
           <ng-option value="1">Bienes</ng-option>
           <ng-option value="2">Servicios</ng-option>
           <ng-option value="3">Ambos</ng-option>
-          <ng-option value="4">Otros</ng-option>
+        </ng-select>
+      </div>
+      <div class="col-md-6" *ngIf="host.venta.tipo_item_export != 2">
+        <label class="form-label">Recinto fiscal</label>
+        <ng-select name="recinto_fiscal" [(ngModel)]="host.venta.recinto_fiscal" placeholder="Seleccione" class="form-select p-0">
+          <ng-option [value]="item.cod" *ngFor="let item of host.recintos">{{ item.nombre }}</ng-option>
+        </ng-select>
+      </div>
+      <div class="col-md-6" *ngIf="host.venta.tipo_item_export != 2">
+        <label class="form-label">Régimen</label>
+        <ng-select name="regimen" [(ngModel)]="host.venta.regimen" placeholder="Seleccione" class="form-select p-0">
+          <ng-option [value]="item.cod" *ngFor="let item of host.regimenes">{{ item.nombre }}</ng-option>
         </ng-select>
       </div>
       <div class="col-md-6">
