@@ -8,11 +8,10 @@ Documento de referencia para diseño de API y reglas de negocio. Cruza **lo que 
 
 ## 1. Qué debe responder la pantalla
 
-Tres bloques de salida:
+Dos bloques de salida:
 
 | Bloque | Contenido | Uso |
 |--------|-----------|-----|
-| **KPIs** | 5 tarjetas con valor, tono y sublínea | Resumen ejecutivo del periodo |
 | **Estado de resultados** | Tabla con 6 columnas por concepto | Detalle gerencial |
 | **Gastos como % de ventas** | Filas con % mes, promedio 6m, delta, sparkline | Tendencia de estructura de costos |
 
@@ -30,21 +29,11 @@ La tabla no es un listado de transacciones: es un **árbol fijo de conceptos** c
 | `plBase` | `gerencial` (sin IVA) \| `caja` (con IVA) | Misma base en ventas, COGS y OPEX |
 | `plSucursalId` | `consolidado` \| `id_sucursal` | Scope de agregación (compartido con Rentabilidad y Flujo) |
 | `suiteMes`, `suiteAnio` | Selects en toolbar | Mes de corte compartido P&L + Rentabilidad |
-| `plComparacion` | `mes_anterior` \| `mes_anterior_2` \| `presupuesto` | Columna “VS.” y sublíneas de KPIs |
+| `plComparacion` | `mes_anterior` \| `mes_anterior_2` \| `presupuesto` | Columna “VS.” de la tabla |
 
 `periodoTitulo` y `comparacionTitulo` se arman en el padre a partir de esos filtros; el API también puede devolver meta en la respuesta.
 
-### 2.2 KPIs (`PlKpi` — `pl-gerencial.model.ts`)
-
-Derivados de líneas clave del P&L + comparación:
-
-- Ventas netas
-- Utilidad bruta (+ % de ventas en sublínea)
-- Utilidad operativa (+ variación % vs comparación)
-- Resultado neto (+ % de ventas)
-- Margen bruto (+ delta en puntos vs comparación)
-
-### 2.3 Filas del estado de resultados (`PlEstadoResultadosFila`)
+### 2.2 Filas del estado de resultados (`PlEstadoResultadosFila`)
 
 Por cada concepto:
 
@@ -67,7 +56,7 @@ Por cada concepto:
 8. (+/-) Otros no operativos
 9. **Resultado neto** (total)
 
-### 2.4 Gastos % ventas (`PlGastoPctVentaFila`)
+### 2.3 Gastos % ventas (`PlGastoPctVentaFila`)
 
 Mismos rubros que COGS + OPEX (sin “ventas netas” como fila de gasto). Por rubro:
 
@@ -179,7 +168,7 @@ Query estándar: `empresa`, `anio`, `mes?`, `sucursal` (`DashboardAnalyticsApiSe
 
 ## 7. Propuesta de contrato API
 
-Un endpoint agregado evita inconsistencias entre KPIs, tabla y sparklines.
+Un endpoint agregado evita inconsistencias entre la tabla y los gastos como % de ventas.
 
 **Request:**
 
@@ -206,7 +195,6 @@ GET /api/finanzas/pl-gerencial?empresa=&anio=&mes=
     base: 'gerencial' | 'caja';
     sucursal: string;
   };
-  kpis: PlKpi[];
   estadoResultados: PlEstadoResultadosFila[]; // recomendado: lineId estable por concepto
   gastosPctVentas: { filas: PlGastoPctVentaFila[] };
   warnings?: string[]; // ej. "N gastos sin rubro P&L"

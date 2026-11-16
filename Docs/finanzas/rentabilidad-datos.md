@@ -12,7 +12,7 @@ Modelado (rubro configurable, gasto fijo/variable, presupuesto por área) queda 
 
 ## 1. Qué debe responder la pantalla
 
-Una sola carga por filtros. El usuario elige horizonte y dimensión. Cada dimensión es una tabla. Al tocar una fila se abre el detalle de cómo se armó ese margen. Los cinco KPIs de arriba los arma el frontend con la fila abierta (`rentabilidad-kpis.builder.ts`). El API manda números y tonos, no frases.
+Una sola carga por filtros. El usuario elige horizonte y dimensión. Cada dimensión es una tabla. Al tocar una fila se abre el detalle. En sucursal, los cuatro cards de arriba salen de `resumen` (utilidad operativa, margen operativo, margen bruto y sucursales con pérdida). En las otras dimensiones los arma el frontend con la fila abierta.
 
 | Dimensión | Tabla | Detalle |
 |-----------|--------|---------|
@@ -225,6 +225,7 @@ Cuerpo, alineado a `RentabilidadMock`:
 ```json
 {
   "meta": { "periodoTitulo": "octubre 2026", "horizonte": "mes" },
+  "resumen": {},
   "filasSucursal": [],
   "filasProducto": [],
   "filasCliente": [],
@@ -235,7 +236,7 @@ Cuerpo, alineado a `RentabilidadMock`:
 
 Cada fila trae su `detalle`. No hace falta un segundo request al abrir la fila: el mock ya lo trae embebido y la pantalla lo espera así.
 
-`kpis` de la raíz no se envían. Esos cinco los calcula `kpisDesdeSucursal` / `Producto` / `Cliente` / `Proveedor` / `Proyecto` con la fila. En modo alertas la otra pestaña sigue con su propio mock.
+`resumen` alimenta los cuatro cards de la dimensión sucursal. En producto, cliente, proveedor y proyecto los cards siguen saliendo de la fila abierta.
 
 Montos con dos decimales. Porcentajes con un decimal cuando la UI usa `toFixed(1)`, dos cuando es margen de tabla.
 

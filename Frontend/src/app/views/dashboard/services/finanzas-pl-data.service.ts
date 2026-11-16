@@ -6,7 +6,6 @@ import {
   PlEstadoResultadosFila,
   PlGastoPctVentaFila,
   PlGastosPctVentasMock,
-  PlKpi,
   PlVistaEstadoId,
 } from '../sections/finanzas/pl-gerencial/pl-gerencial.model';
 export interface PlGerencialQuery {
@@ -25,17 +24,8 @@ export interface PlGerencialResponse {
     anioAcumulado: number;
     vistaEstado?: PlVistaEstadoId;
   };
-  kpis: PlKpi[];
   estadoResultados: PlEstadoResultadosFila[];
   gastosPctVentas: PlGastosPctVentasMock;
-}
-
-interface PlGerencialApiKpi {
-  titulo: string;
-  valor: number;
-  esPct?: boolean;
-  tono: PlKpi['tono'];
-  sublinea?: string;
 }
 
 @Injectable({
@@ -82,7 +72,6 @@ export class FinanzasPlDataService {
 
   private mapear(raw: Record<string, unknown>): PlGerencialResponse {
     const meta = (raw['meta'] ?? {}) as Record<string, unknown>;
-    const kpisRaw = (raw['kpis'] ?? []) as PlGerencialApiKpi[];
     const filasRaw = (raw['estadoResultados'] ?? []) as Record<string, unknown>[];
     const filas = filasRaw.map((row) => this.mapearFilaEstado(row));
     const gpv = (raw['gastosPctVentas'] ?? {}) as { filas?: PlGastoPctVentaFila[] };
@@ -98,12 +87,6 @@ export class FinanzasPlDataService {
         anioAcumulado: Number(meta['anioAcumulado'] ?? new Date().getFullYear()),
         vistaEstado,
       },
-      kpis: kpisRaw.map((k) => ({
-        titulo: k.titulo,
-        valor: k.esPct ? `${k.valor}%` : this.formatMonto(k.valor),
-        tono: k.tono,
-        sublinea: k.sublinea,
-      })),
       estadoResultados: filas,
       gastosPctVentas: { filas: gpv.filas ?? [] },
     };
@@ -136,17 +119,5 @@ export class FinanzasPlDataService {
       meses,
       totalAnual: row['totalAnual'] != null ? Number(row['totalAnual']) : undefined,
     };
-  }
-
-  private formatMonto(n: number): string {
-    const abs = Math.abs(n);
-    const formatted = new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(abs);
-    if (n < 0) {
-      return `-$${formatted}`;
-    }
-    return `$${formatted}`;
   }
 }

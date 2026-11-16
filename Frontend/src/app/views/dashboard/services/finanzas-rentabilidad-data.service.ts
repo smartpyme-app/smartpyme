@@ -5,6 +5,7 @@ import { DashboardAnalyticsApiService } from './dashboard-analytics-api.service'
 import {
   RentabilidadHorizonteId,
   RentabilidadMock,
+  RentabilidadResumen,
 } from '../sections/finanzas/rentabilidad/rentabilidad.model';
 
 export interface RentabilidadQuery {
@@ -38,6 +39,7 @@ export class FinanzasRentabilidadDataService {
         }
         return {
           kpis: [],
+          resumen: this.mapResumen(raw.resumen),
           filasSucursal: raw.filasSucursal ?? [],
           filasProducto: raw.filasProducto ?? [],
           filasCliente: raw.filasCliente ?? [],
@@ -46,5 +48,37 @@ export class FinanzasRentabilidadDataService {
         };
       }),
     );
+  }
+
+  private mapResumen(raw: RentabilidadResumen | null | undefined): RentabilidadResumen | null {
+    if (!raw) {
+      return null;
+    }
+    const num = (v: unknown) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    };
+    const opt = (v: unknown) => {
+      if (v === null || v === undefined) {
+        return null;
+      }
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    };
+    return {
+      mesEtiqueta: String(raw.mesEtiqueta ?? ''),
+      comparacionEtiqueta: String(raw.comparacionEtiqueta ?? ''),
+      utilidadOperativa: num(raw.utilidadOperativa),
+      utilidadOperativaPrev: num(raw.utilidadOperativaPrev),
+      utilidadOperativaVsPct: opt(raw.utilidadOperativaVsPct),
+      margenOperativo: opt(raw.margenOperativo),
+      margenOperativoPrev: opt(raw.margenOperativoPrev),
+      margenBruto: opt(raw.margenBruto),
+      margenBrutoPrev: opt(raw.margenBrutoPrev),
+      sucursalesPerdida: num(raw.sucursalesPerdida),
+      sucursalesTotal: num(raw.sucursalesTotal),
+      peorSucursal: String(raw.peorSucursal ?? ''),
+      peorSucursalUtilidad: num(raw.peorSucursalUtilidad),
+    };
   }
 }

@@ -1,6 +1,13 @@
-<p class="sf-note pl-gastos-caption mb-3">
-  Cada gasto medido contra las ventas del mismo mes
-</p>
+<div class="pl-gastos-leyenda">
+  <span class="pl-gastos-leyenda__item">
+    <span class="pl-gastos-swatch" aria-hidden="true"></span>
+    {{ etiquetaMes() }}
+  </span>
+  <span class="pl-gastos-leyenda__item">
+    <span class="pl-gastos-tick" aria-hidden="true"></span>
+    {{ comparacionEtiqueta }}
+  </span>
+</div>
 
 @if (data.filas.length === 0) {
   <p class="sf-note mb-0">Sin datos de estructura de gastos para este periodo.</p>
@@ -11,31 +18,28 @@
       <div class="pl-gastos-label">{{ fila.concepto }}</div>
       <div class="pl-gastos-bar-wrap">
         <div class="sf-bar pl-gastos-bar-track" aria-hidden="true">
-          <span
-            class="sf-bar__fill"
-            [class.sf-bar__fill--orange]="fila.barTone === 'orange'"
-            [style.width.%]="anchoBarra(fila.pctMes)">
-          </span>
+          <span class="sf-bar__fill" [style.width.%]="anchoBarra(fila.pctMes)"></span>
           <span class="pl-gastos-bar-marker" [style.left.%]="anchoBarra(fila.promedio6m)"></span>
         </div>
       </div>
-      <div class="pl-gastos-pct sf-strong">{{ fila.pctMes }}%</div>
-      <div class="pl-gastos-delta">
-        <span [class.sf-neg]="fila.deltaPts > 0" [class.sf-pos]="fila.deltaPts < 0">
-          {{ formatoDelta(fila.deltaPts) }} pts
-        </span>
-        <span class="sf-cell-muted"> vs. {{ fila.promedio6m }}%</span>
+      <div class="pl-gastos-pct">{{ formatoPct(fila.pctMes) }}</div>
+      <div
+        class="pl-gastos-delta"
+        [class.pl-delta-up]="fila.deltaPts > 0"
+        [class.pl-delta-down]="fila.deltaPts < 0"
+        [class.pl-delta-flat]="fila.deltaPts === 0">
+        {{ formatoDelta(fila.deltaPts) }} pts
       </div>
+      <div class="pl-gastos-ref">{{ formatoPct(fila.promedio6m) }}</div>
       <div class="pl-gastos-spark">
         <svg class="pl-gastos-sparkline" viewBox="0 0 76 30" preserveAspectRatio="none" aria-hidden="true">
           <path
             [attr.d]="sparklinePath(fila)"
             fill="none"
-            stroke-width="2"
+            stroke="#6a6a6a"
+            stroke-width="1.75"
             stroke-linecap="round"
-            stroke-linejoin="round"
-            [class.pl-spark-up]="fila.tendenciaAlcista"
-            [class.pl-spark-down]="!fila.tendenciaAlcista" />
+            stroke-linejoin="round" />
         </svg>
       </div>
     </div>

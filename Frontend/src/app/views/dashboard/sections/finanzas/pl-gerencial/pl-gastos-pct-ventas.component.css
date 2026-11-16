@@ -1,17 +1,44 @@
-.pl-gastos-caption {
-  margin: 0 0 12px;
+.pl-gastos-leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  margin: 0 0 16px;
+  color: #6b6b6b;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.pl-gastos-leyenda__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pl-gastos-swatch {
+  width: 16px;
+  height: 8px;
+  border-radius: 2px;
+  background: #8eafdc;
+}
+
+.pl-gastos-tick {
+  width: 2px;
+  height: 12px;
+  border-radius: 1px;
+  background: #5f6570;
 }
 
 .pl-gastos-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 14px;
 }
 
 .pl-gastos-row {
   display: grid;
-  grid-template-columns: minmax(7.5rem, 10rem) minmax(4rem, 1fr) 3.25rem 7rem 4.5rem;
-  gap: 10px;
+  grid-template-columns: minmax(8.5rem, 11rem) minmax(6rem, 1fr) 3.6rem 4.6rem 3.6rem 4.75rem;
+  gap: 12px;
   align-items: center;
 }
 
@@ -23,29 +50,57 @@
 
 .pl-gastos-bar-track {
   position: relative;
+  height: 8px;
   overflow: visible;
+  background: #f2f0f5;
+}
+
+.pl-gastos-bar-track .sf-bar__fill {
+  background: #8eafdc;
+  opacity: 1;
 }
 
 .pl-gastos-bar-marker {
   position: absolute;
-  top: -3px;
+  top: -4px;
   width: 2px;
-  height: calc(100% + 6px);
+  height: calc(100% + 8px);
   margin-left: -1px;
-  background: var(--sf-muted, #46464a);
+  background: #5f6570;
   border-radius: 1px;
   pointer-events: none;
 }
 
 .pl-gastos-pct {
   text-align: right;
+  font-weight: 600;
+  color: #1a1b1f;
   font-variant-numeric: tabular-nums;
 }
 
 .pl-gastos-delta {
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.25;
   text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pl-delta-up {
+  color: #c23b49;
+}
+
+.pl-delta-down {
+  color: #2d9c57;
+}
+
+.pl-delta-flat {
+  color: #6b6b6b;
+}
+
+.pl-gastos-ref {
+  text-align: right;
+  color: #6b6b6b;
   font-variant-numeric: tabular-nums;
 }
 
@@ -54,21 +109,12 @@
   height: 30px;
 }
 
-.pl-spark-up {
-  stroke: var(--sf-good, #16a34a);
-}
-
-.pl-spark-down {
-  stroke: var(--sf-alert, #ba1a1a);
-}
-
 @media (max-width: 992px) {
   .pl-gastos-row {
-    grid-template-columns: 1fr 3.5rem;
+    grid-template-columns: 1fr auto auto 4.75rem;
     grid-template-areas:
-      'label valor'
-      'bar bar'
-      'delta spark';
+      'label valor delta ref'
+      'bar bar bar spark';
   }
 
   .pl-gastos-label {
@@ -85,7 +131,11 @@
 
   .pl-gastos-delta {
     grid-area: delta;
-    text-align: left;
+    text-align: right;
+  }
+
+  .pl-gastos-ref {
+    grid-area: ref;
   }
 
   .pl-gastos-spark {

@@ -16,12 +16,17 @@
     @if (kpiChartItems().length) {
       <div class="sf-grid sf-grid--kpi">
         @for (item of kpiChartItems(); track item.metric.title) {
-          <app-finanzas-kpi-card [data]="item.metric">
+          <app-finanzas-kpi-card [data]="item.metric" [alerta]="!!item.alerta">
             @if (item.linea) {
               <p class="rent-kpi-linea sf-kpi__sub mb-0">{{ item.linea }}</p>
             }
             @if (item.sublinea) {
-              <p class="rent-kpi-sublinea sf-kpi__sub mb-0">{{ item.sublinea }}</p>
+              <p
+                class="rent-kpi-sublinea sf-kpi__sub mb-0"
+                [class.rent-text-neg]="item.sublineaTono === 'neg'"
+                [class.rent-text-pos]="item.sublineaTono === 'pos'">
+                {{ item.sublinea }}
+              </p>
             }
           </app-finanzas-kpi-card>
         }
@@ -1193,33 +1198,27 @@
         <div>
           <h3 class="rent-bloque-titulo">Ventas por tipo de producto</h3>
           @if (sucursal.detalle.productos.length) {
-            <table class="rent-mini">
-              <thead>
-                <tr>
-                  <th scope="col">Tipo de producto</th>
-                  <th scope="col" class="rent-th-num">Ventas</th>
-                  <th scope="col" class="rent-th-num">% ventas</th>
-                  <th scope="col" class="rent-th-num">Margen</th>
-                  <th scope="col" class="rent-th-num">Margen empresa</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (prod of sucursal.detalle.productos; track prod.tipo) {
-                  <tr>
-                    <td>{{ prod.tipo }}</td>
-                    <td class="rent-th-num">{{ formatMonto(prod.ventas) }}</td>
-                    <td class="rent-th-num">{{ prod.pctVentas }}%</td>
-                    <td
-                      class="rent-th-num"
-                      [class.rent-text-neg]="margenBajoEmpresa(prod)"
-                      [class.rent-text-pos]="!margenBajoEmpresa(prod)">
-                      {{ formatPct(prod.margenPct) }}
-                    </td>
-                    <td class="rent-th-num rent-text-muted">{{ formatPct(prod.margenEmpresaPct) }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+            <div class="rent-tipo-head">
+              <span>Tipo de producto</span>
+              <span></span>
+              <span>Ventas</span>
+              <span>Margen</span>
+            </div>
+            <div class="rent-barras">
+              @for (prod of sucursal.detalle.productos; track prod.tipo) {
+                <div class="rent-barra-row rent-tipo-row">
+                  <div class="rent-barra-label">{{ prod.tipo }}</div>
+                  <div class="rent-barra-track" aria-hidden="true">
+                    <span
+                      class="rent-barra-fill rent-barra-fill--azul"
+                      [style.width.%]="anchoRelativoMonto(prod.ventas, sucursal.detalle.productos)">
+                    </span>
+                  </div>
+                  <div class="rent-barra-monto">{{ formatMonto(prod.ventas) }}</div>
+                  <div class="rent-barra-pct">{{ formatPct(prod.margenPct) }}</div>
+                </div>
+              }
+            </div>
           } @else {
             <p class="rent-vacio">Sin desglose en el periodo.</p>
           }

@@ -803,6 +803,26 @@
   margin-top: 1.25rem;
 }
 
+.rent-detalle-grid .rent-puente-track,
+.rent-detalle-grid .rent-barra-track {
+  background: #f2f0f5;
+  overflow: hidden;
+}
+
+.rent-detalle-grid .rent-puente-fill--azul,
+.rent-detalle-grid .rent-barra-fill--azul {
+  background: #8eafdc;
+}
+
+.rent-detalle-grid .rent-puente-fill--naranja,
+.rent-detalle-grid .rent-barra-fill--naranja {
+  background: #e0bca0;
+}
+
+.rent-detalle-grid .rent-puente-fill--rojo {
+  background: #e7b4b8;
+}
+
 .rent-bloque-titulo {
   margin: 0 0 0.75rem;
   font-size: 0.95rem;
@@ -813,6 +833,35 @@
 .rent-bloque-titulo-monto {
   font-weight: 600;
   color: #64748b;
+}
+
+.rent-tipo-head,
+.rent-tipo-row {
+  grid-template-columns: minmax(8.5rem, 12rem) minmax(4rem, 1fr) auto auto;
+}
+
+.rent-tipo-head {
+  display: grid;
+  gap: 0.65rem;
+  align-items: center;
+  padding-bottom: 0.15rem;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.rent-tipo-head span:nth-child(n + 3) {
+  text-align: right;
+}
+
+.rent-tipo-row .rent-barra-label {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.rent-tipo-row .rent-barra-pct {
+  color: #1e293b;
+  font-weight: 500;
+  min-width: 3.6rem;
 }
 
 .rent-puente-row,

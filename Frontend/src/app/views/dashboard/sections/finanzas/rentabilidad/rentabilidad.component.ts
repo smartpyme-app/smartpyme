@@ -21,7 +21,6 @@ import {
   RentabilidadHorizonteId,
   RentabilidadKpi,
   RentabilidadMontoPct,
-  RentabilidadProductoFila,
   RentabilidadClienteDetalle,
   RentabilidadClienteFila,
   RentabilidadProductoDetalle,
@@ -45,9 +44,10 @@ import {
   kpisDesdeProducto,
   kpisDesdeProveedor,
   kpisDesdeProyecto,
-  kpisDesdeSucursal,
+  kpisDesdeResumen,
   RentabilidadKpiContexto,
 } from './rentabilidad-kpis.builder';
+import { resumenDesdeFilas } from './rentabilidad-kpis.resumen';
 import { detalleClienteDesdeFila } from './rentabilidad-cliente-detalle.builder';
 import { detalleProveedorDesdeFila } from './rentabilidad-proveedor-detalle.builder';
 import { detalleProyectoDesdeFila } from './rentabilidad-proyecto-detalle.builder';
@@ -59,10 +59,13 @@ export interface RentKpiChartItem {
   metric: MetricCard;
   linea?: string;
   sublinea?: string;
+  sublineaTono?: 'neg' | 'pos';
+  alerta?: boolean;
 }
 
 const RENTABILIDAD_VACIA: RentabilidadMock = {
   kpis: [],
+  resumen: null,
   filasSucursal: [],
   filasProducto: [],
   filasCliente: [],
@@ -235,6 +238,8 @@ export class RentabilidadComponent implements OnInit, OnChanges {
       metric: { title: kpi.titulo, value: kpi.valor },
       linea: kpi.linea,
       sublinea: kpi.sublinea,
+      sublineaTono: kpi.sublineaTono,
+      alerta: kpi.alerta,
     }));
   }
 
@@ -252,14 +257,14 @@ export class RentabilidadComponent implements OnInit, OnChanges {
     };
 
     switch (this.dimension) {
-      case 'sucursal':
-        if (this.sucursalAbierta?.kpisToolbar) {
-          return this.sucursalAbierta.kpisToolbar;
-        }
-        if (this.sucursalAbierta) {
-          return kpisDesdeSucursal(this.sucursalAbierta, ctx);
-        }
-        break;
+      case 'sucursal': {
+        const resumen =
+          this.data.resumen ??
+          resumenDesdeFilas(this.data.filasSucursal, this.etiquetaMesResumen(), this.etiquetaComparacionResumen());
+        return resumen
+          ? kpisDesdeResumen(resumen, (n) => this.formatMonto(n), (n, d) => this.formatPct(n, d))
+          : [];
+      }
       case 'producto':
         if (this.productoAbierto?.kpisToolbar) {
           return this.productoAbierto.kpisToolbar;
@@ -648,6 +653,27 @@ export class RentabilidadComponent implements OnInit, OnChanges {
     return 'neg';
   }
 
+  private etiquetaMesResumen(): string {
+    if (this.horizonte === 'anio') {
+      return 'año';
+    }
+    if (this.horizonte === 'trimestre') {
+      return 'trim.';
+    }
+    const abr = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    return abr[this.mes - 1] || 'mes';
+  }
+
+  private etiquetaComparacionResumen(): string {
+    if (this.horizonte === 'anio') {
+      return `año ${this.anio - 1}`;
+    }
+    if (this.horizonte === 'trimestre') {
+      return `trim. ${this.anio - 1}`;
+    }
+    return `${this.etiquetaMesResumen()} ${this.anio - 1}`;
+  }
+
   etiquetaComparacion(): string {
     const partes = this.periodoTitulo.trim().split(/\s+/);
     const mes = (partes[0] || 'sep').slice(0, 3).toUpperCase();
@@ -767,12 +793,9 @@ export class RentabilidadComponent implements OnInit, OnChanges {
       return 'azul';
     }
     if (index === total - 1) {
-      return fila.monto < 0 ? 'rojo' : 'verde';
+      return fila.monto < 0 ? 'rojo' : 'azul';
     }
     return 'naranja';
   }
 
-  margenBajoEmpresa(fila: RentabilidadProductoFila): boolean {
-    return fila.margenPct < fila.margenEmpresaPct;
-  }
 }

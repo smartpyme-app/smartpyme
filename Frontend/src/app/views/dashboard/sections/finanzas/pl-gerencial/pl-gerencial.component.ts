@@ -9,9 +9,6 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '@services/api.service';
-import { formatEmpresaCurrency } from '@helpers/currency-format.helper';
-import { MetricCard } from '../../../models/chart-config.model';
-import { FinanzasKpiCardComponent } from '../finanzas-kpi-card.component';
 import { PlEstadoResultadosFila, PlGastosPctVentasMock, PlVistaEstadoId } from './pl-gerencial.model';
 import {
   buildFilasVistaAnual,
@@ -25,11 +22,6 @@ import {
 } from '../../../services/finanzas-pl-data.service';
 import { finalize, take } from 'rxjs/operators';
 
-export interface PlKpiChartItem {
-  metric: MetricCard;
-  sublinea?: string;
-}
-
 const PL_GASTOS_PCT_VACIO: PlGastosPctVentasMock = { filas: [] };
 
 @Component({
@@ -37,7 +29,7 @@ const PL_GASTOS_PCT_VACIO: PlGastosPctVentasMock = { filas: [] };
   templateUrl: './pl-gerencial.component.html',
   styleUrls: ['./pl-gerencial.component.css'],
   standalone: true,
-  imports: [CommonModule, FinanzasKpiCardComponent, PlGastosPctVentasComponent],
+  imports: [CommonModule, PlGastosPctVentasComponent],
 })
 export class PlGerencialComponent implements OnInit, OnChanges {
   private readonly api = inject(ApiService);
@@ -52,7 +44,6 @@ export class PlGerencialComponent implements OnInit, OnChanges {
   filas: PlEstadoResultadosFila[] = [];
   filasVistaAnual: PlFilaVistaAnual[] = [];
   gastosPctVentas: PlGastosPctVentasMock = PL_GASTOS_PCT_VACIO;
-  kpiItems: PlKpiChartItem[] = [];
 
   cargando = false;
   errorMensaje: string | null = null;
@@ -110,10 +101,6 @@ export class PlGerencialComponent implements OnInit, OnChanges {
           this.filas = data.estadoResultados;
           this.filasVistaAnual = buildFilasVistaAnual(this.filas);
           this.gastosPctVentas = data.gastosPctVentas;
-          this.kpiItems = data.kpis.map((kpi) => ({
-            metric: { title: kpi.titulo, value: kpi.valor },
-            sublinea: kpi.sublinea,
-          }));
           if (data.meta.periodoTitulo) {
             this.periodoTitulo = data.meta.periodoTitulo;
           }
@@ -135,15 +122,6 @@ export class PlGerencialComponent implements OnInit, OnChanges {
             'Error al consultar el P&L gerencial. Revisa la consola del navegador y los logs de sp-analytics.';
         },
       });
-  }
-
-  formatMonto(value: number): string {
-    const empresa = this.api.auth_user()?.empresa;
-    const abs = formatEmpresaCurrency(Math.abs(value), empresa);
-    if (value < 0) {
-      return `-${abs}`;
-    }
-    return abs;
   }
 
   formatPct(value: number | null): string {
@@ -203,6 +181,36 @@ export class PlGerencialComponent implements OnInit, OnChanges {
 
   etiquetaMesTitulo(): string {
     return this.periodoTitulo;
+  }
+
+  /** «OCT 2026» → «octubre 2026». El resto (presupuesto, YTD) va en minúsculas. */
+  etiquetaComparacion(): string {
+    const raw = (this.comparacionTitulo || '').trim();
+    if (!raw) {
+      return 'comparación';
+    }
+    const meses: Record<string, string> = {
+      ene: 'enero',
+      feb: 'febrero',
+      mar: 'marzo',
+      abr: 'abril',
+      may: 'mayo',
+      jun: 'junio',
+      jul: 'julio',
+      ago: 'agosto',
+      sep: 'septiembre',
+      oct: 'octubre',
+      nov: 'noviembre',
+      dic: 'diciembre',
+    };
+    const m = raw.match(/^([A-Za-z]{3,})\s+(\d{4})$/);
+    if (m) {
+      const nombre = meses[m[1].toLowerCase().slice(0, 3)];
+      if (nombre) {
+        return `${nombre} ${m[2]}`;
+      }
+    }
+    return raw.toLowerCase();
   }
 
   esVistaAnualMensual(): boolean {

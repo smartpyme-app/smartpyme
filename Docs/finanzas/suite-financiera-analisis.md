@@ -82,8 +82,7 @@ Detalle de cableado: `suite-financiera-frontend.md`.
 
 | Debe hacer | No debe hacer |
 |------------|----------------|
-| Mostrar KPIs ejecutivos (ventas netas, utilidades, márgenes) | Listar facturas o asientos |
-| Tabla de estado de resultados con % sobre ventas, variación y acumulado | Editar categorías contables |
+| Tabla de estado de resultados con % sobre ventas, variación y acumulado | Listar facturas o asientos, ni editar categorías contables |
 | Bloque «gastos como % de ventas» con tendencia 6 meses | Presupuestar (eso es Modelado) |
 | Respetar sucursal y base sin IVA / con IVA | Mezclar sucursales sin aviso |
 

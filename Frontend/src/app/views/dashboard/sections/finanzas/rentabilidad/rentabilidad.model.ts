@@ -14,6 +14,8 @@ export interface RentabilidadKpi {
   tono: RentabilidadKpiTono;
   linea?: string;
   sublinea?: string;
+  sublineaTono?: 'neg' | 'pos';
+  alerta?: boolean;
   accion?: string;
 }
 
@@ -31,7 +33,6 @@ export interface RentabilidadProductoFila {
   ventas: number;
   pctVentas: number;
   margenPct: number;
-  margenEmpresaPct: number;
 }
 
 export type RentabilidadProductoTono = 'normal' | 'activa' | 'riesgo' | 'muerta';
@@ -323,8 +324,25 @@ export interface RentabilidadProveedorFila {
   kpisToolbar?: RentabilidadKpiOverride;
 }
 
+export interface RentabilidadResumen {
+  mesEtiqueta: string;
+  comparacionEtiqueta: string;
+  utilidadOperativa: number;
+  utilidadOperativaPrev: number;
+  utilidadOperativaVsPct: number | null;
+  margenOperativo: number | null;
+  margenOperativoPrev: number | null;
+  margenBruto: number | null;
+  margenBrutoPrev: number | null;
+  sucursalesPerdida: number;
+  sucursalesTotal: number;
+  peorSucursal: string;
+  peorSucursalUtilidad: number;
+}
+
 export interface RentabilidadMock {
   kpis: RentabilidadKpi[];
+  resumen: RentabilidadResumen | null;
   filasSucursal: RentabilidadSucursalFila[];
   filasProducto: RentabilidadProductoTablaFila[];
   filasCliente: RentabilidadClienteFila[];

@@ -113,8 +113,8 @@
         @if (tabActiva === 'rentabilidad') {
           <div class="sf-field" style="min-width: 130px">
             <select
-              [value]="rentHorizonte"
-              (change)="seleccionarRentHorizonte($event)"
+            [value]="horizonteRentabilidad"
+            (change)="seleccionarRentHorizonte($event)"
               aria-label="Horizonte de rentabilidad">
               @for (opt of rentHorizonteOpciones; track opt.id) {
                 <option [value]="opt.id">{{ opt.label }}</option>
@@ -169,7 +169,7 @@
         [anio]="plQuery.anio"
         [mes]="suiteMesParaRentabilidad"
         [sucursalId]="plQuery.sucursalId"
-        [horizonte]="rentHorizonte">
+        [horizonte]="horizonteRentabilidad">
       </app-rentabilidad>
     }
     @if (tabActiva === 'flujo') {

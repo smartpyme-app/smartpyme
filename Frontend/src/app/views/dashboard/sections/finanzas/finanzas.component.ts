@@ -127,10 +127,17 @@ export class FinanzasComponent implements OnInit {
       .pipe(this.untilDestroyed())
       .subscribe((list) => {
         this.totalSucursales = list.length;
+        const user = this.api.auth_user();
+        const asignada =
+          user?.tipo !== 'Administrador' && user?.id_sucursal != null ? String(user.id_sucursal) : '';
         this.plSucursalOpciones = [
           { id: 'consolidado', label: 'Consolidado' },
           ...list.map((s) => ({ id: s.id, label: s.nombre })),
         ];
+        if (asignada && list.some((s) => s.id === asignada) && this.suiteSucursalId === 'consolidado') {
+          this.suiteSucursalId = asignada;
+          this.refreshPlQuery();
+        }
       });
   }
 
@@ -164,10 +171,20 @@ export class FinanzasComponent implements OnInit {
     if (id !== 'mes' && id !== 'trimestre' && id !== 'anio') {
       return;
     }
-    if (id === this.rentHorizonte) {
-      return;
+    if (this.suiteMes === 0 && id !== 'anio') {
+      this.suiteMes = this.mesReferenciaInicial().getMonth() + 1;
+      this.plPeriodo = 'mes';
+      this.refreshPlQuery();
     }
     this.rentHorizonte = id;
+  }
+
+  /** «Todo el año» pide el acumulado. Un horizonte de un mes dejaría octubre vacío. */
+  get horizonteRentabilidad(): RentabilidadHorizonteId {
+    if (this.suiteMes === 0) {
+      return 'anio';
+    }
+    return this.rentHorizonte;
   }
 
   seleccionarPlComparacion(id: PlComparacionId): void {

@@ -148,9 +148,9 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 2px;
-  padding: 3px;
-  background: var(--sf-bg);
-  border: 1px solid var(--sf-line-soft);
+  padding: 0;
+  background: transparent;
+  border: none;
   border-radius: var(--sf-radius-sm);
 }
 
@@ -160,20 +160,19 @@
   color: var(--sf-muted);
   font: 600 13px/18px 'Open Sans', system-ui, sans-serif;
   padding: 7px 12px;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   white-space: nowrap;
 }
 
 .sf-seg__btn:hover:not(.is-active) {
   color: var(--sf-text);
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--sf-bg);
 }
 
 .sf-seg__btn.is-active {
-  background: var(--sf-card);
+  background: var(--sf-blue-soft);
   color: var(--sf-blue-dark);
-  box-shadow: 0 0 0 1px var(--sf-line-soft);
 }
 
 .sf-stack {

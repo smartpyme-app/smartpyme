@@ -13,18 +13,6 @@
       <div class="alert alert-warning mb-0" role="alert">{{ errorMensaje }}</div>
     }
 
-    @if (kpiItems.length) {
-      <div class="sf-grid sf-grid--kpi">
-        @for (item of kpiItems; track item.metric.title) {
-          <app-finanzas-kpi-card [data]="item.metric">
-            @if (item.sublinea) {
-              <p class="pl-kpi-sublinea sf-kpi__sub mb-0">{{ item.sublinea }}</p>
-            }
-          </app-finanzas-kpi-card>
-        }
-      </div>
-    }
-
     @if (esVistaAnualMensual()) {
       <section class="sf-card">
         <header class="sf-card-head">
@@ -174,12 +162,13 @@
             </svg>
           </span>
           <h3 class="sf-card-head__title mb-0">
-            Gastos como % de ventas — {{ etiquetaMesTitulo() }} vs. su promedio de 6 meses
+            Gastos como % de ventas · vs. {{ etiquetaComparacion() }}
           </h3>
         </div>
       </header>
       <app-pl-gastos-pct-ventas
         [mesEtiqueta]="etiquetaMesTitulo()"
+        [comparacionEtiqueta]="etiquetaComparacion()"
         [data]="gastosPctVentas"></app-pl-gastos-pct-ventas>
     </section>
   }

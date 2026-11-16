@@ -12,8 +12,8 @@ import { CurrencyFormatService } from '@services/currency-format.service';
       <div class="sf-kpi__label fin-kpi-label">{{ data.title }}</div>
       <div
         class="sf-kpi__value fin-kpi-value"
-        [class.sf-kpi__value--neg]="negativo"
-        [class.fin-kpi-value--neg]="negativo">
+        [class.sf-kpi__value--neg]="negativo || alerta"
+        [class.fin-kpi-value--neg]="negativo || alerta">
         @if (muestraMoneda) {
           <span class="fin-kpi-moneda">{{ moneda }}</span>
         }
@@ -60,6 +60,7 @@ import { CurrencyFormatService } from '@services/currency-format.service';
 })
 export class FinanzasKpiCardComponent {
   @Input() data!: MetricCard;
+  @Input() alerta = false;
 
   constructor(private currencyFormat: CurrencyFormatService) {}
 

@@ -34,12 +34,3 @@ export interface PlGastoPctVentaFila {
 export interface PlGastosPctVentasMock {
   filas: PlGastoPctVentaFila[];
 }
-
-export type PlKpiTono = 'rojo' | 'azul' | 'naranja';
-
-export interface PlKpi {
-  titulo: string;
-  valor: string;
-  tono: PlKpiTono;
-  sublinea?: string;
-}

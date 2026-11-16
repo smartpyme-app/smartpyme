@@ -1,4 +1,5 @@
 import { detalleProyectoDesdeFila } from './rentabilidad-proyecto-detalle.builder';
+import { kpisDesdeResumen } from './rentabilidad-kpis.resumen';
 import {
   RentabilidadClienteFila,
   RentabilidadHorizonteId,
@@ -7,8 +8,9 @@ import {
   RentabilidadProductoTablaFila,
   RentabilidadProveedorFila,
   RentabilidadProyectoFila,
-  RentabilidadSucursalFila,
 } from './rentabilidad.model';
+
+export { kpisDesdeResumen };
 
 export interface RentabilidadKpiContexto {
   horizonte: RentabilidadHorizonteId;
@@ -54,51 +56,6 @@ function tonoProveedorValor(
     return tono;
   }
   return 'azul';
-}
-
-export function kpisDesdeSucursal(
-  fila: RentabilidadSucursalFila,
-  ctx: RentabilidadKpiContexto,
-): RentabilidadKpi[] {
-  const h = ctx.horizonte;
-  const suf = etiquetaHorizonte(h);
-  const ventas = escala(fila.ventas, h);
-  const gastos = escala(fila.gastos, h);
-  const utilidad = escala(fila.utilidad, h);
-  const gastosPct = ventas ? (gastos / ventas) * 100 : 0;
-
-  return [
-    {
-      titulo: `Margen bruto — ${suf}`,
-      valor: ctx.formatPct(fila.margenPct),
-      tono: tonoMargen(fila.margenPct),
-      linea: ctx.formatMonto(utilidad),
-      sublinea: fila.nombre,
-    },
-    {
-      titulo: `Ventas — ${suf}`,
-      valor: ctx.formatMonto(ventas),
-      tono: 'azul',
-      sublinea: `${fila.ventasVsAnioPct >= 0 ? '+' : ''}${fila.ventasVsAnioPct}% vs. año ant.`,
-    },
-    {
-      titulo: 'CXC pendiente',
-      valor: ctx.formatMonto(escala(fila.cxc, h)),
-      tono: fila.cxcAlerta ? 'naranja' : 'azul',
-      linea: fila.cxcAlerta ? 'revisar vencidos' : 'al día',
-    },
-    {
-      titulo: `Gastos / ventas — ${suf}`,
-      valor: ctx.formatPct(gastosPct),
-      tono: gastosPct > 90 ? 'rojo' : gastosPct > 80 ? 'naranja' : 'azul',
-      linea: ctx.formatMonto(gastos),
-    },
-    {
-      titulo: 'CXP',
-      valor: ctx.formatMonto(escala(fila.cxp, h)),
-      tono: 'azul',
-    },
-  ];
 }
 
 export function kpisDesdeProducto(
@@ -276,38 +233,4 @@ export function kpisDesdeProyecto(
       sublinea: `pagó ${ctx.formatMonto(escala(det.pagadoObra, h))}`,
     },
   ];
-}
-
-/** ponytail: sanity check — builders return 5 KPIs each */
-export function rentabilidadKpisBuilderSelfCheck(): boolean {
-  const ctx: RentabilidadKpiContexto = {
-    horizonte: 'mes',
-    formatMonto: (n) => `$${n}`,
-    formatPrecio: (n) => `$${n}`,
-    formatPct: (n) => `${n}%`,
-    textoInventario: () => 'ok',
-  };
-  const suc: RentabilidadSucursalFila = {
-    nombre: 'X',
-    ventas: 100,
-    gastos: 80,
-    utilidad: 20,
-    margenPct: 20,
-    tendenciaAlcista: true,
-    tendencia: [20],
-    cxc: 10,
-    cxcAlerta: false,
-    cxp: 5,
-    ventasVsAnioPct: 1,
-    detalle: {
-      cxcVencido: 0,
-      cxpVencido: 0,
-      puente: [],
-      productos: [],
-      clientes: [],
-      devolucionesTotal: 0,
-      devoluciones: [],
-    },
-  };
-  return kpisDesdeSucursal(suc, ctx).length === 5;
 }

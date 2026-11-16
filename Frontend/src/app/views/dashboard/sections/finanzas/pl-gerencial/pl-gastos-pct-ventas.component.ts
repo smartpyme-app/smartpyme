@@ -10,25 +10,26 @@ import { PlGastoPctVentaFila } from './pl-gerencial.model';
 })
 export class PlGastosPctVentasComponent {
   @Input() mesEtiqueta = 'septiembre';
+  @Input() comparacionEtiqueta = 'comparación';
   @Input() data: { filas: PlGastoPctVentaFila[] } = { filas: [] };
   /** ponytail: escala fija del mock; subir si algún % supera 70 */
   readonly escalaMaxPct = 70;
 
   etiquetaMes(): string {
-    const raw = this.mesEtiqueta.trim().toLowerCase();
-    if (raw.startsWith('año')) {
-      return raw;
-    }
-    return raw.split(' ')[0] || 'mes';
+    return this.mesEtiqueta.trim().toLowerCase() || 'mes';
   }
 
   anchoBarra(pct: number): number {
     return Math.min(100, Math.max(0, (pct / this.escalaMaxPct) * 100));
   }
 
+  formatoPct(value: number): string {
+    return `${value.toFixed(1)}%`;
+  }
+
   formatoDelta(delta: number): string {
     if (delta === 0) {
-      return '-0.0';
+      return '0.0';
     }
     const sign = delta > 0 ? '+' : '';
     return `${sign}${delta.toFixed(1)}`;

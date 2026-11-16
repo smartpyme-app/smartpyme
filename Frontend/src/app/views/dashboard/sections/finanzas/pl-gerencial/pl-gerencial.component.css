@@ -30,10 +30,6 @@
   color: var(--sf-text, #292a2d);
 }
 
-.pl-kpi-sublinea {
-  white-space: normal;
-}
-
 .pl-col-mes {
   min-width: 4.5rem;
   white-space: nowrap;
