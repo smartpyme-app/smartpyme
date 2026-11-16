@@ -3,12 +3,15 @@
 namespace App\Models\Compras;
 
 use App\Models\Concerns\AuditableModel;
+use App\Models\Concerns\HasOffloadedDte;
 use App\Models\Compras\Retaceo\Retaceo;
 use App\Models\Compras\Retaceo\RetaceoCompra;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 class Compra extends AuditableModel {
+
+    use HasOffloadedDte;
 
     protected static function auditModule(): string
     {
@@ -73,10 +76,24 @@ class Compra extends AuditableModel {
         'exchange_rate_date',
         'equivalent_total',
         'equivalent_iva',
-
+        'dte_s3_key',
+        'dte_migrated_at',
+        'dte_invalidacion_s3_key',
+        'dte_invalidacion_migrated_at',
     );
 
-    protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal'];
+    protected $hidden = [
+        'dte_s3_key',
+        'dte_invalidacion_s3_key',
+    ];
+
+    protected $appends = [
+        'nombre_proveedor',
+        'nombre_usuario',
+        'nombre_sucursal',
+        'dte_en_s3',
+        'dte_invalidacion_en_s3',
+    ];
 
     protected static function boot()
     {
@@ -87,11 +104,6 @@ class Compra extends AuditableModel {
                 $builder->where('id_empresa', Auth::user()->id_empresa);
             });
         }
-    }
-
-    public function getDteAttribute($value) 
-    {
-        return is_string($value) ? json_decode($value,true) : $value;
     }
 
     protected $casts = [
@@ -105,7 +117,15 @@ class Compra extends AuditableModel {
     ];
 
     public function getSaldoAttribute(){
-        return round($this->total - $this->abonos()->where('estado', 'Confirmado')->sum('total'),2);
+        $abonos = $this->abonos()->where('estado', 'Confirmado')->sum('total');
+        $devoluciones = $this->devoluciones()->where('enable', 1)->sum('total');
+        return round($this->total - $abonos - $devoluciones, 2);
+    }
+
+    public function sincronizarEstadoPorSaldo(): void
+    {
+        $this->estado = $this->saldo <= 0 ? 'Pagada' : 'Pendiente';
+        $this->save();
     }
 
 
