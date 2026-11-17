@@ -66,7 +66,8 @@ use Illuminate\Support\Facades\Auth;
     {
         $facturacionElectronica = $this->tieneFacturacionElectronica();
         $ventas = LibroConsumidoresFilas::consulta($this->request, $facturacionElectronica)->get();
-        $filas = collect(LibroConsumidoresFilas::filas($ventas, $facturacionElectronica));
+        $retornos = LibroConsumidoresFilas::consultaRetornos($this->request)->get();
+        $filas = collect(LibroConsumidoresFilas::filas($ventas, $facturacionElectronica, $retornos));
 
         return $filas->push([
             'es_total' => true,

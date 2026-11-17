@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Compras\Devoluciones;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
+use App\Models\Compras\Compra;
 use App\Models\Compras\Devoluciones\Devolucion;
 use App\Models\Compras\Devoluciones\Detalle;
 use App\Models\Inventario\Producto;
@@ -126,6 +127,7 @@ class DevolucionComprasController extends Controller
 
         $compra->fill($request->all());
         $compra->save();
+        $this->sincronizarCompraOrigen($compra->id_compra);
 
         return Response()->json($compra, 200);
     }
@@ -133,10 +135,12 @@ class DevolucionComprasController extends Controller
     public function delete($id)
     {
         $compra = Devolucion::where('id', $id)->with('detalles')->firstOrFail();
+        $idCompraOrigen = $compra->id_compra;
         foreach ($compra->detalles as $detalle) {
             $detalle->delete();
         }
         $compra->delete();
+        $this->sincronizarCompraOrigen($idCompraOrigen);
 
         return Response()->json($compra, 201);
     }
@@ -205,6 +209,11 @@ class DevolucionComprasController extends Controller
                 }
             }
 
+            $compraOrigen = Compra::find($devolucion->id_compra);
+            if ($compraOrigen) {
+                $compraOrigen->sincronizarEstadoPorSaldo();
+            }
+
             DB::commit();
             return Response()->json($devolucion, 200);
         } catch (\Exception $e) {
@@ -213,6 +222,17 @@ class DevolucionComprasController extends Controller
         } catch (\Throwable $e) {
             DB::rollback();
             return Response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
+
+    private function sincronizarCompraOrigen($idCompra): void
+    {
+        if (!$idCompra) {
+            return;
+        }
+        $compraOrigen = Compra::find($idCompra);
+        if ($compraOrigen) {
+            $compraOrigen->sincronizarEstadoPorSaldo();
         }
     }
 

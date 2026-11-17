@@ -138,6 +138,8 @@
         "emitFailedViewAttemptXml": "Ver XML del comprobante (intento)",
         "emitFailedViewAttemptJson": "Ver JSON interno (payload)",
         "detailSectionTitle": "Detalles de DTE",
+        "detailDocumentTypeLabel": "Tipo de DTE",
+        "detailControlNumberLabel": "Número de control",
         "emittingProgress": "Emitiendo DTE...",
         "mhUserLabel": "Usuario:",
         "mhPasswordLabel": "Contraseña de la API:",

@@ -18,7 +18,7 @@
             routerLink="/contabilidad/activos/categorias"
         >Categorías</button>
     }
-    @if (apiService.canCreateTest('contabilidad.activos.configuracion')) {
+    @if (mostrarConfiguracion && apiService.canCreateTest('contabilidad.activos.configuracion')) {
         <button
             type="button"
             class="btn"

@@ -42,7 +42,7 @@ const routes: Routes = [
       {path: 'configuracion-planilla', component: ConfiguracionPlanillaComponent, title: 'Configuración de planilla', canActivate: [PermissionGuard], data: { permission: 'planilla.configuracion.ver' }},
       {path: 'aguinaldos', component: AguinaldosComponent, title: 'Aguinaldos', canActivate: [PermissionGuard], data: { permission: 'planilla.registros.ver' }},
       {path: 'aguinaldo/detalle/:id', component: AguinaldoDetalleComponent, title: 'Aguinaldo', canActivate: [PermissionGuard], data: { permission: 'planilla.registros.ver' }},
-      {path: 'prestamos', component: PrestamosComponent, title: 'Préstamos', canActivate: [PermissionGuard], data: { permission: 'planilla.registros.ver' }}
+      {path: 'prestamos', component: PrestamosComponent, title: 'Préstamos', canActivate: [PermissionGuard], data: { permission: 'planilla.registros.ver' }},
     ],
   },
 ];

@@ -128,6 +128,43 @@ final class TipoIdentificacionReceptor
     }
 
     /**
+     * Factura consumidor SV (01): sin identificación válida el JSON debe llevar null, no "" (schema DTE v2).
+     *
+     * @return array{0: ?string, 1: ?string} [tipoDocumento, numDocumento]
+     */
+    public static function resolverIdentificacionReceptorElSalvador(
+        ?string $tipoDocumento,
+        ?string $nit,
+        ?string $dui
+    ): array {
+        $tipo = null;
+        $numRaw = null;
+
+        $tipoGuardado = self::tipoGuardado($tipoDocumento);
+        if ($tipoGuardado !== null) {
+            $tipo = $tipoGuardado;
+            $numRaw = self::numeroElSalvador($tipo, $nit, $dui);
+        } else {
+            if (self::tieneValor($nit)) {
+                $tipo = '36';
+                $numRaw = str_replace('-', '', (string) $nit);
+            }
+            if (self::tieneValor($dui)) {
+                $tipo = '13';
+                $numRaw = (string) $dui;
+            }
+        }
+
+        if (! self::tieneValor($numRaw)) {
+            return [null, null];
+        }
+
+        $num = str_replace('-', '', (string) $numRaw);
+
+        return $num === '' ? [null, null] : [$tipo, $num];
+    }
+
+    /**
      * 10 alfanuméricos con al menos una letra, ya sin espacios ni guiones. Va antes del conteo de dígitos.
      */
     private static function cedulaJuridicaConLetra(string $raw): bool

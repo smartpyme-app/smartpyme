@@ -18,7 +18,7 @@ class LibroConsumidoresFilasTest extends TestCase
         $this->assertCount(2, $filas);
         $this->assertSame('UUID-A', $filas[0]['correlativo_inicial']);
         $this->assertSame('UUID-B', $filas[0]['correlativo_final']);
-        $this->assertSame(150.0, $filas[0]['ventas_internas_gravadas']);
+        $this->assertSame(169.5, $filas[0]['ventas_internas_gravadas']);
         $this->assertSame(0.0, $filas[0]['exportaciones']);
         $this->assertSame(169.5, $filas[0]['total_ventas_diarias_propias']);
         $this->assertSame('UUID-C', $filas[1]['correlativo_inicial']);
@@ -36,6 +36,24 @@ class LibroConsumidoresFilasTest extends TestCase
         $this->assertSame('20', $filas[0]['correlativo_final']);
     }
 
+    public function test_evento_de_retorno_resta_del_dia_en_que_se_emite(): void
+    {
+        $retorno = $this->venta('2026-10-01', '', '', 'Factura', 56.5, 50);
+        $retornoOtroDia = $this->venta('2026-10-03', '', '', 'Factura', 11.3, 10);
+
+        $filas = LibroConsumidoresFilas::filas([
+            $this->venta('2026-10-01', '10', 'UUID-B', 'Factura', 113, 100),
+        ], true, [$retorno, $retornoOtroDia]);
+
+        $this->assertCount(2, $filas);
+        $this->assertSame('UUID-B', $filas[0]['correlativo_inicial']);
+        $this->assertSame(50.0, $filas[0]['ventas_internas_gravadas']);
+        $this->assertSame(56.5, $filas[0]['total_ventas_diarias_propias']);
+        // Día con solo retorno: sin correlativos y montos negativos.
+        $this->assertNull($filas[1]['correlativo_inicial']);
+        $this->assertSame(-11.3, $filas[1]['total_ventas_diarias_propias']);
+    }
+
     public function test_montos_anexo_sin_leer_dte(): void
     {
         $venta = $this->venta('2026-10-01', '1', 'UUID', 'Factura', 113, 100);
@@ -43,7 +61,7 @@ class LibroConsumidoresFilasTest extends TestCase
 
         $montos = LibroConsumidoresFilas::montosAnexoConsumidor($venta, false);
 
-        $this->assertSame(100.0, $montos['gravada']);
+        $this->assertSame(113.0, $montos['gravada']);
         $this->assertSame(113.0, $montos['total_propio']);
         $this->assertSame(0.0, $montos['exportacion']);
     }

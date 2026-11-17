@@ -26,8 +26,8 @@ class StoreServicioRequest extends FormRequest
             'codigo' => ['nullable', 'string', 'max:255'],
             'precio' => ['required', 'numeric', 'min:0'],
             'costo' => ['required', 'numeric', 'min:0'],
-            'categoria_id' => ['required', 'integer', 'exists:categorias,id'],
-            'empresa_id' => ['required', 'integer', 'exists:empresas,id'],
+            'id_categoria' => ['required', 'integer', 'exists:categorias,id'],
+            'id_empresa' => ['required', 'integer', 'exists:empresas,id'],
         ];
     }
 
@@ -46,10 +46,10 @@ class StoreServicioRequest extends FormRequest
             'costo.required' => 'El costo es requerido.',
             'costo.numeric' => 'El costo debe ser un número.',
             'costo.min' => 'El costo no puede ser negativo.',
-            'categoria_id.required' => 'La categoría es requerida.',
-            'categoria_id.exists' => 'La categoría seleccionada no existe.',
-            'empresa_id.required' => 'La empresa es requerida.',
-            'empresa_id.exists' => 'La empresa seleccionada no existe.',
+            'id_categoria.required' => 'La categoría es requerida.',
+            'id_categoria.exists' => 'La categoría seleccionada no existe.',
+            'id_empresa.required' => 'La empresa es requerida.',
+            'id_empresa.exists' => 'La empresa seleccionada no existe.',
         ];
     }
 

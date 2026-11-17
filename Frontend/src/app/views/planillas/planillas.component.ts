@@ -8,6 +8,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import {AlertService} from '@services/alert.service';
 import {ApiService} from '@services/api.service';
+import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import {PlanillaConstants} from '../../constants/planilla.constants';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { HttpCacheService } from '@services/http-cache.service';
@@ -16,6 +17,13 @@ import { PlanillaNavComponent } from './planilla-nav/planilla-nav.component';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import Swal from 'sweetalert2';
+
+interface ErrorSpu {
+  fila: number | null;
+  empleado: string | null;
+  columna: string;
+  mensaje: string;
+}
 
 @Component({
     selector: 'app-planillas',
@@ -61,6 +69,22 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
     estado: '',
   };
 
+  readonly mesesSpu = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+  ];
+  public filtrosSpu = {
+    anio: new Date().getFullYear(),
+    mes: new Date().getMonth() + 1,
+    id_sucursal: null as number | null,
+    complementaria: false,
+  };
+  public sucursalesSpu: any[] = [];
+  public erroresSpu: ErrorSpu[] = [];
+  public validadoSpu = false;
+  public procesandoSpu = false;
+  public totalFilasSpu = 0;
+
   public usuario: any = {};
   public periodos: any[] = [];
   public cuentasBanco: any[] = [];
@@ -102,6 +126,14 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
 
   get puedeElegirCuentaBanco(): boolean {
     return this.apiService.hasPermission('contabilidad.catalogo_cuentas.ver');
+  }
+
+  get esElSalvador(): boolean {
+    return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_SV;
+  }
+
+  get periodoSpu(): string {
+    return String(this.filtrosSpu.mes).padStart(2, '0') + this.filtrosSpu.anio;
   }
 
   private cargarCuentasBanco(): void {
@@ -798,6 +830,81 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
       error: (error) => {
         this.alertService.error(error);
         this.procesandoImportacion = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  abrirModalSpu(template: TemplateRef<any>): void {
+    this.erroresSpu = [];
+    this.validadoSpu = false;
+    this.totalFilasSpu = 0;
+    this.procesandoSpu = false;
+    this.openModal(template);
+    this.apiService.getAll('planillas/spu/empleador').pipe(this.untilDestroyed()).subscribe({
+      next: (data) => {
+        this.sucursalesSpu = data.sucursales ?? [];
+        if (!this.filtrosSpu.id_sucursal) {
+          this.filtrosSpu.id_sucursal = this.sucursalesSpu[0]?.id ?? null;
+        }
+        this.cdr.markForCheck();
+      },
+      error: (error) => this.alertService.error(error),
+    });
+  }
+
+  cambioFiltrosSpu(): void {
+    this.validadoSpu = false;
+    this.erroresSpu = [];
+    this.totalFilasSpu = 0;
+  }
+
+  private cuerpoSpu() {
+    return {
+      anio: this.filtrosSpu.anio,
+      mes: this.filtrosSpu.mes,
+      id_sucursal: this.filtrosSpu.id_sucursal,
+      complementaria: this.filtrosSpu.complementaria ? 1 : 0,
+    };
+  }
+
+  validarSpu(): void {
+    if (!this.filtrosSpu.id_sucursal) {
+      return;
+    }
+    this.procesandoSpu = true;
+    this.apiService.getAll('planillas/spu/preview', this.cuerpoSpu()).pipe(this.untilDestroyed()).subscribe({
+      next: (data) => {
+        this.erroresSpu = data.errores ?? [];
+        this.totalFilasSpu = data.filas?.length ?? 0;
+        this.validadoSpu = this.erroresSpu.length === 0 && this.totalFilasSpu > 0;
+        this.procesandoSpu = false;
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        this.procesandoSpu = false;
+        this.validadoSpu = false;
+        this.alertService.error(error);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  descargarSpu(): void {
+    if (!this.validadoSpu || !this.filtrosSpu.id_sucursal) {
+      return;
+    }
+    this.procesandoSpu = true;
+    this.apiService.exportPost('planillas/spu/csv', this.cuerpoSpu()).pipe(this.untilDestroyed()).subscribe({
+      next: (blob) => {
+        this.apiService.downloadFile(blob, `planilla-unica-${this.periodoSpu}.csv`);
+        this.procesandoSpu = false;
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        this.procesandoSpu = false;
+        this.validadoSpu = false;
+        this.alertService.error(error);
         this.cdr.markForCheck();
       },
     });

@@ -307,6 +307,10 @@
                 <button (click)="imprimirDTEPDF(venta)" class="mb-3 btn btn-primary btn-block">
                     Ver PDF
                 </button>
+                @if (tieneDteInvalidacion(venta)) {
+                    <button (click)="imprimirDTEJSON(venta, true)" class="mb-2 btn btn-outline-danger btn-block">Ver JSON anulado</button>
+                    <button (click)="imprimirDTEPDF(venta, true)" class="mb-3 btn btn-outline-danger btn-block">Ver PDF anulado</button>
+                }
             }
 
             @if (venta.sello_mh && !esFeCostaRica()) {

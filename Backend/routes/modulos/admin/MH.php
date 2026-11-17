@@ -22,6 +22,8 @@ use App\Http\Controllers\Api\Admin\MHDTEController;
     Route::post('/generarDTEAnuladoSujetoExcluidoCompra',    [MHDTEController::class, 'generarDTEAnuladoSujetoExcluidoCompra']);
     Route::post('/generarContingencia',    [MHDTEController::class, 'generarContingencia']);
     Route::post('/generarDTEAnulado',    [MHDTEController::class, 'generarDTEAnulado']);
+    Route::post('/generarDTEEventoRetornoCompra',    [MHDTEController::class, 'generarDTEEventoRetornoCompra']);
+    Route::post('/generarDTEAnuladoEventoRetornoCompra',    [MHDTEController::class, 'generarDTEAnuladoEventoRetornoCompra']);
 
     Route::post('/consultarDTE',    [MHDTEController::class, 'consultarDTE']);
 
@@ -30,8 +32,6 @@ use App\Http\Controllers\Api\Admin\MHDTEController;
 
     // Enviar DTE
     Route::post('/enviarDTE',           [MHDTEController::class, 'enviarDTE']);
-    // Anular DTE
-    Route::post('/anularDTE',           [MHDTEController::class, 'anularDTE']);
     Route::get('/reporte/dte/{id}/{tipo}',     [MHDTEController::class, 'generarDTEPDF']);
     Route::get('/reporte/dte-json/{id}/{tipo}',    [MHDTEController::class, 'generarDTEJSON']);
     Route::get('/reporte/dte-xml/{id}/{tipo}',    [MHDTEController::class, 'generarDteXmlCostaRica']);

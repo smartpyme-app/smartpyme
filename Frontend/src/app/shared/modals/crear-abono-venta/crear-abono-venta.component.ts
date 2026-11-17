@@ -1,5 +1,6 @@
 import { Component, OnInit, OnChanges, SimpleChanges, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -14,7 +15,7 @@ import { BaseComponent } from '@shared/base/base.component';
     selector: 'app-crear-abono-venta',
     templateUrl: './crear-abono-venta.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NotificacionesContainerComponent],
+    imports: [CommonModule, RouterModule, FormsModule, NotificacionesContainerComponent, CurrencyPipe],
 
 })
 export class CrearAbonoVentaComponent extends BaseComponent implements OnInit, OnChanges {

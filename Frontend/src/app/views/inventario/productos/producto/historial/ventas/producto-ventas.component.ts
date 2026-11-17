@@ -130,7 +130,7 @@ export class ProductoVentasComponent extends BasePaginatedModalComponent impleme
             this.filtro.estado = '';
         }
         if(!this.proveedores.length){
-            this.apiService.getAll('proveedores/list')
+            this.apiService.getAll('proveedores/list', { minimal: 1 })
               .pipe(this.untilDestroyed())
               .subscribe(proveedores => { 
                 this.proveedores = proveedores;

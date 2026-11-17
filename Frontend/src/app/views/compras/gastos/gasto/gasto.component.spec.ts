@@ -150,4 +150,31 @@ describe('GastoComponent - campos condicionales', () => {
       expect(ctx.tcPreview.error).toBeNull();
     });
   });
+
+  describe('recalcularDesdePrecio', () => {
+    it('resta el descuento y calcula el impuesto sobre la base neta', () => {
+      const d: any = {
+        cantidad: 21,
+        precio_unitario: 2632.75,
+        descuento: 27643.87,
+        sub_total: 0,
+        tipo_gravado: 'gravada',
+        aplica_renta: false,
+        aplica_retencion_iva: false,
+        aplica_percepcion: false,
+      };
+      const ctx: any = {
+        detalles: [d],
+        gasto: {},
+        apiService: { auth_user: () => ({ empresa: { iva: 13 } }) },
+        recalcularTotalesDetalles() {},
+      };
+
+      (GastoComponent.prototype.recalcularDesdePrecio as any).call(ctx, 0);
+
+      expect(d.sub_total).toBe(27643.88);
+      expect(d.iva).toBe(3593.7);
+      expect(d.total).toBe(31237.58);
+    });
+  });
 });

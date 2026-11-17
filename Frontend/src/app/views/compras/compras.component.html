@@ -221,9 +221,14 @@
                                             <i class="fa fa-fw fa-print"></i> Imprimir
                                         </a>
                                     }
-                                    @if (apiService.canEditTest('compras.editar') && !apiService.supervisorLimitadoRestringidoEnCompras()) {
+                                    @if (apiService.canEditTest('compras.editar') && !apiService.supervisorLimitadoRestringidoEnCompras() && !esSujetoExcluidoConFe(compra)) {
                                         <a routerLink="/devolucion-compra/nueva" [queryParams]="{ id_compra: compra.id }" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-right-left"></i> Hacer devolucion
+                                        </a>
+                                    }
+                                    @if (apiService.canEditTest('compras.editar') && !apiService.supervisorLimitadoRestringidoEnCompras() && esSujetoExcluidoConFe(compra) && compra.sello_mh && compra.estado != 'Anulada') {
+                                        <a routerLink="/devolucion-compra/nueva" [queryParams]="{ id_compra: compra.id, tipo_documento: 'evento_retorno' }" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-right-left"></i> Evento de retorno
                                         </a>
                                     }
                                     @if (apiService.canEdit() && compra.tipo_documento == 'Crédito fiscal' && !apiService.supervisorLimitadoRestringidoEnCompras()) {

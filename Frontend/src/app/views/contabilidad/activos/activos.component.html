@@ -19,6 +19,9 @@
         </div>
         <div class="col">
             <div class="d-flex gap-2">
+                @if (apiService.canCreateTest('contabilidad.activos.crear')) {
+                    <app-importar-excel (loadAll)="loadAll()" [nombre]="'activos'"></app-importar-excel>
+                }
                 <form class="d-flex input-group flex-grow-1" (ngSubmit)="filtrarActivos()" autocomplete="off">
                     <input type="text" name="search" class="form-control" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>
@@ -64,7 +67,13 @@
                             @if (activo.estado_registro === 'baja') {
                                 <span class="badge py-2 bg-danger" style="font-size: 0.8rem;">Baja</span>
                             } @else {
-                                {{ activo.estado }}
+                                <span class="badge py-2" style="font-size: 0.8rem;"
+                                      [ngClass]="{
+                                        'bg-success': activo.estado === 'En uso',
+                                        'bg-warning text-dark': activo.estado === 'En reparación',
+                                        'bg-secondary': activo.estado === 'Desechado',
+                                        'bg-primary': activo.estado !== 'En uso' && activo.estado !== 'En reparación' && activo.estado !== 'Desechado'
+                                      }">{{ activo.estado }}</span>
                             }
                         </td>
                         <td class="text-center">

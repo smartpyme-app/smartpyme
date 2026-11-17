@@ -127,7 +127,7 @@
                         }
                         <td>{{venta.nombre_cliente | truncate:30 }}@if (venta.id_cliente && venta.id_cliente != 1) {<a class="float-end d-none"  tooltip="Ver información del cliente" [routerLink]="['/cliente/editar', venta.id_cliente]"><i class="fa fa-edit"></i></a>}</td>
                         <td>
-                            <a class="text-decoration-none text-dark"  tooltip="Ver información de la venta" [routerLink]="['/venta', venta.id]">
+                            <a class="text-decoration-none text-dark" [tooltip]="venta.numero_control ? 'Ver información de la venta · ' + ('country.tax.fe.detailControlNumberLabel' | translate) + ': ' + venta.numero_control : 'Ver información de la venta'" [routerLink]="['/venta', venta.id]">
                                 {{venta.nombre_documento}} {{venta.correlativo ? ' #' + venta.correlativo : ''}}
                             </a>
                         </td>
@@ -323,9 +323,14 @@
                                             <img src="https://wompi.sv/img/icon.png" width="15px" class="img-fluid" alt=""> Generar enlace de pago
                                         </a>
                                     }
-                                    @if (canDevolucionVenta()) {
+                                    @if (canDevolucionVenta() && !esFacturaConFeSv(venta)) {
                                         <a routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id }" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-right-left"></i> Hacer devolucion
+                                        </a>
+                                    }
+                                    @if (canDevolucionVenta() && esFacturaConFeSv(venta) && venta.sello_mh && venta.estado != 'Anulada') {
+                                        <a routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id, tipo_documento: 'evento_retorno' }" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-right-left"></i> Evento de retorno
                                         </a>
                                     }
                                     @if (canEditVentas() && apiService.canGenerarPartidaContable('venta', contabilidadHabilitada)) {

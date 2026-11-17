@@ -13,6 +13,12 @@ class Gasto extends AuditableModel {
         return 'gastos';
     }
 
+    /** ponytail: sin JSON/XML de emisión DTE en audits */
+    protected $auditExclude = [
+        'dte',
+        'dte_invalidacion',
+    ];
+
     protected $table = 'egresos';
     protected $fillable = [
         'tipo_dte',

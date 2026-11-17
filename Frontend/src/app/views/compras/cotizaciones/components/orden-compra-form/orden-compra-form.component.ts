@@ -89,7 +89,7 @@ export class OrdenCompraFormComponent implements OnInit {
         lastValueFrom(this.apiService.getAll('bodegas/list')),
         lastValueFrom(this.apiService.getAll('usuarios/list')),
         lastValueFrom(this.apiService.getAll('documentos/list')),
-        lastValueFrom(this.apiService.getAll('proveedores/list')),
+        lastValueFrom(this.apiService.getAll('proveedores/list', { minimal: 1 })),
         lastValueFrom(this.apiService.getAll('proyectos/list')),
       ]
     ).then(

@@ -72,7 +72,7 @@ export class ProductoComboComponent extends BaseComponent implements OnInit {
       this.cdr.markForCheck();
     }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
 
-    this.apiService.getAll('proveedores/list')
+    this.apiService.getAll('proveedores/list', { minimal: 1 })
       .pipe(this.untilDestroyed())
       .subscribe(proveedores => {
       this.proveedores = proveedores;

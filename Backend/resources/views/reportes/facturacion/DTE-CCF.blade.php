@@ -330,12 +330,12 @@
                 <tr>
                     <td colspan="4"></td>
                     <td colspan="{{ $muestraColCuentaTerceros ? 5 : 4 }}">IVA Retenido: (-) </td>
-                    <td class="text-right">${{ number_format($DTE['resumen']['ivaRete1'], 2) }}</td>
+                    <td class="text-right">${{ number_format($DTE['resumen']['ivaRete'] ?? $DTE['resumen']['ivaRete1'] ?? 0, 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="4"></td>
                     <td colspan="{{ $muestraColCuentaTerceros ? 5 : 4 }}">Retención de Renta: </td>
-                    <td class="text-right">${{ number_format($DTE['resumen']['reteRenta'], 2) }}</td>
+                    <td class="text-right">${{ number_format($DTE['resumen']['reteRenta'] ?? 0, 2) }}</td>
                 </tr>
                 @if(isset($registro->propina) && floatval($registro->propina) > 0)
                     <tr>
@@ -390,6 +390,11 @@
                         @endif
                     </td>
                 </tr>
+                @if (!empty($DTE['resumen']['observaciones']))
+                    <tr>
+                        <td colspan="2"><b>Observaciones:</b> {{ $DTE['resumen']['observaciones'] }}</td>
+                    </tr>
+                @endif
                 @if (isset($DTE['apendice']))
                     @foreach ($DTE['apendice'] as $atributo)
                     <tr>

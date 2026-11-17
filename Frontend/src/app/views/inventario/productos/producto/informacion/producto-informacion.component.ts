@@ -230,7 +230,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
 
     this.intentarCargarBarcodeSugerido();
 
-    this.apiService.getAll('proveedores/list')
+    this.apiService.getAll('proveedores/list', { minimal: 1 })
       .pipe(this.untilDestroyed())
       .subscribe(
       (proveedores) => {

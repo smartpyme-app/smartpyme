@@ -7,6 +7,7 @@ import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 import { CountryI18nService } from '@services/country-i18n.service';
+import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import {
   mensajeErrorHttpFeCr,
   type FeCrErrorEmisionPayload,
@@ -74,6 +75,13 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
 
     public canDevolucionVenta(): boolean {
         return puedeDevolucionVenta(this.perm);
+    }
+
+    /** Con FE SV activa, la devolución de una factura/exportación se documenta con Evento de retorno (no devolución libre). */
+    esFacturaConFeSv(venta: any): boolean {
+        return !!this.apiService.auth_user()?.empresa?.facturacion_electronica
+            && resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_SV
+            && ['Factura', 'Factura de exportación'].includes(venta?.nombre_documento);
     }
 
     public canEmitirFeVenta(): boolean {

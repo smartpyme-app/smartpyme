@@ -50,14 +50,98 @@ class ProveedoresController extends Controller
 
     }
 
-    public function list() {
+    public function list(Request $request) {
 
-        $proveedores = Proveedor::orderBy('nombre','asc')
-                                ->where('enable', true)
-                                ->get();
+        $proveedores = Proveedor::query()
+            ->where('enable', true)
+            ->orderBy('nombre', 'asc');
+
+        if ($request->boolean('minimal')) {
+            $proveedores = $proveedores
+                ->withoutEagerLoads()
+                ->select(['id', 'tipo', 'nombre', 'apellido', 'nombre_empresa', 'nombre_comercial'])
+                ->toBase()
+                ->get();
+
+            foreach ($proveedores as $proveedor) {
+                $proveedor->nombre_completo = $proveedor->nombre.' '.($proveedor->apellido ?: '');
+                unset($proveedor->apellido);
+            }
+        } else {
+            $proveedores = $proveedores->get();
+        }
 
         return Response()->json($proveedores, 200);
 
+    }
+
+    public function buscarEmisor(Request $request)
+    {
+        $nit = trim((string) $request->input('nit', ''));
+        $ncr = trim((string) $request->input('ncr', ''));
+        $dui = trim((string) $request->input('dui', ''));
+        $nombre = trim((string) $request->input('nombre', ''));
+
+        $base = Proveedor::query()->select([
+            'id', 'tipo', 'nombre', 'apellido', 'nombre_empresa', 'nombre_comercial',
+            'nit', 'ncr', 'dui', 'tipo_contribuyente',
+        ]);
+
+        $proveedor = null;
+        foreach (['nit' => $nit, 'ncr' => $ncr, 'dui' => $dui] as $columna => $valor) {
+            if ($valor === '') {
+                continue;
+            }
+            $proveedor = (clone $base)->where($columna, $valor)->first();
+            if ($proveedor) {
+                break;
+            }
+        }
+
+        if (!$proveedor && $nombre !== '') {
+            $proveedor = (clone $base)->where(function ($q) use ($nombre) {
+                $q->where('nombre_empresa', $nombre)->orWhere('nombre', $nombre);
+            })->first();
+        }
+
+        return Response()->json($proveedor, 200);
+    }
+
+    public function buscar(Request $request)
+    {
+        $term = trim((string) $request->input('q', ''));
+        if (mb_strlen($term) < 2) {
+            return Response()->json([], 200);
+        }
+
+        $like = '%'.addcslashes($term, '%_\\').'%';
+        $proveedores = Proveedor::query()
+            ->where('enable', true)
+            ->where(function ($q) use ($like) {
+                $q->where('nombre', 'like', $like)
+                    ->orWhere('apellido', 'like', $like)
+                    ->orWhere('nombre_empresa', 'like', $like)
+                    ->orWhere('nombre_comercial', 'like', $like)
+                    ->orWhere('nit', 'like', $like)
+                    ->orWhere('ncr', 'like', $like);
+            })
+            ->select(['id', 'tipo', 'nombre', 'apellido', 'nombre_empresa', 'nombre_comercial'])
+            ->orderBy('nombre')
+            ->limit(20)
+            ->get()
+            ->map(function ($proveedor) {
+                return [
+                    'id' => $proveedor->id,
+                    'tipo' => $proveedor->tipo,
+                    'nombre' => $proveedor->nombre,
+                    'nombre_empresa' => $proveedor->nombre_empresa,
+                    'nombre_comercial' => $proveedor->nombre_comercial,
+                    'nombre_completo' => $proveedor->nombre_completo,
+                ];
+            })
+            ->values();
+
+        return Response()->json($proveedores, 200);
     }
 
 

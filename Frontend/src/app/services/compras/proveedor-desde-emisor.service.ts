@@ -62,15 +62,27 @@ export class ProveedorDesdeEmisorService {
       return { proveedor: null, creado: false };
     }
 
+    let encontrado: any = null;
     try {
-      const encontrado = await firstValueFrom(
+      encontrado = await firstValueFrom(
         this.proveedorSearchService.searchProveedor(emisor, proveedores || [])
       );
-      if (encontrado?.id) {
-        return { proveedor: encontrado, creado: false };
-      }
     } catch {
-      // continuar a creación
+      encontrado = null;
+    }
+
+    if (encontrado?.id && Object.prototype.hasOwnProperty.call(encontrado, 'tipo_contribuyente')) {
+      return { proveedor: encontrado, creado: false };
+    }
+
+    const remoto = await this.buscarEmisor(emisor);
+    if (remoto?.id) {
+      this.fusionar(proveedores, remoto);
+      return { proveedor: remoto, creado: false };
+    }
+
+    if (encontrado?.id) {
+      return { proveedor: encontrado, creado: false };
     }
 
     const auth = this.apiService.auth_user();
@@ -116,5 +128,32 @@ export class ProveedorDesdeEmisorService {
     }
 
     return { proveedor: null, creado: false };
+  }
+
+  private async buscarEmisor(emisor: Record<string, unknown>): Promise<any | null> {
+    try {
+      return await firstValueFrom(
+        this.apiService.getAll('proveedores/buscar-emisor', {
+          nit: emisor['nit'] || '',
+          ncr: emisor['nrc'] || '',
+          dui: emisor['dui'] || '',
+          nombre: emisor['nombre'] || '',
+        })
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  private fusionar(proveedores: any[], remoto: any): void {
+    if (!Array.isArray(proveedores)) {
+      return;
+    }
+    const i = proveedores.findIndex((p) => p?.id == remoto.id);
+    if (i >= 0) {
+      proveedores[i] = { ...proveedores[i], ...remoto };
+    } else {
+      proveedores.push(remoto);
+    }
   }
 }
