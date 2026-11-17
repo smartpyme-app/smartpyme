@@ -98,7 +98,7 @@
         <span *ngIf="venta.cliente?.limite_credito"> · Disponible: {{ ((venta.cliente.limite_credito ?? 0) - (venta.cliente.saldo_pendiente ?? 0)) | currency }}</span>
       </div>
 
-      <div class="form-switch border rounded p-2 mb-2" *ngIf="venta.cotizacion != 1 && apiService.auth_user().tipo != 'Ventas Limitado'">
+      <div class="form-switch border rounded p-2 mb-2" *ngIf="venta.cotizacion != 1">
         <label for="pos_credito">Venta al crédito</label>
         <input id="pos_credito" class="form-check-input float-end" type="checkbox" (change)="setCredito()" [(ngModel)]="venta.credito" name="pos_credito">
       </div>
