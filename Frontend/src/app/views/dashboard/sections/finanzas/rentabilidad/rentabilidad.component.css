@@ -23,15 +23,109 @@
   white-space: normal;
 }
 
+.rent-producto-filtro {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  min-height: 36px;
+  min-width: 18rem;
+  max-width: 100%;
+  padding: 0 10px 0 12px;
+  border: 1px solid var(--sf-line, #c7c6ca);
+  border-radius: var(--sf-radius-sm, 8px);
+  background: var(--sf-card, #fff);
+  color: var(--sf-muted, #46464a);
+}
+
+.rent-producto-filtro__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.rent-producto-filtro__etiqueta {
+  flex-shrink: 0;
+  font: 500 13px/18px 'Open Sans', system-ui, sans-serif;
+}
+
+.rent-producto-filtro input {
+  flex: 1 1 8rem;
+  min-width: 0;
+  border: 0;
+  padding: 8px 4px;
+  background: transparent;
+  color: var(--sf-text, #1b1b1f);
+  font: 500 13px/18px 'Open Sans', system-ui, sans-serif;
+}
+
+.rent-producto-filtro input:focus {
+  outline: none;
+}
+
+.rent-producto-filtro input::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+.rent-producto-filtro__clear {
+  border: 0;
+  background: transparent;
+  color: var(--sf-muted, #46464a);
+  font: 600 16px/1 'Open Sans', system-ui, sans-serif;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.rent-producto-sugerencias {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  margin: 0;
+  padding: 4px 0;
+  overflow: auto;
+  list-style: none;
+  border: 1px solid var(--sf-line, #c7c6ca);
+  border-radius: var(--sf-radius-sm, 8px);
+  background: var(--sf-card, #fff);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.rent-producto-sugerencias button {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 8px 12px;
+  text-align: left;
+  color: var(--sf-text, #1b1b1f);
+  font: 600 14px/20px 'Open Sans', system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.rent-producto-sugerencias button:hover {
+  background: var(--sf-bg, #f2f0f4);
+}
+
+.rent-producto-sugerencias__nota {
+  padding: 8px 12px;
+  color: var(--sf-muted, #46464a);
+  font: 600 13px/18px 'Open Sans', system-ui, sans-serif;
+}
+
 .rent-productos-scroll {
   max-height: 28rem;
   overflow: auto;
 }
 
 .rent-tabla.sf-table thead th {
-  text-transform: uppercase;
-  font-size: 12px;
-  letter-spacing: 0.02em;
+  text-transform: none;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: #94a3b8;
 }
 
 .rent-tabla.sf-table .rent-th-num,
@@ -213,14 +307,15 @@
 }
 
 .rent-fila:hover,
-.rent-fila:focus-visible,
-.rent-fila--activa {
+.rent-fila:focus-visible {
   background: var(--sf-bg, #f2f0f4);
   outline: none;
 }
 
 .rent-fila--activa {
+  background: var(--sf-blue-soft, #d7e2ff);
   font-weight: 600;
+  outline: none;
 }
 
 .rent-th-num {
@@ -254,10 +349,11 @@
   scroll-margin-top: 0.75rem;
 }
 
-.rent-productos-scroll .rent-dashboard-table thead th {
+.rent-productos-scroll .rent-tabla thead th {
   position: sticky;
   top: 0;
   z-index: 2;
+  background: var(--sf-card, #fff);
 }
 
 .rent-prod-fila {
@@ -265,7 +361,7 @@
 }
 
 .rent-prod-fila--activa {
-  background: var(--sf-bg, #f2f0f4) !important;
+  background: var(--sf-blue-soft, #d7e2ff);
   font-weight: 600;
 }
 
@@ -383,13 +479,6 @@
   color: #9a3412;
 }
 
-.rent-prod-fila--riesgo {
-  background: var(--sf-bg, #f2f0f4);
-}
-
-.rent-prod-fila--muerta {
-  background: #fef2f2;
-}
 
 .rent-precio-costo {
   white-space: nowrap;
@@ -436,7 +525,7 @@
 }
 
 .rent-cliente-fila--activa {
-  background: var(--sf-bg, #f2f0f4) !important;
+  background: var(--sf-blue-soft, #d7e2ff) !important;
   font-weight: 600;
 }
 
@@ -449,9 +538,201 @@
   font-weight: 600;
 }
 
+.rent-prov-detalle .rent-barra-fill--azul {
+  background: #8eafdc;
+}
+
+.rent-prov-detalle .rent-barra-fill--naranja {
+  background: #e0bca0;
+}
+
+.rent-prov-detalle .rent-barra-track {
+  background: #f2f0f5;
+  overflow: hidden;
+}
+
+.rent-prov-combo {
+  width: 100%;
+  height: 240px;
+  display: block;
+}
+
+.rent-prov-eje,
+.rent-prov-mes {
+  font-size: 11px;
+  fill: #94a3b8;
+}
+
+.rent-prov-grid {
+  stroke: #f1f5f9;
+  stroke-width: 1;
+}
+
+.rent-prov-bar-compra {
+  fill: #e0bca0;
+}
+
+.rent-prov-bar-venta {
+  fill: #8eafdc;
+}
+
+.rent-prov-linea {
+  stroke: #334155;
+  stroke-width: 1.6;
+}
+
+.rent-prov-dot-compra {
+  background: #e0bca0;
+}
+
+.rent-prov-dot-venta {
+  background: #8eafdc;
+}
+
+.rent-prov-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0 1.25rem;
+}
+
+.rent-prov-kpis .rent-kpi-titulo {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.rent-prov-prod-scroll {
+  max-height: calc(2.4rem + 4 * 4.6rem);
+  overflow: auto;
+}
+
+.rent-prov-prod-scroll .rent-prov-prod-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--sf-card, #fff);
+}
+
+.rent-prov-prod {
+  display: grid;
+  grid-template-columns: minmax(11rem, 1.5fr) repeat(7, auto);
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.84rem;
+}
+
+.rent-prov-prod > div:nth-child(n + 2) {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rent-prov-prod-head {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-bottom: none;
+}
+
+.rent-prov-prod-nombre {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.rent-prov-prod-meta {
+  margin: 0.1rem 0 0.3rem;
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.rent-prov-nota {
+  margin: 0.45rem 0 1.1rem;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.rent-prov-util {
+  background: #eef8f1;
+}
+
+.rent-prov-cxp {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.rent-prov-cxp-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+}
+
+.rent-prov-cxp-card--alerta {
+  background: #f8efe6;
+  border-color: #ead7c4;
+}
+
+.rent-prov-cxp-valor {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.rent-prov-fact {
+  display: grid;
+  grid-template-columns: minmax(5rem, 1fr) minmax(4rem, 0.8fr) minmax(6rem, 1fr) auto;
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.84rem;
+}
+
+.rent-prov-fact > div:last-child {
+  text-align: right;
+  font-weight: 600;
+}
+
+.rent-prov-fact-head {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-bottom: none;
+}
+
+.rent-prov-fact-head > div:last-child,
+.rent-prov-fact-total > div:last-child {
+  font-weight: 700;
+}
+
+.rent-prov-estado {
+  display: inline-block;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.rent-prov-estado--alerta {
+  background: #f8efe6;
+  color: #9a3412;
+}
+
 .rent-proveedor-nombre {
   font-weight: 600;
+  color: #1e293b;
+}
+
+.rent-text-info {
   color: #2563eb;
+  font-weight: 600;
 }
 
 .rent-proveedor-meta {
@@ -466,23 +747,50 @@
 }
 
 .rent-proveedor-fila--activa {
-  background: var(--sf-bg, #f2f0f4) !important;
+  background: var(--sf-blue-soft, #d7e2ff) !important;
   font-weight: 600;
 }
 
 .rent-proveedor-fila--alerta {
-  background: var(--sf-bg, #f2f0f4);
+  background: #fde8e4;
 }
 
 .rent-proyecto-nombre {
   font-weight: 600;
-  color: #2563eb;
+  color: #1e293b;
 }
 
 .rent-proyecto-cliente {
-  margin-top: 0.15rem;
-  font-size: 0.78rem;
+  margin-top: 0.12rem;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.rent-producto-filtro__chev {
+  display: inline-flex;
+  margin-left: auto;
   color: #64748b;
+}
+
+.rent-tabla.rent-tabla-proyecto thead th {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+  border-bottom: 1px solid #e6e8ee;
+}
+
+.rent-tabla-proyecto tbody td {
+  border-bottom: 1px solid #e6e8ee;
+  vertical-align: middle;
+}
+
+.rent-tabla-proyecto .rent-th-progreso {
+  text-align: left;
+}
+
+.rent-tabla-proyecto td.rent-text-neg,
+.rent-tabla-proyecto td.rent-text-pos {
+  font-weight: 700;
 }
 
 .rent-proyecto-fila {
@@ -490,9 +798,36 @@
 }
 
 .rent-proyecto-fila--seleccionada {
-  background: var(--sf-bg, #f2f0f4) !important;
-  font-weight: 600;
+  background: var(--sf-blue-soft, #d7e2ff) !important;
 }
+
+.rent-tabla-proyecto .rent-tabla-progreso {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0.28rem;
+  width: 5.6rem;
+}
+
+.rent-tabla-proyecto .rent-tabla-progreso-track {
+  flex: none;
+  max-width: none;
+  width: 100%;
+  height: 8px;
+  background: #f2f0f5;
+}
+
+.rent-tabla-proyecto .rent-tabla-progreso-pct {
+  min-width: 0;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+}
+
+.rent-tabla-proyecto .rent-barra-fill--azul { background: #7ea4d4; }
+.rent-tabla-proyecto .rent-barra-fill--verde { background: #8fceab; }
+.rent-tabla-proyecto .rent-barra-fill--rojo { background: #e7a8ad; }
 
 .rent-tabla-proyecto .rent-th-progreso {
   min-width: 7.5rem;
@@ -542,34 +877,62 @@
   align-items: start;
 }
 
+.rent-proy-kpis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin: 0.2rem 0 1rem;
+}
+
+.rent-proy-detalle .rent-kpi-valor--ambar {
+  color: #b45309;
+}
+
 .rent-proy-avances {
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
-  margin-bottom: 1rem;
-  padding: 0.75rem 0.85rem;
-  border: 1px solid #f1f5f9;
-  border-radius: 10px;
-  background: #fafbfc;
+  gap: 0.7rem;
+  margin-bottom: 1.15rem;
 }
 
 .rent-proy-avance-row {
   display: grid;
-  grid-template-columns: minmax(8rem, 10rem) minmax(4rem, 1fr) 2.5rem;
-  gap: 0.65rem;
+  grid-template-columns: 11.5rem minmax(8rem, 1fr) auto;
+  gap: 0.85rem;
   align-items: center;
 }
 
 .rent-proy-avance-label {
-  font-size: 0.8rem;
-  color: #475569;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.rent-proy-avance-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  min-width: 14rem;
 }
 
 .rent-proy-avance-track {
-  height: 8px;
+  height: 9px;
   border-radius: 999px;
-  background: #e2e8f0;
+  background: #f2f0f5;
   overflow: hidden;
+}
+
+.rent-proy-detalle .rent-barra-fill--azul { background: #7ea4d4; }
+.rent-proy-detalle .rent-barra-fill--verde { background: #8fceab; }
+.rent-proy-detalle .rent-barra-fill--rojo { background: #e7a8ad; }
+.rent-proy-detalle .rent-barra-fill--naranja { background: #e0bca0; }
+
+.rent-proy-avance-detalle {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .rent-proy-avance-track .rent-barra-fill {
@@ -577,10 +940,10 @@
 }
 
 .rent-proy-avance-pct {
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   text-align: right;
-  color: #334155;
+  color: #1e293b;
   font-variant-numeric: tabular-nums;
 }
 
@@ -600,10 +963,118 @@
   max-width: 4.5rem;
 }
 
-.rent-proy-total-row td {
-  border-top: 1px solid #e5e7eb;
-  padding-top: 0.55rem;
+.rent-proy-detalle .rent-mini thead th {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  border-bottom: 1px solid #d5d8e0;
 }
+
+.rent-proy-detalle .rent-mini tbody td {
+  border-bottom: 1px solid #e4e7ee;
+  color: #1e293b;
+}
+
+.rent-proy-util td,
+.rent-proy-total-row td {
+  background: #eef3ff;
+}
+
+.rent-proy-util td.rent-th-num,
+.rent-proy-resultado td.rent-text-neg {
+  font-weight: 700;
+}
+
+.rent-proy-cat {
+  display: grid;
+  grid-template-columns: minmax(7rem, 9.5rem) minmax(5rem, 1fr) 5.4rem 4.8rem;
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid #e6e8ee;
+  font-size: 14px;
+}
+
+.rent-proy-cat-head {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+  padding-bottom: 0.35rem;
+}
+
+.rent-proy-cat-head div {
+  font-weight: 500;
+  color: #64748b;
+  text-align: left;
+}
+
+.rent-proy-cat-head div:nth-child(3),
+.rent-proy-cat-head div:last-child {
+  text-align: right;
+}
+
+.rent-proy-cat-nombre { color: #1e293b; }
+
+.rent-proy-cat-track {
+  position: relative;
+  height: 9px;
+  border-radius: 999px;
+  background: #f2f0f5;
+}
+
+.rent-proy-cat-track .rent-barra-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+}
+
+.rent-proy-cat-raya {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 15px;
+  background: #334155;
+}
+
+.rent-proy-cat-pct,
+.rent-proy-cat-monto {
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.rent-proy-mat-sub {
+  color: #94a3b8;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.rent-proy-chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.rent-proy-chart-svg {
+  width: 100%;
+  height: 11rem;
+  display: block;
+}
+
+.rent-proy-eje,
+.rent-proy-mes {
+  fill: #94a3b8;
+  font-size: 10px;
+}
+
+.rent-proy-grid { stroke: #eef0f4; }
+
+.rent-proy-dot--gasto { fill: #e0bca0; }
+.rent-proy-dot--factura { fill: #7ea4d4; }
+.rent-proy-dot--cobro { fill: #8fceab; }
 
 .rent-proy-cat-row {
   grid-template-columns: minmax(6.5rem, 8rem) minmax(3rem, 1fr) 2.25rem auto;
@@ -616,14 +1087,8 @@
   background: #fafbfc;
 }
 
-.rent-proy-chart-svg {
-  width: 100%;
-  height: 6.5rem;
-  display: block;
-}
-
 .rent-proy-chart-area {
-  fill: rgba(34, 197, 94, 0.22);
+  fill: rgba(143, 206, 171, 0.35);
   stroke: none;
 }
 
@@ -635,11 +1100,11 @@
 }
 
 .rent-proy-chart-line--gasto {
-  stroke: #fb923c;
+  stroke: #e0bca0;
 }
 
 .rent-proy-chart-line--factura {
-  stroke: #60a5fa;
+  stroke: #7ea4d4;
 }
 
 .rent-proy-chart-labels {
@@ -833,6 +1298,145 @@
 .rent-bloque-titulo-monto {
   font-weight: 600;
   color: #64748b;
+}
+
+.rent-cli-top {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+}
+
+.rent-cli-top .rent-detalle-titulo {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.rent-cli-top .rent-prod-detalle-sub {
+  margin: 0;
+}
+
+.rent-cli-top .rent-detalle-icon {
+  align-self: center;
+}
+
+.rent-cli-kpis {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 2.25rem;
+  margin-bottom: 1.35rem;
+}
+
+.rent-cli-kpis-grupo {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.rent-cli-detalle .rent-kpi-titulo {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #64748b;
+  margin-bottom: 0.2rem;
+}
+
+.rent-cli-detalle .rent-kpi-valor {
+  font-size: 1.35rem;
+}
+
+.rent-cli-detalle .rent-kpi-card {
+  padding: 0.7rem 0.85rem 0.6rem;
+}
+
+.rent-cli-detalle .rent-prod-detalle-col {
+  gap: 1.6rem;
+}
+
+.rent-cli-seccion {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 0.2rem;
+}
+
+.rent-cli-seccion .rent-bloque-titulo {
+  margin: 0;
+}
+
+.rent-cli-seccion-extra {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.rent-cli-detalle .rent-puente-row {
+  border-bottom: 1px solid #f1f5f9;
+  padding: 0.42rem 0;
+}
+
+.rent-cli-detalle .rent-cli-head {
+  border-bottom: none;
+  padding-bottom: 0.1rem;
+}
+
+.rent-cli-detalle .rent-puente-row--cierre {
+  border-top: 1px solid #e5e7eb;
+  margin-top: 0.1rem;
+}
+
+.rent-cli-detalle .rent-text-neg {
+  color: #dc2626;
+}
+
+.rent-cli-detalle .rent-text-pos {
+  color: #16a34a;
+}
+
+.rent-cli-detalle .rent-text-muted {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.rent-cli-detalle .rent-puente-track,
+.rent-cli-detalle .rent-barra-track {
+  background: #f2f0f5;
+  overflow: hidden;
+}
+
+.rent-cli-detalle .rent-puente-fill--azul,
+.rent-cli-detalle .rent-barra-fill--azul {
+  background: #8eafdc;
+}
+
+.rent-cli-detalle .rent-puente-fill--naranja,
+.rent-cli-detalle .rent-barra-fill--naranja {
+  background: #e0bca0;
+}
+
+.rent-cli-head {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.rent-cli-head > div:nth-child(n + 3) {
+  text-align: right;
+}
+
+.rent-cli-prod {
+  grid-template-columns: minmax(8rem, 12rem) minmax(3rem, 1fr) auto auto auto;
+}
+
+.rent-cli-facturas {
+  grid-template-columns: minmax(5.5rem, 8rem) minmax(4rem, 1fr) auto auto;
+}
+
+.rent-cli-vence {
+  color: #64748b;
+  font-size: 0.84rem;
 }
 
 .rent-tipo-head,
@@ -1063,8 +1667,25 @@
 @media (max-width: 1200px) {
   .rent-kpi-grid,
   .rent-detalle-kpis,
-  .rent-detalle-grid {
+  .rent-detalle-grid,
+  .rent-cli-kpis,
+  .rent-proy-kpis,
+  .rent-proy-detalle-layout {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .rent-proy-kpis {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .rent-cli-kpis,
+  .rent-cli-kpis-grupo,
+  .rent-prod-detalle-grid,
+  .rent-prov-kpis,
+  .rent-prov-cxp {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1076,4 +1697,188 @@
   .rent-barra-row {
     grid-template-columns: 1fr;
   }
+
+  .rent-cli-detalle .rent-puente-row {
+    grid-template-columns: minmax(6.5rem, 10rem) minmax(2.5rem, 1fr) auto auto;
+  }
+
+  .rent-cli-detalle .rent-cli-prod {
+    grid-template-columns: minmax(5.5rem, 8rem) minmax(2rem, 1fr) auto auto auto;
+  }
+
+  .rent-cli-detalle .rent-cli-facturas {
+    grid-template-columns: minmax(4.5rem, 7rem) minmax(3.5rem, 1fr) auto auto;
+  }
+}
+
+.rentabilidad-dashboard .sf-card-head__title,
+.rentabilidad-dashboard .rent-detalle-titulo,
+.rentabilidad-dashboard .rent-cli-top .rent-detalle-titulo {
+  font-size: 15px;
+  line-height: 20px;
+}
+
+.rentabilidad-dashboard .sf-table,
+.rentabilidad-dashboard .rent-mini,
+.rentabilidad-dashboard .rent-puente-row,
+.rentabilidad-dashboard .rent-barra-row,
+.rentabilidad-dashboard .rent-prov-prod,
+.rentabilidad-dashboard .rent-prov-fact,
+.rentabilidad-dashboard .rent-cli-head,
+.rentabilidad-dashboard .rent-puente-label,
+.rentabilidad-dashboard .rent-puente-monto,
+.rentabilidad-dashboard .rent-puente-pct {
+  font-size: 13px;
+}
+
+.rentabilidad-dashboard .sf-table td,
+.rentabilidad-dashboard .sf-table--compact td {
+  padding: 9px 10px;
+}
+
+.rentabilidad-dashboard .rent-bloque-titulo {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.rentabilidad-dashboard .rent-kpi-titulo,
+.rentabilidad-dashboard .rent-cli-detalle .rent-kpi-titulo,
+.rentabilidad-dashboard .rent-prov-kpis .rent-kpi-titulo {
+  font-size: 12px;
+}
+
+.rentabilidad-dashboard .rent-kpi-valor,
+.rentabilidad-dashboard .rent-cli-detalle .rent-kpi-valor {
+  font-size: 1.15rem;
+}
+
+.rentabilidad-dashboard .rent-prod-detalle-sub,
+.rentabilidad-dashboard .rent-kpi-sublinea,
+.rentabilidad-dashboard .rent-prov-nota,
+.rentabilidad-dashboard .rent-prov-prod-meta {
+  font-size: 12px;
+}
+
+.rent-prov-detalle .rent-kpi-titulo,
+.rent-prov-detalle .rent-mini thead th,
+.rent-prov-detalle .rent-prov-prod-head,
+.rent-prov-detalle .rent-prov-fact-head {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.rentabilidad-dashboard .rent-prov-detalle .rent-kpi-valor {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.rent-prov-detalle .rent-mini thead th {
+  font-size: 12px;
+}
+
+.rent-prov-mes-col {
+  text-transform: capitalize;
+}
+
+.rent-prov-detalle .rent-mini thead th,
+.rent-prov-detalle .rent-prov-fact-head,
+.rent-prov-detalle .rent-cli-head {
+  border-bottom: 1px solid #d5d8e0;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.rent-prov-detalle .rent-mini tbody td {
+  border-bottom: 1px solid #e4e7ee;
+  color: #1e293b;
+  padding: 0.7rem 0.4rem;
+}
+
+.rent-prov-detalle .rent-mini tbody td.rent-th-num {
+  font-weight: 600;
+}
+
+.rent-prov-detalle .rent-prov-resumen tbody td:nth-child(3):not(.rent-text-pos) {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.rent-prov-detalle .rent-prov-util {
+  background: #eef3ff;
+}
+
+.rent-prov-detalle .rent-prov-fact,
+.rent-prov-detalle .rent-puente-row {
+  border-bottom: 1px solid #e4e7ee;
+  padding: 0.55rem 0;
+}
+
+.rent-prov-detalle .rent-prov-fact-total {
+  border-bottom: none;
+  font-weight: 700;
+}
+
+.rent-prov-detalle .rent-puente-label,
+.rent-prov-detalle .rent-puente-monto,
+.rent-prov-detalle .rent-prov-fact > div:first-child {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.rentabilidad-dashboard .rent-proy-detalle .rent-kpi-titulo {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.rentabilidad-dashboard .rent-proy-detalle .rent-kpi-valor {
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.rent-proy-detalle .rent-kpi-valor--ambar {
+  color: #a16207;
+}
+
+.rent-proy-detalle .rent-kpi-sublinea {
+  color: #64748b;
+  margin-top: 0.2rem;
+}
+
+.rent-proy-kpis {
+  gap: 0.65rem;
+}
+
+.rent-proy-kpis .rent-kpi-card {
+  padding: 0.75rem 0.85rem 0.7rem;
+}
+
+.rent-proy-detalle .rent-cli-top .rent-detalle-titulo {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.rent-proy-detalle .rent-cli-top .rent-prod-detalle-sub {
+  font-size: 14px;
+  font-weight: 400;
+  color: #64748b;
+}
+
+.rent-proy-detalle .rent-bloque-titulo {
+  font-size: 15px;
+  font-weight: 650;
+  color: #1e293b;
+}
+
+.rent-proy-detalle .rent-cli-seccion-extra {
+  font-size: 12px;
+  font-weight: 400;
+  color: #94a3b8;
 }

@@ -26,5 +26,5 @@ const VACIO: RentabilidadProyectoDetalle = {
 export function detalleProyectoDesdeFila(
   fila: RentabilidadProyectoFila,
 ): RentabilidadProyectoDetalle {
-  return fila.detalle ?? VACIO;
+  return { ...VACIO, ...(fila.detalle ?? {}) };
 }

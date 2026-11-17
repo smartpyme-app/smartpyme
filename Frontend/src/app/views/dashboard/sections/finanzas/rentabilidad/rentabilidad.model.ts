@@ -193,11 +193,33 @@ export interface RentabilidadProveedorResumenFila {
   mesTono?: RentabilidadProveedorValorTono;
 }
 
+export interface RentabilidadProveedorProductoFila {
+  nombre: string;
+  pct: number;
+  compras: number;
+  unidades: number;
+  costoHoy: number;
+  costo6m: number;
+  costoVsPct: number;
+  precioVsPct: number;
+  costoSubioMas: boolean;
+  margenPct: number;
+}
+
+export interface RentabilidadProveedorFactura {
+  codigo: string;
+  fecha: string;
+  nota: string;
+  notaAlerta: boolean;
+  monto: number;
+}
+
 export interface RentabilidadProveedorClienteFila {
   nombre: string;
   ventas: number;
   margenPct: number;
   margenBajo: boolean;
+  margenAlto?: boolean;
 }
 
 export interface RentabilidadProveedorDetalle {
@@ -221,6 +243,18 @@ export interface RentabilidadProveedorDetalle {
   productoMargenPct: number;
   porPagar: { fecha: string; monto: number }[];
   clientes: RentabilidadProveedorClienteFila[];
+  ventasGeneradas: number;
+  rentabilidadPct: number;
+  rentabilidadAnioPct: number;
+  inventarioValor: number;
+  inventarioDias: number;
+  porPagarTotal: number;
+  porPagarVencido: number;
+  porPagar7: number;
+  proximoPago: string;
+  creditoDias: number;
+  productos: RentabilidadProveedorProductoFila[];
+  facturas: RentabilidadProveedorFactura[];
 }
 
 export type RentabilidadProyectoTono = 'normal' | 'activa' | 'alerta';
@@ -230,6 +264,8 @@ export interface RentabilidadProyectoAvance {
   etiqueta: string;
   pct: number;
   barTono: RentabilidadProyectoBarTono;
+  monto?: number;
+  base?: number;
 }
 
 export interface RentabilidadProyectoResultadoFila {
@@ -238,11 +274,13 @@ export interface RentabilidadProyectoResultadoFila {
   fecha: number;
   formato: 'monto' | 'pct';
   fechaBajo?: boolean;
+  nota?: string;
 }
 
 export interface RentabilidadProyectoCategoriaGasto {
   nombre: string;
   pctGasto: number;
+  pctPresupuesto?: number;
   monto: number;
 }
 
@@ -257,11 +295,18 @@ export interface RentabilidadProyectoPresupuestoFila {
 
 export interface RentabilidadProyectoMaterialFila {
   material: string;
-  cotizadoTexto: string | null;
-  compradoTexto: string;
+  cotizadoTexto?: string | null;
+  compradoTexto?: string;
+  cotizadoCant?: number | null;
+  cotizadoUnit?: number | null;
+  cotizadoMonto?: number | null;
+  compradoCant?: number | null;
+  compradoUnit?: number | null;
+  compradoMonto?: number | null;
   cantPct: number | null;
   cantPctAlto?: boolean;
   difPrecio: number | null;
+  difPrecioPct?: number | null;
 }
 
 export interface RentabilidadProyectoDetalle {
@@ -281,6 +326,7 @@ export interface RentabilidadProyectoDetalle {
     gastado: number;
     disponible: number;
     usadoPct: number;
+    usadoBarTono?: 'azul' | 'naranja';
   };
   materiales: RentabilidadProyectoMaterialFila[];
   chartLabels: string[];
@@ -292,6 +338,7 @@ export interface RentabilidadProyectoDetalle {
 export interface RentabilidadProyectoFila {
   nombre: string;
   cliente: string;
+  descripcion?: string;
   contrato: number;
   facturadoPct: number;
   presupuestoGastadoPct: number;

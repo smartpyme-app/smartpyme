@@ -1,6 +1,7 @@
 import {
   ChangeDetectorRef,
   Component,
+  DestroyRef,
   ElementRef,
   Input,
   OnChanges,
@@ -9,9 +10,11 @@ import {
   ViewChild,
   inject,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '@services/api.service';
-import { finalize, take } from 'rxjs/operators';
+import { of, Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, finalize, map, switchMap, take } from 'rxjs/operators';
 import {
   formatEmpresaCurrency,
   formatEmpresaCurrencyInt,
@@ -39,14 +42,10 @@ import {
   FinanzasRentabilidadDataService,
 } from '../../../services/finanzas-rentabilidad-data.service';
 import {
-  factorHorizonte,
-  kpisDesdeCliente,
-  kpisDesdeProducto,
-  kpisDesdeProveedor,
-  kpisDesdeProyecto,
-  kpisDesdeResumen,
-  RentabilidadKpiContexto,
-} from './rentabilidad-kpis.builder';
+  DashboardFiltroCatalogoItem,
+  DashboardFiltrosCatalogoService,
+} from '../../../services/dashboard-filtros-catalogo.service';
+import { factorHorizonte, kpisDesdeResumen } from './rentabilidad-kpis.builder';
 import { resumenDesdeFilas } from './rentabilidad-kpis.resumen';
 import { detalleClienteDesdeFila } from './rentabilidad-cliente-detalle.builder';
 import { detalleProveedorDesdeFila } from './rentabilidad-proveedor-detalle.builder';
@@ -83,7 +82,13 @@ const RENTABILIDAD_VACIA: RentabilidadMock = {
 export class RentabilidadComponent implements OnInit, OnChanges {
   private readonly api = inject(ApiService);
   private readonly rentabilidadData = inject(FinanzasRentabilidadDataService);
+  private readonly filtrosCatalogo = inject(DashboardFiltrosCatalogoService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly buscarProducto$ = new Subject<string>();
+  private readonly buscarCliente$ = new Subject<string>();
+  private busquedaSeq = 0;
+  private clienteSeq = 0;
 
   @ViewChild('detalleProducto') private detalleProducto?: ElementRef<HTMLElement>;
   @ViewChild('detalleSucursal') private detalleSucursal?: ElementRef<HTMLElement>;
@@ -117,6 +122,28 @@ export class RentabilidadComponent implements OnInit, OnChanges {
   ];
 
   dimension: RentabilidadDimensionId = 'sucursal';
+  productoFiltroId = 'todos';
+  productoFiltroNombre = '';
+  productoTexto = '';
+  productoSugerencias: DashboardFiltroCatalogoItem[] = [];
+  productoListaAbierta = false;
+  productoBuscando = false;
+  productoHayMas = false;
+  private productoQueryActiva = '';
+  clienteFiltroId = 'todos';
+  clienteFiltroNombre = '';
+  clienteTexto = '';
+  clienteSugerencias: DashboardFiltroCatalogoItem[] = [];
+  clienteListaAbierta = false;
+  clienteBuscando = false;
+  clienteHayMas = false;
+  private clienteQueryActiva = '';
+  proveedorFiltroNombre = '';
+  proveedorTexto = '';
+  proveedorListaAbierta = false;
+  proyectoFiltroNombre = '';
+  proyectoTexto = '';
+  proyectoListaAbierta = false;
   sucursalAbierta: RentabilidadSucursalFila | null = null;
   productoAbierto: RentabilidadProductoTablaFila | null = null;
   clienteAbierto: RentabilidadClienteFila | null = null;
@@ -125,6 +152,68 @@ export class RentabilidadComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.cargar();
+    this.buscarProducto$
+      .pipe(
+        debounceTime(250),
+        map((value) => value.trim()),
+        distinctUntilChanged(),
+        switchMap((q) => {
+          this.productoQueryActiva = q;
+          const seq = ++this.busquedaSeq;
+          if (q.length < 2) {
+            return of({ seq, list: [] as DashboardFiltroCatalogoItem[] });
+          }
+          this.productoBuscando = true;
+          this.cdr.markForCheck();
+          return this.filtrosCatalogo.buscarProductos(q, 0).pipe(map((list) => ({ seq, list })));
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(({ seq, list }) => {
+        if (seq !== this.busquedaSeq) {
+          return;
+        }
+        const term = this.productoQueryActiva;
+        const page =
+          term.length < 2
+            ? []
+            : list.filter((p) => p.nombre.toLowerCase().includes(term.toLowerCase())).slice(0, 20);
+        this.productoSugerencias = page;
+        this.productoHayMas = list.length === 20;
+        this.productoBuscando = false;
+        this.cdr.markForCheck();
+      });
+    this.buscarCliente$
+      .pipe(
+        debounceTime(250),
+        map((value) => value.trim()),
+        distinctUntilChanged(),
+        switchMap((q) => {
+          this.clienteQueryActiva = q;
+          const seq = ++this.clienteSeq;
+          if (q.length < 2) {
+            return of({ seq, list: [] as DashboardFiltroCatalogoItem[] });
+          }
+          this.clienteBuscando = true;
+          this.cdr.markForCheck();
+          return this.filtrosCatalogo.buscarClientes(q, 0).pipe(map((list) => ({ seq, list })));
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(({ seq, list }) => {
+        if (seq !== this.clienteSeq) {
+          return;
+        }
+        const term = this.clienteQueryActiva;
+        const page =
+          term.length < 2
+            ? []
+            : list.filter((p) => p.nombre.toLowerCase().includes(term.toLowerCase())).slice(0, 20);
+        this.clienteSugerencias = page;
+        this.clienteHayMas = list.length === 20;
+        this.clienteBuscando = false;
+        this.cdr.markForCheck();
+      });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -201,6 +290,8 @@ export class RentabilidadComponent implements OnInit, OnChanges {
           this.data = data;
           this.contenidoListo = true;
           this.abrirPrimeras();
+          this.aplicarFiltroProducto();
+          this.aplicarFiltroCliente();
           this.cdr.markForCheck();
         },
         error: () => {
@@ -248,58 +339,12 @@ export class RentabilidadComponent implements OnInit, OnChanges {
       return this.data.kpis;
     }
 
-    const ctx: RentabilidadKpiContexto = {
-      horizonte: this.horizonte,
-      formatMonto: (value) => this.formatMonto(value),
-      formatPrecio: (value) => this.formatPrecio(value),
-      formatPct: (value, digits) => this.formatPct(value, digits),
-      textoInventario: (fila) => this.textoInventario(fila),
-    };
-
-    switch (this.dimension) {
-      case 'sucursal': {
-        const resumen =
-          this.data.resumen ??
-          resumenDesdeFilas(this.data.filasSucursal, this.etiquetaMesResumen(), this.etiquetaComparacionResumen());
-        return resumen
-          ? kpisDesdeResumen(resumen, (n) => this.formatMonto(n), (n, d) => this.formatPct(n, d))
-          : [];
-      }
-      case 'producto':
-        if (this.productoAbierto?.kpisToolbar) {
-          return this.productoAbierto.kpisToolbar;
-        }
-        if (this.productoAbierto) {
-          return kpisDesdeProducto(this.productoAbierto, ctx);
-        }
-        break;
-      case 'cliente':
-        if (this.clienteAbierto?.kpisToolbar) {
-          return this.clienteAbierto.kpisToolbar;
-        }
-        if (this.clienteAbierto) {
-          return kpisDesdeCliente(this.clienteAbierto, ctx);
-        }
-        break;
-      case 'proveedor':
-        if (this.proveedorAbierto?.kpisToolbar) {
-          return this.proveedorAbierto.kpisToolbar;
-        }
-        if (this.proveedorAbierto) {
-          return kpisDesdeProveedor(this.proveedorAbierto, ctx);
-        }
-        break;
-      case 'proyecto':
-        if (this.proyectoAbierto?.kpisToolbar) {
-          return this.proyectoAbierto.kpisToolbar;
-        }
-        if (this.proyectoAbierto) {
-          return kpisDesdeProyecto(this.proyectoAbierto, ctx);
-        }
-        break;
-    }
-
-    return this.data.kpis;
+    const resumen =
+      this.data.resumen ??
+      resumenDesdeFilas(this.data.filasSucursal, this.etiquetaMesResumen(), this.etiquetaComparacionResumen());
+    return resumen
+      ? kpisDesdeResumen(resumen, (n) => this.formatMonto(n), (n, d) => this.formatPct(n, d))
+      : [];
   }
 
   seleccionarDimension(id: RentabilidadDimensionId): void {
@@ -307,11 +352,17 @@ export class RentabilidadComponent implements OnInit, OnChanges {
     if (id === 'sucursal' && !this.sucursalAbierta) {
       this.sucursalAbierta = this.data.filasSucursal[0] ?? null;
     }
-    if (id === 'producto' && !this.productoAbierto) {
-      this.productoAbierto = this.data.filasProducto[0] ?? null;
+    if (id === 'producto') {
+      if (!this.productoAbierto) {
+        this.productoAbierto = this.data.filasProducto[0] ?? null;
+      }
+      this.aplicarFiltroProducto();
     }
-    if (id === 'cliente' && !this.clienteAbierto) {
-      this.clienteAbierto = this.data.filasCliente[0] ?? null;
+    if (id === 'cliente') {
+      if (!this.clienteAbierto) {
+        this.clienteAbierto = this.data.filasCliente[0] ?? null;
+      }
+      this.aplicarFiltroCliente();
     }
     if (id === 'proveedor' && !this.proveedorAbierto) {
       this.proveedorAbierto = this.data.filasProveedor[0] ?? null;
@@ -326,6 +377,421 @@ export class RentabilidadComponent implements OnInit, OnChanges {
     setTimeout(() => {
       this.detalleSucursal?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
+  }
+
+  escribirProducto(event: Event): void {
+    this.productoTexto = (event.target as HTMLInputElement).value;
+    this.productoListaAbierta = true;
+    if (this.productoFiltroId !== 'todos') {
+      this.productoFiltroId = 'todos';
+      this.productoFiltroNombre = '';
+      this.productoAbierto = this.data.filasProducto[0] ?? null;
+    }
+    this.buscarProducto$.next(this.productoTexto);
+  }
+
+  abrirBusquedaProducto(): void {
+    this.productoListaAbierta = true;
+    if (this.productoTexto.trim().length >= 2 && this.productoSugerencias.length === 0) {
+      this.buscarProducto$.next(this.productoTexto);
+    }
+  }
+
+  cerrarBusquedaProducto(event: FocusEvent): void {
+    const next = event.relatedTarget as Node | null;
+    if (next && (event.currentTarget as HTMLElement).contains(next)) {
+      return;
+    }
+    this.productoListaAbierta = false;
+  }
+
+  elegirProducto(item: DashboardFiltroCatalogoItem): void {
+    this.productoFiltroId = item.id;
+    this.productoFiltroNombre = item.nombre.trim();
+    this.productoTexto = item.nombre;
+    this.productoListaAbierta = false;
+    this.productoAbierto = this.filasProductoVisibles()[0] ?? null;
+  }
+
+  limpiarProducto(): void {
+    this.productoFiltroId = 'todos';
+    this.productoFiltroNombre = '';
+    this.productoTexto = '';
+    this.productoSugerencias = [];
+    this.productoHayMas = false;
+    this.productoListaAbierta = false;
+    this.productoAbierto = this.data.filasProducto[0] ?? null;
+  }
+
+  masProductos(event: Event): void {
+    const el = event.target as HTMLElement;
+    if (!this.productoHayMas || this.productoBuscando) {
+      return;
+    }
+    if (el.scrollTop + el.clientHeight < el.scrollHeight - 32) {
+      return;
+    }
+    this.cargarMasProductos();
+  }
+
+  private cargarMasProductos(): void {
+    const term = this.productoQueryActiva;
+    if (term.length < 2 || this.productoBuscando || !this.productoHayMas) {
+      return;
+    }
+    const seq = this.busquedaSeq;
+    const offset = this.productoSugerencias.length;
+    this.productoBuscando = true;
+    this.filtrosCatalogo
+      .buscarProductos(term, offset)
+      .pipe(take(1))
+      .subscribe((list) => {
+        if (seq !== this.busquedaSeq) {
+          return;
+        }
+        const page = list
+          .filter((p) => p.nombre.toLowerCase().includes(term.toLowerCase()))
+          .slice(0, 20);
+        this.productoSugerencias = this.productoSugerencias.concat(page);
+        this.productoHayMas = list.length === 20;
+        this.productoBuscando = false;
+        this.cdr.markForCheck();
+      });
+  }
+
+  filasProductoVisibles(): RentabilidadProductoTablaFila[] {
+    if (this.productoFiltroId === 'todos') {
+      return this.data.filasProducto;
+    }
+    const nombre = this.productoFiltroNombre.trim();
+    if (!nombre) {
+      return [];
+    }
+    return this.data.filasProducto.filter((fila) => fila.nombre.trim() === nombre);
+  }
+
+  private aplicarFiltroProducto(): void {
+    if (this.dimension !== 'producto' || this.productoFiltroId === 'todos') {
+      return;
+    }
+    this.productoAbierto = this.filasProductoVisibles()[0] ?? null;
+  }
+
+  escribirCliente(event: Event): void {
+    this.clienteTexto = (event.target as HTMLInputElement).value;
+    this.clienteListaAbierta = true;
+    if (this.clienteFiltroId !== 'todos') {
+      this.clienteFiltroId = 'todos';
+      this.clienteFiltroNombre = '';
+      this.clienteAbierto = this.data.filasCliente[0] ?? null;
+    }
+    this.buscarCliente$.next(this.clienteTexto);
+  }
+
+  abrirBusquedaCliente(): void {
+    this.clienteListaAbierta = true;
+    if (this.clienteTexto.trim().length >= 2 && this.clienteSugerencias.length === 0) {
+      this.buscarCliente$.next(this.clienteTexto);
+    }
+  }
+
+  cerrarBusquedaCliente(event: FocusEvent): void {
+    const next = event.relatedTarget as Node | null;
+    if (next && (event.currentTarget as HTMLElement).contains(next)) {
+      return;
+    }
+    this.clienteListaAbierta = false;
+  }
+
+  elegirCliente(item: DashboardFiltroCatalogoItem): void {
+    this.clienteFiltroId = item.id;
+    this.clienteFiltroNombre = item.nombre.trim();
+    this.clienteTexto = item.nombre;
+    this.clienteListaAbierta = false;
+    this.clienteAbierto = this.filasClienteVisibles()[0] ?? null;
+  }
+
+  limpiarCliente(): void {
+    this.clienteFiltroId = 'todos';
+    this.clienteFiltroNombre = '';
+    this.clienteTexto = '';
+    this.clienteSugerencias = [];
+    this.clienteHayMas = false;
+    this.clienteListaAbierta = false;
+    this.clienteAbierto = this.data.filasCliente[0] ?? null;
+  }
+
+  masClientes(event: Event): void {
+    const el = event.target as HTMLElement;
+    if (!this.clienteHayMas || this.clienteBuscando) {
+      return;
+    }
+    if (el.scrollTop + el.clientHeight < el.scrollHeight - 32) {
+      return;
+    }
+    this.cargarMasClientes();
+  }
+
+  private cargarMasClientes(): void {
+    const term = this.clienteQueryActiva;
+    if (term.length < 2 || this.clienteBuscando || !this.clienteHayMas) {
+      return;
+    }
+    const seq = this.clienteSeq;
+    const offset = this.clienteSugerencias.length;
+    this.clienteBuscando = true;
+    this.filtrosCatalogo
+      .buscarClientes(term, offset)
+      .pipe(take(1))
+      .subscribe((list) => {
+        if (seq !== this.clienteSeq) {
+          return;
+        }
+        const page = list
+          .filter((p) => p.nombre.toLowerCase().includes(term.toLowerCase()))
+          .slice(0, 20);
+        this.clienteSugerencias = this.clienteSugerencias.concat(page);
+        this.clienteHayMas = list.length === 20;
+        this.clienteBuscando = false;
+        this.cdr.markForCheck();
+      });
+  }
+
+  filasClienteVisibles(): RentabilidadClienteFila[] {
+    if (this.clienteFiltroId === 'todos') {
+      return this.data.filasCliente;
+    }
+    const nombre = this.clienteFiltroNombre.trim();
+    if (!nombre) {
+      return [];
+    }
+    return this.data.filasCliente.filter((fila) => fila.nombre.trim() === nombre);
+  }
+
+  private aplicarFiltroCliente(): void {
+    if (this.dimension !== 'cliente' || this.clienteFiltroId === 'todos') {
+      return;
+    }
+    this.clienteAbierto = this.filasClienteVisibles()[0] ?? null;
+  }
+
+  escribirProveedor(event: Event): void {
+    this.proveedorTexto = (event.target as HTMLInputElement).value;
+    this.proveedorListaAbierta = true;
+    if (this.proveedorTexto.trim() !== this.proveedorFiltroNombre) {
+      this.proveedorFiltroNombre = '';
+      this.proveedorAbierto = this.data.filasProveedor[0] ?? null;
+    }
+  }
+
+  cerrarBusquedaProveedor(event: FocusEvent): void {
+    const next = event.relatedTarget as Node | null;
+    if (next && (event.currentTarget as HTMLElement).contains(next)) {
+      return;
+    }
+    this.proveedorListaAbierta = false;
+  }
+
+  proveedorSugerencias(): RentabilidadProveedorFila[] {
+    const q = this.proveedorTexto.trim().toLowerCase();
+    const filas = this.data.filasProveedor;
+    if (q.length < 2 || q === this.proveedorFiltroNombre.trim().toLowerCase()) {
+      return filas.slice(0, 20);
+    }
+    return filas.filter((fila) => fila.nombre.toLowerCase().includes(q)).slice(0, 20);
+  }
+
+  elegirProveedor(fila: RentabilidadProveedorFila): void {
+    this.proveedorFiltroNombre = fila.nombre.trim();
+    this.proveedorTexto = fila.nombre;
+    this.proveedorListaAbierta = false;
+    this.proveedorAbierto = fila;
+  }
+
+  limpiarProveedor(): void {
+    this.proveedorFiltroNombre = '';
+    this.proveedorTexto = '';
+    this.proveedorListaAbierta = false;
+    this.proveedorAbierto = this.data.filasProveedor[0] ?? null;
+  }
+
+  escribirProyecto(event: Event): void {
+    this.proyectoTexto = (event.target as HTMLInputElement).value;
+    this.proyectoListaAbierta = true;
+    if (this.proyectoTexto.trim() !== this.proyectoFiltroNombre) {
+      this.proyectoFiltroNombre = '';
+      this.proyectoAbierto = this.data.filasProyecto[0] ?? null;
+    }
+  }
+
+  cerrarBusquedaProyecto(event: FocusEvent): void {
+    const next = event.relatedTarget as Node | null;
+    if (next && (event.currentTarget as HTMLElement).contains(next)) {
+      return;
+    }
+    this.proyectoListaAbierta = false;
+  }
+
+  proyectoSugerencias(): RentabilidadProyectoFila[] {
+    const q = this.proyectoTexto.trim().toLowerCase();
+    const filas = this.data.filasProyecto;
+    if (q.length < 2 || q === this.proyectoFiltroNombre.trim().toLowerCase()) {
+      return filas.slice(0, 20);
+    }
+    return filas.filter((fila) => fila.nombre.toLowerCase().includes(q)).slice(0, 20);
+  }
+
+  elegirProyecto(fila: RentabilidadProyectoFila): void {
+    this.proyectoFiltroNombre = fila.nombre.trim();
+    this.proyectoTexto = fila.nombre;
+    this.proyectoListaAbierta = false;
+    this.proyectoAbierto = fila;
+  }
+
+  limpiarProyecto(): void {
+    this.proyectoFiltroNombre = '';
+    this.proyectoTexto = '';
+    this.proyectoListaAbierta = false;
+    this.proyectoAbierto = this.data.filasProyecto[0] ?? null;
+  }
+
+  filasProyectoVisibles(): RentabilidadProyectoFila[] {
+    const nombre = this.proyectoFiltroNombre.trim();
+    if (!nombre) {
+      return this.data.filasProyecto;
+    }
+    return this.data.filasProyecto.filter((fila) => fila.nombre.trim() === nombre);
+  }
+
+  lineaMaterial(cant?: number | null, unit?: number | null): string | null {
+    if (cant == null || unit == null || cant <= 0) {
+      return null;
+    }
+    const qty = Number.isInteger(cant) ? String(cant) : cant.toFixed(1);
+    return `${qty} × ${this.formatMonto(unit)}`;
+  }
+
+  totalMateriales(mats: RentabilidadProyectoDetalle['materiales']): { cot: number | null; com: number | null; dif: number | null } | null {
+    if (!mats.length) {
+      return null;
+    }
+    let cot = 0;
+    let com = 0;
+    let dif = 0;
+    let hayCot = false;
+    let hayCom = false;
+    let hayDif = false;
+    for (const mat of mats) {
+      if (mat.cotizadoMonto != null) {
+        cot += mat.cotizadoMonto;
+        hayCot = true;
+      }
+      if (mat.compradoMonto != null) {
+        com += mat.compradoMonto;
+        hayCom = true;
+      }
+      if (mat.difPrecio != null) {
+        dif += mat.difPrecio;
+        hayDif = true;
+      }
+    }
+    return { cot: hayCot ? cot : null, com: hayCom ? com : null, dif: hayDif ? dif : null };
+  }
+
+  proyectoGrafico(detalle: RentabilidadProyectoDetalle): {
+    w: number;
+    h: number;
+    ticks: { y: number; text: string }[];
+    area: string;
+    lineG: string;
+    lineF: string;
+    dotsG: { x: number; y: number }[];
+    dotsF: { x: number; y: number }[];
+    dotsC: { x: number; y: number }[];
+    labels: { x: number; text: string }[];
+  } | null {
+    const labels = detalle.chartLabels ?? [];
+    const n = labels.length;
+    if (!n) {
+      return null;
+    }
+    const gastado = detalle.chartGastado ?? [];
+    const facturado = detalle.chartFacturado ?? [];
+    const cobrado = detalle.chartCobrado ?? [];
+    const max = Math.max(...gastado, ...facturado, ...cobrado, 1);
+    const w = 360;
+    const h = 168;
+    const left = 42;
+    const right = 8;
+    const top = 10;
+    const bottom = 22;
+    const innerW = w - left - right;
+    const innerH = h - top - bottom;
+    const x = (i: number) => left + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW);
+    const y = (v: number) => top + innerH - (v / max) * innerH;
+    const path = (vals: number[]) =>
+      vals.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+    const base = top + innerH;
+    const area = `${path(cobrado)} L${x(n - 1).toFixed(1)},${base.toFixed(1)} L${x(0).toFixed(1)},${base.toFixed(1)} Z`;
+    const dots = (vals: number[]) => vals.map((v, i) => ({ x: x(i), y: y(v) }));
+    return {
+      w,
+      h,
+      ticks: [1, 0.5, 0].map((p) => ({ y: y(max * p), text: this.ejeMonto(max * p) })),
+      area,
+      lineG: path(gastado),
+      lineF: path(facturado),
+      dotsG: dots(gastado),
+      dotsF: dots(facturado),
+      dotsC: dots(cobrado),
+      labels: labels.map((text, i) => ({ x: x(i), text })),
+    };
+  }
+
+  filasProveedorVisibles(): RentabilidadProveedorFila[] {
+    const nombre = this.proveedorFiltroNombre.trim();
+    if (!nombre) {
+      return this.data.filasProveedor;
+    }
+    return this.data.filasProveedor.filter((fila) => fila.nombre.trim() === nombre);
+  }
+
+  tonoGananciaCompra(fila: RentabilidadProveedorFila): string {
+    return fila.ganaPorDolar >= 0.45 ? 'rent-text-pos' : '';
+  }
+
+  tonoPrecioProveedor(pct: number): string {
+    if (pct >= 5) {
+      return 'rent-text-neg';
+    }
+    if (pct > 0) {
+      return 'rent-text-warn';
+    }
+    if (pct < 0) {
+      return 'rent-text-pos';
+    }
+    return '';
+  }
+
+  tonoDiasPago(fila: RentabilidadProveedorFila): string {
+    const dias = fila.diasPago;
+    if (dias > 0 && dias <= 15) {
+      return 'rent-text-info';
+    }
+    if (dias > 0 && dias <= 21) {
+      return 'rent-text-neg';
+    }
+    if (dias >= 45) {
+      return 'rent-text-pos';
+    }
+    if (fila.dependenciaAlta && dias >= 30) {
+      return 'rent-text-warn';
+    }
+    return '';
+  }
+
+  proveedorAlerta(fila: RentabilidadProveedorFila): boolean {
+    return fila.diasPago > 0 && fila.diasPago <= 21;
   }
 
   abrirProducto(fila: RentabilidadProductoTablaFila): void {
@@ -581,30 +1047,95 @@ export class RentabilidadComponent implements OnInit, OnChanges {
     return this.seriePath(detalle.chartMargen, 280, 56);
   }
 
+  ejeMonto(value: number): string {
+    if (value <= 0) {
+      return '$0';
+    }
+    if (value >= 1000) {
+      const miles = value / 1000;
+      const texto = Number.isInteger(miles) ? miles.toFixed(0) : miles.toFixed(1);
+      return `$${texto}k`;
+    }
+    return this.formatMonto(value);
+  }
+
+  comboProveedor(detalle: RentabilidadProveedorDetalle): {
+    left: { y: number; text: string }[];
+    right: { y: number; text: string }[];
+    bars: { compraY: number; compraH: number; ventaY: number; ventaH: number; x: number; label: string }[];
+    line: string;
+  } | null {
+    const n = detalle.chartLabels.length;
+    if (!n) {
+      return null;
+    }
+    const w = 720;
+    const h = 220;
+    const padL = 46;
+    const padR = 42;
+    const padT = 12;
+    const padB = 26;
+    const innerH = h - padT - padB;
+    const slot = (w - padL - padR) / n;
+    const maxV = Math.max(...detalle.chartCompras, ...detalle.chartVentas, 1);
+    const margenes = detalle.chartMargen.length ? detalle.chartMargen : [0];
+    let minM = Math.min(...margenes);
+    let maxM = Math.max(...margenes);
+    if (maxM - minM < 1) {
+      minM -= 1;
+      maxM += 1;
+    }
+    const yMonto = (valor: number) => padT + innerH - (valor / maxV) * innerH;
+    const yMargen = (valor: number) => padT + innerH - ((valor - minM) / (maxM - minM)) * innerH;
+    const left = [0, 1, 2, 3].map((i) => {
+      const valor = (maxV / 3) * i;
+      return { y: yMonto(valor), text: this.ejeMonto(valor) };
+    });
+    const right = [0, 1, 2, 3].map((i) => {
+      const valor = minM + ((maxM - minM) / 3) * i;
+      return { y: yMargen(valor), text: `${Math.round(valor)}%` };
+    });
+    const bars = detalle.chartLabels.map((label, i) => {
+      const compra = detalle.chartCompras[i] ?? 0;
+      const venta = detalle.chartVentas[i] ?? 0;
+      const compraH = (compra / maxV) * innerH;
+      const ventaH = (venta / maxV) * innerH;
+      const x = padL + slot * i + slot / 2;
+      return {
+        x,
+        label,
+        compraY: padT + innerH - compraH,
+        compraH,
+        ventaY: padT + innerH - ventaH,
+        ventaH,
+      };
+    });
+    const line = detalle.chartMargen
+      .map((valor, i) => {
+        const x = padL + slot * i + slot / 2;
+        return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${yMargen(valor).toFixed(1)}`;
+      })
+      .join(' ');
+    return { left, right, bars, line };
+  }
+
   tonoPuenteCliente(etiqueta: string): string {
-    if (etiqueta === 'Le queda') {
-      return 'verde';
+    if (
+      etiqueta.startsWith('Descuentos') ||
+      etiqueta === 'Mercadería' ||
+      etiqueta === 'Esperar su pago' ||
+      etiqueta === 'Costo'
+    ) {
+      return 'naranja';
     }
-    if (etiqueta === 'Ganancia') {
-      return 'azul';
-    }
-    if (etiqueta.startsWith('Descuentos') || etiqueta === 'Esperar su pago') {
-      return 'rosa';
-    }
-    if (etiqueta === 'Ventas a precio de lista' || etiqueta === 'Ventas netas') {
-      return 'neutral';
-    }
-    return 'naranja';
+    return 'azul';
   }
 
   tituloTabla(): string {
-    if (this.dimension === 'cliente') {
-      return `¿Cuánto le deja cada cliente? — ${this.periodoTitulo}`;
-    }
-    if (this.dimension === 'proveedor') {
-      return `¿Cuánto le dejan sus proveedores? — ${this.periodoTitulo}`;
-    }
     const dim = this.dimensionOpciones.find((d) => d.id === this.dimension);
+    if (this.dimension === 'proyecto') {
+      return 'Rentabilidad por proyecto';
+    }
     const nombre = dim?.label?.toLowerCase() ?? 'sucursal';
     return `Rentabilidad por ${nombre} — ${this.periodoTitulo}`;
   }
@@ -696,8 +1227,13 @@ export class RentabilidadComponent implements OnInit, OnChanges {
     return this.etiquetaComparacion().toLowerCase();
   }
 
-  formatPct(value: number, digits = 1): string {
-    return `${value.toFixed(digits)}%`;
+  mesNombre(): string {
+    const nombres = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    return nombres[this.mes] ?? '';
+  }
+
+  formatPct(value: number | null | undefined, digits = 1): string {
+    return `${(value ?? 0).toFixed(digits)}%`;
   }
 
   formatVs(value: number): string {
@@ -778,14 +1314,19 @@ export class RentabilidadComponent implements OnInit, OnChanges {
     return Math.min(100, Math.abs(pct));
   }
 
+  anchoPuenteCliente(pct: number, pasos: { pct: number }[]): number {
+    const max = Math.max(100, ...pasos.map((p) => Math.abs(p.pct)));
+    return (Math.abs(pct) / max) * 100;
+  }
+
   anchoRelativo(pct: number, filas: RentabilidadMontoPct[]): number {
     const max = Math.max(...filas.map((f) => f.pct), 1);
     return (pct / max) * 100;
   }
 
-  anchoRelativoMonto(monto: number, filas: { ventas: number }[]): number {
-    const max = Math.max(...filas.map((f) => f.ventas), 1);
-    return (monto / max) * 100;
+  anchoRelativoMonto(monto: number, filas: { ventas?: number; compro?: number; compras?: number }[]): number {
+    const max = Math.max(...filas.map((f) => f.ventas ?? f.compro ?? f.compras ?? 0), 1);
+    return (Math.abs(monto) / max) * 100;
   }
 
   tonoPuente(fila: RentabilidadMontoPct, index: number, total: number): string {
