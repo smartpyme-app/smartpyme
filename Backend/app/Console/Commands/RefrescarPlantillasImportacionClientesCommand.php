@@ -67,6 +67,7 @@ class RefrescarPlantillasImportacionClientesCommand extends Command
         );
         $sheet->setCellValue('O' . $row, '22223333');
         $sheet->setCellValue('P' . $row, 'correoejemplo@ejemplo.com');
+        $sheet->setCellValue('Q' . $row, 'EMP-001');
     }
 
     private function establecerFormulasCodigoEmpresaEnFila(Worksheet $sheet, int $row): void
@@ -221,8 +222,13 @@ class RefrescarPlantillasImportacionClientesCommand extends Command
             $clientes->removeRow($fr + 1, $highest - $fr);
         }
 
+        $q1 = (string) $clientes->getCell('Q1')->getValue();
+        if ($q1 === '' || stripos($q1, 'codigo') === false) {
+            $clientes->setCellValue('Q1', 'codigo_cliente_empresa');
+        }
+
         for ($r = 3; $r <= $fr; $r++) {
-            foreach (['A', 'B', 'C', 'E', 'F', 'G', 'H', 'I', 'K', 'M', 'O', 'P'] as $col) {
+            foreach (['A', 'B', 'C', 'E', 'F', 'G', 'H', 'I', 'K', 'M', 'O', 'P', 'Q'] as $col) {
                 $clientes->setCellValue($col . $r, null);
             }
             $this->establecerFormulasCodigoEmpresaEnFila($clientes, $r);
@@ -243,6 +249,7 @@ class RefrescarPlantillasImportacionClientesCommand extends Command
             '6. Solo se importa la primera hoja del archivo; debe llamarse «clientes» y ser la primera pestaña (izquierda).',
             '7. nit y teléfono: use formato texto en Excel cuando haga falta para no perder ceros.',
             '8. correo es opcional; «-» o vacío se aceptan.',
+            '9. codigo_cliente_empresa (columna Q) es opcional; identificador interno del cliente corporativo.',
         ];
         foreach ($lineas as $i => $texto) {
             $instr->setCellValue('A' . ($i + 1), $texto);

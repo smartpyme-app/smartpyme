@@ -888,6 +888,7 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
     this.cliente.tipo_fiscal = '';
     this.cliente.giro = '';
     this.cliente.empresa_telefono = '';
+    this.cliente.empresa_correo = '';
     this.cliente.empresa_direccion = '';
 
     // Campos de extranjero

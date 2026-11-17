@@ -16,6 +16,7 @@ class ClientesEmpresasPlantillaExport implements FromCollection, WithHeadings
             'ncr',
             'giro',
             'tipo_contribuyente',
+            'codigo_cliente_empresa',
             'dui',
             'nit',
             'direccion',

@@ -35,10 +35,6 @@
             <div class="row">
                 <h6 class="col-12 pb-2 mb-2">Información de contacto</h6>
                 @if (cliente.tipo == 'Empresa') {
-                <div class="form-group col-6 col-lg-3">
-                  <label for="codigo_cliente">Código Cliente</label>
-                  <input type="text" class="form-control" placeholder="Escribe aquí" name="codigo_cliente" [(ngModel)]="cliente.codigo_cliente">
-                </div>
                 <div class="form-group col-lg-3">
                     <label for="nombre">Nombre</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre" [(ngModel)]="cliente.nombre">
@@ -353,6 +349,10 @@
                         <option value="Otro">Otro</option>
                     </select>
                 </div>
+                <div class="form-group col-md-6 col-lg-3">
+                    <label for="codigo_cliente_empresa_cr">Código cliente empresa</label>
+                    <input type="text" class="form-control" id="codigo_cliente_empresa_cr" placeholder="Opcional" name="codigo_cliente" [(ngModel)]="cliente.codigo_cliente" maxlength="60">
+                </div>
                 <div class="form-group col-6 col-lg-3">
                     <label for="empresa_telefono_cr_info">Teléfono:</label>
                     <input type="text" class="form-control" id="empresa_telefono_cr_info" placeholder="Escribe aquí" name="empresa_telefono" [(ngModel)]="cliente.empresa_telefono">
@@ -398,6 +398,10 @@
                     </select>
                     <small class="form-text text-muted">Exento: no aplica {{ 'country.tax.taxLabel' | translate }}; sí impuestos especiales del producto.</small>
                 </div>
+                <div class="form-group col-md-6 col-lg-3">
+                    <label for="codigo_cliente_empresa">Código cliente empresa</label>
+                    <input type="text" class="form-control" id="codigo_cliente_empresa" placeholder="Opcional" name="codigo_cliente" [(ngModel)]="cliente.codigo_cliente" maxlength="60">
+                </div>
                 <div class="form-group col-6 col-lg-6">
                     <label for="giro">Giro:</label>
                     @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
@@ -422,6 +426,11 @@
                 </div>
                 }
                 @if (cliente.tipo == 'Empresa') {
+                <div class="form-group col-6 col-lg-4">
+                    <label for="empresa_correo_info">Correo de la empresa</label>
+                    <input type="email" class="form-control" id="empresa_correo_info" placeholder="facturacion@empresa.com" name="empresa_correo" [(ngModel)]="cliente.empresa_correo">
+                    <small class="form-text text-muted">Recepción de comprobantes electrónicos (FE/DTE); distinto al correo del contacto abajo.</small>
+                </div>
                 <div class="form-group col-6 col-lg-3">
                     <label for="pais">Pais:</label>
                     @if (apiService.auth_user().empresa.pais != 'El Salvador' && !esCostaRicaFe()) {

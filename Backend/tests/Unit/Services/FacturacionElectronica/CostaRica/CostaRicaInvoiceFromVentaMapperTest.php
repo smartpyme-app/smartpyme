@@ -280,7 +280,8 @@ final class CostaRicaInvoiceFromVentaMapperTest extends TestCase
         $cliente->telefono = null;
         $cliente->empresa_direccion = 'Veredas del Café, Santa Bárbara';
         $cliente->empresa_telefono = '88881234';
-        $cliente->correo = 'admin@veredacafe.cr';
+        $cliente->empresa_correo = 'fe@veredacafe.cr';
+        $cliente->correo = 'contacto@veredacafe.cr';
         $cliente->cod_distrito = '40401';
         $cliente->distrito = 'Santa Bárbara';
         $cliente->municipio = 'Santa Bárbara';
@@ -296,7 +297,7 @@ final class CostaRicaInvoiceFromVentaMapperTest extends TestCase
         $this->assertSame('Veredas del Café, Santa Bárbara', $receiver['location']['address_details']);
         $this->assertSame('Santa Bárbara', $receiver['location']['neighborhood']);
         $this->assertSame('88881234', $receiver['phone']['number']);
-        $this->assertSame(['admin@veredacafe.cr'], $receiver['email']);
+        $this->assertSame(['fe@veredacafe.cr'], $receiver['email']);
     }
 
     public function test_receptor_nombre_se_trunca_a_100_caracteres_xsd(): void

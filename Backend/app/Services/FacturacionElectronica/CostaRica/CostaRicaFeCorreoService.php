@@ -163,7 +163,7 @@ final class CostaRicaFeCorreoService
             $v = Venta::with('cliente')->where('id', $id)->firstOrFail();
             $c = $v->cliente;
             $nombre = $c ? trim((string) ($c->nombre ?? '')) : 'Cliente';
-            $correo = $c ? $c->correo : null;
+            $correo = $c ? $c->getCorreoFeReceptor() : null;
 
             return [$correo, $nombre !== '' ? $nombre : 'Cliente', $v];
         }
@@ -172,7 +172,7 @@ final class CostaRicaFeCorreoService
             $d = DevolucionVenta::with('cliente')->where('id', $id)->firstOrFail();
             $c = $d->cliente;
             $nombre = $c ? trim((string) ($c->nombre ?? '')) : 'Cliente';
-            $correo = $c ? $c->correo : null;
+            $correo = $c ? $c->getCorreoFeReceptor() : null;
 
             return [$correo, $nombre !== '' ? $nombre : 'Cliente', $d];
         }
