@@ -229,10 +229,12 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
             ];
         });
 
+        // Solo NC/ND sobre Crédito fiscal (igual que la pantalla); el evento de retorno sobre facturas va al libro de consumidor.
         $devoluciones = DevolucionVenta::with(['cliente', 'venta'])
             ->where('enable', true)
             ->whereHas('venta', function ($query) {
-                $query->where('estado', '!=', 'Anulada');
+                $query->where('estado', '!=', 'Anulada')
+                    ->whereHas('documento', fn ($dq) => $dq->where('nombre', 'Crédito fiscal'));
             })
             ->when($request->id_sucursal, function ($query) use ($request) {
                 return $query->where('id_sucursal', $request->id_sucursal);

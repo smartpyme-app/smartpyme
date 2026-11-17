@@ -259,6 +259,34 @@
                       />
                     </div>
                   }
+                  @if (formConfig.mostrarOpcionesDescuentosSv) {
+                    <div class="form-group col-md-3">
+                      <label for="institucion_previsional">Institución previsional (SPU):</label>
+                      <select
+                        [(ngModel)]="empleado.institucion_previsional"
+                        name="institucion_previsional"
+                        id="institucion_previsional"
+                        class="form-select"
+                      >
+                        <option [ngValue]="null">Sin definir</option>
+                        <option value="COF">COF - AFP Confía</option>
+                        <option value="MAX">MAX - AFP Crecer</option>
+                        <option value="ISP">ISP - Instituto Salvadoreño de Pensiones</option>
+                        <option value="ISS">ISS - Unidad de Pensiones del ISSS</option>
+                      </select>
+                    </div>
+                    <div class="form-group col-md-3">
+                      <label for="apellido_casada">Apellido de casada:</label>
+                      <input
+                        type="text"
+                        [(ngModel)]="empleado.apellido_casada"
+                        name="apellido_casada"
+                        id="apellido_casada"
+                        class="form-control"
+                        maxlength="40"
+                      />
+                    </div>
+                  }
 
                   <!-- Información Laboral -->
                   <h6 class="col-12 pb-2 mb-2 mt-4 fw-bold">Información Laboral</h6>

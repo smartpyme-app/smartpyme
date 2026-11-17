@@ -420,6 +420,61 @@ trait BuildsTributosVenta
     }
 
     /**
+     * NC/ND v4: cada ítem informa noGravado, totalIva, ivaPerci e ivaRete. Al ajustar un CCF el IVA va en
+     * resumen.tributos (código 20), por eso totalIva es 0; percepción y retención se prorratean por ventaGravada
+     * y el último ítem absorbe el redondeo para que la suma cuadre con el resumen.
+     */
+    protected function agregarRetencionesItemsNota($cuerpoDocumento, float $ivaPerci, float $ivaRete): Collection
+    {
+        $items = collect($cuerpoDocumento)->values();
+        $base = (float) $items->sum('ventaGravada');
+        $ultimo = $items->count() - 1;
+        $acumPerci = 0.0;
+        $acumRete = 0.0;
+
+        return $items->map(function ($item, $i) use ($base, $ultimo, $ivaPerci, $ivaRete, &$acumPerci, &$acumRete) {
+            $peso = $base > 0 ? ((float) $item['ventaGravada']) / $base : ($i === 0 ? 1.0 : 0.0);
+            $perci = $i === $ultimo ? round($ivaPerci - $acumPerci, 2) : round($ivaPerci * $peso, 2);
+            $rete = $i === $ultimo ? round($ivaRete - $acumRete, 2) : round($ivaRete * $peso, 2);
+            $acumPerci += $perci;
+            $acumRete += $rete;
+
+            return $item + [
+                'noGravado' => 0,
+                'ivaPerci' => $perci,
+                'totalIva' => 0,
+                'ivaRete' => $rete,
+            ];
+        });
+    }
+
+    protected function totalEnLetras(float $monto): string
+    {
+        $n = explode('.', number_format($monto, 2, '.', ''));
+        $formatter = new \Luecano\NumeroALetras\NumeroALetras();
+
+        return $formatter->toWords((float) $n[0]) . ' DÓLARES CON ' . $formatter->toWords($n[1]) . ' CENTAVOS.';
+    }
+
+    /** CAT-006: 22 = 1 %, C4 = 13 %, C9 = otras retenciones de IVA. */
+    protected function codigoRetencionMh(float $ivaRete, float $totalGravada): ?string
+    {
+        if ($ivaRete <= 0) {
+            return null;
+        }
+        // ponytail: se infiere por proporción con holgura de 0.1 pp; si el MH rechaza casos especiales, guardar el código en la venta.
+        $tasa = $totalGravada > 0 ? $ivaRete / $totalGravada * 100 : 0;
+        if (abs($tasa - 1) <= 0.1) {
+            return '22';
+        }
+        if (abs($tasa - 13) <= 0.1) {
+            return 'C4';
+        }
+
+        return 'C9';
+    }
+
+    /**
      * Hacienda valida resumen.totalGravada = suma de cuerpoDocumento.ventaGravada (2 decimales).
      *
      * @param  \Illuminate\Support\Collection|array<int, array<string, mixed>>  $cuerpoDocumento

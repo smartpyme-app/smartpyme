@@ -38,14 +38,21 @@ class MHAnulacion extends Model
         }
 
         $codigoGeneracionAnula = strtoupper(Uuid::uuid4()->toString());
-        $this->caja_codigo = 'P001';
+        // El evento de retorno (18) no trae tipoDte sino tipoEvento.
+        $tipoDte = $DTE['identificacion']['tipoDte'] ?? $DTE['identificacion']['tipoEvento'] ?? null;
+
+        // CCF/NC/ND/ER: la fecha del evento debe ser la de generación del DTE; FE/FEX/FSE admiten hasta 3 meses después.
+        $fecEmi = in_array($tipoDte, ['03', '05', '06', '18'], true)
+            ? $DTE['identificacion']['fecEmi']
+            : ($this->venta->fecha_anulacion ? \Carbon\Carbon::parse($this->venta->fecha_anulacion)->format('Y-m-d') : \Carbon\Carbon::now()->format('Y-m-d'));
 
         $identificacion = [
-            "version" => 2,
+            "version" => 3,
             "ambiente" => $DTE['identificacion']['ambiente'],
             "codigoGeneracion" => $codigoGeneracionAnula,
-            "fecAnula" => $this->venta->fecha_anulacion ? \Carbon\Carbon::parse($this->venta->fecha_anulacion)->format('Y-m-d') : \Carbon\Carbon::now()->format('Y-m-d'),
-            "horAnula" => \Carbon\Carbon::now()->format('H:i:s'),
+            "fecEmi" => $fecEmi,
+            "horEmi" => \Carbon\Carbon::now()->format('H:i:s'),
+            "fusion" => NULL,
         ];
 
         $tipo_documento = NULL;
@@ -55,7 +62,7 @@ class MHAnulacion extends Model
         $telefono = NULL;
 
 
-        if (isset($DTE['receptor']) && $DTE['identificacion']['tipoDte'] == '01') {
+        if (isset($DTE['receptor']) && $tipoDte == '01') {
             $tipo_documento = $DTE['receptor']['tipoDocumento'];
             $num_documento = $DTE['receptor']['numDocumento'];
             $nombre = $DTE['receptor']['nombre'];
@@ -64,8 +71,8 @@ class MHAnulacion extends Model
         }
 
 
-        if (($DTE['identificacion']['tipoDte'] ?? null) == '14') {
-            $sujeto = $DTE['sujetoExcluido'] ?? null;
+        if ($tipoDte == '14') {
+            $sujeto = $DTE['receptor'] ?? $DTE['sujetoExcluido'] ?? null;
             if (!$sujeto && method_exists($this->venta, 'proveedor') && $this->venta->proveedor) {
                 $proveedor = $this->venta->proveedor;
                 $tipoDoc = TipoIdentificacionReceptor::elSalvador(
@@ -98,7 +105,15 @@ class MHAnulacion extends Model
             }
         }
 
-        if ($DTE['identificacion']['tipoDte'] == '11') {
+        if ($tipoDte == '18' && isset($DTE['documento'])) {
+            $tipo_documento = $DTE['documento']['tipoDocumento'];
+            $num_documento = $DTE['documento']['numDocumento'];
+            $nombre = $DTE['documento']['nombre'];
+            $correo = $DTE['documento']['correo'];
+            $telefono = $DTE['documento']['telefono'];
+        }
+
+        if ($tipoDte == '11') {
             $tipo_documento = $DTE['receptor']['tipoDocumento'];
             $num_documento = $DTE['receptor']['numDocumento'];
             $nombre = $DTE['receptor']['nombre'];
@@ -106,9 +121,10 @@ class MHAnulacion extends Model
             $telefono = $DTE['receptor']['telefono'];
         }
 
-        if (isset($DTE['receptor']) && (($DTE['identificacion']['tipoDte'] == '03') || $DTE['identificacion']['tipoDte'] == '05') || $DTE['identificacion']['tipoDte'] == '06') {
-            $tipo_documento = '36';
-            $num_documento = $DTE['receptor']['nit'];
+        if (isset($DTE['receptor']) && in_array($tipoDte, ['03', '05', '06'], true)) {
+            // NC/ND v4 identifican al receptor con tipoDocumento/numDocumento; CCF y documentos previos usan nit.
+            $tipo_documento = $DTE['receptor']['tipoDocumento'] ?? '36';
+            $num_documento = $DTE['receptor']['numDocumento'] ?? $DTE['receptor']['nit'];
             $nombre = $DTE['receptor']['nombre'];
             $correo = $DTE['receptor']['correo'];
             $telefono = $DTE['receptor']['telefono'];
@@ -131,12 +147,11 @@ class MHAnulacion extends Model
         }
 
         $documento = [
-            "tipoDte" => $DTE['identificacion']['tipoDte'],
+            "tipoDte" => $tipoDte,
             "codigoGeneracion" => $codigoGeneracionDoc,
             "selloRecibido" => $selloRecibido,
-            "numeroControl" => $DTE['identificacion']['numeroControl'],
+            "numeroControl" => $DTE['identificacion']['numeroControl'] ?? NULL,
             "fecEmi" => $DTE['identificacion']['fecEmi'],
-            "montoIva" => isset($DTE['resumen']['totalIva']) ? $DTE['resumen']['totalIva'] : NULL,
             "codigoGeneracionR" => ($tipoAnulacion == 1 || $tipoAnulacion == 3) && $this->venta->codigo_generacion_remplazo 
                 ? $this->venta->codigo_generacion_remplazo 
                 : NULL, // Solo si el motivo es error (1) u otro (3), hay que mandar el que sustituye
@@ -180,29 +195,18 @@ class MHAnulacion extends Model
             "numDocSolicita" => str_replace('-', '', (string) ($DTE['emisor']['nit'] ?? '')),
         ];
 
-        switch ($this->empresa->tipo_establecimiento) {
-            case 'Sucursal':
-                $this->empresa->tipoEstablecimiento = '01';
-                break;
-            case 'Casa matriz':
-                $this->empresa->tipoEstablecimiento = '02';
-                break;
-            case 'Bodega':
-                $this->empresa->tipoEstablecimiento = '04';
-                break;
-            default:
-                $this->empresa->tipoEstablecimiento = '02';
-                break;
-        }
-
+        // El emisor del evento debe coincidir con el del DTE: establecimiento y punto de venta salen de su número de control.
+        $numeroControl = (string) ($DTE['identificacion']['numeroControl'] ?? '');
+        $codEstableMH = strlen($numeroControl) === 31 ? substr($numeroControl, 7, 4) : ($DTE['emisor']['codEstableMH'] ?? $this->sucursal->cod_estable_mh ?? NULL);
+        $codPuntoVentaMH = strlen($numeroControl) === 31 ? substr($numeroControl, 11, 4) : ($DTE['emisor']['codPuntoVentaMH'] ?? $this->sucursal->codigo_punto_venta ?? 'P001');
 
         $emisor = [
             "nit" => str_replace('-', '', $this->empresa->nit),
             "nombre" => $this->empresa->nombre,
-            "tipoEstablecimiento" => $this->sucursal->tipo_establecimiento,
-            "nomEstablecimiento" => $this->empresa->nombre,
-            "codEstable" => $this->sucursal->cod_estable_mh ? $this->sucursal->cod_estable_mh : NULL,
-            "codPuntoVenta" => $this->caja_codigo ? $this->caja_codigo : NULL,
+            "codEstableMH" => $codEstableMH,
+            "codEstable" => $codEstableMH,
+            "codPuntoVentaMH" => $codPuntoVentaMH,
+            "codPuntoVenta" => $codPuntoVentaMH,
             "telefono" => $this->empresa->telefono,
             "correo" => $this->empresa->correo,
         ];

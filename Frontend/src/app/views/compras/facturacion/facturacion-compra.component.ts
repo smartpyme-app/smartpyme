@@ -1527,7 +1527,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                 }
             }
 
-            const percepcion = parseFloat(jsonData.resumen.ivaPerci1) || 0;
+            const percepcion = parseFloat(jsonData.resumen.ivaPerci ?? jsonData.resumen.ivaPerci1) || 0;
             if (percepcion > 0) {
                 this.compra.percepcion = percepcion;
                 this.compra.cobrar_percepcion = true;
@@ -2111,8 +2111,8 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                 }
             }
 
-            // Percepción (DTE.resumen.ivaPerci1): si trae percepción, asignar monto y sello a la compra
-            const percepcion = parseFloat(jsonData.resumen.ivaPerci1) || 0;
+            // Percepción (DTE.resumen.ivaPerci, v1: ivaPerci1): si trae percepción, asignar monto y sello a la compra
+            const percepcion = parseFloat(jsonData.resumen.ivaPerci ?? jsonData.resumen.ivaPerci1) || 0;
             if (percepcion > 0) {
                 this.compra.percepcion = percepcion;
                 this.compra.cobrar_percepcion = true;

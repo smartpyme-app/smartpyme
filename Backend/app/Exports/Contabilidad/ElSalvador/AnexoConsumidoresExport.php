@@ -47,12 +47,18 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
     {
         $fe = $this->feActiva();
 
-        return LibroConsumidoresFilas::consultaAnexo($this->request, $fe)
+        $ventas = LibroConsumidoresFilas::consultaAnexo($this->request, $fe)
             ->with([
                 'detalles' => fn ($q) => $q->select('id', 'id_venta', 'id_producto')->orderBy('id')->limit(1),
                 'detalles.producto:id,tipo',
             ])
             ->get();
+
+        // toBase: merge de Eloquent agrupa por id y una devolución pisaría a la venta con el mismo id.
+        return $ventas->toBase()
+            ->merge(LibroConsumidoresFilas::retornosAnexo($this->request)->all())
+            ->sortByDesc('fecha')
+            ->values();
     }
 
     public function map($venta): array
@@ -76,7 +82,7 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
         return [
             \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y'),
             $this->obtenerClaseDocumento($venta),
-            '01',
+            $venta->tipo_anexo ?? '01',
             $numeroControl,
             $sello,
             $tieneFE ? $codigoGeneracion : $correlativo,

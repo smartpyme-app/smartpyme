@@ -33,6 +33,8 @@ class Empleado extends Model
         'nit',
         'isss',
         'afp',
+        'institucion_previsional',
+        'apellido_casada',
         'configuracion_descuentos',
         'es_pensionado',
         'fecha_nacimiento',

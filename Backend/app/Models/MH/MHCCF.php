@@ -43,7 +43,7 @@ class MHCCF extends Model
         $this->venta->tipoContingencia = NULL; // 1 No disponibilidad de sistema del MH 2 No disponibilidad de sistema del emisor 3 Falla en el suministro de servicio de Internet del Emisor 4 Falla en el suministro de servicio de energía eléctrica del emisor que impida la transmisión de los DTE 5 Otro (deberá digitar un máximo de 500 caracteres explicando el motivo)
         $this->venta->motivoContin = NULL;
         $this->venta->moneda = 'USD';
-        $this->venta->version = 3;
+        $this->venta->version = 4;
 
 
         // Condición
@@ -85,7 +85,7 @@ class MHCCF extends Model
         $partes = explode('.', strval( number_format($this->venta->total - $this->venta->cuenta_a_terceros, 2) ));
 
         $formatter = new NumeroALetras();
-        $n = explode(".", number_format($venta->total,2));
+        $n = explode(".", number_format($this->totalPagar(), 2));
         
         $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
         $centavos = $formatter->toWords($n[1]);
@@ -122,17 +122,15 @@ class MHCCF extends Model
             "codActividad" => ActividadEconomicaEmisor::resolver($this->empresa, $this->sucursal ?? null)['cod'],
             "descActividad" => ActividadEconomicaEmisor::resolver($this->empresa, $this->sucursal ?? null)['giro'],
             "nombreComercial" => $this->empresa->nombre_comercial,
-            "tipoEstablecimiento" => $this->sucursal->tipo_establecimiento,
             "direccion" => [
                 "departamento" => $this->empresa->cod_departamento,
                 "municipio" => $this->empresa->cod_municipio,
+                "distrito" => $this->empresa->cod_distrito,
                 "complemento" => $this->empresa->direccion,
             ],
             "telefono" => $this->empresa->telefono,
-            "codEstableMH" => $this->sucursal->cod_estable_mh ? $this->sucursal->cod_estable_mh : NULL,
-            "codEstable" => $this->empresa->cod_estable ? $this->empresa->cod_estable : NULL,
-            "codPuntoVentaMH" => $this->caja_codigo ? $this->caja_codigo : NULL,
-            "codPuntoVenta" => $this->caja_codigo ? $this->caja_codigo : NULL,
+            "codEstable" => $this->sucursal->cod_estable_mh ?: NULL,
+            "codPuntoVenta" => $this->caja_codigo ?: NULL,
             "correo" => $this->empresa->correo,
         ];
     }
@@ -153,6 +151,7 @@ class MHCCF extends Model
               "direccion" => [
                 "departamento" => $this->venta->cliente->cod_departamento,
                 "municipio" => $this->venta->cliente->cod_municipio,
+                "distrito" => $this->venta->cliente->cod_distrito,
                 "complemento" => $this->venta->cliente->empresa_direccion ?? $this->venta->cliente->direccion,
               ],
               "telefono" => $this->venta->cliente->telefono,
@@ -161,15 +160,6 @@ class MHCCF extends Model
     }
 
     public function generarCCF(){
-
-        $apendice = NULL;
-        
-        if ($this->venta->observaciones ) {
-            $apendice = collect();
-            if ($this->venta->observaciones) {
-                $apendice->push(['etiqueta' => 'Observaciones', 'campo' => 'Observaciones', 'valor'=> $this->venta->observaciones]);
-            }
-        }
 
         if ($this->documentoTieneIva()) {
             $this->venta->gravada = $this->venta->sub_total;
@@ -209,12 +199,11 @@ class MHCCF extends Model
                   "totalDescu" => floatval(number_format($totalDescu, 2, '.', '')),
                   "tributos" => $tributos,
                   "subTotal" => $subTotal,
-                  "ivaPerci1" => floatval(number_format($this->venta->iva_percibido, 2, '.', '')),
-                  "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
-                  "reteRenta" => floatval(number_format($this->venta->renta_retenida ?? 0, 2, '.', '')),
+                  "ivaPerci" => floatval(number_format($this->venta->iva_percibido, 2, '.', '')),
+                  "ivaRete" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
                   "montoTotalOperacion" => $montoTotalOperacion,
                   "totalNoGravado" => floatval(number_format($this->venta->cuenta_a_terceros, 2, '.', '')),
-                  "totalPagar" => floatval(number_format($this->venta->total, 2, '.', '')),
+                  "totalPagar" => $this->totalPagar(),
                   "totalLetras" => $this->venta->total_en_letras,
                   // "totalIva" => floatval(number_format($this->venta->iva, 2, '.', '')),
                   "saldoFavor" => 0,
@@ -222,16 +211,16 @@ class MHCCF extends Model
                   "pagos" => [
                     [
                       "codigo" => $this->venta->cod_metodo_pago,
-                      "montoPago" => floatval(number_format($this->venta->total, 2, '.', '')),
+                      "montoPago" => $this->totalPagar(),
                       "referencia" => NULL,
                       "plazo" => $pagoCond['plazo'],
                       "periodo" => $pagoCond['periodo']
                     ]
                   ],
-                  "numPagoElectronico" => ""
+                  "numPagoElectronico" => "",
+                  "observaciones" => $this->venta->observaciones ?: NULL
                 ],
-                "extension" => NULL,
-                "apendice" => $apendice
+                "apendice" => NULL
             ];
     }
 
@@ -445,6 +434,12 @@ class MHCCF extends Model
             'plazo' => $this->obtenerPlazo($this->venta->dias_credito),
             'periodo' => $periodo,
         ];
+    }
+
+    /** DTE v4 ya no informa reteRenta: el total de la venta la descuenta, el DTE no. */
+    private function totalPagar(): float
+    {
+        return floatval(number_format((float) $this->venta->total + (float) ($this->venta->renta_retenida ?? 0), 2, '.', ''));
     }
 
     private function obtenerPlazo($dias_credito) {

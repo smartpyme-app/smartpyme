@@ -86,7 +86,7 @@ class DteDocumentParseService
             'total_amount' => (float) ($resumen['totalPagar'] ?? $resumen['montoTotalOperacion'] ?? 0),
             'issuer_nit' => (string) ($dto->emisor['nit'] ?? $dto->emisor['identificacion'] ?? ''),
             'issuer_name' => (string) ($dto->emisor['nombre'] ?? ''),
-            'receiver_nit' => $receptor['nit'] ?? null,
+            'receiver_nit' => $receptor['nit'] ?? $receptor['numDocumento'] ?? null,
             'receiver_name' => $receptor['nombre'] ?? null,
             'items' => $items,
             'pais' => $dto->pais,

@@ -13,6 +13,7 @@ import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { DevolucionCompraDetallesComponent } from './detalles/devolucion-compra-detalles.component';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { esElSalvadorFe as empresaEsElSalvador } from '@services/facturacion-electronica/fe-pais.util';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 
 @Component({
     selector: 'app-devolucion-compra-nueva',
@@ -42,6 +43,7 @@ export class DevolucionCompraNuevaComponent extends BaseModalComponent implement
         protected override modalManager: ModalManagerService,
         private sumPipe:SumPipe,
         private route: ActivatedRoute, private router: Router,
+        private facturacionElectronica: FacturacionElectronicaService,
     ) {
         super(modalManager, alertService);
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
@@ -115,6 +117,11 @@ export class DevolucionCompraNuevaComponent extends BaseModalComponent implement
                     this.devolucion.tipo_documento = documento.nombre;
                 }
             }
+            // Evento de retorno (18): no usa documento de sucursal; se emite al guardar sobre la FSE de la compra.
+            if (this.route.snapshot.queryParamMap.get('tipo_documento')! == 'evento_retorno') {
+                this.devolucion.tipo_documento = 'Evento de retorno';
+                this.cdr.markForCheck();
+            }
         }, error => {this.alertService.error(error);});
     }
 
@@ -177,6 +184,10 @@ export class DevolucionCompraNuevaComponent extends BaseModalComponent implement
             this.apiService.store('devolucion-compra', this.devolucion)
                 .pipe(this.untilDestroyed())
                 .subscribe(devolucion => {
+                if (devolucion.tipo_documento == 'Evento de retorno') {
+                    this.emitirEventoRetorno(devolucion);
+                    return;
+                }
                 this.saving = false;
                 if(devolucion.tipo_documento == 'Factura' || devolucion.tipo_documento == 'Credito Fiscal' || devolucion.tipo_documento == 'Ticket'){
                     this.imprimirDocDevolucion(devolucion);
@@ -185,6 +196,19 @@ export class DevolucionCompraNuevaComponent extends BaseModalComponent implement
                 this.alertService.success('Devolucion de compra creada', 'La devolución de compra fue guardado exitosamente.');
                 this.cdr.markForCheck();
             },error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck(); });
+        }
+
+        /** Tras guardar, emite el evento de retorno; si falla, la devolución queda pendiente de emitir en el listado. */
+        private emitirEventoRetorno(devolucion: any) {
+            this.facturacionElectronica.emitirDTEEventoRetornoCompra(devolucion).then(() => {
+                this.alertService.success('Evento de retorno', 'Emitido y sellado por Hacienda.');
+            }).catch((error: any) => {
+                this.alertService.warning('Evento de retorno no emitido', String(error?.error?.error ?? error?.message ?? error));
+            }).finally(() => {
+                this.saving = false;
+                this.router.navigate(['/devoluciones/compras']);
+                this.cdr.markForCheck();
+            });
         }
 
     public imprimirDocDevolucion(devolucion:any){

@@ -398,6 +398,8 @@ class EmpleadosController extends Controller
                 'nit',
                 'isss',
                 'afp',
+                'institucion_previsional',
+                'apellido_casada',
                 'fecha_nacimiento',
                 'direccion',
                 'telefono',

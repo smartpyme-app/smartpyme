@@ -177,7 +177,6 @@
                 <ng-option value="1">Bienes</ng-option>
                 <ng-option value="2">Servicios</ng-option>
                 <ng-option value="3">Ambos</ng-option>
-                <ng-option value="4">Otros</ng-option>
             </ng-select>
         </div>
         <div class="form-group col-md-6 col-lg-4">
@@ -189,6 +188,7 @@
                 }
             </ng-select>
         </div>
+        @if (venta.tipo_item_export != 2) {
         <div class="form-group col-md-6 col-lg-4">
             <label for="recinto_fiscal">Recinto Fiscal</label>
             <ng-select name="recinto_fiscal" [(ngModel)]="venta.recinto_fiscal" placeholder="Seleccione aquí"
@@ -208,6 +208,7 @@
                 }
             </ng-select>
         </div>
+        }
         <div class="form-group col-md-4 col-lg-3">
             <label for="seguro">Seguro</label><br>
             <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.seguro"

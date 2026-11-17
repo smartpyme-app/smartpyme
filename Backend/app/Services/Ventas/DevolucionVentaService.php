@@ -48,7 +48,8 @@ class DevolucionVentaService
         foreach ($devolucionesActivas as $devolucionExistente) {
             $nombreDocumentoExistente = optional($devolucionExistente->documento)->nombre;
 
-            if ($nombreDocumentoExistente == 'Nota de crédito') {
+            // El evento de retorno resta de la factura igual que una nota de crédito (MH: la suma no excede el DTE).
+            if (in_array($nombreDocumentoExistente, ['Nota de crédito', 'Evento de retorno'], true)) {
                 $totalCreditos += $devolucionExistente->total;
             } elseif ($nombreDocumentoExistente == 'Nota de débito') {
                 $totalDebitos += $devolucionExistente->total;
@@ -58,7 +59,7 @@ class DevolucionVentaService
         $documentoNuevo = $idDocumentoNuevo ? Documento::find($idDocumentoNuevo) : null;
         $nombreDocumentoNuevo = optional($documentoNuevo)->nombre;
 
-        if ($nombreDocumentoNuevo == 'Nota de crédito') {
+        if (in_array($nombreDocumentoNuevo, ['Nota de crédito', 'Evento de retorno'], true)) {
             $totalCreditos += $totalNuevo;
         } elseif ($nombreDocumentoNuevo == 'Nota de débito') {
             $totalDebitos += $totalNuevo;

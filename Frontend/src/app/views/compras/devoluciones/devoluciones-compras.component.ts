@@ -13,6 +13,7 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import Swal from 'sweetalert2';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 
 @Component({
     selector: 'app-devoluciones-compras',
@@ -37,7 +38,8 @@ export class DevolucionesComprasComponent extends BaseCrudComponent<any> impleme
         apiService: ApiService,
         alertService: AlertService,
         modalManager: ModalManagerService,
-        private cdr: ChangeDetectorRef
+        private cdr: ChangeDetectorRef,
+        private facturacionElectronica: FacturacionElectronicaService,
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'devolucion/compra',
@@ -195,6 +197,99 @@ export class DevolucionesComprasComponent extends BaseCrudComponent<any> impleme
                 this.cdr.markForCheck();
             }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
         super.openModal(template);
+    }
+
+    // Evento de retorno (18) sobre compras de sujeto excluido
+
+    esEventoRetorno(compra: any): boolean {
+        return compra?.tipo_documento === 'Evento de retorno' && !!this.apiService.auth_user()?.empresa?.facturacion_electronica;
+    }
+
+    tieneDteInvalidacion(compra: any): boolean {
+        return !!compra?.dte_invalidacion;
+    }
+
+    private reemplazarEnListado(compra: any): void {
+        const idx = this.compras.data?.findIndex((c: any) => c.id === compra.id);
+        if (idx !== undefined && idx !== -1 && this.compras.data) {
+            this.compras.data[idx] = { ...compra };
+        }
+        this.cdr.markForCheck();
+    }
+
+    emitirEventoRetorno(compra: any): void {
+        this.saving = true;
+        this.facturacionElectronica.emitirDTEEventoRetornoCompra(compra).then((guardada: any) => {
+            this.reemplazarEnListado({ ...compra, ...guardada });
+            this.alertService.success('Evento de retorno', 'Emitido y sellado por Hacienda.');
+        }).catch((error: any) => {
+            this.alertService.warning('Evento de retorno no emitido', String(error?.error?.error ?? error?.message ?? error));
+        }).finally(() => {
+            this.saving = false;
+            this.cdr.markForCheck();
+        });
+    }
+
+    verDteEventoRetorno(compra: any, formato: 'pdf' | 'json', anulado = false): void {
+        const ruta = formato === 'pdf' ? 'dte' : 'dte-json';
+        window.open(`${this.apiService.baseUrl}/api/reporte/${ruta}/${compra.id}/18/?token=${this.apiService.auth_token()}&origen=compra${anulado ? '&documento=anulado' : ''}`, 'hola', 'width=400');
+    }
+
+    enviarCorreoEventoRetorno(compra: any): void {
+        this.apiService.store('enviarDTE', { id: compra.id, tipo_dte: '18', origen: 'compra' })
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: () => this.alertService.success('Correo enviado', 'El evento de retorno fue enviado al proveedor.'),
+                error: (error: any) => this.alertService.error(error),
+            });
+    }
+
+    /** Invalida el evento en Hacienda y, si obtiene sello, anula la devolución (restaura inventario). */
+    anularEventoRetorno(compra: any): void {
+        if (!confirm('¿Confirma invalidar el evento de retorno en Hacienda?')) {
+            return;
+        }
+        this.saving = true;
+        const fallo = (error: any) => {
+            this.alertService.error(error?.error?.descripcionMsg ?? error?.error?.observaciones ?? error);
+            this.saving = false;
+            this.cdr.markForCheck();
+        };
+        this.apiService.store('generarDTEAnuladoEventoRetornoCompra', { id: compra.id })
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (dte: any) => {
+                    compra.dte_invalidacion = dte;
+                    this.facturacionElectronica.firmarDTE(dte).pipe(this.untilDestroyed()).subscribe({
+                        next: (dteFirmado: any) => {
+                            if (dteFirmado.status == 'ERROR') {
+                                fallo(dteFirmado.body?.mensaje);
+                                return;
+                            }
+                            compra.dte_invalidacion.firmaElectronica = dteFirmado.body;
+                            this.facturacionElectronica.anularDTE(compra, dteFirmado.body).pipe(this.untilDestroyed()).subscribe({
+                                next: (res: any) => {
+                                    if (res.estado == 'PROCESADO' && res.selloRecibido) {
+                                        compra.dte_invalidacion.sello = res.selloRecibido;
+                                        compra.enable = '0';
+                                        this.apiService.store('devolucion/compra', compra).pipe(this.untilDestroyed()).subscribe({
+                                            next: (guardada: any) => {
+                                                this.reemplazarEnListado({ ...compra, ...guardada });
+                                                this.alertService.success('Evento de retorno', 'Invalidado en Hacienda.');
+                                                this.saving = false;
+                                            },
+                                            error: fallo,
+                                        });
+                                    }
+                                },
+                                error: fallo,
+                            });
+                        },
+                        error: fallo,
+                    });
+                },
+                error: fallo,
+            });
     }
 
     public imprimir(compra:any){

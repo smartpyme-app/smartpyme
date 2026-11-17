@@ -117,7 +117,7 @@
                     </td>
                     <td style="width: 50%; vertical-align: top;">
                         <p><b>Nombre o razón social: </b>{{ \App\Support\NombreComercial::mostrar($DTE['receptor']['nombre'] ?? '', $registro ?? ($venta ?? null)) }}</p>
-                        <p><b>NIT:</b> {{ $DTE['receptor']['nit'] }}</p>
+                        <p><b>NIT:</b> {{ $DTE['receptor']['nit'] ?? $DTE['receptor']['numDocumento'] ?? '' }}</p>
                         <p><b>NRC:</b> {{ $DTE['receptor']['nrc'] }}</p>
                         <p><b>Act. económica:</b> {{ $DTE['receptor']['descActividad'] }}</p>
                         <p><b>Dirección:</b> {{ $DTE['receptor']['direccion']['complemento'] }}
@@ -213,17 +213,17 @@
                 <tr>
                     <td colspan="4"></td>
                     <td colspan="{{ $muestraColCuentaTerceros ? 5 : 4 }}">Monto global Desc., Rebajas y otros a ventas no sujetas: </td>
-                    <td class="text-right">${{ number_format($DTE['resumen']['descuNoSuj'], 2) }}</td>
+                    <td class="text-right">${{ number_format($DTE['resumen']['descuNoSuj'] ?? 0, 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="4"></td>
                     <td colspan="{{ $muestraColCuentaTerceros ? 5 : 4 }}">Monto global Desc., Rebajas y otros a ventas exentas: </td>
-                    <td class="text-right">${{ number_format($DTE['resumen']['descuExenta'], 2) }}</td>
+                    <td class="text-right">${{ number_format($DTE['resumen']['descuExenta'] ?? 0, 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="4"></td>
                     <td colspan="{{ $muestraColCuentaTerceros ? 5 : 4 }}">Monto global Desc., Rebajas y otros a ventas gravadas: </td>
-                    <td class="text-right">${{ number_format($DTE['resumen']['descuGravada'], 2) }}</td>
+                    <td class="text-right">${{ number_format($DTE['resumen']['descuGravada'] ?? $DTE['resumen']['totalDescu'] ?? 0, 2) }}</td>
                 </tr>
 
                 @if (isset($DTE['resumen']['tributos']))
@@ -238,7 +238,7 @@
                 <tr>
                     <td colspan="4"></td>
                     <td colspan="{{ $muestraColCuentaTerceros ? 5 : 4 }}">Sub-Total: </td>
-                    <td class="text-right">${{ number_format($DTE['resumen']['subTotal'], 2) }}</td>
+                    <td class="text-right">${{ number_format($DTE['resumen']['subTotal'] ?? $DTE['resumen']['subTotalVentas'] ?? 0, 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="4"></td>
@@ -248,12 +248,12 @@
                 <tr>
                     <td colspan="4"></td>
                     <td colspan="{{ $muestraColCuentaTerceros ? 5 : 4 }}">IVA Retenido: (-) </td>
-                    <td class="text-right">${{ number_format($DTE['resumen']['ivaRete1'], 2) }}</td>
+                    <td class="text-right">${{ number_format($DTE['resumen']['ivaRete'] ?? $DTE['resumen']['ivaRete1'] ?? 0, 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="4"></td>
                     <td colspan="{{ $muestraColCuentaTerceros ? 5 : 4 }}">Retención de Renta: </td>
-                    <td class="text-right">${{ number_format($DTE['resumen']['reteRenta'], 2) }}</td>
+                    <td class="text-right">${{ number_format($DTE['resumen']['reteRenta'] ?? 0, 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="4"></td>

@@ -93,6 +93,7 @@ final class DocumentosDefaultPorPais
             'Orden de compra',
             'Nota de crédito',
             'Nota de débito',
+            'Evento de retorno',
             'Factura de remisión',
             'Sujeto excluido',
             'Factura de exportación',
