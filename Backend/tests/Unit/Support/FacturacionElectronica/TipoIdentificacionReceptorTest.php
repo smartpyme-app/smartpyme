@@ -74,4 +74,24 @@ class TipoIdentificacionReceptorTest extends TestCase
     {
         $this->assertSame('123456789012', TipoIdentificacionReceptor::numeroCostaRica('03', '', '123456789012'));
     }
+
+    public function test_sv_resolver_sin_identificacion_devuelve_null(): void
+    {
+        $this->assertSame([null, null], TipoIdentificacionReceptor::resolverIdentificacionReceptorElSalvador(null, null, null));
+        $this->assertSame([null, null], TipoIdentificacionReceptor::resolverIdentificacionReceptorElSalvador('', '', ''));
+        $this->assertSame([null, null], TipoIdentificacionReceptor::resolverIdentificacionReceptorElSalvador('13', null, null));
+    }
+
+    public function test_sv_resolver_con_dui_normaliza(): void
+    {
+        $this->assertSame(['13', '012345678'], TipoIdentificacionReceptor::resolverIdentificacionReceptorElSalvador(null, null, '01234567-8'));
+    }
+
+    public function test_sv_resolver_con_nit_sin_guiones(): void
+    {
+        $this->assertSame(
+            ['36', '06141234560010'],
+            TipoIdentificacionReceptor::resolverIdentificacionReceptorElSalvador(null, '0614-123456-001-0', null)
+        );
+    }
 }

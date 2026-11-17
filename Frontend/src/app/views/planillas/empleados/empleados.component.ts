@@ -245,12 +245,13 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
   }
 
   public openModalDarBaja(template: TemplateRef<any>, empleado: any) {
-    this.empleado = { ...empleado };
-    // Establecer la fecha de notificación por defecto como hoy
-    this.empleado.fecha_fin = new Date().toISOString().split('T')[0];
-    // La fecha efectiva de baja puede ser igual a la fecha de notificación inicialmente
-    this.empleado.fecha_baja = this.empleado.fecha_fin;
-    super.openModal(template);
+    const hoy = new Date().toISOString().split('T')[0];
+    // Pasar el empleado: openModal() sin item reemplaza this.empleado por uno nuevo y pierde el id.
+    super.openModal(template, {
+      ...empleado,
+      fecha_fin: hoy,
+      fecha_baja: hoy,
+    });
   }
 
   public onFileSelected(event: any) {
@@ -355,8 +356,7 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
   }
 
   public openModalDarAlta(template: TemplateRef<any>, empleado: any) {
-    this.empleado = { ...empleado };
-    super.openModal(template);
+    super.openModal(template, empleado);
   }
 
   public darBaja() {

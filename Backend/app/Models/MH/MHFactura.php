@@ -151,26 +151,15 @@ class MHFactura extends Model
             ];
         }
 
-        if (TipoIdentificacionReceptor::tipoGuardado($this->venta->cliente->tipo_documento)) {
-            $this->venta->cliente->num_documento = TipoIdentificacionReceptor::numeroElSalvador(
-                $this->venta->cliente->tipo_documento,
-                $this->venta->cliente->nit,
-                $this->venta->cliente->dui
-            );
-        } else {
-            if ($this->venta->cliente->nit) {
-                $this->venta->cliente->tipo_documento = '36';
-                $this->venta->cliente->num_documento = $this->venta->cliente->nit ? str_replace('-', '', $this->venta->cliente->nit) : NULL;
-            }
-            if ($this->venta->cliente->dui) {
-                $this->venta->cliente->tipo_documento = '13';
-                $this->venta->cliente->num_documento = $this->venta->cliente->dui ? $this->venta->cliente->dui : NULL;
-            }
-        }
+        [$tipoDocumento, $numDocumento] = TipoIdentificacionReceptor::resolverIdentificacionReceptorElSalvador(
+            $this->venta->cliente->tipo_documento,
+            $this->venta->cliente->nit,
+            $this->venta->cliente->dui
+        );
 
         return [
-              "tipoDocumento" => $this->venta->cliente->tipo_documento, //36 NIT 13 DUI
-              "numDocumento" => str_replace('-', '', $this->venta->cliente->num_documento),
+              "tipoDocumento" => $tipoDocumento, //36 NIT 13 DUI
+              "numDocumento" => $numDocumento,
               "nrc" => NULL, // Factura 01: MH exige nrc null en receptor; el NCR del cliente solo aplica en CCF.
               "nombre" => $this->venta->nombreClienteFiscal(),
               "codActividad" => $this->venta->cliente->cod_giro ? $this->venta->cliente->cod_giro : NULL,

@@ -161,13 +161,7 @@ class AbonoCompraService
      */
     protected function actualizarEstadoCompra(Compra $compra): void
     {
-        if ($compra->saldo <= 0) {
-            $compra->estado = 'Pagada';
-            $compra->save();
-        } else {
-            $compra->estado = 'Pendiente';
-            $compra->save();
-        }
+        $compra->sincronizarEstadoPorSaldo();
     }
 
     /**
