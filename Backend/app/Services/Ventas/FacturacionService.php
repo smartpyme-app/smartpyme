@@ -47,13 +47,6 @@ class FacturacionService
      */
     public function assertReglasNegocio(User $user, Request $request): void
     {
-        if ($user->tipo === 'Ventas Limitado' && $request->credito == 1) {
-            throw new FacturacionException(
-                'Los usuarios de tipo "Ventas Limitado" no pueden crear ventas al crédito.',
-                403
-            );
-        }
-
         if ($request->estado === 'Pendiente' && $request->id_cliente) {
             $cliente = Cliente::find($request->id_cliente);
             if ($cliente && $cliente->limite_credito !== null && $cliente->limite_credito > 0) {

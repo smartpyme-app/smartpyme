@@ -142,8 +142,7 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
 
     get mostrarCuentaTercerosEnLinea(): boolean {
         return this.habilitarCuentaTerceros
-            && this.venta?.cotizacion != 1
-            && this.usuario?.tipo !== 'Ventas Limitado';
+            && this.venta?.cotizacion != 1;
     }
 
     /** Mientras el módulo de paquetes esté activo, el monto en línea no se edita en el front (viene del paquete / API). */

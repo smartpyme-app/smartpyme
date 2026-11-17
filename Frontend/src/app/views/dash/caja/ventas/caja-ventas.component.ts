@@ -27,6 +27,11 @@ import {
 import { PipesModule } from '../../../../pipes/pipes.module';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { CrearAbonoVentaComponent } from '@shared/modals/crear-abono-venta/crear-abono-venta.component';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
+import { SharedModule } from '@shared/shared.module';
 import {
     puedeDevolucionVenta,
     puedeEditarVenta,
@@ -40,7 +45,22 @@ import {
     selector: 'app-caja-ventas',
     templateUrl: './caja-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, AlertsHaciendaComponent, FeEnviarCorreoComponent, PipesModule, PopoverModule, TooltipModule],
+    imports: [
+        CommonModule,
+        RouterModule,
+        FormsModule,
+        ImportarExcelComponent,
+        AlertsHaciendaComponent,
+        FeEnviarCorreoComponent,
+        PipesModule,
+        PopoverModule,
+        TooltipModule,
+        NgSelectModule,
+        PaginationComponent,
+        CrearAbonoVentaComponent,
+        NotificacionesContainerComponent,
+        SharedModule,
+    ],
 })
 
 export class CajaVentasComponent extends BaseCrudComponent<any> implements OnInit {

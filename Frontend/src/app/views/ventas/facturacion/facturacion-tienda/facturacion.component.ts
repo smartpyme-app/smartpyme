@@ -803,12 +803,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     this.venta.estado = 'Pagada';
     this.venta.condicion = 'Contado';
 
-    // Asegurar que usuarios "Ventas Limitado" siempre tengan ventas al contado
-    if (this.apiService.auth_user().tipo === 'Ventas Limitado') {
-      this.venta.credito = false;
-      this.venta.consigna = false;
-    }
-
     this.venta.tipo_operacion = 'Gravada';
     this.venta.tipo_renta = null;
     this.venta.detalle_banco = '';
@@ -1720,12 +1714,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     }
 
     public setCredito() {
-        // Prevenir que usuarios "Ventas Limitado" activen ventas al crédito
-        if (this.apiService.auth_user().tipo === 'Ventas Limitado' && this.venta.credito) {
-            this.venta.credito = false;
-            this.alertService.error('Los usuarios de tipo "Ventas Limitado" no pueden crear ventas al crédito.');
-            return;
-        }
         if (this.venta.credito) {
             this.venta.estado = 'Pendiente';
             this.venta.condicion = 'Crédito';
@@ -2828,12 +2816,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     }
 
     aplicarEstadoConsignaEnVenta(this.venta);
-
-    // Asegurar que usuarios "Ventas Limitado" siempre tengan ventas al contado
-    if (this.apiService.auth_user().tipo === 'Ventas Limitado') {
-      this.venta.credito = false;
-      this.venta.consigna = false;
-    }
 
     if (!this.venta.detalles || !Array.isArray(this.venta.detalles) || this.venta.detalles.length === 0) {
       this.alertService.warning(

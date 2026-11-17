@@ -100,6 +100,8 @@ const routes: Routes = [
         { path: 'cliente/vista-360/:id', component: ClienteVista360Component, title: 'Vista 360° Cliente'},
         { path: 'cliente/crear', component: ClienteComponent, title: 'Cliente'},
         { path: 'cliente/editar/:id', component: ClienteComponent, title: 'Cliente'},
+        // ponytail: enlaces legacy /cliente/:id → editar (p. ej. listado vendedor)
+        { path: 'cliente/:id', redirectTo: 'cliente/editar/:id', pathMatch: 'full' },
         { path: 'clientes/cuentas-cobrar', component: CuentasCobrarComponent, title: 'Cuentas por cobrar' },
         {
             path: 'clientes/creditos',
