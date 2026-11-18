@@ -40,13 +40,8 @@
           <button class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" (click)="loadAll()">Todos</button>
       </div>
       <div class="col d-flex gap-2 justify-content-end">
-          <ng-select name="id_cliente" (change)="filtrarVentas()" [(ngModel)]="filtros.id_cliente" class="form-select p-0 border-0 bg-default  w-auto" style="min-width: 100px;">
-              <ng-option value="">Cliente</ng-option>
-              @for (cliente of clientes; track cliente.id) {
-                  <ng-option [value]="cliente.id">
-                      {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}@if (cliente.nombre_comercial) { ({{ cliente.nombre_comercial }}) }
-                  </ng-option>
-              }
+          <ng-select name="id_cliente" (change)="filtrarVentas()" [(ngModel)]="filtros.id_cliente" class="form-select p-0 border-0 bg-default  w-auto" style="min-width: 100px;"
+                     [items]="clientesFiltroBarra" bindLabel="etiqueta" bindValue="id" [virtualScroll]="true" [clearable]="false">
           </ng-select>
       </div>
   </div>
@@ -172,13 +167,8 @@
           </div>
           <div class="form-group col-md-12">
               <label for="filtros.id_cliente">Cliente:</label>
-              <ng-select name="id_cliente" [(ngModel)]="filtros.id_cliente" class="form-select p-0">
-                  <ng-option value="">Todos</ng-option>
-                  @for (cliente of clientes; track cliente.id) {
-                      <ng-option [value]="cliente.id">
-                          {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}@if (cliente.nombre_comercial) { ({{ cliente.nombre_comercial }}) }
-                      </ng-option>
-                  }
+              <ng-select name="id_cliente" [(ngModel)]="filtros.id_cliente" class="form-select p-0"
+                         [items]="clientesFiltroModal" bindLabel="etiqueta" bindValue="id" [virtualScroll]="true" [clearable]="false">
               </ng-select>
           </div>
           <div class="form-group col-md-6">
