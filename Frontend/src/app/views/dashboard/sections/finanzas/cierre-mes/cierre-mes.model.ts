@@ -51,6 +51,7 @@ export interface CierreMesDetalle {
   mesCertificar: string;
   mesEtiquetaCorto: string;
   checklist: CierreChecklistItem[];
+  bloqueado: boolean;
   puedeCertificar: boolean;
   presupuesto: CierrePresupuestoFila[];
   impuestos: {

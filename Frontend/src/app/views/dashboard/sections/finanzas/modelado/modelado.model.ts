@@ -5,17 +5,42 @@ export interface ModeladoConfiguradoDetalle {
   efectivoDias: number | null;
 }
 
-export interface ModeladoModuloLinea {
-  etiqueta: string;
-  valor: string;
-  valorSecundario?: string;
+export interface ModeladoPlanillaFila {
+  concepto: string;
+  detalle: string;
+  monto: number;
+  cuando: string;
+  proximo: string;
+  alAnio: number;
 }
 
-export interface ModeladoModuloExterno {
-  titulo: string;
-  estadoConexion: string;
-  lineas: ModeladoModuloLinea[];
-  accion: string;
+export interface ModeladoPlanillasModulo {
+  empleados: number;
+  sucursales: number;
+  ultima: string;
+  filas: ModeladoPlanillaFila[];
+}
+
+export interface ModeladoPrestamoFila {
+  nombre: string;
+  saldo: number;
+  tasaAnual: number;
+  cuota: number | null;
+  diaPago: string;
+  cuotasRestantes: number | null;
+  interesMes: number | null;
+  capitalMes: number | null;
+}
+
+export interface ModeladoPrestamosModulo {
+  activos: number;
+  filas: ModeladoPrestamoFila[];
+}
+
+export interface ModeladoModulosExternos {
+  tituloSeccion: string;
+  planillas: ModeladoPlanillasModulo | null;
+  prestamos: ModeladoPrestamosModulo | null;
 }
 
 export type ModeladoGastoTipo = 'fijo' | 'variable';
@@ -29,17 +54,10 @@ export interface ModeladoGastoFila {
   tipo: ModeladoGastoTipo | null;
   pctVentas?: number | null;
   nuevo?: boolean;
-}
-
-export interface ModeladoPuntoEquilibrio {
-  costosFijosMes: number;
-  gastosVariablesPctVentas: number | null;
-  costoVentasPctVentas: number | null;
-  margenContribucionPct: number | null;
-  ventasMinimasMes: number | null;
-  ventasPromedio3Meses: number;
-  margenSeguridadPct: number | null;
-  sinClasificarMonto: number;
+  origen?: 'planillas' | 'prestamos';
+  proveedor?: string;
+  sucursal?: string;
+  diaPago?: string;
 }
 
 export interface ModeladoVista {
@@ -56,13 +74,10 @@ export interface ModeladoVista {
     vencimiento: string;
     aguinaldoRango: string;
   };
-  modulosExternos: {
-    tituloSeccion: string;
-    modulos: ModeladoModuloExterno[];
-  };
+  modulosExternos: ModeladoModulosExternos;
   paso1Titulo: string;
   gastosFijosVariables: ModeladoGastoFila[];
-  puntoEquilibrio: ModeladoPuntoEquilibrio;
+  ventasPromedio3Meses: number;
   paso2Titulo: string;
   calendarioCostosFijos: ModeladoCalendarioCostoFila[];
   calendarioPendiente: ModeladoCalendarioPendiente | null;

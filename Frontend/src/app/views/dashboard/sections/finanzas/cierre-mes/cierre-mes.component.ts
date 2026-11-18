@@ -37,6 +37,7 @@ export class CierreMesComponent implements OnInit {
   data = { ...CIERRE_MES_VACIA, anio: this.anio };
   mesSeleccionadoId: number | null = null;
   cargando = false;
+  certificando = false;
   contenidoListo = false;
   errorMensaje: string | null = null;
   private loadSeq = 0;
@@ -66,7 +67,32 @@ export class CierreMesComponent implements OnInit {
   }
 
   puedeCertificar(detalle: CierreMesDetalle): boolean {
-    return detalle.puedeCertificar && this.pendientesChecklist(detalle) === 0;
+    return detalle.puedeCertificar && this.pendientesChecklist(detalle) === 0 && !this.certificando;
+  }
+
+  certificar(detalle: CierreMesDetalle): void {
+    if (!this.puedeCertificar(detalle) || this.mesSeleccionadoId == null) {
+      return;
+    }
+    this.certificando = true;
+    this.errorMensaje = null;
+    const mes = this.mesSeleccionadoId + 1;
+    this.cierreData
+      .certificar({ anio: this.anio, mes })
+      .pipe(
+        take(1),
+        finalize(() => {
+          this.certificando = false;
+          this.cdr.markForCheck();
+        }),
+      )
+      .subscribe((ok) => {
+        if (!ok) {
+          this.errorMensaje = 'No se pudo bloquear el mes.';
+          return;
+        }
+        this.cargar(mes);
+      });
   }
 
   etiquetaAccion(codigo: string): string {

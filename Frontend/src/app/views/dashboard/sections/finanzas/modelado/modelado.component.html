@@ -51,12 +51,12 @@
 
   <div class="row mb-2">
     <div class="col-12">
-      <div class="sf-card">
-        <div class="card-body p-3 px-4">
-          <div class="modelado-perfil d-flex flex-wrap align-items-center gap-3 gap-md-4">
-            <div class="modelado-perfil-titulo d-inline-flex align-items-center gap-2">
+      <div class="sf-card modelado-perfil-card">
+        <div class="card-body">
+          <div class="modelado-perfil">
+            <div class="modelado-perfil-titulo">
               <span class="modelado-perfil-icon" aria-hidden="true">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
                   <path d="M12 3a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1 -4 10 15.3 15.3 0 0 1 -4 -10 15.3 15.3 0 0 1 4 -10z" />
                   <path d="M2 12h20" />
@@ -85,276 +85,252 @@
     </div>
   </div>
 
-  @if (data.modulosExternos.modulos.length) {
+  @if (data.modulosExternos.planillas || data.modulosExternos.prestamos) {
   <div class="row mb-2">
     <div class="col-12">
-      <h2 class="modelado-seccion-titulo">{{ data.modulosExternos.tituloSeccion }}</h2>
-    </div>
-  </div>
+      <div class="sf-card modelado-ext">
+        <div class="card-body">
+          <h2 class="modelado-ext-titulo">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            {{ data.modulosExternos.tituloSeccion }}
+          </h2>
 
-  <div class="row g-2 mb-2">
-    @for (modulo of data.modulosExternos.modulos; track modulo.titulo) {
-      <div class="col-lg-6">
-        <div class="sf-card h-100">
-          <div class="card-body p-4">
-            <div class="card h-100">
-              <div class="card-body p-3 d-flex flex-column">
-                <header class="modelado-modulo-header mb-3">
-                  <h3 class="sf-card-head__title mb-1">{{ modulo.titulo }}</h3>
-                  <p class="modelado-modulo-estado mb-0">
-                    <span class="modelado-modulo-dot" aria-hidden="true"></span>
-                    {{ modulo.estadoConexion }}
-                  </p>
-                </header>
-
-                <ul class="modelado-modulo-lineas list-unstyled mb-3 flex-grow-1">
-                  @for (linea of modulo.lineas; track linea.etiqueta) {
-                    <li class="modelado-modulo-linea">
-                      <span class="modelado-modulo-etiqueta">{{ linea.etiqueta }}</span>
-                      <span class="modelado-modulo-valor">{{ linea.valor }}</span>
-                    </li>
-                  }
-                </ul>
-
-                <button type="button" class="btn btn-sm btn-outline-primary modelado-modulo-accion align-self-start">
-                  {{ modulo.accion }}
-                </button>
+          @if (data.modulosExternos.planillas; as planillas) {
+            <div class="modelado-ext-bloque">
+              <header class="modelado-ext-head">
+                <h3 class="modelado-ext-sub">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  Planillas · {{ cuenta(planillas.empleados, 'empleado', 'empleados') }}@if (planillas.sucursales) { en {{ cuenta(planillas.sucursales, 'sucursal', 'sucursales') }} }
+                </h3>
+                <div class="modelado-ext-acciones">
+                  <span class="modelado-ext-estado"><span class="modelado-modulo-dot" aria-hidden="true"></span>Conectado · última planilla {{ planillas.ultima }}</span>
+                  <a routerLink="/planilla" class="modelado-ext-btn">Ver planilla actual</a>
+                </div>
+              </header>
+              <div class="sf-table-wrap">
+                <table class="sf-table modelado-ext-tabla">
+                  <thead>
+                    <tr>
+                      <th>Concepto</th>
+                      <th>Monto</th>
+                      <th>Cuándo se paga</th>
+                      <th>Próximo pago</th>
+                      <th>Al año</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (fila of planillas.filas; track fila.concepto) {
+                      <tr>
+                        <td>
+                          <div class="modelado-ext-concepto">{{ fila.concepto }}</div>
+                          <div class="modelado-ext-detalle">{{ fila.detalle }}</div>
+                        </td>
+                        <td class="modelado-ext-num">{{ formatMonto(fila.monto) }}</td>
+                        <td>{{ fila.cuando }}</td>
+                        <td>{{ fila.proximo || '—' }}</td>
+                        <td class="modelado-ext-num">{{ formatMonto(fila.alAnio) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
               </div>
             </div>
-          </div>
+          }
+
+          @if (data.modulosExternos.prestamos; as prestamos) {
+            <div class="modelado-ext-bloque">
+              <header class="modelado-ext-head">
+                <h3 class="modelado-ext-sub">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
+                  Préstamos
+                </h3>
+                <div class="modelado-ext-acciones">
+                  <span class="modelado-ext-estado"><span class="modelado-modulo-dot" aria-hidden="true"></span>Conectado · {{ cuenta(prestamos.activos, 'préstamo activo', 'préstamos activos') }}</span>
+                  <a routerLink="/finanzas/prestamos" class="modelado-ext-btn">Ver préstamos</a>
+                </div>
+              </header>
+              <div class="sf-table-wrap">
+                <table class="sf-table modelado-ext-tabla modelado-ext-tabla-prestamo">
+                  <thead>
+                    <tr>
+                      <th>Préstamo</th>
+                      <th>Saldo</th>
+                      <th>Tasa anual</th>
+                      <th>Cuota</th>
+                      <th>Día de pago</th>
+                      <th>Cuotas restantes</th>
+                      <th>Intereses del mes</th>
+                      <th>Capital del mes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (fila of prestamos.filas; track fila.nombre) {
+                      <tr>
+                        <td class="modelado-ext-concepto">{{ fila.nombre }}</td>
+                        <td class="modelado-ext-num">{{ formatMonto(fila.saldo) }}</td>
+                        <td>{{ tasa(fila.tasaAnual) }}</td>
+                        <td class="modelado-ext-num">{{ fila.cuota == null ? '—' : formatMonto(fila.cuota) }}</td>
+                        <td>{{ fila.diaPago || '—' }}</td>
+                        <td>{{ fila.cuotasRestantes == null ? '—' : fila.cuotasRestantes }}</td>
+                        <td class="modelado-ext-num">
+                          {{ fila.interesMes == null ? '—' : formatMonto(fila.interesMes) }}
+                          @if (fila.interesMes != null) { <span class="modelado-ext-nota">va al P&amp;L</span> }
+                        </td>
+                        <td class="modelado-ext-num">
+                          {{ fila.capitalMes == null ? '—' : formatMonto(fila.capitalMes) }}
+                          @if (fila.capitalMes != null) { <span class="modelado-ext-nota">solo caja</span> }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
         </div>
       </div>
-    }
+    </div>
   </div>
   }
 
   <div class="row g-2 mb-2">
-    <div class="col-lg-8">
-      <div class="sf-card h-100">
-        <div class="card-body p-4">
-          <div class="card h-100">
-            <div class="card-body p-3">
-              <h2 class="sf-card-head__title mb-3">{{ data.paso1Titulo }}</h2>
+    <div class="col-12">
+      <div class="sf-card h-100 modelado-paso1">
+        <div class="card-body">
+              <h2 class="modelado-paso1-titulo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>
+                {{ data.paso1Titulo }}
+              </h2>
 
-              <ul class="modelado-gastos-list list-unstyled mb-3">
+              <ul class="modelado-gastos-list list-unstyled">
                 @for (gasto of gastos; track gasto.id) {
+                  @if (gasto.montoMensual > 0 || gasto.tipo || gasto.nuevo || gasto.origen) {
                   <li
                     class="modelado-gasto-row"
-                    [class.modelado-gasto-row--nuevo]="gasto.nuevo && gasto.tipo === null"
-                    [class.modelado-gasto-row--sin-tipo]="gasto.tipo === null && !gasto.nuevo">
+                    [class.modelado-gasto-row--nuevo]="gasto.nuevo && gasto.tipo === null">
                     <div class="modelado-gasto-info">
                       <div class="modelado-gasto-nombre">
                         {{ gasto.nombre }}
-                        @if (gasto.nuevo) {
+                        @if (gasto.origen === 'planillas') {
+                          <span class="modelado-gasto-badge"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Planillas</span>
+                        } @else if (gasto.origen === 'prestamos') {
+                          <span class="modelado-gasto-badge"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Préstamos</span>
+                        }
+                        @if (gasto.nuevo && !gasto.origen) {
                           <span class="modelado-gasto-tag">nuevo</span>
                         }
                       </div>
                       <div class="modelado-gasto-meta">{{ gastoSubtitulo(gasto) }}</div>
                     </div>
-                    <input
-                      type="text"
-                      inputmode="decimal"
-                      class="form-control form-control-sm modelado-gasto-input"
-                      [attr.value]="gasto.montoMensual ? gasto.montoMensual : ''"
-                      (blur)="guardarMonto(gasto, $event)"
-                      [attr.aria-label]="'Monto mensual ' + gasto.nombre" />
-                    <div class="sf-seg" role="group" [attr.aria-label]="'Tipo de ' + gasto.nombre">
-                      <button
-                        type="button"
-                        class="sf-seg__btn"
-                        [class.is-active]="gasto.tipo === 'fijo'"
-                        [attr.aria-pressed]="gasto.tipo === 'fijo'"
-                        (mousedown)="elegirTipo(gasto, 'fijo', $event)">
+                    @if (gasto.origen) {
+                      <span class="modelado-gasto-fijo">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                         Fijo
-                      </button>
-                      <button
-                        type="button"
-                        class="sf-seg__btn"
-                        [class.is-active]="gasto.tipo === 'variable'"
-                        [attr.aria-pressed]="gasto.tipo === 'variable'"
-                        (mousedown)="elegirTipo(gasto, 'variable', $event)">
-                        Variable
-                      </button>
-                    </div>
+                      </span>
+                    } @else {
+                      <div class="modelado-gasto-seg" role="group" [attr.aria-label]="'Tipo de ' + gasto.nombre">
+                        <button
+                          type="button"
+                          class="modelado-gasto-seg-btn"
+                          [class.is-fijo]="gasto.tipo === 'fijo'"
+                          [attr.aria-pressed]="gasto.tipo === 'fijo'"
+                          (mousedown)="elegirTipo(gasto, 'fijo', $event)">
+                          Fijo
+                        </button>
+                        <button
+                          type="button"
+                          class="modelado-gasto-seg-btn"
+                          [class.is-variable]="gasto.tipo === 'variable'"
+                          [attr.aria-pressed]="gasto.tipo === 'variable'"
+                          (mousedown)="elegirTipo(gasto, 'variable', $event)">
+                          Variable
+                        </button>
+                      </div>
+                    }
                   </li>
+                  }
                 }
               </ul>
               @if (gastoNuevo; as nuevo) {
-                <div class="modelado-gasto-form card border-0 bg-light mb-3">
-                  <div class="card-body p-3">
-                    <h3 class="modelado-gasto-form-titulo mb-3">Nuevo gasto</h3>
-                    <div class="row g-2 mb-2">
-                      <div class="col-md-6">
-                        <label class="form-label modelado-gasto-form-label">Nombre</label>
-                        <input
-                          type="text"
-                          class="form-control form-control-sm"
-                          placeholder="Ej.: Comisiones de vendedores"
-                          [(ngModel)]="nuevo.nombre"
-                          aria-label="Nombre del gasto" />
-                      </div>
-                      <div class="col-md-6">
-                        <label class="form-label modelado-gasto-form-label">Categoría del P&amp;L</label>
-                        <select class="form-select form-select-sm" [(ngModel)]="nuevo.rubro" aria-label="Categoría">
-                          @for (rubro of rubrosGasto; track rubro.id) {
-                            <option [value]="rubro.id">{{ rubro.label }}</option>
-                          }
-                        </select>
-                      </div>
+                <div class="modelado-nuevo">
+                  <h3 class="modelado-nuevo-titulo">Nuevo gasto</h3>
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="modelado-nuevo-label" for="gastoNuevoNombre">Nombre</label>
+                      <input id="gastoNuevoNombre" type="text" class="form-control modelado-nuevo-input" placeholder="Ej.: Vigilancia nocturna" [(ngModel)]="nuevo.nombre" />
                     </div>
-                    <div class="row g-2 mb-3">
-                      <div class="col-md-6">
-                        <label class="form-label modelado-gasto-form-label">Área</label>
-                        <select class="form-select form-select-sm" disabled aria-label="Área">
-                          @for (a of areasGasto; track a.id) {
-                            <option [value]="a.id">{{ a.label }}</option>
-                          }
-                        </select>
-                      </div>
-                      <div class="col-md-6">
-                        <label class="form-label modelado-gasto-form-label">Sucursal</label>
-                        <select class="form-select form-select-sm" disabled aria-label="Sucursal">
-                          <option>Todas</option>
-                        </select>
-                      </div>
+                    <div class="col-md-6">
+                      <label class="modelado-nuevo-label" for="gastoNuevoProveedor">Proveedor</label>
+                      <ng-select
+                        id="gastoNuevoProveedor"
+                        class="modelado-nuevo-input"
+                        [items]="proveedores"
+                        bindLabel="etiqueta"
+                        bindValue="etiqueta"
+                        [(ngModel)]="nuevo.proveedor"
+                        placeholder="Buscar proveedor"
+                        notFoundText="No hay proveedores"
+                        [clearable]="true"
+                        [searchable]="true">
+                      </ng-select>
                     </div>
-                    <p class="modelado-gasto-form-label mb-1">¿Cómo se comporta?</p>
-                    <div class="modelado-comportamiento mb-3" role="group" aria-label="Comportamiento del gasto">
-                      <button
-                        type="button"
-                        class="modelado-comportamiento-btn"
-                        [class.modelado-comportamiento-btn--active]="nuevo.tipo === 'variable'"
-                        (click)="nuevo.tipo = 'variable'">
-                        Variable — sube con las ventas
-                      </button>
-                      <button
-                        type="button"
-                        class="modelado-comportamiento-btn"
-                        [class.modelado-comportamiento-btn--active]="nuevo.tipo === 'fijo'"
-                        (click)="nuevo.tipo = 'fijo'">
-                        Fijo — mismo monto cada mes
-                      </button>
+                    <div class="col-md-6">
+                      <label class="modelado-nuevo-label" for="gastoNuevoRubro">Categoría de gastos</label>
+                      <select id="gastoNuevoRubro" class="form-select modelado-nuevo-input" [(ngModel)]="nuevo.rubro">
+                        @for (rubro of rubrosGasto; track rubro.id) {
+                          <option [value]="rubro.id">{{ rubro.label }}</option>
+                        }
+                      </select>
                     </div>
-                    @if (nuevo.tipo === 'variable') {
-                      <div class="row g-2 align-items-end mb-3">
-                        <div class="col-md-4">
-                          <label class="form-label modelado-gasto-form-label">% de las ventas</label>
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.1"
-                            class="form-control form-control-sm"
-                            [(ngModel)]="nuevo.pctVentas"
-                            aria-label="Porcentaje de ventas" />
-                        </div>
-                        <div class="col-md-8 modelado-gasto-form-hint">
-                          <span>{{ formatMonto(nuevoGastoMontoVariable()) }}/mes</span>
-                          @if (nuevoGastoMargenPreview(); as margen) {
-                            <span class="modelado-gasto-form-impacto">{{ margen }}</span>
-                          }
-                        </div>
+                    <div class="col-md-6">
+                      <label class="modelado-nuevo-label" for="gastoNuevoSucursal">Sucursal</label>
+                      <select id="gastoNuevoSucursal" class="form-select modelado-nuevo-input" [(ngModel)]="nuevo.sucursal">
+                        <option value="">Todas las sucursales</option>
+                        @for (sucursal of sucursales; track sucursal.id) {
+                          <option [value]="sucursal.nombre">{{ sucursal.nombre }}</option>
+                        }
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <p class="modelado-nuevo-label mb-1">¿Cómo se comporta?</p>
+                      <div class="modelado-nuevo-seg" role="group" aria-label="Comportamiento del gasto">
+                        <button type="button" [class.is-on]="nuevo.tipo === 'fijo'" (click)="nuevo.tipo = 'fijo'">Fijo</button>
+                        <button type="button" [class.is-on]="nuevo.tipo === 'variable'" (click)="nuevo.tipo = 'variable'">Variable</button>
                       </div>
-                    } @else {
-                      <div class="row g-2 align-items-end mb-3">
-                        <div class="col-md-4">
-                          <label class="form-label modelado-gasto-form-label">Monto mensual</label>
-                          <input
-                            type="number"
-                            min="0"
-                            class="form-control form-control-sm"
-                            [(ngModel)]="nuevo.montoMensual"
-                            aria-label="Monto mensual" />
-                        </div>
-                        <div class="col-md-3">
-                          <label class="form-label modelado-gasto-form-label">Día de pago</label>
-                          <input
-                            type="text"
-                            class="form-control form-control-sm"
-                            [(ngModel)]="nuevo.diaPago"
-                            aria-label="Día de pago" />
-                        </div>
-                        <div class="col-md-5">
-                          <div class="form-check modelado-gasto-form-iva">
-                            <input class="form-check-input" type="checkbox" [(ngModel)]="nuevo.llevaIva" id="gastoNuevoIva" />
-                            <label class="form-check-label" for="gastoNuevoIva">Lleva IVA</label>
-                          </div>
-                          @if (nuevoGastoEquilibrioPreview(); as eqPrev) {
-                            <p class="modelado-gasto-form-impacto mb-0">{{ eqPrev }}</p>
-                          }
-                        </div>
+                      <p class="modelado-nuevo-ayuda">{{ comportamientoTexto(nuevo.tipo) }}</p>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="modelado-nuevo-label" for="gastoNuevoMonto">{{ nuevo.tipo === 'fijo' ? 'Monto mensual' : 'Monto estimado por mes' }}</label>
+                      <div class="modelado-nuevo-monto">
+                        <span aria-hidden="true">$</span>
+                        <input id="gastoNuevoMonto" type="number" min="0" class="form-control" [placeholder]="nuevo.tipo === 'fijo' ? 'Ej.: 300' : 'Ej.: 150'" [(ngModel)]="nuevo.montoMensual" />
+                      </div>
+                      @if (nuevo.tipo === 'variable') {
+                        <p class="modelado-nuevo-ayuda">Un estimado; se ajusta con lo que registre cada mes.</p>
+                      }
+                    </div>
+                    @if (nuevo.tipo === 'fijo') {
+                      <div class="col-md-6">
+                        <label class="modelado-nuevo-label" for="gastoNuevoDia">Día de pago</label>
+                        <input id="gastoNuevoDia" type="text" class="form-control modelado-nuevo-input" [(ngModel)]="nuevo.diaPago" />
                       </div>
                     }
-                    <div class="d-flex flex-wrap gap-2">
-                      <button type="button" class="btn btn-sm btn-primary" (click)="guardarGastoNuevo()">Agregar gasto</button>
-                      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="cancelarGastoNuevo()">Cancelar</button>
-                    </div>
+                  </div>
+                  <div class="modelado-nuevo-acciones">
+                    <button type="button" class="modelado-nuevo-agregar" [disabled]="!puedeAgregarGasto(nuevo)" (click)="guardarGastoNuevo()">Agregar gasto</button>
+                    <button type="button" class="modelado-nuevo-cancelar" (click)="cancelarGastoNuevo()">Cancelar</button>
                   </div>
                 </div>
               }
               @if (!gastoNuevo) {
-                <button type="button" class="btn btn-link btn-sm px-0" (click)="mostrarGastoNuevo()">
+                <button type="button" class="modelado-agregar-gasto" (click)="mostrarGastoNuevo()">
                   + Agregar gasto fijo o variable
                 </button>
               }
-            </div>
-          </div>
         </div>
       </div>
     </div>
 
-    <div class="col-lg-4">
-      <div class="sf-card h-100">
-        <div class="card-body p-4">
-          <div class="card h-100">
-            <div class="card-body p-3">
-              <h2 class="sf-card-head__title mb-3">Punto de equilibrio</h2>
-
-              <dl class="modelado-equilibrio-list mb-3">
-                <div class="modelado-equilibrio-item">
-                  <dt>Costos fijos por mes</dt>
-                  <dd>{{ formatMonto(data.puntoEquilibrio.costosFijosMes) }}</dd>
-                </div>
-                <div class="modelado-equilibrio-item">
-                  <dt>Gastos variables</dt>
-                  <dd>{{ pct(data.puntoEquilibrio.gastosVariablesPctVentas) }} de ventas</dd>
-                </div>
-                <div class="modelado-equilibrio-item">
-                  <dt>Costo de ventas</dt>
-                  <dd>{{ pct(data.puntoEquilibrio.costoVentasPctVentas) }} de ventas</dd>
-                </div>
-                <div class="modelado-equilibrio-item">
-                  <dt>Margen de contribución</dt>
-                  <dd class="modelado-equilibrio-azul">{{ pct(data.puntoEquilibrio.margenContribucionPct) }}</dd>
-                </div>
-              </dl>
-
-              <div class="modelado-ventas-min mb-3">
-                <div class="modelado-ventas-min-label">Ventas mínimas / mes</div>
-                <div class="modelado-ventas-min-valor">
-                  {{ data.puntoEquilibrio.ventasMinimasMes == null ? '—' : formatMonto(data.puntoEquilibrio.ventasMinimasMes) }}
-                </div>
-              </div>
-
-              <dl class="modelado-equilibrio-list modelado-equilibrio-list--pie mb-0">
-                <div class="modelado-equilibrio-item">
-                  <dt>Ventas promedio 3 meses</dt>
-                  <dd>{{ formatMonto(data.puntoEquilibrio.ventasPromedio3Meses) }}</dd>
-                </div>
-                <div class="modelado-equilibrio-item">
-                  <dt>Margen de seguridad</dt>
-                  <dd class="modelado-equilibrio-verde">{{ pct(data.puntoEquilibrio.margenSeguridadPct) }}</dd>
-                </div>
-                <div class="modelado-equilibrio-item">
-                  <dt>Sin clasificar</dt>
-                  <dd class="modelado-equilibrio-naranja">{{ formatMonto(sinClasificarTotal()) }}</dd>
-                </div>
-              </dl>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <div class="row mb-2">
@@ -539,9 +515,6 @@
                         </div>
                         <div class="col-md-8 modelado-gasto-form-hint">
                           <span>{{ formatMonto(nuevoCostoMontoVariable()) }}/mes</span>
-                          @if (nuevoCostoMargenPreview(); as margen) {
-                            <span class="modelado-gasto-form-impacto">{{ margen }}</span>
-                          }
                         </div>
                       </div>
                     } @else {
@@ -566,11 +539,8 @@
                         <div class="col-md-5">
                           <div class="form-check modelado-gasto-form-iva">
                             <input class="form-check-input" type="checkbox" [(ngModel)]="nuevo.llevaIva" id="costoNuevoIva" />
-                            <label class="form-check-label" for="costoNuevoIva">Lleva IVA</label>
+                            <label class="form-check-label" for="costoNuevoIva">Lleva IVA. El calendario usa el monto con IVA.</label>
                           </div>
-                          @if (nuevoCostoEquilibrioPreview(); as eqPrev) {
-                            <p class="modelado-gasto-form-impacto mb-0">{{ eqPrev }}</p>
-                          }
                         </div>
                       </div>
                     }
@@ -876,6 +846,9 @@
                     class="form-control form-control-sm modelado-p4-input"
                     [(ngModel)]="pronostico.costoCapitalPctMes"
                     (blur)="guardarPronostico()" />
+                  @if (costoCapitalMes(); as costo) {
+                    <p class="modelado-p4-historial-line mb-0 mt-1">Sobre el efectivo de hoy: {{ formatMonto(costo) }} al mes</p>
+                  }
                 </div>
 
                 <div class="modelado-p4-panel">
@@ -889,6 +862,9 @@
                         class="form-control form-control-sm modelado-p4-input"
                         [(ngModel)]="pronostico.escenarioConservadorPct"
                         (blur)="guardarPronostico()" />
+                      @if (escenarioVentas(pronostico.escenarioConservadorPct); as ventas) {
+                        <p class="modelado-p4-historial-line mb-0 mt-1">{{ formatMonto(ventas) }} de ventas</p>
+                      }
                     </div>
                     <div>
                       <label class="modelado-p4-sublabel" for="modelado-optimista">Optimista %</label>
@@ -898,6 +874,9 @@
                         class="form-control form-control-sm modelado-p4-input"
                         [(ngModel)]="pronostico.escenarioOptimistaPct"
                         (blur)="guardarPronostico()" />
+                      @if (escenarioVentas(pronostico.escenarioOptimistaPct); as ventas) {
+                        <p class="modelado-p4-historial-line mb-0 mt-1">{{ formatMonto(ventas) }} de ventas</p>
+                      }
                     </div>
                   </div>
                 </div>

@@ -23,7 +23,7 @@ class ModeladoController extends Controller
             'clasificaciones' => DB::table('modelado_clasificaciones')
                 ->where('id_empresa', $empresa)
                 ->orderBy('nombre')
-                ->get(['clave', 'nombre', 'rubro', 'tipo', 'monto', 'pct_ventas', 'dia_pago']),
+                ->get(['clave', 'nombre', 'rubro', 'tipo', 'monto', 'pct_ventas', 'dia_pago', 'proveedor', 'sucursal']),
             'calendario' => DB::table('modelado_calendario')
                 ->where('id_empresa', $empresa)
                 ->orderBy('id')
@@ -66,6 +66,8 @@ class ModeladoController extends Controller
             'monto' => 'nullable|numeric|min:0',
             'pctVentas' => 'nullable|numeric|min:0|max:100',
             'diaPago' => 'nullable|string|max:32',
+            'proveedor' => 'nullable|string|max:191',
+            'sucursal' => 'nullable|string|max:191',
         ]);
         $empresa = $this->empresaId();
         $now = now();
@@ -77,6 +79,8 @@ class ModeladoController extends Controller
             'monto' => $data['monto'] ?? null,
             'pct_ventas' => $data['pctVentas'] ?? null,
             'dia_pago' => $data['diaPago'] ?? null,
+            'proveedor' => $data['proveedor'] ?? null,
+            'sucursal' => $data['sucursal'] ?? null,
             'updated_at' => $now,
         ];
         if (DB::table('modelado_clasificaciones')->where($where)->exists()) {
@@ -237,9 +241,61 @@ class ModeladoController extends Controller
                     }
                 }
             }
+            $this->crearPresupuestoFinanzasSiFalta($empresa, $anio, $data['filas'], $now);
         });
 
         return response()->json(['ok' => true]);
+    }
+
+    // Copia el anual de la suite a presupuestos de Finanzas solo si la empresa
+    // no tiene ya uno vigente ese año. No pisa el detalle de uno importado.
+    private function crearPresupuestoFinanzasSiFalta(int $empresa, int $anio, array $filas, $now): void
+    {
+        $desde = sprintf('%d-01-01', $anio);
+        $hasta = sprintf('%d-12-31', $anio);
+        $existe = DB::table('presupuestos')
+            ->where('id_empresa', $empresa)
+            ->where('enable', 1)
+            ->where(function ($q) {
+                $q->whereNull('id_proyecto')->orWhere('id_proyecto', 0);
+            })
+            ->where('fecha_inicio', '<=', $hasta)
+            ->where('fecha_fin', '>=', $desde)
+            ->exists();
+        if ($existe) {
+            return;
+        }
+        $anual = [];
+        foreach ($filas as $fila) {
+            $anual[$fila['rubro']] = (float) $fila['anual'];
+        }
+        $egresos = ($anual['costo'] ?? 0) + ($anual['personal'] ?? 0) + ($anual['local'] ?? 0)
+            + ($anual['marketing'] ?? 0) + ($anual['admin'] ?? 0) + ($anual['financieros'] ?? 0);
+        $ingresos = $anual['ventas'] ?? 0;
+        try {
+            DB::table('presupuestos')->insert([
+                'id_empresa' => $empresa,
+                'titulo' => 'Presupuesto '.$anio,
+                'fecha_inicio' => $desde,
+                'fecha_fin' => $hasta,
+                'ingresos' => $ingresos,
+                'egresos' => $egresos,
+                'compras' => 0,
+                'utilidad' => $ingresos - $egresos,
+                'margen' => $ingresos > 0 ? round(($ingresos - $egresos) / $ingresos * 100, 2) : 0,
+                'costo_de_venta' => $anual['costo'] ?? 0,
+                'planilla' => $anual['personal'] ?? 0,
+                'alquiler' => $anual['local'] ?? 0,
+                'marketing' => $anual['marketing'] ?? 0,
+                'gastos_administrativos' => $anual['admin'] ?? 0,
+                'prestamos' => $anual['financieros'] ?? 0,
+                'enable' => 1,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        } catch (\Throwable $e) {
+            // El guardado de la suite ya quedó. Finanzas no recibió la copia.
+        }
     }
 
     public function guardarPronostico(Request $request)

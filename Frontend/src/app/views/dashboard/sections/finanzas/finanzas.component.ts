@@ -57,7 +57,6 @@ export class FinanzasComponent implements OnInit {
   readonly tabs: FinanzasSuiteTab[] = [
     { id: 'pl', label: 'P&L Gerencial' },
     { id: 'rentabilidad', label: 'Rentabilidad' },
-    { id: 'flujo', label: 'Flujo de Caja' },
     { id: 'cierre', label: 'Cierre de Mes' },
     { id: 'modelado', label: 'Modelado' },
     { id: 'alertas', label: 'Alertas y resúmenes' },

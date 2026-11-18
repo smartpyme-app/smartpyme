@@ -111,9 +111,14 @@
                 <button
                   type="button"
                   class="btn w-100 cierre-certificar-btn"
-                  [disabled]="!puedeCertificar(detalle)">
+                  [disabled]="detalle.bloqueado || !puedeCertificar(detalle)"
+                  (click)="certificar(detalle)">
                   <span class="cierre-certificar-lock" aria-hidden="true">🔒</span>
-                  Certificar {{ detalle.mesCertificar }} ({{ pendientesChecklist(detalle) }} pendientes)
+                  @if (detalle.bloqueado) {
+                    Mes bloqueado
+                  } @else {
+                    Certificar {{ detalle.mesCertificar }} ({{ pendientesChecklist(detalle) }} pendientes)
+                  }
                 </button>
               </div>
             </div>

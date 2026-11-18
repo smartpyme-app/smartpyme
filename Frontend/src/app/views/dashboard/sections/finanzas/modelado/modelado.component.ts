@@ -2,8 +2,11 @@ import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ApiService } from '@services/api.service';
+import { SharedDataService } from '@services/shared-data.service';
 import { formatEmpresaCurrency } from '@helpers/currency-format.helper';
 import { finalize, switchMap, take } from 'rxjs/operators';
 import { of } from 'rxjs';
@@ -34,12 +37,15 @@ const AREAS_GASTO = [{ id: 'empresa', label: 'Empresa (consolidado)' }];
 
 interface ModeladoGastoNuevoForm {
   nombre: string;
+  proveedor: string;
+  sucursal: string;
   rubro: string;
   tipo: ModeladoGastoTipo;
   montoMensual: number | null;
   pctVentas: number | null;
   diaPago: string;
   llevaIva: boolean;
+  estimado?: boolean;
 }
 
 const RUBROS_GASTO: { id: string; label: string }[] = [
@@ -49,7 +55,7 @@ const RUBROS_GASTO: { id: string; label: string }[] = [
   { id: 'admin', label: 'Administrativos' },
   { id: 'financieros', label: 'Financieros' },
   { id: 'costo', label: 'Costo de ventas' },
-  { id: 'otros', label: 'Otros' },
+  { id: 'otros', label: 'Gastos varios' },
 ];
 
 const RUBROS_COSTO: { id: string; label: string }[] = [
@@ -63,10 +69,11 @@ const RUBROS_COSTO: { id: string; label: string }[] = [
   templateUrl: './modelado.component.html',
   styleUrls: ['./modelado.component.css'],
   standalone: true,
-  imports: [CommonModule, FormsModule, TooltipModule],
+  imports: [CommonModule, FormsModule, RouterLink, NgSelectModule, TooltipModule],
 })
 export class ModeladoComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly shared = inject(SharedDataService);
   private readonly modeladoData = inject(FinanzasModeladoDataService);
   private readonly cdr = inject(ChangeDetectorRef);
 
@@ -82,6 +89,8 @@ export class ModeladoComponent implements OnInit {
   pronostico = { ...MODELADO_VACIA.parametrosPronostico };
   costoNuevo: ModeladoGastoNuevoForm | null = null;
   gastoNuevo: ModeladoGastoNuevoForm | null = null;
+  proveedores: { id: number; etiqueta: string }[] = [];
+  sucursales: { id: number; nombre: string }[] = [];
   readonly rubrosGasto = RUBROS_GASTO;
   readonly rubrosCosto = RUBROS_COSTO;
   readonly areasGasto = AREAS_GASTO;
@@ -100,6 +109,30 @@ export class ModeladoComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargar();
+    this.cargarCatalogos();
+  }
+
+  private cargarCatalogos(): void {
+    this.shared.getProveedores().pipe(take(1)).subscribe((rows) => {
+      this.proveedores = (rows ?? []).map((p) => ({
+        id: p.id,
+        etiqueta: this.etiquetaProveedor(p),
+      })).filter((p) => p.etiqueta);
+      this.cdr.markForCheck();
+    });
+    this.api.getAll('sucursales/list').pipe(take(1)).subscribe((rows: { id: number; nombre: string }[]) => {
+      this.sucursales = rows ?? [];
+      this.cdr.markForCheck();
+    });
+  }
+
+  private etiquetaProveedor(p: { tipo?: string; nombre_empresa?: string; nombre_completo?: string; nombre?: string; nombre_comercial?: string }): string {
+    const legal = p.tipo === 'Empresa' ? p.nombre_empresa : (p.nombre_completo || p.nombre);
+    const base = (legal || '').trim();
+    if (!base) {
+      return '';
+    }
+    return p.nombre_comercial ? `${base} (${p.nombre_comercial})` : base;
   }
 
   formatMonto(value: number | null): string {
@@ -110,15 +143,43 @@ export class ModeladoComponent implements OnInit {
     return value == null ? '—' : `${value}%`;
   }
 
-  gastoSubtitulo(gasto: ModeladoGastoFila): string {
-    if (gasto.tipo === 'variable' && gasto.pctVentas != null) {
-      return `${gasto.categoria} · ${gasto.pctVentas}% ventas · ${this.formatMonto(gasto.montoMensual)}/mes`;
+  cuenta(n: number, uno: string, varios: string): string {
+    return `${n} ${n === 1 ? uno : varios}`;
+  }
+
+  tasa(value: number | null | undefined): string {
+    if (value == null || Number.isNaN(value)) {
+      return '—';
     }
-    return `${gasto.categoria} · ${this.formatMonto(gasto.montoMensual)}/mes`;
+    const t = Number.isInteger(value) ? String(value) : String(Math.round(value * 100) / 100);
+    return `${t}%`;
+  }
+
+  gastoSubtitulo(gasto: ModeladoGastoFila): string {
+    const partes = [gasto.categoria];
+    if (gasto.proveedor) {
+      partes.push(gasto.proveedor);
+    }
+    if (gasto.sucursal) {
+      partes.push(gasto.sucursal);
+    }
+    if (gasto.tipo === 'variable' && gasto.pctVentas != null) {
+      partes.push(`${gasto.pctVentas}% ventas`);
+    }
+    partes.push(`${this.formatMonto(gasto.montoMensual)}/mes`);
+    return partes.join(' · ');
+  }
+
+  comportamientoTexto(tipo: ModeladoGastoTipo): string {
+    return tipo === 'variable' ? 'Cambia de un mes a otro.' : 'Se paga lo mismo cada mes, venda o no venda.';
+  }
+
+  puedeAgregarGasto(n: ModeladoGastoNuevoForm): boolean {
+    return !!n.nombre.trim() && n.montoMensual != null && Number(n.montoMensual) >= 0;
   }
 
   ventasPromedioMes(): number {
-    const v = this.data.puntoEquilibrio.ventasPromedio3Meses;
+    const v = this.data.ventasPromedio3Meses;
     return v > 0 ? v / 3 : 0;
   }
 
@@ -137,48 +198,13 @@ export class ModeladoComponent implements OnInit {
     return this.montoVariableDe(this.costoNuevo);
   }
 
-  margenPreviewDe(n: ModeladoGastoNuevoForm | null): string | null {
-    const eq = this.data.puntoEquilibrio;
-    if (!n || n.tipo !== 'variable' || n.pctVentas == null || eq.margenContribucionPct == null) {
-      return null;
-    }
-    const despues = eq.margenContribucionPct - Number(n.pctVentas);
-    return `Margen ${eq.margenContribucionPct}% → ${despues.toFixed(1)}%`;
-  }
-
-  nuevoGastoMargenPreview(): string | null {
-    return this.margenPreviewDe(this.gastoNuevo);
-  }
-
-  nuevoCostoMargenPreview(): string | null {
-    return this.margenPreviewDe(this.costoNuevo);
-  }
-
-  equilibrioPreviewDe(n: ModeladoGastoNuevoForm | null): string | null {
-    const eq = this.data.puntoEquilibrio;
-    if (!n || n.tipo !== 'fijo' || n.montoMensual == null || eq.ventasMinimasMes == null || eq.margenContribucionPct == null || eq.margenContribucionPct <= 0) {
-      return null;
-    }
-    const fijos = eq.costosFijosMes + Number(n.montoMensual);
-    const min = fijos / (eq.margenContribucionPct / 100);
-    return `Punto de equilibrio ${this.formatMonto(eq.ventasMinimasMes)} → ${this.formatMonto(min)}`;
-  }
-
-  nuevoGastoEquilibrioPreview(): string | null {
-    return this.equilibrioPreviewDe(this.gastoNuevo);
-  }
-
-  nuevoCostoEquilibrioPreview(): string | null {
-    return this.equilibrioPreviewDe(this.costoNuevo);
-  }
-
   frecuenciaTexto(codigo: string): string {
     return FRECUENCIA[codigo] ?? codigo;
   }
 
   elegirTipo(gasto: ModeladoGastoFila, tipo: ModeladoGastoTipo, ev: Event): void {
     ev.preventDefault();
-    if (gasto.tipo === tipo) {
+    if (gasto.origen || gasto.tipo === tipo) {
       return;
     }
     const previo = gasto.tipo;
@@ -206,12 +232,15 @@ export class ModeladoComponent implements OnInit {
   mostrarGastoNuevo(): void {
     this.gastoNuevo = {
       nombre: '',
-      rubro: 'ventas_marketing',
+      proveedor: '',
+      sucursal: '',
+      rubro: 'otros',
       tipo: 'variable',
       montoMensual: null,
       pctVentas: null,
       diaPago: '5',
-      llevaIva: true,
+      llevaIva: false,
+      estimado: true,
     };
   }
 
@@ -236,12 +265,6 @@ export class ModeladoComponent implements OnInit {
           this.falloGuardar('No se guardó la clasificación.');
         },
       });
-  }
-
-  sinClasificarTotal(): number {
-    return this.gastos
-      .filter((g) => g.tipo === null)
-      .reduce((sum, g) => sum + g.montoMensual, 0);
   }
 
   ejecutadoPresupuestoTexto(fila: ModeladoPresupuestoFila): string {
@@ -324,6 +347,31 @@ export class ModeladoComponent implements OnInit {
     return dias == null ? 'sin fecha' : `${dias} días`;
   }
 
+  costoCapitalMes(): number | null {
+    const efectivo = this.pronostico.efectivoHoy;
+    const pct = this.pronostico.costoCapitalPctMes;
+    if (efectivo == null || pct == null) {
+      return null;
+    }
+    return (Number(efectivo) * Number(pct)) / 100;
+  }
+
+  escenarioVentas(pct: number): number | null {
+    const base = Number(this.metaVentasAnual) || this.data.presupuesto.metaVentas.montoAnual;
+    if (!base) {
+      return null;
+    }
+    return base * (1 + Number(pct) / 100);
+  }
+
+  private montoCaja(monto: number, llevaIva: boolean): number {
+    const iva = this.data.perfilFiscal.ivaPct ?? 0;
+    if (!llevaIva || iva <= 0) {
+      return monto;
+    }
+    return Math.round(monto * (1 + iva / 100) * 100) / 100;
+  }
+
   agregarCalendarioPendiente(): void {
     const p = this.calendarioPendiente;
     if (!p) {
@@ -347,6 +395,8 @@ export class ModeladoComponent implements OnInit {
   mostrarCostoNuevo(): void {
     this.costoNuevo = {
       nombre: '',
+      proveedor: '',
+      sucursal: '',
       rubro: 'costo',
       tipo: 'fijo',
       montoMensual: null,
@@ -500,7 +550,7 @@ export class ModeladoComponent implements OnInit {
     }
     let monto = 0;
     let pctVentas: number | null = null;
-    if (n.tipo === 'variable') {
+    if (!n.estimado && n.tipo === 'variable') {
       if (n.pctVentas == null || Number(n.pctVentas) < 0) {
         this.errorMensaje = 'Indica el % de ventas.';
         this.cdr.markForCheck();
@@ -517,6 +567,9 @@ export class ModeladoComponent implements OnInit {
       monto = Number(n.montoMensual);
     }
     const clave = claveManual(n.nombre);
+    const proveedor = n.proveedor.trim();
+    const sucursal = n.sucursal.trim();
+    const dia = n.tipo === 'fijo' && n.diaPago.trim() ? n.diaPago.trim() : null;
     const gasto: ModeladoGastoFila = {
       id: clave,
       nombre: n.nombre.trim(),
@@ -525,17 +578,19 @@ export class ModeladoComponent implements OnInit {
       montoMensual: monto,
       tipo: n.tipo,
       pctVentas,
+      proveedor: proveedor || undefined,
+      sucursal: sucursal || undefined,
+      diaPago: dia || undefined,
     };
-    const dia = n.tipo === 'fijo' ? (n.diaPago || '1').trim() : null;
     this.modeladoData
-      .guardarClasificacion(gasto, { pctVentas, diaPago: dia })
+      .guardarClasificacion(gasto, { pctVentas, diaPago: dia, proveedor: proveedor || null, sucursal: sucursal || null })
       .pipe(
         switchMap(() => {
           if (n.tipo === 'fijo' && dia) {
             return this.modeladoData.crearCalendario({
               clave,
               nombre: gasto.nombre,
-              monto,
+              monto: this.montoCaja(monto, n.llevaIva),
               frecuencia: 'mensual',
               dia,
             });

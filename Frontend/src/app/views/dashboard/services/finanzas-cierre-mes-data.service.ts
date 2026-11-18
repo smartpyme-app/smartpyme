@@ -27,6 +27,7 @@ interface CierreMesApiResponse {
     mesCertificar?: string;
     mesEtiquetaCorto?: string;
     checklist?: { estado?: string; texto?: string; accion?: string }[];
+    bloqueado?: boolean;
     puedeCertificar?: boolean;
     presupuesto?: {
       categoria?: string;
@@ -67,6 +68,18 @@ export class FinanzasCierreMesDataService {
       map((raw) => (raw ? mapCierre(raw, q.anio) : null)),
     );
   }
+
+  certificar(q: CierreMesQuery): Observable<boolean> {
+    const empresa = this.analytics.idEmpresa;
+    if (!empresa || !q.mes) {
+      return of(false);
+    }
+    const url = `${this.analytics.baseUrl}/api/finanzas/cierre-mes/certificar?empresa=${empresa}&anio=${q.anio}&mes=${q.mes}`;
+    return this.analytics.post<{ ok?: boolean }>(url).pipe(
+      timeout(90_000),
+      map((raw) => raw?.ok === true),
+    );
+  }
 }
 
 function mapCierre(raw: CierreMesApiResponse, anio: number): CierreMesVista {
@@ -89,6 +102,7 @@ function mapDetalle(raw: NonNullable<CierreMesApiResponse['detalle']>): CierreMe
     mesTitulo: raw.mesTitulo ?? '',
     mesCertificar: raw.mesCertificar ?? '',
     mesEtiquetaCorto: raw.mesEtiquetaCorto ?? '',
+    bloqueado: raw.bloqueado === true,
     puedeCertificar: raw.puedeCertificar === true,
     checklist: (raw.checklist ?? []).map((i) => ({
       estado: estadoChecklist(i.estado),
