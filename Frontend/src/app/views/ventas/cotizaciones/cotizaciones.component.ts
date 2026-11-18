@@ -1,6 +1,7 @@
 ﻿import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
+import { OpcionSelect, opcionesSelect } from '@shared/utils/opciones-select.util';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PopoverModule } from 'ngx-bootstrap/popover';
@@ -39,6 +40,8 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
   public venta: any = {};
   public downloading: boolean = false;
   public clientes: any = [];
+  public clientesFiltroBarra: OpcionSelect[] = opcionesSelect([], 'Cliente');
+  public clientesFiltroModal: OpcionSelect[] = opcionesSelect([], 'Todos');
   public usuarios: any = [];
   public canales: any = [];
   public proyectos: any = [];
@@ -108,7 +111,11 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
     this.apiService.getAll('clientes/list')
       .pipe(this.untilDestroyed())
       .subscribe(clientes => {
+        // Con muchos clientes (p. ej. 16k), un <ng-option> por cliente en dos selects congelaba la
+        // vista al abrirla. Se pasan como [items] con virtualScroll: sólo se dibujan los visibles.
         this.clientes = clientes;
+        this.clientesFiltroBarra = opcionesSelect(clientes, 'Cliente');
+        this.clientesFiltroModal = opcionesSelect(clientes, 'Todos');
         this.cdr.markForCheck();
       }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
   }
