@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\Registros\Cliente;
 use App\Models\Ventas\Clientes\Cliente as ClienteVenta;
 use App\Models\Ventas\Venta as Cotizacion;
+use App\Support\Ventas\IndiceListadoVentas;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Detalle;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
@@ -110,6 +111,7 @@ class CotizacionesController extends Controller
                             return $query->where('tipo_documento', $request->tipo_documento);
                         })
                         ->when($request->buscador, fn ($query) => $this->aplicarFiltroBuscadorCotizaciones($query, (string) $request->buscador))
+                        ->when(trim((string) $request->buscador) !== '', fn ($query) => IndiceListadoVentas::evitarIndiceGlobalDeFecha($query))
                     ->where('cotizacion', 1)
                     ->orderBy($request->orden, $request->direccion)
                     ->orderBy('id', 'desc')
