@@ -50,6 +50,7 @@ use App\Models\Admin\Empresa;
 use App\Models\Admin\Caja;
 use App\Models\Admin\Documento;
 use App\Support\Honduras\DocumentoImpresionHn;
+use App\Support\Ventas\IndiceListadoVentas;
 use App\Support\Ventas\Ticket80mm;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Impuesto;
@@ -232,6 +233,10 @@ class VentasController extends Controller
             })
             ->where('cotizacion', 0)
             ->when($request->buscador, fn ($query) => $this->aplicarFiltroBuscador($query, (string) $request->buscador));
+
+        if (trim((string) $request->buscador) !== '') {
+            IndiceListadoVentas::evitarIndiceGlobalDeFecha($ventasQuery);
+        }
 
         if ($listadoLigero) {
             $ventas = $ventasQuery->clone()
