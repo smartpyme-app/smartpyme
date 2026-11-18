@@ -194,8 +194,8 @@ class ClientesController extends Controller
 
     public function searchClientes(Request $request)
     {
-        $term = $request->get('q', ''); // Término de búsqueda
-        $limit = $request->get('limit', 50); // Límite de resultados (default 50)
+        $term = trim((string) $request->get('q', '')); // Término de búsqueda
+        $limit = max(1, min(100, (int) $request->get('limit', 50))); // Límite de resultados (default 50, máx. 100)
 
         if (strlen($term) < 2) {
             return response()->json([], 200);
@@ -211,14 +211,15 @@ class ClientesController extends Controller
                 ->orWhere('telefono', 'LIKE', "%{$term}%")
                 ->orWhereRaw("CONCAT(nombre, ' ', apellido) LIKE ?", ["%{$term}%"]);
             })
+            // El término va como parámetro: antes se interpolaba en el SQL (inyección SQL).
             ->orderByRaw("
                 CASE
-                    WHEN nombre LIKE '{$term}%' THEN 1
-                    WHEN nombre_empresa LIKE '{$term}%' THEN 2
-                    WHEN CONCAT(nombre, ' ', apellido) LIKE '{$term}%' THEN 3
+                    WHEN nombre LIKE ? THEN 1
+                    WHEN nombre_empresa LIKE ? THEN 2
+                    WHEN CONCAT(nombre, ' ', apellido) LIKE ? THEN 3
                     ELSE 4
                 END
-            ")
+            ", ["{$term}%", "{$term}%", "{$term}%"])
             ->orderBy('nombre', 'asc')
             ->limit($limit)
             ->get();

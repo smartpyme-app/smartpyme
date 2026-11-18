@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { OpcionSelect, opcionesSelect } from '@shared/utils/opciones-select.util';
 import { FormsModule } from '@angular/forms';
+import { Subject, of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, map, switchMap, tap } from 'rxjs/operators';
 import { RouterModule } from '@angular/router';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
@@ -39,9 +41,18 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
   public ventas: any = {};
   public venta: any = {};
   public downloading: boolean = false;
-  public clientes: any = [];
+  /**
+   * Filtro de cliente con búsqueda en el servidor (clientes/search, máx. 50 resultados):
+   * antes se bajaban todos los clientes al entrar (16k+ en algunas empresas) aunque no se usara el filtro.
+   * Las opciones siempre incluyen la opción vacía y el cliente seleccionado, para que su nombre
+   * se siga viendo en la barra y en el modal aunque cambien los resultados de búsqueda.
+   */
   public clientesFiltroBarra: OpcionSelect[] = opcionesSelect([], 'Cliente');
   public clientesFiltroModal: OpcionSelect[] = opcionesSelect([], 'Todos');
+  public clientesInput$ = new Subject<string>();
+  public buscandoClientes = false;
+  private clientesEncontrados: OpcionSelect[] = [];
+  private clienteSeleccionado: OpcionSelect | null = null;
   public usuarios: any = [];
   public canales: any = [];
   public proyectos: any = [];
@@ -108,16 +119,40 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
   ngOnInit() {
     this.loadAll();
 
-    this.apiService.getAll('clientes/list')
-      .pipe(this.untilDestroyed())
-      .subscribe(clientes => {
-        // Con muchos clientes (p. ej. 16k), un <ng-option> por cliente en dos selects congelaba la
-        // vista al abrirla. Se pasan como [items] con virtualScroll: sólo se dibujan los visibles.
-        this.clientes = clientes;
-        this.clientesFiltroBarra = opcionesSelect(clientes, 'Cliente');
-        this.clientesFiltroModal = opcionesSelect(clientes, 'Todos');
-        this.cdr.markForCheck();
-      }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
+    this.clientesInput$
+      .pipe(
+        map((texto) => (texto || '').trim()),
+        debounceTime(300),
+        distinctUntilChanged(),
+        tap((texto) => { this.buscandoClientes = texto.length >= 2; this.cdr.markForCheck(); }),
+        switchMap((texto) => texto.length < 2
+          ? of([])
+          : this.apiService.getAll('clientes/search', { q: texto, limit: 50 }).pipe(catchError(() => of([])))),
+        this.untilDestroyed()
+      )
+      .subscribe((clientes: any[]) => {
+        this.clientesEncontrados = opcionesSelect(clientes);
+        this.buscandoClientes = false;
+        this.actualizarOpcionesCliente();
+      });
+  }
+
+  /** (change) de los selects de cliente; en la barra además filtra en el acto. */
+  public onClienteChange(opcion: OpcionSelect | null | undefined, filtrar: boolean): void {
+    this.clienteSeleccionado = opcion && opcion.id !== '' ? opcion : null;
+    this.actualizarOpcionesCliente();
+    if (filtrar) {
+      this.filtrarVentas();
+    }
+  }
+
+  private actualizarOpcionesCliente(): void {
+    const sel = this.clienteSeleccionado;
+    const resto = sel ? this.clientesEncontrados.filter((c) => c.id !== sel.id) : this.clientesEncontrados;
+    const opciones = sel ? [sel, ...resto] : resto;
+    this.clientesFiltroBarra = [{ id: '', etiqueta: 'Cliente' }, ...opciones];
+    this.clientesFiltroModal = [{ id: '', etiqueta: 'Todos' }, ...opciones];
+    this.cdr.markForCheck();
   }
 
   public setOrden(columna: string) {
@@ -134,6 +169,8 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
   public override loadAll() {
     this.filtros.id_sucursal = '';
     this.filtros.id_cliente = '';
+    this.clienteSeleccionado = null;
+    this.actualizarOpcionesCliente();
     this.filtros.id_usuario = this.apiService.soloVeCotizacionesPropiasEnListado()
       ? this.apiService.auth_user().id
       : '';
