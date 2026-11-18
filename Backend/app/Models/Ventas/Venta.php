@@ -459,12 +459,21 @@ class Venta extends AuditableModel {
     }
 
     /**
-     * Si en la venta se canjearon puntos (descuento por fidelización), no se acumulan puntos en la misma operación.
+     * Indica si en la venta se canjearon puntos (descuento por fidelización).
+     * El canje puede coexistir con la acumulación sobre el monto neto cobrado (venta.total).
      */
     public function tieneCanjeDePuntosEnVenta(): bool
     {
         return ((int) ($this->puntos_canjeados ?? 0)) > 0
             || ((float) ($this->descuento_puntos ?? 0)) > 0.00001;
+    }
+
+    /**
+     * Monto base para acumular puntos: total ya neto de descuento_puntos en facturación.
+     */
+    public function getMontoBaseAcumulacionPuntos(): float
+    {
+        return (float) ($this->total ?? 0);
     }
 
     public function getMontoFinalAttribute()
@@ -485,14 +494,10 @@ class Venta extends AuditableModel {
 
     public function calcularPuntosEsperados()
     {
-        if ($this->tieneCanjeDePuntosEnVenta()) {
-            return 0;
-        }
-
         $tipoCliente = $this->cliente->getTipoClienteEfectivo();
         if (!$tipoCliente) return 0;
 
-        return $tipoCliente->calcularPuntos($this->getMontoFinal());
+        return $tipoCliente->calcularPuntos($this->getMontoBaseAcumulacionPuntos());
     }
 
     public function tienePuntosGenerados()
@@ -505,10 +510,6 @@ class Venta extends AuditableModel {
     {
         if ($this->tienePuntosGenerados()) {
             return false; // Ya tiene puntos generados
-        }
-
-        if ($this->tieneCanjeDePuntosEnVenta()) {
-            return false;
         }
 
         $puntosCalculados = $this->calcularPuntosEsperados();
