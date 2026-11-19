@@ -22,6 +22,7 @@ use App\Models\Admin\Sucursal;
 use App\Models\Ventas\Venta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ReporteAutomaticoGenerator
@@ -279,7 +280,7 @@ class ReporteAutomaticoGenerator
         // Son ids enteros leídos de la BD; intval evita cualquier inyección al ir dentro de DB::raw.
         $bodegasSql = empty($bodegas) ? 'NULL' : implode(',', array_map('intval', $bodegas));
 
-        $inventarioData = DB::table('productos as p')
+        $inventarioQuery = DB::table('productos as p')
             ->join('inventario as i', 'p.id', '=', 'i.id_producto')
             ->join('sucursal_bodegas as b', 'i.id_bodega', '=', 'b.id')
             ->join('sucursales as s', 'b.id_sucursal', '=', 's.id')
@@ -364,8 +365,9 @@ class ReporteAutomaticoGenerator
             ->orderBy('p.nombre')
             // Desempate: productos con el mismo nombre en la misma bodega salían en orden arbitrario.
             ->orderBy('p.id')
-            ->orderBy('i.id')
-            ->get();
+            ->orderBy('i.id');
+
+        $inventarioData = $this->sinMaterializacionLateral(fn () => $inventarioQuery->get());
 
         $datosPreparados = [];
         foreach ($inventarioData->groupBy('nombre_sucursal') as $sucursalNombre => $datosSucursal) {
@@ -480,5 +482,38 @@ class ReporteAutomaticoGenerator
             'tipo_reporte' => $configuracion->tipo_reporte,
             'empresa' => $empresa->nombre ?? '',
         ];
+    }
+
+    /**
+     * MariaDB aplica "split_materialized" (derivadas LATERAL) a k_reciente y recalcula el bloque de
+     * k_max por cada producto: en producción esta consulta pasaba de <1 s a >150 s (MySQL no tiene esa
+     * optimización, por eso en local no se veía). Se apaga sólo durante esta consulta y se restaura el
+     * valor previo, porque las conexiones de los workers se reutilizan. Si el servidor no conoce el flag
+     * (MySQL) o el SET falla, la consulta se ejecuta tal cual.
+     */
+    private function sinMaterializacionLateral(callable $consulta)
+    {
+        $previo = null;
+        try {
+            $actual = DB::selectOne('SELECT @@SESSION.optimizer_switch AS v')->v ?? null;
+            if (is_string($actual) && str_contains($actual, 'split_materialized=')) {
+                DB::statement("SET SESSION optimizer_switch = 'split_materialized=off'");
+                $previo = $actual;
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Reporte inventario: no se pudo ajustar optimizer_switch', ['error' => $e->getMessage()]);
+        }
+
+        try {
+            return $consulta();
+        } finally {
+            if ($previo !== null) {
+                try {
+                    DB::statement('SET SESSION optimizer_switch = ' . DB::getPdo()->quote($previo));
+                } catch (\Throwable $e) {
+                    Log::warning('Reporte inventario: no se pudo restaurar optimizer_switch', ['error' => $e->getMessage()]);
+                }
+            }
+        }
     }
 }
