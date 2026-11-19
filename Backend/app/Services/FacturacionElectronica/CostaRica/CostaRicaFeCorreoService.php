@@ -7,8 +7,10 @@ use App\Mail\FeCrComprobanteClienteMailable;
 use App\Models\Admin\Empresa;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Gastos\Gasto;
+use App\Models\Ventas\Abono;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Ventas\Venta;
+use App\Support\FacturacionElectronica\CostaRica\ReferenciaComprobanteCr;
 use App\Support\FacturacionElectronica\ClaveComprobanteCr;
 use App\Support\FacturacionElectronica\CorreoDestinoDte;
 use App\Support\FacturacionElectronica\CostaRicaFeDteDocumento;
@@ -136,7 +138,7 @@ final class CostaRicaFeCorreoService
         return response()->json(['message' => 'Correo enviado.'], 200);
     }
 
-    private function dteRegistroParaCorreo(Venta|DevolucionVenta|Compra|Gasto $registro, string $tipoDte): mixed
+    private function dteRegistroParaCorreo(Venta|DevolucionVenta|Compra|Gasto|Abono $registro, string $tipoDte): mixed
     {
         if ($tipoDte === '02' && $registro instanceof Venta) {
             $devNd = DevolucionVenta::query()
@@ -152,7 +154,7 @@ final class CostaRicaFeCorreoService
     }
 
     /**
-     * @return array{0: ?string, 1: Venta|DevolucionVenta|Compra|Gasto}
+     * @return array{0: ?string, 1: string, 2: Venta|DevolucionVenta|Compra|Gasto|Abono}
      */
     private function resolverDestinatarioYRegistro(EnviarDTERequest $request): array
     {
@@ -196,6 +198,15 @@ final class CostaRicaFeCorreoService
             }
         }
 
+        if ($tipoDte === ReferenciaComprobanteCr::TIPO_COMPROBANTE_REP && $request->tipo === 'abono') {
+            $a = Abono::with('venta.cliente')->where('id', $id)->firstOrFail();
+            $c = $a->venta?->cliente;
+            $nombre = $c ? trim((string) ($c->nombre ?? '')) : 'Cliente';
+            $correo = $c ? $c->correo : null;
+
+            return [$correo, $nombre !== '' ? $nombre : 'Cliente', $a];
+        }
+
         throw new RuntimeException('Tipo de documento no soportado para envío de correo FE Costa Rica.');
     }
 
@@ -215,6 +226,9 @@ final class CostaRicaFeCorreoService
 
             return [$tipoPdf, $tipoCompraGasto];
         }
+        if ($tipoDte === ReferenciaComprobanteCr::TIPO_COMPROBANTE_REP) {
+            return [ReferenciaComprobanteCr::TIPO_COMPROBANTE_REP, $tipoCompraGasto ?? 'abono'];
+        }
 
         return [$tipoDte, null];
     }
@@ -223,7 +237,7 @@ final class CostaRicaFeCorreoService
      * @return array{0: ?string, 1: ?string}
      */
     private function extraerXmlsParaAdjuntos(
-        Venta|DevolucionVenta|Compra|Gasto $registro,
+        Venta|DevolucionVenta|Compra|Gasto|Abono $registro,
         string $tipoDte,
         Empresa $empresa,
         mixed $dte
@@ -258,6 +272,7 @@ final class CostaRicaFeCorreoService
             '02' => 'Nota de débito electrónica',
             '03' => 'Nota de crédito electrónica',
             '08' => 'Factura electrónica de compra',
+            ReferenciaComprobanteCr::TIPO_COMPROBANTE_REP => 'Recibo electrónico de pago',
         ];
 
         return $m[$tipoDteCodigo] ?? ($tituloPdf !== '' ? $tituloPdf : 'Comprobante electrónico');

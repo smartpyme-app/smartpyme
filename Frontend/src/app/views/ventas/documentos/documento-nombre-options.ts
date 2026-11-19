@@ -15,7 +15,8 @@ export const NOMBRE_DOCUMENTO_CR = {
   fecCompra: 'Factura Electrónica de Compra',
   notaCredito: 'Nota de Crédito Electrónica',
   notaDebito: 'Nota de Débito Electrónica',
-  abonoVenta: 'Abono de Venta',
+  /** Abono / correlativo del REP (tipo 10). */
+  abonoVenta: 'Recibo electrónico',
 } as const;
 
 /** Compra/gasto FEC (08): nombre nuevo o registros históricos «Compra electrónica». */
@@ -58,6 +59,8 @@ export const DOCUMENTO_NOMBRE_OPCIONES_CR: DocumentoNombreOption[] = [
   { value: NOMBRE_DOCUMENTO_CR.notaCredito, label: NOMBRE_DOCUMENTO_CR.notaCredito },
   { value: NOMBRE_DOCUMENTO_CR.notaDebito, label: NOMBRE_DOCUMENTO_CR.notaDebito },
   { value: NOMBRE_DOCUMENTO_CR.abonoVenta, label: NOMBRE_DOCUMENTO_CR.abonoVenta },
+  /** Series antiguas CR antes del rename. */
+  { value: 'Abono de Venta', label: 'Abono de Venta' },
 ];
 
 export const NOMBRE_DOCUMENTO_HN = {

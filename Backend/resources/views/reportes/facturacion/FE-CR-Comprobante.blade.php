@@ -28,7 +28,7 @@
         p { margin: 2px 0; }
         .mb-2 { margin-bottom: 6px; }
         .row-subtotal td { font-weight: 700; background-color: #f0f0f0; }
-        .clave-bloque { font-size: 8px; letter-spacing: 0.3px; line-height: 1.35; word-break: break-all; }
+        .clave-bloque { font-size: 8px; letter-spacing: 0.3px; line-height: 1.35; white-space: nowrap; }
         .totales-ext td { padding: 3px 6px; }
         .monto-letras { font-size: 8px; margin-top: 8px; font-style: italic; text-transform: uppercase; }
     </style>
@@ -236,7 +236,7 @@
                         @php $qrImgB64 = DNS2D::getBarcodePNG($qrPayload, 'QRCODE', 8, 1, [0, 0, 0], true); @endphp
                         @if($qrImgB64 !== '')
                             <img width="115" height="115" style="display:inline-block;" src="data:image/png;base64,{{ $qrImgB64 }}" alt="Código QR" />
-                            <p class="muted" style="margin-top:4px;max-width:115px;margin-left:auto;">Consulta: clave o enlace ATV</p>
+                            <p class="muted" style="margin-top:4px;margin-left:auto;white-space:nowrap;font-size:7px;">Consulta: clave o enlace ATV</p>
                         @endif
                     </td>
                 </tr>
@@ -248,8 +248,7 @@
                 <tr>
                     <td colspan="2" class="bg-light" style="padding:8px;">
                         <p style="margin:0 0 4px;"><b>Tipo de comprobante:</b> {{ $nombreTipoNormativo }} <span class="muted">(código {{ $tipoDocCodigo }})</span></p>
-                        <p style="margin:0 0 4px;"><b>Clave numérica:</b></p>
-                        <p class="clave-bloque" style="margin:0 0 6px;">{{ $claveFmt }}</p>
+                        <p class="clave-bloque" style="margin:0 0 6px;"><b>Clave numérica:</b> {{ $claveFmt }}</p>
                         <p style="margin:0;"><b>Consecutivo:</b> {{ $consecutivo !== '' ? $consecutivo : '—' }}</p>
                     </td>
                 </tr>
