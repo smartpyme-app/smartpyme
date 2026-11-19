@@ -1,20 +1,55 @@
 import { Injectable, Injector } from '@angular/core';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpResponse } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { filter, finalize, map, shareReplay, tap } from 'rxjs/operators';
 import { HttpCacheService } from './http-cache.service';
 import { SharedDataService } from './shared-data.service';
+import { AuthService } from './auth.service';
 
 /**
- * Caché HTTP (solo GET): por defecto NO se cachea nada.
- * Sistema transaccional (ventas, compras, inventario, planilla, etc.): los datos deben verse al instante tras crear/editar.
+ * Caché HTTP (solo GET) y unificación de peticiones repetidas.
  *
- * Solo se permiten en caché respuestas explícitamente seguras (p. ej. constants / modules).
- * Cualquier POST, PUT, PATCH o DELETE vacía el HttpCacheService e invalida listas operativas en SharedDataService.
+ * 1) Peticiones GET idénticas en vuelo al mismo tiempo (p. ej. header + sidebar pidiendo
+ *    `notificaciones`, o dos componentes pidiendo `usuarios/list`) comparten UNA sola
+ *    llamada al servidor. No hay riesgo de datos viejos: es la misma respuesta del momento.
+ *
+ * 2) Caché corto (60 s) SOLO para datos de configuración/catálogos que casi no cambian
+ *    (sucursales, bodegas, usuarios, impuestos, formas de pago, ...). Nunca para datos
+ *    transaccionales: ventas, documentos (correlativo), inventario, notificaciones, etc.
+ *    `constants` y `modules` mantienen su caché largo de antes.
+ *
+ * - Cualquier POST/PUT/PATCH/DELETE vacía el caché (al empezar y al terminar).
+ * - La clave incluye usuario y empresa: cambiar de empresa/usuario nunca reutiliza datos.
+ * - Cada consumidor recibe una COPIA del cuerpo: si un componente modifica la lista
+ *   (p. ej. `formaPagos.push(...)`), no afecta a los demás ni al caché.
  */
 @Injectable()
 export class CacheInterceptor implements HttpInterceptor {
   private cleanupInterval?: any;
+  private readonly enVuelo = new Map<string, Observable<HttpEvent<any>>>();
+
+  /** TTL del caché corto de catálogos/configuración. */
+  private static readonly TTL_CATALOGOS_MS = 60 * 1000;
+
+  /** Rutas (después de /api/) con caché corto. Coincidencia exacta del final de la URL. */
+  private static readonly CATALOGOS_CORTOS: RegExp[] = [
+    /\/api\/sucursales\/list$/,
+    /\/api\/bodegas\/list$/,
+    /\/api\/usuarios\/list$/,
+    /\/api\/formas-de-pago\/list$/,
+    /\/api\/canales\/list$/,
+    /\/api\/impuestos$/,
+    /\/api\/proyectos\/list$/,
+    /\/api\/identificacion-tipos$/,
+    /\/api\/banco\/cuentas\/list$/,
+    /\/api\/bancos\/list$/,
+    /\/api\/moneda\/config$/,
+    /\/api\/boxful\/status$/,
+    /\/api\/empresa\/get-alert$/,
+    /\/api\/restaurante\/pantallas$/,
+    /\/api\/ventas-recurrentes\/preferencias$/,
+    /\/api\/verificar-accesos$/,
+  ];
 
   constructor(
     private cacheService: HttpCacheService,
@@ -28,28 +63,42 @@ export class CacheInterceptor implements HttpInterceptor {
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     if (req.method !== 'GET') {
       this.invalidateAfterMutation();
-      return next.handle(req);
+      return next.handle(req).pipe(finalize(() => this.invalidateAfterMutation()));
     }
 
     const saltarJWT = req.params.get('saltarJWT');
-    if (saltarJWT) {
+    if (saltarJWT || req.responseType !== 'json' || this.esDescarga(req.url)) {
       return next.handle(req);
     }
 
     const params = this.extractParams(req);
-    const cachedResponse = this.cacheService.get(req.url, params);
+    const claveUrl = `${this.alcance()}|${req.url}`;
 
+    const cachedResponse = this.cacheService.get(claveUrl, params);
     if (cachedResponse) {
-      return of(cachedResponse);
+      return of(this.copia(cachedResponse));
     }
 
-    return next.handle(req).pipe(
+    const claveVuelo = `${claveUrl}?${req.params.toString()}`;
+    const existente = this.enVuelo.get(claveVuelo);
+    if (existente) {
+      return existente.pipe(map(ev => this.copiaEvento(ev)));
+    }
+
+    const ttl = this.ttlCache(req.url);
+    const compartida = next.handle(req).pipe(
       tap(event => {
-        if (event instanceof HttpResponse && event.status === 200 && this.shouldCache(req.url)) {
-          this.cacheService.set(req.url, event, undefined, params);
+        if (ttl !== null && event instanceof HttpResponse && event.status === 200) {
+          this.cacheService.set(claveUrl, event, ttl, params);
         }
-      })
+      }),
+      finalize(() => this.enVuelo.delete(claveVuelo)),
+      // Solo se reenvía la respuesta final a quienes se suman tarde.
+      shareReplay({ bufferSize: 1, refCount: true }),
     );
+    this.enVuelo.set(claveVuelo, compartida.pipe(filter(ev => ev instanceof HttpResponse)));
+
+    return compartida.pipe(map(ev => this.copiaEvento(ev)));
   }
 
   private extractParams(req: HttpRequest<any>): any {
@@ -62,34 +111,53 @@ export class CacheInterceptor implements HttpInterceptor {
     return params;
   }
 
-  /**
-   * Opt-in: solo URLs claramente estáticas o de configuración de app.
-   * Todo lo demás (ventas, compras, listas, inventario, citas, etc.) va siempre a red.
-   */
-  private shouldCache(url: string): boolean {
+  /** Usuario + empresa activos: separa el caché entre sesiones / "Trabajando en…". */
+  private alcance(): string {
+    try {
+      const u = this.injector.get(AuthService).auth_user();
+      return `${u?.id ?? 0}:${u?.id_empresa ?? 0}`;
+    } catch {
+      return '0:0';
+    }
+  }
+
+  private esDescarga(url: string): boolean {
     const lower = url.toLowerCase();
+    return lower.includes('/exportar') || lower.includes('/download') || lower.includes('/export');
+  }
 
-    if (lower.includes('/exportar') || lower.includes('/download') || lower.includes('/export')) {
-      return false;
-    }
+  /**
+   * null = no se guarda en caché (solo se unifica si está en vuelo).
+   */
+  private ttlCache(url: string): number | null {
+    const lower = url.toLowerCase();
     if (lower.includes('/login') || lower.includes('/logout') || lower.includes('/auth')) {
-      return false;
+      return null;
     }
-    if (lower.includes('/notificaciones') || lower.includes('/chat') || lower.includes('/ping')) {
-      return false;
-    }
-    if (lower.includes('fe-cr/cabys') || lower.includes('/fe/cabys')) {
-      return false;
-    }
-    if (lower.includes('fe-cr/contribuyente') || lower.includes('/fe/ae')) {
-      return false;
-    }
-
     if (lower.includes('/constants') || lower.includes('/modules')) {
-      return true;
+      return 30 * 60 * 1000;
     }
+    const path = lower.split('?')[0];
+    if (CacheInterceptor.CATALOGOS_CORTOS.some(rx => rx.test(path))) {
+      return CacheInterceptor.TTL_CATALOGOS_MS;
+    }
+    return null;
+  }
 
-    return false;
+  private copiaEvento(ev: HttpEvent<any>): HttpEvent<any> {
+    return ev instanceof HttpResponse ? this.copia(ev) : ev;
+  }
+
+  private copia(res: HttpResponse<any>): HttpResponse<any> {
+    const body = res.body;
+    if (body === null || typeof body !== 'object') {
+      return res.clone();
+    }
+    try {
+      return res.clone({ body: structuredClone(body) });
+    } catch {
+      return res.clone({ body: JSON.parse(JSON.stringify(body)) });
+    }
   }
 
   /**
