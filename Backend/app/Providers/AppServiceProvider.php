@@ -9,6 +9,7 @@ use Sentry\Laravel\Tracing\Middleware as SentryVendorTracingMiddleware;
 use App\Services\ContextService;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use App\Models\Inventario\Inventario;
@@ -59,6 +60,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->ensureOpenSslCliOnPathWindows();
+
+        // En producción bloquea migrate:fresh, migrate:refresh, migrate:reset,
+        // migrate:rollback y db:wipe (borran tablas o datos de clientes).
+        DB::prohibitDestructiveCommands($this->app->isProduction());
 
         // Registrar el observer de Inventario
         Cliente::observe(ClienteNivelObserver::class);
