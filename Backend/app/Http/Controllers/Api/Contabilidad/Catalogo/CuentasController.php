@@ -119,9 +119,15 @@ class CuentasController extends Controller
         return $resultado;
     }
 
-    public function list() {
+    public function list(Request $request) {
 
-        $cuentas = Cuenta::orderby('id')->get();
+        // ?basico=1: sólo lo que necesitan los selectores (id, código, nombre). Sin el parámetro
+        // se mantiene la respuesta completa que usan las demás vistas.
+        $query = Cuenta::orderby('id');
+        if ($request->boolean('basico')) {
+            $query->select(['id', 'codigo', 'nombre']);
+        }
+        $cuentas = $query->get();
         return Response()->json($cuentas, 200);
 
     }
