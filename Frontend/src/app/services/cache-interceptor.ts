@@ -19,6 +19,9 @@ import { AuthService } from './auth.service';
  *    `constants` y `modules` mantienen su caché largo de antes.
  *
  * - Cualquier POST/PUT/PATCH/DELETE vacía el caché (al empezar y al terminar).
+ *   Excepción: guardar ventas, DTE, compras o gastos no cambia sucursales, bodegas,
+ *   impuestos, etc.; esas operaciones vacían todo MENOS los catálogos (así el cajero no
+ *   vuelve a descargar los mismos catálogos en cada venta).
  * - La clave incluye usuario y empresa: cambiar de empresa/usuario nunca reutiliza datos.
  * - Cada consumidor recibe una COPIA del cuerpo: si un componente modifica la lista
  *   (p. ej. `formaPagos.push(...)`), no afecta a los demás ni al caché.
@@ -51,6 +54,18 @@ export class CacheInterceptor implements HttpInterceptor {
     /\/api\/verificar-accesos$/,
   ];
 
+  /** Mutaciones que no modifican catálogos ni configuración (ruta exacta). */
+  private static readonly MUTACIONES_TRANSACCIONALES: RegExp[] = [
+    /\/api\/facturacion$/,
+    /\/api\/venta$/,
+    /\/api\/generarDTE$/,
+    /\/api\/enviarDTE$/,
+    /\/api\/dte\/enviar$/,
+    /\/api\/compra$/,
+    /\/api\/compra\/facturacion$/,
+    /\/api\/gasto$/,
+  ];
+
   constructor(
     private cacheService: HttpCacheService,
     private injector: Injector
@@ -62,8 +77,9 @@ export class CacheInterceptor implements HttpInterceptor {
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     if (req.method !== 'GET') {
-      this.invalidateAfterMutation();
-      return next.handle(req).pipe(finalize(() => this.invalidateAfterMutation()));
+      const conservarCatalogos = this.esMutacionTransaccional(req.url);
+      this.invalidateAfterMutation(conservarCatalogos);
+      return next.handle(req).pipe(finalize(() => this.invalidateAfterMutation(conservarCatalogos)));
     }
 
     const saltarJWT = req.params.get('saltarJWT');
@@ -144,6 +160,17 @@ export class CacheInterceptor implements HttpInterceptor {
     return null;
   }
 
+  private esMutacionTransaccional(url: string): boolean {
+    const path = url.split('?')[0];
+    return CacheInterceptor.MUTACIONES_TRANSACCIONALES.some(rx => rx.test(path));
+  }
+
+  /** Clave del caché = `usuario:empresa|url[?params]` → ¿es un catálogo / constants / modules? */
+  private esClaveDeCatalogo(clave: string): boolean {
+    const url = clave.substring(clave.indexOf('|') + 1);
+    return this.ttlCache(url) !== null;
+  }
+
   private copiaEvento(ev: HttpEvent<any>): HttpEvent<any> {
     return ev instanceof HttpResponse ? this.copia(ev) : ev;
   }
@@ -163,8 +190,12 @@ export class CacheInterceptor implements HttpInterceptor {
   /**
    * Tras cualquier mutación: sin caché HTTP y listas compartidas marcadas para recargar.
    */
-  private invalidateAfterMutation(): void {
-    this.cacheService.clear();
+  private invalidateAfterMutation(conservarCatalogos = false): void {
+    if (conservarCatalogos) {
+      this.cacheService.deleteWhere(clave => !this.esClaveDeCatalogo(clave));
+    } else {
+      this.cacheService.clear();
+    }
     try {
       const shared = this.injector.get(SharedDataService);
       shared.invalidateOperationalListCaches();
