@@ -6,6 +6,23 @@
     <style>
         * { font-family: DejaVu Sans, sans-serif; font-size: 9px; color: #000; }
         body { margin: 24px 28px; }
+        /* ponytail: DomPDF no flex; min-height + pie absoluto ancla firmas/datos al fondo en hojas cortas */
+        .pagina-toma {
+            position: relative;
+            min-height: 250mm;
+            padding-bottom: 125px;
+            box-sizing: border-box;
+        }
+        .pagina-toma:not(:last-child) {
+            page-break-after: always;
+        }
+        .bloque-inferior {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+        }
         .titulo-toma {
             text-align: center;
             font-size: 15px;
@@ -54,12 +71,12 @@
             border: 1px solid #000;
             min-height: 72px;
             padding: 8px;
-            margin-bottom: 28px;
+            margin-bottom: 14px;
         }
         .firmas {
             width: 100%;
-            margin-top: 12px;
-            margin-bottom: 36px;
+            margin-top: 0;
+            margin-bottom: 16px;
         }
         .firmas td {
             width: 50%;
@@ -74,10 +91,9 @@
             text-align: center;
             font-size: 8.5px;
             line-height: 1.45;
-            margin-top: 8px;
+            margin-top: 0;
         }
         .pie .empresa-nombre { font-weight: bold; font-size: 9px; margin-bottom: 4px; }
-        .page-break { page-break-after: always; }
     </style>
 </head>
 <body>
@@ -114,7 +130,10 @@
     @foreach ($secciones as $i => $seccion)
         @php
             $payload = $seccion['payload'] ?? [];
+            $colsLote = !empty($payload['incluir_lote']);
+            $colspanVacio = $colsLote ? 7 : 5;
         @endphp
+        <div class="pagina-toma">
         <h1 class="titulo-toma">
             TOMA DE INVENTARIO {{ strtoupper($seccion['cliente_nombre'] ?? '') }}
         </h1>
@@ -123,10 +142,6 @@
             FECHA DE TOMA DE INVENTARIO: <span class="fecha-linea">&nbsp;</span>
         </p>
 
-        @php
-            $colsLote = !empty($payload['incluir_lote']);
-            $colspanVacio = $colsLote ? 7 : 5;
-        @endphp
         <table class="datos">
             <thead>
                 <tr>
@@ -172,39 +187,38 @@
             </tbody>
         </table>
 
-        <div class="comentarios-label">Comentarios:</div>
-        <div class="comentarios-box">&nbsp;</div>
+        <div class="bloque-inferior">
+            <div class="comentarios-label">Comentarios:</div>
+            <div class="comentarios-box">&nbsp;</div>
 
-        <table class="firmas">
-            <tr>
-                <td>RESPONSABLE {{ $nombreEmpresaReporte }}</td>
-                <td>RESPONSABLE {{ $nombreClientePie($seccion) }}<br>NOMBRE, FIRMA Y SELLO</td>
-            </tr>
-        </table>
+            <table class="firmas">
+                <tr>
+                    <td>RESPONSABLE {{ $nombreEmpresaReporte }}</td>
+                    <td>RESPONSABLE {{ $nombreClientePie($seccion) }}<br>NOMBRE, FIRMA Y SELLO</td>
+                </tr>
+            </table>
 
-        <div class="pie">
-            <div class="empresa-nombre">{{ $nombreEmpresaReporte }}</div>
-            @if ($lineaDireccion !== '')
-                <div>{{ strtoupper($lineaDireccion) }}</div>
-            @endif
-            @if (!empty($empresa->correo) || !empty($empresa->telefono))
-                <div>
-                    @if (!empty($empresa->correo))
-                        E-mail: {{ $empresa->correo }}
-                    @endif
-                    @if (!empty($empresa->correo) && !empty($empresa->telefono))
-                        ,
-                    @endif
-                    @if (!empty($empresa->telefono))
-                        Teléfono: {{ $empresa->telefono }}
-                    @endif
-                </div>
-            @endif
+            <div class="pie">
+                <div class="empresa-nombre">{{ $nombreEmpresaReporte }}</div>
+                @if ($lineaDireccion !== '')
+                    <div>{{ strtoupper($lineaDireccion) }}</div>
+                @endif
+                @if (!empty($empresa->correo) || !empty($empresa->telefono))
+                    <div>
+                        @if (!empty($empresa->correo))
+                            E-mail: {{ $empresa->correo }}
+                        @endif
+                        @if (!empty($empresa->correo) && !empty($empresa->telefono))
+                            ,
+                        @endif
+                        @if (!empty($empresa->telefono))
+                            Teléfono: {{ $empresa->telefono }}
+                        @endif
+                    </div>
+                @endif
+            </div>
         </div>
-
-        @if ($i < count($secciones) - 1)
-            <div class="page-break"></div>
-        @endif
+        </div>
     @endforeach
 </body>
 </html>
