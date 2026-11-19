@@ -5,13 +5,14 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
+import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 type AlcanceHistorial = 'ventas' | 'compras';
 
 @Component({
   selector: 'app-consigna-historial-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgSelectModule, CurrencyPipe],
+  imports: [CommonModule, FormsModule, NgSelectModule, CurrencyPipe, LazyImageDirective],
   templateUrl: './consigna-historial-panel.component.html',
 })
 export class ConsignaHistorialPanelComponent implements OnChanges {
@@ -22,6 +23,16 @@ export class ConsignaHistorialPanelComponent implements OnChanges {
   @Input() nombreCliente = '';
   /** Requerido en compras. */
   @Input() idProveedor: number | null = null;
+  /** API GET para datos (custodia usa consigna-historial; productos en consigna usa consignas/seguimiento). */
+  @Input() rutaDatos = 'productos/consigna-historial';
+  /** API export PDF. */
+  @Input() rutaExportarPdf = 'productos/consigna-historial/exportar-pdf';
+  @Input() permisoExportar = 'inventario.consigna_kardex.ver';
+  /** Si el padre muestra Del/Al (p. ej. productos en consigna). */
+  @Input() fechasDesdePadre = false;
+  @Input() fechaIni = '';
+  @Input() fechaFin = '';
+  @Input() rutaExportarExcel = '';
 
   public loading = false;
   public downloading = false;
@@ -56,6 +67,13 @@ export class ConsignaHistorialPanelComponent implements OnChanges {
     }
   }
 
+  /** Llamado desde el padre cuando cambian fechas en la barra superior. */
+  public recargarSiListo(): void {
+    if (this.terceroListo()) {
+      this.cargar();
+    }
+  }
+
   public terceroListo(): boolean {
     return this.alcance === 'ventas' ? !!this.idCliente : !!this.idProveedor;
   }
@@ -74,7 +92,7 @@ export class ConsignaHistorialPanelComponent implements OnChanges {
     } else {
       params['id_proveedor'] = this.idProveedor;
     }
-    this.apiService.getAll('productos/consigna-historial', params).subscribe({
+    this.apiService.getAll(this.rutaDatos, params).subscribe({
       next: (data) => {
         const payload = data?.resumen !== undefined ? data : (data?.data ?? data);
         this.resumen = Array.isArray(payload?.resumen) ? payload.resumen : [];
@@ -162,6 +180,33 @@ export class ConsignaHistorialPanelComponent implements OnChanges {
       .trim();
   }
 
+  public exportarExcel(): void {
+    if (!this.rutaExportarExcel || !this.apiService.hasPermission(this.permisoExportar)) {
+      return;
+    }
+    this.downloading = true;
+    const params: Record<string, unknown> = { alcance: this.alcance, ...this.parametrosFechas() };
+    if (this.alcance === 'ventas') {
+      params['id_cliente'] = this.idCliente;
+    } else {
+      params['id_proveedor'] = this.idProveedor;
+    }
+    this.apiService.export(this.rutaExportarExcel, params).subscribe({
+      next: (blob) => {
+        const nombre =
+          this.alcance === 'ventas'
+            ? `seguimiento-consigna-cliente-${this.idCliente}.xlsx`
+            : 'historial-consigna-compras.xlsx';
+        this.apiService.downloadFile(blob, nombre);
+        this.downloading = false;
+      },
+      error: (err) => {
+        this.downloading = false;
+        this.alertService.error(err);
+      },
+    });
+  }
+
   public exportar(): void {
     if (!this.terceroListo()) {
       this.alertService.warning(
@@ -172,7 +217,7 @@ export class ConsignaHistorialPanelComponent implements OnChanges {
       );
       return;
     }
-    if (!this.apiService.hasPermission('inventario.consigna_kardex.ver')) {
+    if (!this.apiService.hasPermission(this.permisoExportar)) {
       return;
     }
     this.downloading = true;
@@ -182,7 +227,7 @@ export class ConsignaHistorialPanelComponent implements OnChanges {
     } else {
       params['id_proveedor'] = this.idProveedor;
     }
-    this.apiService.export('productos/consigna-historial/exportar-pdf', params).subscribe({
+    this.apiService.export(this.rutaExportarPdf, params).subscribe({
       next: (blob) => {
         const nombre =
           this.alcance === 'compras' ? 'historial-consigna-compras.pdf' : 'historial-consigna-ventas.pdf';
@@ -262,11 +307,13 @@ export class ConsignaHistorialPanelComponent implements OnChanges {
 
   private parametrosFechas(): Record<string, string> {
     const out: Record<string, string> = {};
-    if (this.fechas.fecha_ini) {
-      out['fecha_ini'] = this.fechas.fecha_ini;
+    const ini = this.fechasDesdePadre ? this.fechaIni : this.fechas.fecha_ini;
+    const fin = this.fechasDesdePadre ? this.fechaFin : this.fechas.fecha_fin;
+    if (ini) {
+      out['fecha_ini'] = ini;
     }
-    if (this.fechas.fecha_fin) {
-      out['fecha_fin'] = this.fechas.fecha_fin;
+    if (fin) {
+      out['fecha_fin'] = fin;
     }
     return out;
   }

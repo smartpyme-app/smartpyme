@@ -105,6 +105,7 @@ Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, '
     Route::post('/producto/sucursal',          [ConsignasController::class, 'store']);
     Route::delete('/producto/sucursal/{id}',   [ConsignasController::class, 'delete']);
     Route::get('/productos/consignas/exportar',        [ConsignasController::class, 'export'])->middleware('permission:ventas.consignas.ver');
+    Route::get('/productos/consignas/exportar-toma-inventario-pdf', [ConsignasController::class, 'exportarTomaInventarioConsignaPdf'])->middleware('permission:ventas.consignas.ver');
     Route::get('/productos/consignas-compras',         [ConsignasController::class, 'indexCompras'])->middleware('permission:compras.consignas.ver');
     Route::get('/productos/consignas-compras/exportar', [ConsignasController::class, 'exportCompras'])->middleware('permission:compras.consignas.ver');
     Route::get('/productos/consigna-disponible',      [ConsignasController::class, 'disponible']);

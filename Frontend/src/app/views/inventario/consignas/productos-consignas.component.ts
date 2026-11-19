@@ -12,7 +12,6 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
-
 @Component({
     selector: 'app-productos-consignas',
     templateUrl: './productos-consignas.component.html',
@@ -24,6 +23,9 @@ export class ProductosConsignasComponent extends BaseCrudComponent<any> implemen
 
     public productos:any = { data: [] };
     public downloading:boolean = false;
+    public downloadingTomaInventario = false;
+    public clientes: any[] = [];
+    public idClienteTomaInventario: number | null = null;
     public producto:any = {};
     /** ponytail: separado de `producto` del CRUD para que el modal no pierda `ventas` */
     public modalConsigna: any = null;
@@ -80,6 +82,16 @@ export class ProductosConsignasComponent extends BaseCrudComponent<any> implemen
               this.alertService.error(error);
               this.cdr.markForCheck();
             }
+          });
+
+        this.apiService.getAll('clientes/list')
+          .pipe(this.untilDestroyed())
+          .subscribe({
+            next: (clientes) => {
+              this.clientes = Array.isArray(clientes) ? clientes : (clientes?.data ?? []);
+              this.cdr.markForCheck();
+            },
+            error: () => this.cdr.markForCheck(),
           });
 
         this.apiService.getAll('sucursales/list')
@@ -235,6 +247,56 @@ export class ProductosConsignasComponent extends BaseCrudComponent<any> implemen
             this.saving = false;
             this.cdr.markForCheck();
             }
+    }
+
+    public etiquetaCliente(cliente: any): string {
+        if (cliente == null || cliente === '') {
+            return '';
+        }
+        if (typeof cliente === 'number') {
+            const encontrado = this.clientes.find((c) => Number(c.id) === cliente);
+            return encontrado ? this.etiquetaCliente(encontrado) : '';
+        }
+        const base =
+            cliente?.tipo === 'Empresa'
+                ? cliente?.nombre_empresa
+                : [cliente?.nombre, cliente?.apellido].filter(Boolean).join(' ').trim()
+                    || cliente?.nombre_completo;
+        const comercial = cliente?.nombre_comercial ? ` (${cliente.nombre_comercial})` : '';
+        const etiqueta = ((base ?? '') + comercial).trim();
+        return etiqueta || `Cliente #${cliente?.id ?? ''}`;
+    }
+
+    public etiquetaClienteToma(): string {
+        if (!this.idClienteTomaInventario) {
+            return '';
+        }
+        const cliente = this.clientes.find((c) => Number(c.id) === Number(this.idClienteTomaInventario));
+        return cliente ? this.etiquetaCliente(cliente) : '';
+    }
+
+    public descargarTomaInventarioPdf(): void {
+        this.downloadingTomaInventario = true;
+        const params: Record<string, unknown> = {};
+        if (this.idClienteTomaInventario) {
+            params['id_cliente'] = this.idClienteTomaInventario;
+        }
+        this.apiService.export('productos/consignas/exportar-toma-inventario-pdf', params).subscribe({
+            next: (blob) => {
+                const nombre = this.idClienteTomaInventario
+                    ? `toma-inventario-consigna-cliente-${this.idClienteTomaInventario}.pdf`
+                    : 'toma-inventario-consigna-todos.pdf';
+                this.apiService.downloadFile(blob, nombre);
+                this.downloadingTomaInventario = false;
+                this.closeModal();
+                this.cdr.markForCheck();
+            },
+            error: (err) => {
+                this.alertService.error(err);
+                this.downloadingTomaInventario = false;
+                this.cdr.markForCheck();
+            },
+        });
     }
 
     public descargar(){

@@ -16,6 +16,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\Inventario\Consignas\StoreAjusteRequest;
 use App\Services\Inventario\ConsignaDisponibleService;
 use App\Services\Inventario\ConsignaProductosVentaListadoService;
+use App\Services\Inventario\ConsignaSeguimientoVentasService;
 use App\Models\Admin\Empresa;
 use Illuminate\Support\Facades\Auth;
 
@@ -134,6 +135,32 @@ class ConsignasController extends Controller
         $consignas->filter($request);
 
         return Excel::download($consignas, 'productos-en-consigna.xlsx');
+    }
+
+    /** PDF toma de inventario en consigna (estilo Wellmeds, sin historial de movimientos). */
+    public function exportarTomaInventarioConsignaPdf(Request $request)
+    {
+        $empresa = Empresa::query()->findOrFail(Auth::user()->id_empresa);
+        $data = app(ConsignaSeguimientoVentasService::class)->seccionesTomaInventario(
+            $request,
+            (int) $empresa->id,
+            $empresa
+        );
+
+        if ($data['secciones'] === []) {
+            return response()->json(['error' => 'No hay clientes con consigna para generar el reporte.'], 404);
+        }
+
+        $nombre = $request->filled('id_cliente')
+            ? 'toma-inventario-consigna-cliente-' . (int) $request->id_cliente . '.pdf'
+            : 'toma-inventario-consigna-todos.pdf';
+
+        $pdf = app('dompdf.wrapper')->loadView('reportes.inventario.consigna-toma-inventario', [
+            'empresa' => $empresa,
+            'secciones' => $data['secciones'],
+        ]);
+
+        return $pdf->download($nombre);
     }
 
     public function ventasPorProducto(int $idProducto)

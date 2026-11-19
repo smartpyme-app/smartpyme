@@ -4,7 +4,7 @@
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
-        <div class="col-md-6 mb-2">
+        <div class="col-md-6 mb-3">
             @if (productos?.total) {
                 <span class="text-muted d-flex align-items-center gap-2 flex-wrap">
                     Mostrando
@@ -18,21 +18,37 @@
             }
         </div>
 
-        <div class="col-md-6 mb-2">
-            <div class="d-flex gap-2">
-                <button [disabled]="downloading" tooltip="Descargar productos en consigna" (click)="descargar()" class="btn btn-default tcla-F6">
-                    <img appLazyImage="/assets/icons/download.png" class="icon">
+        <div class="col-md-6 mb-3">
+            <div class="d-flex gap-2 flex-grow-1 justify-content-md-end">
+                <button
+                    type="button"
+                    [disabled]="downloading"
+                    class="btn btn-default tcla-F6"
+                    tooltip="Descargar productos en consigna (Excel)"
+                    (click)="descargar()">
+                    <img appLazyImage="/assets/icons/download.png" class="icon" alt="">
                 </button>
-                <input
-                    type="text"
-                    name="buscador"
-                    class="form-control pull-right"
-                    placeholder="Buscar producto, cliente o Nº de factura..."
-                    [(ngModel)]="filtros.buscador"
-                    (keyup.enter)="buscar()" />
+                <button
+                    type="button"
+                    class="btn btn-default"
+                    tooltip="Toma de inventario en consigna (PDF)"
+                    (click)="openModal(mtomaInventario)">
+                    <img appLazyImage="/assets/icons/filter.png" class="icon" alt="">
+                </button>
+                <form class="d-flex input-group flex-grow-1" (ngSubmit)="buscar()" autocomplete="off">
+                    <input
+                        type="text"
+                        name="buscador"
+                        class="form-control"
+                        placeholder="Buscar producto, cliente o Nº de factura..."
+                        [(ngModel)]="filtros.buscador" />
+                </form>
                 <button type="button" class="btn btn-default tcla-F6" [disabled]="loading" (click)="buscar()" tooltip="Buscar (F6)">
-                    <i *ngIf="!loading" class="fa fa-search"></i>
-                    <i *ngIf="loading" class="fa fa-ellipsis-h"></i>
+                    @if (!loading) {
+                        <i class="fa fa-search"></i>
+                    } @else {
+                        <i class="fa fa-ellipsis-h"></i>
+                    }
                 </button>
             </div>
         </div>
@@ -137,6 +153,54 @@
         }
     </div>
 </section>
+
+<ng-template #mtomaInventario>
+    <div class="modal-header">
+        <div class="modal-title text-center w-100">
+            <h2 class="text-center mb-0">Toma de inventario</h2>
+        </div>
+        <button type="button" class="btn-close" (click)="closeModal()" aria-label="Cerrar"></button>
+    </div>
+    <div class="modal-body">
+        <p class="alert bg-info mb-3">
+            Reporte en PDF con productos en consigna por cliente: cantidad sistema (saldo en ERP), columnas toma actual y facturar en blanco para llenar. Deje el cliente vacío para incluir todos.
+        </p>
+        <div class="form-group mb-3">
+            <label class="form-label" for="id_cliente_toma">Cliente (opcional)</label>
+            <ng-select
+                id="id_cliente_toma"
+                class="form-select p-0"
+                name="id_cliente_toma"
+                [items]="clientes"
+                bindValue="id"
+                [(ngModel)]="idClienteTomaInventario"
+                placeholder="Todos los clientes con consigna"
+                [clearable]="true"
+                [searchable]="true"
+                appendTo="body">
+                <ng-template ng-label-tmp let-item="item">
+                    {{ item ? etiquetaCliente(item) : etiquetaClienteToma() }}
+                </ng-template>
+                <ng-template ng-option-tmp let-item="item">
+                    {{ etiquetaCliente(item) }}
+                </ng-template>
+            </ng-select>
+        </div>
+        <div class="d-grid">
+            <button
+                type="button"
+                class="btn btn-primary"
+                [disabled]="downloadingTomaInventario"
+                (click)="descargarTomaInventarioPdf()">
+                @if (!downloadingTomaInventario) {
+                    <i class="fa fa-file-pdf-o me-1"></i> Descargar PDF
+                } @else {
+                    Descargando…
+                }
+            </button>
+        </div>
+    </div>
+</ng-template>
 
 <ng-template #mdetalles>
   <div class="modal-header">

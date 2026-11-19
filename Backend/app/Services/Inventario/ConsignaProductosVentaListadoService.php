@@ -162,6 +162,72 @@ class ConsignaProductosVentaListadoService
         return $resumen;
     }
 
+    /**
+     * Una fila por línea de remisión en consigna; Nº CON = correlativo de la venta.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function filasTomaInventarioPorCliente(
+        int $idCliente,
+        int $idEmpresa,
+        ?Empresa $empresa
+    ): array {
+        $incluirLote = $this->agruparPorProductoYLote($empresa);
+        $with = [
+            'producto:id,nombre,codigo',
+            'venta:id,correlativo,id_bodega,id_empresa',
+            'venta.bodega:id,nombre',
+        ];
+        if ($incluirLote) {
+            $with[] = 'lote:id,numero_lote,fecha_vencimiento';
+        }
+
+        $detalles = DetalleVenta::query()
+            ->whereHas('venta', fn ($q) => $q
+                ->where('id_empresa', $idEmpresa)
+                ->where('estado', 'Consigna')
+                ->where('cotizacion', 0)
+                ->where('id_cliente', $idCliente))
+            ->with($with)
+            ->orderBy('id_venta')
+            ->orderBy('id')
+            ->get();
+
+        $filas = [];
+        foreach ($detalles as $detalle) {
+            $qty = (float) $detalle->cantidad;
+            if ($qty <= 0.0001) {
+                continue;
+            }
+
+            $correlativo = $detalle->venta?->correlativo;
+            $fila = [
+                'numero_consigna' => $correlativo !== null && $correlativo !== '' ? $correlativo : null,
+                'id_producto' => (int) $detalle->id_producto,
+                'codigo' => $detalle->producto?->codigo,
+                'producto' => $detalle->producto?->nombre,
+                'bodega' => $detalle->venta?->bodega?->nombre,
+                'disponible' => round($qty, 4),
+                'precio_unitario' => (float) ($detalle->precio ?? 0),
+            ];
+            if ($incluirLote) {
+                $fila['lote_id'] = $detalle->lote_id ? (int) $detalle->lote_id : null;
+                $fila['lote'] = $detalle->lote?->numero_lote;
+                $fila['vence'] = $detalle->lote?->fecha_vencimiento?->format('Y-m-d');
+            }
+            $filas[] = $fila;
+        }
+
+        return collect($filas)
+            ->sortBy(fn (array $r) => sprintf(
+                '%s-%s',
+                str_pad((string) ($r['numero_consigna'] ?? ''), 12, '0', STR_PAD_LEFT),
+                (string) ($r['producto'] ?? '')
+            ))
+            ->values()
+            ->all();
+    }
+
     /** @return array<string, mixed> */
     private function lineaVentaConsigna(DetalleVenta $detalle, bool $incluirLoteDetalle): array
     {

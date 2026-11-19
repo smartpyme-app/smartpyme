@@ -15,12 +15,13 @@ class ConsignaHistorialResumenSheet implements FromCollection, WithHeadings, Wit
      */
     public function __construct(
         private array $payload,
-        private string $alcance
+        private string $alcance,
+        private ?string $tituloHoja = null,
     ) {}
 
     public function title(): string
     {
-        return 'Productos en consigna';
+        return $this->tituloHoja ?? 'Productos en consigna';
     }
 
     public function headings(): array

@@ -14,12 +14,13 @@ class ConsignaHistorialMovimientosSheet implements FromCollection, WithHeadings,
      * @param  array<string, mixed>  $payload
      */
     public function __construct(
-        private array $payload
+        private array $payload,
+        private ?string $tituloHoja = null,
     ) {}
 
     public function title(): string
     {
-        return 'Historial movimientos';
+        return $this->tituloHoja ?? 'Historial movimientos';
     }
 
     public function headings(): array
