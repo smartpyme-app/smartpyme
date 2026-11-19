@@ -154,6 +154,13 @@
                                         *ngIf="detalle.id_presentacion" class="badge bg-success ms-1"
                                         style="font-size: 10px;"><i class="fa fa-box me-1"></i>Presentación</span></small>
 
+                                @if (tieneUbicaciones(detalle)) {
+                                    <button type="button" class="btn btn-link btn-sm p-0 ms-2 align-baseline text-info" style="font-size: 11px; line-height: 1.2;"
+                                        (click)="abrirUbicaciones(mubicacionesProducto, detalle)"
+                                        title="Ver ubicaciones del producto">
+                                        <i class="fa fa-map-marker-alt me-1"></i>Ubicaciones
+                                    </button>
+                                }
                                 <br>
                                 <small class="text-muted" *ngIf="detalle.inventario_por_lotes && apiService.isLotesActivo()">
                                     <button class="btn btn-sm btn-outline-primary mt-1"
@@ -185,6 +192,13 @@
                             <small class="text-muted text-tiny">{{ detalle?.tipo }} <span
                                     *ngIf="detalle.id_presentacion" class="badge bg-success ms-1"
                                     style="font-size: 10px;"><i class="fa fa-box me-1"></i>Presentación</span></small>
+                            @if (tieneUbicaciones(detalle)) {
+                                <button type="button" class="btn btn-link btn-sm p-0 ms-2 align-baseline text-info" style="font-size: 11px; line-height: 1.2;"
+                                    (click)="abrirUbicaciones(mubicacionesProducto, detalle)"
+                                    title="Ver ubicaciones del producto">
+                                    <i class="fa fa-map-marker-alt me-1"></i>Ubicaciones
+                                </button>
+                            }
                             <br>
                             <small class="text-muted" *ngIf="detalle.inventario_por_lotes && apiService.isLotesActivo()">
                                 <button class="btn btn-sm btn-outline-primary mt-1"
@@ -430,6 +444,37 @@
             [disabled]="!distribucionLotesValida() || loading">
             Confirmar distribución
         </button>
+    </div>
+</ng-template>
+
+<!-- Modal de ubicaciones del producto -->
+<ng-template #mubicacionesProducto>
+    <div class="modal-header">
+        <div class="modal-title text-center w-100">
+            <h3 class="mb-0">Ubicaciones</h3>
+            <small class="text-muted fw-normal d-block">{{ productoUbicaciones?.nombre }}</small>
+            <div class="d-flex justify-content-center mt-2">
+                @if (hasImage(productoUbicaciones?.img)) {
+                    <img [src]="apiService.productoImagenUrl(productoUbicaciones.img)"
+                         [alt]="productoUbicaciones?.nombre || 'Producto'"
+                         class="rounded border"
+                         style="width: 90px; height: 90px; object-fit: cover;">
+                } @else {
+                    <span class="d-inline-flex flex-column align-items-center justify-content-center rounded bg-light text-muted"
+                          style="width: 90px; height: 90px; border: 1px dashed #ced4da;">
+                        <i class="fa fa-image fa-lg"></i>
+                        <small style="font-size: 10px;">Sin foto</small>
+                    </span>
+                }
+            </div>
+        </div>
+        <button type="button" class="btn-close" (click)="modalRef?.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <div class="text-center py-3" *ngIf="loadingUbicaciones">
+            <span class="badge bg-primary">Cargando ubicaciones...</span>
+        </div>
+        <app-producto-ubicaciones *ngIf="!loadingUbicaciones" [producto]="productoUbicaciones" [soloEditar]="true"></app-producto-ubicaciones>
     </div>
 </ng-template>
 

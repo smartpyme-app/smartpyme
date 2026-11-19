@@ -328,11 +328,23 @@
 
 <ng-template #mubicacionesProducto>
     <div class="modal-header">
-        <h3 class="modal-title text-center w-100">
-            Ubicaciones
-            <br>
-            <small class="text-muted fw-normal">{{ productoUbicaciones?.nombre }}</small>
-        </h3>
+        <div class="modal-title text-center w-100">
+            <h3 class="mb-0">Ubicaciones</h3>
+            <small class="text-muted fw-normal d-block">{{ productoUbicaciones?.nombre }}</small>
+            <div class="d-flex justify-content-center mt-2">
+                <img *ngIf="hasImage(productoUbicaciones?.img); else sinFoto"
+                    [src]="apiService.productoImagenUrl(productoUbicaciones.img)"
+                    [alt]="productoUbicaciones?.nombre || 'Producto'" class="rounded border"
+                    style="width: 90px; height: 90px; object-fit: cover;">
+                <ng-template #sinFoto>
+                    <span class="d-inline-flex flex-column align-items-center justify-content-center rounded bg-light text-muted"
+                        style="width: 90px; height: 90px; border: 1px dashed #ced4da;">
+                        <i class="fa fa-image fa-lg"></i>
+                        <small style="font-size: 10px;">Sin foto</small>
+                    </span>
+                </ng-template>
+            </div>
+        </div>
         <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
     </div>
     <div class="modal-body">

@@ -1,7 +1,7 @@
 <div class="row">
     <h6 class="my-3 font-weight-bold">
         Ubicaciones
-        @if (inventariosDisponibles.length > 0) {
+        @if (!soloLectura && !soloEditar && inventariosDisponibles.length > 0) {
             <a class="btn btn-default float-end" (click)="openModal(mubicacion, null)" tooltip="Agregar ubicación">
                 <i class="fa fa-plus"></i> Agregar ubicación
             </a>
@@ -16,27 +16,31 @@
                     <th>Ubicación</th>
                     <th>Ubicación específica</th>
                     <th>Detalle</th>
-                    <th class="text-center" style="width: 100px;"><i class="fa fa-cog"></i></th>
+                    @if (!soloLectura) {
+                        <th class="text-center" style="width: 100px;"><i class="fa fa-cog"></i></th>
+                    }
                 </tr>
             </thead>
             <tbody>
                 @if (loading) {
                     <tr>
-                        <td colspan="5" class="text-center">
+                        <td [attr.colspan]="soloLectura ? 4 : 5" class="text-center">
                             <span class="badge bg-primary">Guardando...</span>
                         </td>
                     </tr>
                 }
                 @if (!loading && inventariosDisponibles.length === 0) {
                     <tr>
-                        <td colspan="5" class="text-center">
-                            <span class="text-muted">Configure primero el inventario en una bodega para poder agregar ubicaciones.</span>
+                        <td [attr.colspan]="soloLectura ? 4 : 5" class="text-center">
+                            <span class="text-muted">
+                                {{ (soloLectura || soloEditar) ? 'El producto no tiene inventario configurado en ninguna bodega.' : 'Configure primero el inventario en una bodega para poder agregar ubicaciones.' }}
+                            </span>
                         </td>
                     </tr>
                 }
                 @if (!loading && inventariosDisponibles.length > 0 && filas.length === 0) {
                     <tr>
-                        <td colspan="5" class="text-center">
+                        <td [attr.colspan]="soloLectura ? 4 : 5" class="text-center">
                             <span class="text-muted">No tiene ubicaciones configuradas</span>
                         </td>
                     </tr>
@@ -47,16 +51,20 @@
                         <td>{{ fila.ubicacion.ubicacion || '—' }}</td>
                         <td>{{ fila.ubicacion.ubicacion_especifica || '—' }}</td>
                         <td style="white-space: pre-line;">{{ fila.ubicacion.detalle || '—' }}@if (fila.ubicacion.activa === false) { <small class="text-muted">(sin existencias)</small> }</td>
-                        <td class="text-center">
-                            <div class="d-flex gap-2 justify-content-center">
-                                <a class="btn btn-light" (click)="openModal(mubicacion, fila)" tooltip="Editar" href="javascript:void(0)">
-                                    <i class="fa fa-pencil-alt"></i>
-                                </a>
-                                <a class="btn btn-light" (click)="delete(fila)" tooltip="Eliminar" href="javascript:void(0)">
-                                    <i class="fa fa-trash"></i>
-                                </a>
-                            </div>
-                        </td>
+                        @if (!soloLectura) {
+                            <td class="text-center">
+                                <div class="d-flex gap-2 justify-content-center">
+                                    <a class="btn btn-light" (click)="openModal(mubicacion, fila)" tooltip="Editar" href="javascript:void(0)">
+                                        <i class="fa fa-pencil-alt"></i>
+                                    </a>
+                                    @if (!soloEditar) {
+                                        <a class="btn btn-light" (click)="delete(fila)" tooltip="Eliminar" href="javascript:void(0)">
+                                            <i class="fa fa-trash"></i>
+                                        </a>
+                                    }
+                                </div>
+                            </td>
+                        }
                     </tr>
                 }
             </tbody>

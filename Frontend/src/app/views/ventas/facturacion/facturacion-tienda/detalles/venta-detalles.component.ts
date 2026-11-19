@@ -51,6 +51,7 @@ import { filtrarPreciosPorUsuario } from '@utils/precios-usuario-venta.util';
 import { CountryI18nService } from '@services/country-i18n.service';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { idProductoEditable, rutaEditarProductoDetalle } from '@views/ventas/venta-detalle-producto-link.util';
+import { ProductoUbicacionesComponent } from '@views/inventario/productos/producto/ubicaciones/producto-ubicaciones.component';
 
 @Component({
     selector: 'app-venta-detalles',
@@ -68,6 +69,7 @@ import { idProductoEditable, rutaEditarProductoDetalle } from '@views/ventas/ven
         LazyImageDirective,
         FeCrExoneracionDetalleModalComponent,
         CurrencyPipe,
+        ProductoUbicacionesComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -97,6 +99,8 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
   @Output() selectCliente = new EventEmitter<any>();
   override modalRef!: BsModalRef;
   public zoomImageUrl: string = '';
+  public productoUbicaciones: any = {};
+  public loadingUbicaciones: boolean = false;
 
     @ViewChild('msupervisor')
     public supervisorTemplate!: TemplateRef<any>;
@@ -182,6 +186,53 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
   openModalEdit(template: TemplateRef<any>, detalle: any) {
     this.detalle = detalle;
     this.openModal(template, { class: 'modal-md', backdrop: 'static' });
+  }
+
+  /** Indica si el producto del detalle tiene ubicaciones configuradas en inventario. */
+  public tieneUbicaciones(detalle: any): boolean {
+    if (!detalle || detalle.tipo === 'Servicio') {
+      return false;
+    }
+    const flag = detalle.tiene_ubicaciones;
+    if (flag === true || Number(flag) === 1) {
+      return true;
+    }
+    return (detalle.inventarios || []).some(
+      (inventario: any) => Array.isArray(inventario?.ubicaciones) && inventario.ubicaciones.length > 0
+    );
+  }
+
+  /** Abre el mismo modal de ubicaciones del producto (alta/edición) desde la línea de venta. */
+  public abrirUbicaciones(template: TemplateRef<any>, detalle: any): void {
+    this.productoUbicaciones = {
+      id: detalle?.id_producto,
+      nombre: detalle?.descripcion,
+      img: detalle?.img,
+      inventarios: detalle?.inventarios || [],
+    };
+    this.loadingUbicaciones = true;
+    this.openLargeModal(template);
+
+    if (!detalle?.id_producto) {
+      this.loadingUbicaciones = false;
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.apiService.read('producto/', detalle.id_producto)
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (producto) => {
+          this.productoUbicaciones = producto;
+          this.loadingUbicaciones = false;
+          this.cdr.markForCheck();
+        },
+        error: (error) => {
+          this.loadingUbicaciones = false;
+          this.alertService.error(error);
+          this.cdr.markForCheck();
+        },
+      });
   }
 
     private obtenerPorcentajeIvaDetalle(detalle: any): number {

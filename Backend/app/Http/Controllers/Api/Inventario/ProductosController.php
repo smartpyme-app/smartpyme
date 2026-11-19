@@ -268,6 +268,22 @@ class ProductosController extends Controller
     }
 
     /**
+     * Agrega el flag `tiene_ubicaciones` (EXISTS) sin cargar las filas de ubicaciones.
+     */
+    protected function aplicarFlagTieneUbicaciones(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        if (Schema::hasTable('inventario_ubicaciones')) {
+            $query->withExists([
+                'inventarios as tiene_ubicaciones' => function ($q) {
+                    $q->whereHas('ubicaciones');
+                },
+            ]);
+        }
+
+        return $query;
+    }
+
+    /**
      * Stock base para buscadores de ventas/compras: lotes si el producto los usa, inventario tradicional si no.
      */
     protected function calcularStockBaseParaBusqueda(Producto $producto, ?int $id_bodega, ?Empresa $empresa): ?float
@@ -377,7 +393,7 @@ class ProductosController extends Controller
         $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
         $incluirNombreComercial = $empresa && $empresa->isNombreComercialHabilitado();
 
-        $productos = Producto::where('enable', true)->with(array_merge(
+        $productos = $this->aplicarFlagTieneUbicaciones(Producto::where('enable', true)->with(array_merge(
             ['inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios', 'precios'],
             $this->relacionesImpuestosProducto()
         ))
@@ -395,7 +411,7 @@ class ProductosController extends Controller
                     $q->orWhere('nombre_comercial', 'like', "%$txt%");
                 }
             })
-            ->take(50)
+            ->take(50))
             ->get();
 
         return Response()->json($productos, 200);
@@ -472,7 +488,7 @@ class ProductosController extends Controller
             $with[] = 'presentaciones';
         }
 
-        $productos = Producto::where('enable', true)
+        $productos = $this->aplicarFlagTieneUbicaciones(Producto::where('enable', true)
             ->with($with)
             ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
             ->where(function ($q) use ($query, $incluirComponenteQuimico, $incluirNombreComercial) {
@@ -489,7 +505,7 @@ class ProductosController extends Controller
                     $q->orWhere('nombre_comercial', 'like', "%$query%");
                 }
             })
-            ->take(50)
+            ->take(50))
             ->get();
 
         // ── 2. Construir lista aplanada ────────────────────────────────────────────
@@ -561,7 +577,7 @@ class ProductosController extends Controller
                 $withBodega[] = 'presentaciones';
             }
 
-            $productos = Producto::where('enable', true)
+            $productos = $this->aplicarFlagTieneUbicaciones(Producto::where('enable', true)
                 ->with($withBodega)
                 ->with(array_merge(
                     ['composiciones.opciones', 'composiciones.compuesto.inventarios', 'precios'],
@@ -591,7 +607,7 @@ class ProductosController extends Controller
                         $q->orWhere('nombre_comercial', 'like', "%$query%");
                     }
                 })
-                ->take(50)
+                ->take(50))
                 ->get();
         } else {
             $withGlobal = array_merge(
@@ -602,7 +618,7 @@ class ProductosController extends Controller
                 $withGlobal[] = 'presentaciones';
             }
 
-            $productos = Producto::where('enable', true)->with($withGlobal)->with('precios')
+            $productos = $this->aplicarFlagTieneUbicaciones(Producto::where('enable', true)->with($withGlobal)->with('precios')
                 ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
                 ->where(function ($q) use ($query, $incluirComponenteQuimico, $incluirNombreComercial) {
                     $q->where('nombre', 'like', "%$query%")
@@ -618,7 +634,7 @@ class ProductosController extends Controller
                         $q->orWhere('nombre_comercial', 'like', "%$query%");
                     }
                 })
-                ->take(50)
+                ->take(50))
                 ->get();
         }
 

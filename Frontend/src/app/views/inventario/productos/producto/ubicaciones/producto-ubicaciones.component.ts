@@ -19,6 +19,10 @@ import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/n
 export class ProductoUbicacionesComponent extends BaseModalComponent {
 
     @Input() producto: any = {};
+    /** En ventas se muestra solo como consulta: oculta agregar, editar y eliminar. */
+    @Input() soloLectura: boolean = false;
+    /** Permite editar ubicaciones existentes, pero oculta agregar y eliminar. */
+    @Input() soloEditar: boolean = false;
 
     public form: any = {};
     public editIndex: number | null = null;

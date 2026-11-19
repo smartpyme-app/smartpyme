@@ -716,8 +716,12 @@ export class ProductosComponent implements OnInit, OnDestroy {
         return !!producto?.tiene_ubicaciones;
     }
 
+    public hasImage(img: any): boolean {
+        return !!img && img !== 'default.png' && img !== 'default.jpg' && img !== 'productos/default.jpg' && img !== 'null' && img !== 'undefined';
+    }
+
     public abrirVerUbicaciones(template: TemplateRef<any>, producto: any): void {
-        this.productoUbicaciones = { nombre: producto?.nombre };
+        this.productoUbicaciones = { nombre: producto?.nombre, img: producto?.img };
         this.filasUbicacionesModal = [];
         this.loadingUbicacionesModal = true;
         this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
