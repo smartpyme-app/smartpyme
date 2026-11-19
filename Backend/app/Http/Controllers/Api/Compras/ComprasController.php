@@ -55,7 +55,9 @@ class ComprasController extends Controller
         }
 
         $compras = ComprasListQuery::apply(Compra::select($columns), $request)
-                        ->with(['proveedor', 'usuario', 'sucursal', 'proyecto', 'empresa'])
+                        // Sin 'empresa': era la misma en todas las filas y nadie la usa en el listado
+                        // (los DTE recargan la compra con su empresa en el servidor).
+                        ->with(['proveedor', 'usuario', 'sucursal', 'proyecto'])
                         ->withSum(['abonos' => function ($query) {
                             $query->where('estado', 'Confirmado');
                         }], 'total')

@@ -22,6 +22,7 @@ use App\Models\Admin\Sucursal;
 use App\Models\Ventas\Venta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ReporteAutomaticoGenerator
@@ -272,17 +273,29 @@ class ReporteAutomaticoGenerator
             ->pluck('id')
             ->toArray();
 
-        $inventarioData = DB::table('productos as p')
+        // k_reciente sólo puede unirse a filas con id_inventario dentro de $bodegas (el JOIN exige
+        // i.id_bodega = k_reciente.id_inventario y el WHERE exige b.id IN $bodegas), así que filtrar
+        // el kardex por esas bodegas da el mismo resultado sin agrupar el kardex de todas las empresas
+        // (antes ~3M filas por ejecución: 20 s desde la pantalla, ~20 min en el programado).
+        // Son ids enteros leídos de la BD; intval evita cualquier inyección al ir dentro de DB::raw.
+        $bodegasSql = empty($bodegas) ? 'NULL' : implode(',', array_map('intval', $bodegas));
+
+        $inventarioQuery = DB::table('productos as p')
             ->join('inventario as i', 'p.id', '=', 'i.id_producto')
             ->join('sucursal_bodegas as b', 'i.id_bodega', '=', 'b.id')
             ->join('sucursales as s', 'b.id_sucursal', '=', 's.id')
             ->leftJoin('categorias as c', 'p.id_categoria', '=', 'c.id')
+            // El GROUP BY evita que el motor "aplane" k_reciente dentro de la consulta principal: así se
+            // calcula una vez y se indexa por (id_producto, id_inventario). Sin él, por cada fila del
+            // reporte recorría todo el kardex de la bodega (31M búsquedas para 5.6k filas). No cambia
+            // el resultado: k.id = k_max.max_id deja una sola fila por (id_producto, id_inventario),
+            // así que MAX() de esa fila es su mismo valor.
             ->leftJoin(DB::raw('(
                 SELECT
                     k.id_producto,
                     k.id_inventario,
-                    k.precio_unitario,
-                    k.costo_unitario
+                    MAX(k.precio_unitario) as precio_unitario,
+                    MAX(k.costo_unitario) as costo_unitario
                 FROM kardexs k
                 INNER JOIN (
                     SELECT
@@ -292,12 +305,15 @@ class ReporteAutomaticoGenerator
                         MAX(id) as max_id
                     FROM kardexs
                     WHERE (precio_unitario > 0 OR costo_unitario > 0)
+                      AND id_inventario IN (' . $bodegasSql . ')
                     GROUP BY id_producto, id_inventario
                 ) k_max ON k.id_producto = k_max.id_producto
                        AND k.id_inventario = k_max.id_inventario
                        AND k.fecha = k_max.max_fecha
                        AND k.id = k_max.max_id
                 WHERE (k.precio_unitario > 0 OR k.costo_unitario > 0)
+                  AND k.id_inventario IN (' . $bodegasSql . ')
+                GROUP BY k.id_producto, k.id_inventario
             ) as k_reciente'), function ($join) {
                 $join->on('p.id', '=', 'k_reciente.id_producto')
                     ->on('i.id_bodega', '=', 'k_reciente.id_inventario');
@@ -347,7 +363,11 @@ class ReporteAutomaticoGenerator
             ->orderBy('s.nombre')
             ->orderBy('b.nombre')
             ->orderBy('p.nombre')
-            ->get();
+            // Desempate: productos con el mismo nombre en la misma bodega salían en orden arbitrario.
+            ->orderBy('p.id')
+            ->orderBy('i.id');
+
+        $inventarioData = $this->sinMaterializacionLateral(fn () => $inventarioQuery->get());
 
         $datosPreparados = [];
         foreach ($inventarioData->groupBy('nombre_sucursal') as $sucursalNombre => $datosSucursal) {
@@ -462,5 +482,38 @@ class ReporteAutomaticoGenerator
             'tipo_reporte' => $configuracion->tipo_reporte,
             'empresa' => $empresa->nombre ?? '',
         ];
+    }
+
+    /**
+     * MariaDB aplica "split_materialized" (derivadas LATERAL) a k_reciente y recalcula el bloque de
+     * k_max por cada producto: en producción esta consulta pasaba de <1 s a >150 s (MySQL no tiene esa
+     * optimización, por eso en local no se veía). Se apaga sólo durante esta consulta y se restaura el
+     * valor previo, porque las conexiones de los workers se reutilizan. Si el servidor no conoce el flag
+     * (MySQL) o el SET falla, la consulta se ejecuta tal cual.
+     */
+    private function sinMaterializacionLateral(callable $consulta)
+    {
+        $previo = null;
+        try {
+            $actual = DB::selectOne('SELECT @@SESSION.optimizer_switch AS v')->v ?? null;
+            if (is_string($actual) && str_contains($actual, 'split_materialized=')) {
+                DB::statement("SET SESSION optimizer_switch = 'split_materialized=off'");
+                $previo = $actual;
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Reporte inventario: no se pudo ajustar optimizer_switch', ['error' => $e->getMessage()]);
+        }
+
+        try {
+            return $consulta();
+        } finally {
+            if ($previo !== null) {
+                try {
+                    DB::statement('SET SESSION optimizer_switch = ' . DB::getPdo()->quote($previo));
+                } catch (\Throwable $e) {
+                    Log::warning('Reporte inventario: no se pudo restaurar optimizer_switch', ['error' => $e->getMessage()]);
+                }
+            }
+        }
     }
 }

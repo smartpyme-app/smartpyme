@@ -58,12 +58,8 @@
                 <option value="Pagada">Pagada</option>
             </select>
             <ng-select name="id_proveedor" (change)="filtrarCompras()" [(ngModel)]="filtros.id_proveedor"
-                class="form-select p-0 border-0 bg-default w-auto" [clearable]="true" placeholder="Proveedor">
-                @for (proveedor of proveedores; track proveedor.id) {
-                    <ng-option [value]="proveedor.id">
-                        {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo }}@if (proveedor.nombre_comercial) { ({{ proveedor.nombre_comercial }}) }
-                    </ng-option>
-                }
+                class="form-select p-0 border-0 bg-default w-auto" [clearable]="true" placeholder="Proveedor"
+                [items]="proveedoresOpciones" bindLabel="etiqueta" bindValue="id" [virtualScroll]="true">
             </ng-select>
         </div>
     </div>
@@ -382,12 +378,8 @@
             <div class="form-group col-md-12">
                 <label for="filtros.proveedor">Proveedor:</label>
                 <ng-select [(ngModel)]="filtros.id_proveedor" class="form-select p-0" name="filtros.id_proveedor"
-                    [clearable]="true" placeholder="Todos los proveedores">
-                    @for (proveedor of proveedores; track proveedor.id) {
-                        <ng-option [value]="proveedor.id">
-                            {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo }}@if (proveedor.nombre_comercial) { ({{ proveedor.nombre_comercial }}) }
-                        </ng-option>
-                    }
+                    [clearable]="true" placeholder="Todos los proveedores"
+                    [items]="proveedoresOpciones" bindLabel="etiqueta" bindValue="id" [virtualScroll]="true">
                 </ng-select>
             </div>
             <div class="form-group col-md-6">
@@ -860,10 +852,8 @@
                   [(ngModel)]="item.compra.id_proveedor"
                   (change)="onBulkProveedorChange(item)"
                   [name]="'bf-' + item.uid + '-prov'"
-                  placeholder="Seleccione proveedor">
-                  <ng-option [value]="p.id" *ngFor="let p of proveedores">
-                    {{ p.tipo == 'Empresa' ? p.nombre_empresa : p.nombre_completo }}@if (p.nombre_comercial) { ({{ p.nombre_comercial }}) }
-                  </ng-option>
+                  placeholder="Seleccione proveedor"
+                  [items]="proveedoresOpciones" bindLabel="etiqueta" bindValue="id" [virtualScroll]="true">
                 </ng-select>
                 <app-crear-proveedor
                   [id_proveedor]="item.compra.id_proveedor"

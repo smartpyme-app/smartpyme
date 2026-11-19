@@ -881,13 +881,8 @@
             </div>
             <div class="form-group col-sm-6">
                 <label for="filtros.id_cliente">Cliente:</label>
-                <ng-select name="id_cliente" [(ngModel)]="filtros.id_cliente" class="form-select p-0">
-                    <ng-option value="">Todos</ng-option>
-                    @for (cliente of clientes; track cliente.id) {
-                        <ng-option [value]="cliente.id">
-                            {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}@if (cliente.nombre_comercial) { ({{ cliente.nombre_comercial }}) }
-                        </ng-option>
-                    }
+                <ng-select name="id_cliente" [(ngModel)]="filtros.id_cliente" class="form-select p-0"
+                           [items]="clientesOpcionesFiltro" bindLabel="etiqueta" bindValue="id" [virtualScroll]="true" [clearable]="false">
                 </ng-select>
             </div>
             <div class="form-group col-md-6">
@@ -1130,11 +1125,8 @@
             <div class="row">
                 <div class="form-group col-12">
                     <label>Cliente:</label>
-                    <ng-select [(ngModel)]="filtrosVentasCliente.id_cliente" class="form-select p-0" name="id_cliente" [clearable]="true">
-                        <ng-option [value]="''">Todos los clientes</ng-option>
-                        <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-                            {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}@if (cliente.nombre_comercial) { ({{ cliente.nombre_comercial }}) }
-                        </ng-option>
+                    <ng-select [(ngModel)]="filtrosVentasCliente.id_cliente" class="form-select p-0" name="id_cliente" [clearable]="true"
+                               [items]="clientesOpcionesReporte" bindLabel="etiqueta" bindValue="id" [virtualScroll]="true">
                     </ng-select>
                 </div>
             </div>

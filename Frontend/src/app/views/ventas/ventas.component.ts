@@ -2,6 +2,7 @@
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
+import { OpcionSelect, opcionesSelect } from '@shared/utils/opciones-select.util';
 import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { PopoverModule } from 'ngx-bootstrap/popover';
@@ -182,6 +183,9 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   }
 
   public clientes: any = [];
+  /** Opciones con virtualScroll (16k+ clientes congelaban el modal con un <ng-option> por cliente). */
+  public clientesOpcionesFiltro: OpcionSelect[] = opcionesSelect([], 'Todos');
+  public clientesOpcionesReporte: OpcionSelect[] = opcionesSelect([], 'Todos los clientes');
   public usuario: any = {};
   public usuarios: any = [];
   public sucursales: any = [];
@@ -518,7 +522,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
         .pipe(this.untilDestroyed())
         .subscribe({
           next: (clientes) => {
-            this.clientes = clientes;
+            this.setClientes(clientes);
             this.abrirModalVentasCliente(template);
           },
           error: (error) => {
@@ -855,13 +859,20 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     this.cdr.markForCheck();
   }
 
+  private setClientes(clientes: any[]): void {
+    this.clientes = clientes;
+    this.clientesOpcionesFiltro = opcionesSelect(clientes, 'Todos');
+    this.clientesOpcionesReporte = opcionesSelect(clientes, 'Todos los clientes');
+    this.cdr.markForCheck();
+  }
+
   public openFilter(template: TemplateRef<any>) {
     if (!this.clientes.length) {
       this.sharedDataService.getClientes()
         .pipe(this.untilDestroyed())
         .subscribe({
           next: (clientes) => {
-            this.clientes = clientes;
+            this.setClientes(clientes);
           },
           error: (error) => {
             this.alertService.error(error);
