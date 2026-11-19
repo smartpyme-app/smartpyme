@@ -1,7 +1,9 @@
 import { Component, OnInit, ViewChild, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { NavigationEnd, Router, RouterModule } from '@angular/router';
+import { filter, take } from 'rxjs/operators';
+import Swal from 'sweetalert2';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { SwUpdate } from '@angular/service-worker';
@@ -37,6 +39,8 @@ export class AppComponent implements OnInit {
     modalRefEndTour!: BsModalRef;
 
     private destroyRef = inject(DestroyRef);
+    private router = inject(Router);
+    private actualizacionPendiente = false;
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
@@ -56,14 +60,50 @@ export class AppComponent implements OnInit {
                 .pipe(this.untilDestroyed())
                 .subscribe((event: any) => {
                     if (event.type === 'VERSION_READY') {
-                        // if (confirm('Hay una nueva versión disponible. ¿Quieres actualizar?')) {
-                          this.updates.activateUpdate().then(() => document.location.reload());
-                        // }
+                        this.avisarNuevaVersion();
                     }
                 });
         }
     }
     
+
+    /**
+     * Hay una versión nueva descargada. No se recarga sola (el usuario podría estar a
+     * mitad de una venta): se le pregunta. "Más tarde" (o si otra alerta cierra este aviso)
+     * → se actualiza al cambiar de pantalla, cuando ya no hay nada a medias en la actual.
+     */
+    private avisarNuevaVersion(): void {
+        if (this.actualizacionPendiente) {
+            return;
+        }
+        this.actualizacionPendiente = true;
+        Swal.fire({
+            toast: true,
+            position: 'bottom-end',
+            icon: 'info',
+            title: 'Hay una nueva versión de SmartPyme',
+            text: 'Actualiza para obtener las mejoras. Si eliges "Más tarde", se actualizará al cambiar de pantalla.',
+            showConfirmButton: true,
+            showCancelButton: true,
+            confirmButtonText: 'Actualizar ahora',
+            cancelButtonText: 'Más tarde',
+            timer: undefined,
+        }).then(resultado => {
+            if (resultado.isConfirmed) {
+                this.aplicarActualizacion();
+                return;
+            }
+            this.router.events
+                .pipe(filter(e => e instanceof NavigationEnd), take(1), this.untilDestroyed())
+                .subscribe(() => this.aplicarActualizacion());
+        });
+    }
+
+    private aplicarActualizacion(): void {
+        this.updates.activateUpdate()
+            .catch(() => undefined)
+            .then(() => document.location.reload());
+    }
 
     ngOnInit() {
         this.configurePace();
