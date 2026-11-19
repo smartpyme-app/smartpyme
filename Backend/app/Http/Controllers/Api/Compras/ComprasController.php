@@ -66,6 +66,9 @@ class ComprasController extends Controller
                         }], 'total')
                         ->paginate($request->paginate);
 
+        // Igual que en ventas: no descargar de S3 los DTE migrados al serializar el listado.
+        $compras->getCollection()->each->sinDescargarDteDeS3();
+
         return Response()->json($compras, 200);
            
     }

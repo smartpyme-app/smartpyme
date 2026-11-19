@@ -264,6 +264,10 @@ class VentasController extends Controller
                 ->orderBy($request->orden, $request->direccion)
                 ->orderBy('id', 'desc')
                 ->paginate($request->paginate);
+
+            // El SELECT ya devuelve dte = NULL para las migradas a S3; sin esto el accessor
+            // las descargaba de S3 al serializar (2 llamadas por fila).
+            $ventas->getCollection()->each->sinDescargarDteDeS3();
         }
 
         return Response()->json($ventas, 200);
