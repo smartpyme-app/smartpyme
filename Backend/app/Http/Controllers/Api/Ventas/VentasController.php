@@ -381,6 +381,14 @@ class VentasController extends Controller
         }
 
         $venta->saldo = round($venta->total - ($venta->abonos_sum_total ?? 0) - ($venta->devoluciones_sum_total ?? 0), 2);
+
+        $rawInv = $venta->getAttributes()['dte_invalidacion'] ?? null;
+        $invS3 = $venta->getAttributes()['dte_invalidacion_s3_key'] ?? null;
+        $venta->setAttribute(
+            'tiene_dte_invalidacion',
+            (is_string($rawInv) && trim($rawInv) !== '') || (is_string($invS3) && trim($invS3) !== '') ? 1 : 0
+        );
+
         return Response()->json($venta, 200);
     }
 

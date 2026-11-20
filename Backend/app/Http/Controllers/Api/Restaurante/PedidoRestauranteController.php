@@ -415,36 +415,58 @@ class PedidoRestauranteController extends Controller
         );
     }
 
-    public function anular(int $id): JsonResponse
+    public function anular(Request $request, int $id): JsonResponse
     {
-        $user = auth()->user();
-        if (!$user || !$user->id_empresa) {
-            return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
-        }
-
-        $pedido = PedidoRestaurante::where('id_empresa', $user->id_empresa)->findOrFail($id);
-
-        if (! in_array($pedido->estado, ['borrador', 'pendiente_facturar'], true)) {
-            return response()->json(['error' => 'Solo se pueden anular pedidos en borrador o pendiente de facturar'], 422);
-        }
-
-        try {
-            DB::transaction(function () use ($pedido) {
-                if ($pedido->estado === 'pendiente_facturar' && $pedido->id_bodega) {
-                    $svc = new PedidoCanalInventarioService();
-                    $svc->revertirSalidasPedido($pedido->fresh(['detalles']), (int) $pedido->id_bodega);
+        return app(RestauranteIdempotencyService::class)->run(
+            'anular_pedido',
+            $request,
+            function () use ($id) {
+                $user = auth()->user();
+                if (! $user || ! $user->id_empresa) {
+                    return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
                 }
-                $pedido->update(['estado' => 'anulado']);
-            });
-        } catch (RuntimeException $e) {
-            return response()->json(['error' => $e->getMessage()], 400);
-        }
 
-        $pedido->load(['detalles.producto', 'cliente', 'usuario', 'venta']);
+                try {
+                    $pedido = DB::transaction(function () use ($user, $id) {
+                        $pedido = PedidoRestaurante::where('id_empresa', $user->id_empresa)
+                            ->whereKey($id)
+                            ->lockForUpdate()
+                            ->firstOrFail();
 
-        $response = $this->enrichDetallesWithPaquetes($pedido->toArray(), $user->id_empresa);
+                        if ($pedido->estado === 'anulado') {
+                            return $pedido;
+                        }
 
-        return response()->json($response);
+                        if (! in_array($pedido->estado, ['borrador', 'pendiente_facturar'], true)) {
+                            throw new RuntimeException('Solo se pueden anular pedidos en borrador o pendiente de facturar');
+                        }
+
+                        if ($pedido->estado === 'pendiente_facturar' && $pedido->inventario_descontado_at) {
+                            $idBodega = (int) ($pedido->id_bodega_inventario ?? $pedido->id_bodega);
+                            if ($idBodega > 0) {
+                                $svc = new PedidoCanalInventarioService();
+                                $svc->revertirSalidasPedido($pedido->fresh(['detalles']), $idBodega);
+                            }
+                        }
+
+                        $pedido->update(['estado' => 'anulado']);
+
+                        return $pedido->fresh();
+                    });
+                } catch (RuntimeException $e) {
+                    $msg = $e->getMessage();
+                    $code = str_contains($msg, 'borrador') || str_contains($msg, 'pendiente') ? 422 : 400;
+
+                    return response()->json(['error' => $msg], $code);
+                }
+
+                $pedido->load(['detalles.producto', 'cliente', 'usuario', 'venta']);
+
+                $response = $this->enrichDetallesWithPaquetes($pedido->toArray(), (int) $user->id_empresa);
+
+                return response()->json($response);
+            }
+        );
     }
 
     /**
