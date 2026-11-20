@@ -264,6 +264,10 @@ class VentasController extends Controller
                 ->orderBy($request->orden, $request->direccion)
                 ->orderBy('id', 'desc')
                 ->paginate($request->paginate);
+
+            // El SELECT ya devuelve dte = NULL para las migradas a S3; sin esto el accessor
+            // las descargaba de S3 al serializar (2 llamadas por fila).
+            $ventas->getCollection()->each->sinDescargarDteDeS3();
         }
 
         return Response()->json($ventas, 200);
@@ -709,6 +713,7 @@ class VentasController extends Controller
         $corte  = $caja->corte;
         $ventas = $corte->ventas()->orderBy('id', 'desc')
             ->paginate(30);
+        $ventas->getCollection()->each->sinDescargarDteDeS3();
 
         return Response()->json($ventas, 200);
     }
@@ -911,7 +916,7 @@ class VentasController extends Controller
                 ->orderBy('id', 'desc')
                 ->paginate(5000);
         }
-
+        $ventas->getCollection()->each->sinDescargarDteDeS3();
 
         return Response()->json($ventas, 200);
     }
@@ -928,6 +933,7 @@ class VentasController extends Controller
             ->where('id_usuario', $usuario->id)
             ->orderBy('id', 'desc')
             ->paginate(5000);
+        $ventas->getCollection()->each->sinDescargarDteDeS3();
 
         return Response()->json($ventas, 200);
     }
@@ -1230,6 +1236,8 @@ class VentasController extends Controller
             ->whereDoesntHave('devoluciones')
             ->orderBy('fecha', 'DESC')
             ->get();
+        // Selector para crear devoluciones: no usa el DTE (hasta 3 meses de ventas sin paginar).
+        $ventas->each->makeHidden(['dte', 'dte_invalidacion']);
 
         return Response()->json($ventas, 200);
     }
@@ -1345,6 +1353,8 @@ class VentasController extends Controller
             ->orderBy($orden, $direccion)
             ->orderBy('id', 'desc')
             ->paginate($paginate);
+        // Cuentas por cobrar no usa el DTE; evita enviarlo o descargarlo de S3 por fila.
+        $cobros->getCollection()->each->makeHidden(['dte', 'dte_invalidacion']);
 
         return Response()->json($cobros, 200);
     }

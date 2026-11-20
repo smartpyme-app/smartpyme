@@ -174,8 +174,10 @@ class Kernel extends ConsoleKernel
             ->appendOutputTo(storage_path('logs/activos-depreciacion.log'));
 
         if (config('dte.schedule_enabled')) {
-            $schedule->command('dte:migrate-to-s3')
-                ->dailyAt('02:45')
+            // Cada madrugada: sube a S3 los DTE con fecha hasta ayer que sigan en la columna
+            // (incluye los que se volvieron a llenar tras migrarse) y deja solo la llave.
+            $schedule->command('dte:migrate-to-s3 --dias-minimos=1')
+                ->dailyAt('01:00')
                 ->withoutOverlapping(120)
                 ->runInBackground()
                 ->appendOutputTo(storage_path('logs/dte-migrate-s3.log'));

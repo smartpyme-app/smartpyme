@@ -26,7 +26,8 @@ class MigrateDteToS3Command extends Command
                             {--skip-invalidacion : No migrar columnas dte_invalidacion}
                             {--mes= : Filtrar por mes de la columna fecha (formato YYYY-MM, ej. 2025-06)}
                             {--desde= : Inicio de rango fecha (Y-m-d); usar junto con --hasta}
-                            {--hasta= : Fin de rango fecha (Y-m-d); usar junto con --desde}';
+                            {--hasta= : Fin de rango fecha (Y-m-d); usar junto con --desde}
+                            {--dias-minimos= : Solo documentos con fecha de hace al menos N días (1 = hasta ayer). Lo usa el cron diario}';
 
     protected $description = 'Sube DTE (JSON El Salvador o XML Costa Rica) desde compras/ventas a S3 y vacía la columna local.';
 
@@ -73,7 +74,7 @@ class MigrateDteToS3Command extends Command
 
     /**
      * @param  class-string<Venta|Compra>  $class
-     * @param  array{0: string, 1: string}|null  $rangoFechas [desde, hasta] inclusive en columna fecha
+     * @param  array{0: string|null, 1: string|null}|null  $rangoFechas [desde, hasta] inclusive en columna fecha (null = sin límite)
      */
     protected function processModel(string $class, string $table, string $disk, bool $dry, ?int $limit, bool $skipInv, ?array $rangoFechas): int
     {
@@ -88,8 +89,14 @@ class MigrateDteToS3Command extends Command
         });
 
         if ($rangoFechas !== null) {
-            $q->whereBetween('fecha', [$rangoFechas[0], $rangoFechas[1]]);
-            $this->line("Filtro fecha: {$rangoFechas[0]} … {$rangoFechas[1]}");
+            [$desde, $hasta] = $rangoFechas;
+            if ($desde !== null) {
+                $q->where('fecha', '>=', $desde);
+            }
+            if ($hasta !== null) {
+                $q->where('fecha', '<=', $hasta);
+            }
+            $this->line('Filtro fecha: ' . ($desde ?? 'inicio') . ' … ' . ($hasta ?? 'hoy'));
         }
 
         $q->orderBy('id');
@@ -142,20 +149,23 @@ class MigrateDteToS3Command extends Command
         if ($raw === null || $raw === '') {
             return false;
         }
-        if (!empty($row->getRawOriginal($keyCol))) {
-            return false;
-        }
 
         $bytes = is_string($raw) ? $raw : json_encode($raw);
         if ($bytes === false || $bytes === '') {
             return false;
         }
 
+        // Si ya tiene llave en S3 pero la columna se volvió a llenar (reenvío al MH,
+        // contingencia, firma posterior...), la columna es la versión más reciente:
+        // se vuelve a subir sobre el mismo objeto y se vacía la columna.
+        $keyExistente = $row->getRawOriginal($keyCol);
+        $resubida = !empty($keyExistente);
+
         $format = $this->dteS3ObjectFormat($bytes);
-        $path = $this->buildObjectKey($table, $row, $jsonCol, $format['ext']);
+        $path = $resubida ? (string) $keyExistente : $this->buildObjectKey($table, $row, $jsonCol, $format['ext']);
 
         if ($dry) {
-            $this->line("[dry-run] {$table}#{$row->id} -> {$path}");
+            $this->line("[dry-run] {$table}#{$row->id} -> {$path}" . ($resubida ? ' (resubida)' : ''));
 
             return false;
         }
@@ -178,11 +188,22 @@ class MigrateDteToS3Command extends Command
         }
 
         $migratedAt = now();
-        DB::table($table)->where('id', $row->id)->update([
-            $keyCol => $path,
-            $migratedCol => $migratedAt,
-            $jsonCol => null,
-        ]);
+        // Solo se vacía si la columna sigue con lo mismo que se subió: si la app la cambió
+        // mientras tanto, no se toca (se sube en la siguiente corrida) y no se pierde nada.
+        $afectadas = DB::table($table)
+            ->where('id', $row->id)
+            ->where($jsonCol, $raw)
+            ->update([
+                $keyCol => $path,
+                $migratedCol => $migratedAt,
+                $jsonCol => null,
+            ]);
+
+        if ($afectadas === 0) {
+            $this->warn("{$table}#{$row->id} {$jsonCol} cambió durante la subida; se reintentará en la próxima corrida.");
+
+            return false;
+        }
 
         $attrs = $row->getAttributes();
         $attrs[$keyCol] = $path;
@@ -191,7 +212,7 @@ class MigrateDteToS3Command extends Command
         $row->setRawAttributes($attrs);
         $row->syncOriginal();
 
-        $this->line("Migrado {$table}#{$row->id} {$jsonCol} -> {$path}");
+        $this->line(($resubida ? 'Resubido' : 'Migrado') . " {$table}#{$row->id} {$jsonCol} -> {$path}");
 
         return true;
     }
@@ -272,13 +293,29 @@ class MigrateDteToS3Command extends Command
     }
 
     /**
-     * @return array{0: string, 1: string}|null|false
+     * @return array{0: string|null, 1: string|null}|null|false
      */
     protected function resolveRangoFechasFiltro()
     {
         $mesOpt = $this->option('mes');
         $desdeOpt = $this->option('desde');
         $hastaOpt = $this->option('hasta');
+        $diasMinOpt = $this->option('dias-minimos');
+
+        if ($diasMinOpt !== null && $diasMinOpt !== '') {
+            if ($mesOpt || $desdeOpt || $hastaOpt) {
+                $this->error('No combines --dias-minimos con --mes, --desde o --hasta.');
+
+                return false;
+            }
+            if (!ctype_digit((string) $diasMinOpt)) {
+                $this->error('--dias-minimos debe ser un número entero (ejemplo: 1 = hasta ayer).');
+
+                return false;
+            }
+
+            return [null, Carbon::today()->subDays((int) $diasMinOpt)->format('Y-m-d')];
+        }
 
         if ($mesOpt) {
             if ($desdeOpt || $hastaOpt) {
