@@ -39,7 +39,7 @@ export class PermissionService {
     const storedPermissions = localStorage.getItem('SP_user_permissions');
     if (storedPermissions) {
       try {
-        const role = JSON.parse(storedPermissions).role;
+        const role = this.parseCacheado(storedPermissions).role;
         if (typeof role === 'string' && role && role !== 'Sin rol asignado') {
           return this.formatRoleName(role);
         }
@@ -61,9 +61,29 @@ export class PermissionService {
     return 'Usuario';
   }
 
+  /**
+   * El menú lateral llama hasPermission()/isAdmin() desde la plantilla en cada ciclo de
+   * detección de cambios: miles de JSON.parse de SP_auth_user (~25 kB) y SP_user_permissions
+   * por segundo mientras cargan las peticiones. Se reutiliza el objeto parseado mientras el
+   * texto guardado no cambie (si cambia, se vuelve a parsear). Los objetos se usan sólo para leer.
+   */
+  private readonly cacheParse = new Map<string, any>();
+
+  private parseCacheado(raw: string): any {
+    if (this.cacheParse.has(raw)) {
+      return this.cacheParse.get(raw);
+    }
+    const valor = JSON.parse(raw);
+    if (this.cacheParse.size >= 4) {
+      this.cacheParse.clear();
+    }
+    this.cacheParse.set(raw, valor);
+    return valor;
+  }
+
   private getAuthUser(): any {
     const user = localStorage.getItem('SP_auth_user');
-    return user ? JSON.parse(user) : null;
+    return user ? this.parseCacheado(user) : null;
   }
 
   private toPermissionNameArray(value: unknown): string[] {
@@ -196,7 +216,7 @@ export class PermissionService {
       return false;
     }
     try {
-      const role = JSON.parse(stored).role;
+      const role = this.parseCacheado(stored).role;
       if (typeof role !== 'string' || !role) {
         return false;
       }
@@ -269,7 +289,7 @@ export class PermissionService {
     const stored = localStorage.getItem('SP_user_permissions');
     if (stored) {
       try {
-        if (JSON.parse(stored).role === 'super_admin') {
+        if (this.parseCacheado(stored).role === 'super_admin') {
           return true;
         }
       } catch {
@@ -300,7 +320,7 @@ export class PermissionService {
   isAdminRole(): boolean {
     let user = localStorage.getItem('SP_user_permissions');
     if (user) {
-      let role = JSON.parse(user).role;
+      let role = this.parseCacheado(user).role;
       return (
         role === 'usuario_contador' ||
         role === 'admin' ||
@@ -314,7 +334,7 @@ export class PermissionService {
   verifyVentasRole(): boolean {
     let user = localStorage.getItem('SP_user_permissions');
     if (user) {
-      let role = JSON.parse(user).role;
+      let role = this.parseCacheado(user).role;
       return role === 'usuario_ventas';
     }
     return false;
@@ -323,7 +343,7 @@ export class PermissionService {
   verifyCitasRole(): boolean {
     let user = localStorage.getItem('SP_user_permissions');
     if (user) {
-      let role = JSON.parse(user).role;
+      let role = this.parseCacheado(user).role;
       return role === 'usuario_citas';
     }
     return false;
@@ -336,7 +356,7 @@ export class PermissionService {
     }
 
     try {
-      const { role } = JSON.parse(userPermissions);
+      const { role } = this.parseCacheado(userPermissions);
       return equals ? role === roleToCheck : role !== roleToCheck;
     } catch (error) {
       console.error('Error checking role:', error);
@@ -348,7 +368,7 @@ export class PermissionService {
     const userPermissions = localStorage.getItem('SP_user_permissions');
     if (userPermissions) {
       try {
-        const { role } = JSON.parse(userPermissions);
+        const { role } = this.parseCacheado(userPermissions);
         return role === 'usuario_supervisor_limitado' || role === 'supervisor_limitado';
       } catch (error) {
         console.error('Error checking supervisor limitado role:', error);
@@ -365,7 +385,7 @@ export class PermissionService {
     const userPermissions = localStorage.getItem('SP_user_permissions');
     if (userPermissions) {
       try {
-        const { role } = JSON.parse(userPermissions);
+        const { role } = this.parseCacheado(userPermissions);
         if (role === 'ventas_limitado') return true;
       } catch {
         /* fallback al tipo */
