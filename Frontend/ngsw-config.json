@@ -11,6 +11,19 @@
           "/index.html",
           "/manifest.webmanifest",
           "/*.css",
+          "/runtime.*.js",
+          "/polyfills.*.js",
+          "/scripts.*.js",
+          "/main.*.js"
+        ]
+      }
+    },
+    {
+      "name": "modulos",
+      "installMode": "lazy",
+      "updateMode": "prefetch",
+      "resources": {
+        "files": [
           "/*.js"
         ]
       }

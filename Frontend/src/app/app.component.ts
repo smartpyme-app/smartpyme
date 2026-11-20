@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { NavigationEnd, Router, RouterModule } from '@angular/router';
+import { NavigationEnd, NavigationError, Router, RouterModule } from '@angular/router';
 import { filter, take } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
@@ -63,7 +63,45 @@ export class AppComponent implements OnInit {
                         this.avisarNuevaVersion();
                     }
                 });
+            // La versión en caché quedó inutilizable (archivos ya no disponibles): recargar.
+            this.updates.unrecoverable
+                .pipe(this.untilDestroyed())
+                .subscribe(() => document.location.reload());
         }
+
+        this.router.events
+            .pipe(filter((e): e is NavigationError => e instanceof NavigationError), this.untilDestroyed())
+            .subscribe((e) => this.recuperarSiFallaCargaDeModulo(e));
+    }
+
+    /**
+     * Los módulos se descargan bajo demanda (ngsw-config: installMode lazy). Si después de un
+     * deploy el usuario sigue en la versión anterior y entra a un módulo que no tenía descargado,
+     * ese archivo ya no existe en el servidor (ChunkLoadError). Se recarga directo en la pantalla
+     * destino, que carga la versión nueva. Como máximo una vez cada 30 s para no entrar en ciclo.
+     */
+    private recuperarSiFallaCargaDeModulo(e: NavigationError): void {
+        const err: any = e.error;
+        const mensaje = String(err?.message ?? err ?? '') + ' ' + String(err?.name ?? '');
+        if (!/ChunkLoadError|Loading chunk|dynamically imported module|Importing a module script failed|error loading dynamically imported/i.test(mensaje)) {
+            return;
+        }
+        const clave = 'SP_recarga_por_modulo';
+        let ultima = 0;
+        try {
+            ultima = Number(sessionStorage.getItem(clave) || 0);
+        } catch {
+            /* sin sessionStorage */
+        }
+        if (Date.now() - ultima < 30_000) {
+            return;
+        }
+        try {
+            sessionStorage.setItem(clave, String(Date.now()));
+        } catch {
+            /* sin sessionStorage */
+        }
+        window.location.assign(e.url);
     }
     
 

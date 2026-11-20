@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { LayoutComponent } from '../../layout/layout.component';
 
 import { ComprasComponent } from '../compras/compras.component';
 import { FacturacionCompraComponent } from '../compras/facturacion/facturacion-compra.component';
@@ -45,7 +44,6 @@ const retaceoGuards = [PermissionGuard, FuncionalidadGuard];
 const routes: Routes = [
   {
     path: '',
-    component: LayoutComponent,
     title: 'Compras',
     children: [
       {

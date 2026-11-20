@@ -2,12 +2,10 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AdminGuard } from '@guards/admin.guard';
 import { UsuariosGuard } from '@guards/usuarios.guard';
-import { LayoutComponent } from '@layout/layout.component';
 
 const routes: Routes = [
   {
     path: '',
-    component: LayoutComponent,
     canActivate: [AdminGuard],
     children: [
         { 

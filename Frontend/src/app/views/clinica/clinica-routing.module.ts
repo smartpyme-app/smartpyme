@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { LayoutComponent } from '../../layout/layout.component';
 import { FuncionalidadGuard } from '@guards/funcionalidad.guard';
 import { PermissionGuard } from '@guards/permission.guard';
 import { PacientesComponent } from './pacientes/pacientes.component';
@@ -20,7 +19,6 @@ import { DiagnosticoFichaComponent } from './diagnosticos/diagnostico-ficha.comp
 const routes: Routes = [
   {
     path: '',
-    component: LayoutComponent,
     children: [
       { path: 'clinica/pacientes', component: PacientesComponent, canActivate: [FuncionalidadGuard, PermissionGuard], data: { funcionalidadSlug: 'clinica-pacientes', permission: 'clinica.pacientes.ver' }, title: 'Pacientes' },
       { path: 'clinica/pacientes/nuevo', component: PacienteFormComponent, canActivate: [FuncionalidadGuard, PermissionGuard], data: { funcionalidadSlug: 'clinica-pacientes', permission: 'clinica.pacientes.crear' }, title: 'Nuevo paciente' },

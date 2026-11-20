@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { LayoutComponent } from '../../layout/layout.component';
 import { DteManagementComponent } from './dte-management.component';
 import { EmailAccountsComponent } from './email-accounts/email-accounts.component';
 import { SyncDashboardComponent } from './sync-dashboard/sync-dashboard.component';
@@ -10,7 +9,6 @@ import { DteDetailComponent } from './dte-detail/dte-detail.component';
 const routes: Routes = [
   {
     path: '',
-    component: LayoutComponent,
     title: 'DTEs',
     children: [
       {

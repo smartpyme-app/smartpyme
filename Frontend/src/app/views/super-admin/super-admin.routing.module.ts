@@ -1,13 +1,11 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { SuperAdminGuard } from '@guards/super-admin.guard';
-import { LayoutComponent } from '@layout/layout.component';
 
 
 const routes: Routes = [
   {
     path: 'admin',
-    component: LayoutComponent,
     canActivate: [SuperAdminGuard],
     children: [
         {

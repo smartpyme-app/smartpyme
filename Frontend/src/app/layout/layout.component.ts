@@ -23,6 +23,7 @@ import { FuncionalidadesService } from '@services/functionalities.service';
 import { SLUG_DESCARGA_AUTOMATIZADA_DTES } from '@guards/funcionalidad.guard';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ContadoresPortalService } from '@services/contadores-portal.service';
+import { RefrescoLayoutService } from '../services/refresco-layout.service';
 
 @Component({
     selector: 'app-layout',
@@ -61,6 +62,7 @@ export class LayoutComponent implements OnInit {
   readonly DIAS_UMBRAL_SUSPENSION_ACCESO = AppConstants.DIAS_PRORROGA_SUSCRIPCION + 1;
 
   private destroyRef = inject(DestroyRef);
+  private refrescoLayout = inject(RefrescoLayoutService);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
@@ -90,6 +92,15 @@ export class LayoutComponent implements OnInit {
 
     this.getAlertSuscription();
     this.checkDtePendingReviewAlert();
+
+    // El layout ya no se recrea por módulo: refrescar alertas al navegar, máximo cada 5 min.
+    this.refrescoLayout.marcar('layout-alertas');
+    this.refrescoLayout.alNavegar('layout-alertas', 5 * 60_000)
+      .pipe(this.untilDestroyed())
+      .subscribe(() => {
+        this.getAlertSuscription();
+        this.checkDtePendingReviewAlert();
+      });
   }
 
   private refrescarUsuarioLayout(): void {

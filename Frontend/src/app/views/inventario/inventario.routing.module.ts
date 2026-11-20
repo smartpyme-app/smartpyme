@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { LayoutComponent } from '@layout/layout.component';
 import { CitasGuard } from '@guards/citas.guard';
 import { InventarioOperacionesAdminGuard } from '@guards/inventario-operaciones-admin.guard';
 import { TransformacionProductosGuard } from '@guards/transformacion-productos.guard';
@@ -47,7 +46,6 @@ import { ProductoPresentacionesComponent } from '@views/inventario/productos/pro
 const routes: Routes = [
   {
     path: '',
-    component: LayoutComponent,
     title: 'Inventario',
     children: [
         { path: 'productos', component: ProductosComponent, title: 'Productos' },
