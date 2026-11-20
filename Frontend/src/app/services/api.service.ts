@@ -459,6 +459,14 @@ export class ApiService {
     return this.permissionService.validateRole(roleToCheck, equals);
   }
 
+  isGerenteRole(): boolean {
+    return this.permissionService.isGerenteRole();
+  }
+
+  puedeVerInteligenciaNegociosMenu(): boolean {
+    return this.permissionService.puedeVerInteligenciaNegociosMenu();
+  }
+
   /** Portal contador con cartera (rol admin_contador). */
   esPortalContador(): boolean {
     if (this.validateRole('admin_contador', true)) {
