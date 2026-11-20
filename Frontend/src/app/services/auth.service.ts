@@ -110,9 +110,26 @@ export class AuthService {
     }
   }
 
+  /**
+   * auth_user() se llama cientos de veces por ciclo de detección de cambios (plantillas y
+   * helpers de ApiService). Se reutiliza el objeto parseado mientras el texto guardado en
+   * SP_auth_user no cambie; cualquier setItem/removeItem de esa clave se refleja en la
+   * siguiente llamada porque el texto ya no coincide.
+   */
+  private authUserCache: { raw: string; valor: any } | null = null;
+
   auth_user(): any {
     const user = localStorage.getItem('SP_auth_user');
-    return user ? JSON.parse(user) : null;
+    if (!user) {
+      this.authUserCache = null;
+      return null;
+    }
+    if (this.authUserCache?.raw === user) {
+      return this.authUserCache.valor;
+    }
+    const valor = JSON.parse(user);
+    this.authUserCache = { raw: user, valor };
+    return valor;
   }
 
   register_user(): any {
