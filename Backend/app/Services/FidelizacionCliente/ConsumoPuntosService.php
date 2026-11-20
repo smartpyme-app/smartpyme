@@ -82,13 +82,9 @@ class ConsumoPuntosService
             return false;
         }
 
-        // 2b. Con canje de puntos en la misma venta no se acumulan puntos nuevos
-        if ($venta->tieneCanjeDePuntosEnVenta()) {
-            Log::debug('Venta con canje de puntos: no se acumulan puntos', ['venta_id' => $venta->id]);
-            return false;
-        }
-
         // 3. Verificar si ya existe una transacción de puntos para esta venta (más eficiente)
+        // Nota: el canje parcial no bloquea la acumulación; los puntos se calculan sobre venta.total
+        // (monto neto ya cobrado tras descuento_puntos).
         $existeTransaccion = TransaccionPuntos::where('id_venta', $venta->id)
             ->where('tipo', TransaccionPuntos::TIPO_GANANCIA)
             ->exists();
@@ -134,13 +130,14 @@ class ConsumoPuntosService
             return false;
         }
 
-        // 7. Calcular puntos basado en el monto total de la venta
-        $puntosCalculados = $tipoCliente->calcularPuntos($venta->total);
+        // 7. Calcular puntos sobre el monto neto cobrado (total ya incluye descuento_puntos)
+        $montoBase = $venta->getMontoBaseAcumulacionPuntos();
+        $puntosCalculados = $tipoCliente->calcularPuntos($montoBase);
         
         if ($puntosCalculados <= 0) {
             Log::debug('No se generan puntos para esta venta (puntos calculados: 0)', [
                 'venta_id' => $venta->id,
-                'monto' => $venta->total,
+                'monto' => $montoBase,
                 'puntos_por_dolar' => $tipoCliente->puntos_por_dolar
             ]);
             return false;

@@ -159,12 +159,8 @@ class ProcesarPuntosVentasExistentes extends Command
             return ['success' => false, 'error' => 'Venta ya tiene puntos generados'];
         }
 
-        // 3b. Ventas con canje de puntos no deben recibir acumulación en la misma operación
-        if ($venta->tieneCanjeDePuntosEnVenta()) {
-            return ['success' => true, 'puntos' => 0, 'message' => 'Venta con canje de puntos: no aplica acumulación'];
-        }
-
         // 4. Obtener el cliente y su tipo efectivo
+        // Nota: el canje parcial no bloquea la acumulación; se usa venta.total (neto cobrado).
         $cliente = $venta->cliente;
         if (!$cliente) {
             return ['success' => false, 'error' => 'Cliente no encontrado'];
@@ -175,8 +171,8 @@ class ProcesarPuntosVentasExistentes extends Command
             return ['success' => false, 'error' => 'No se pudo determinar tipo de cliente efectivo'];
         }
 
-        // 5. Calcular puntos basado en el monto total de la venta
-        $puntosCalculados = $tipoCliente->calcularPuntos($venta->total);
+        // 5. Calcular puntos sobre el monto neto cobrado (total ya incluye descuento_puntos)
+        $puntosCalculados = $tipoCliente->calcularPuntos($venta->getMontoBaseAcumulacionPuntos());
         
         if ($puntosCalculados <= 0) {
             return ['success' => true, 'puntos' => 0, 'message' => 'No se generan puntos para esta venta'];
