@@ -221,6 +221,7 @@ class PaquetesController extends Controller
     }
 
     public function export(Request $request){
+        \App\Support\MemoriaExport::ampliar();
         $paquetes = new PaquetesExport();
         $paquetes->filter($request);
 
