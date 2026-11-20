@@ -39,7 +39,7 @@ class Proyecto extends Model {
     }
 
     public function getNombreClienteAttribute()
-    {   $cliente = $this->cliente()->first();
+    {   $cliente = $this->relationLoaded('cliente') ? $this->cliente : $this->cliente()->first();
         if ($cliente) {
             return $cliente->nombreParaDocumento();
         }
