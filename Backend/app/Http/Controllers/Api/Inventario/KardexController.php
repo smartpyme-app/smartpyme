@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Requests\Inventario\Kardex\StoreKardexRequest;
 use App\Http\Requests\Inventario\Kardex\SolicitarMasivoKardexRequest;
 use App\Http\Requests\Inventario\Kardex\EstadoColaKardexRequest;
+use App\Services\Inventario\ConsignaDisponibleService;
+use App\Services\Inventario\KardexInventarioNormalService;
 
 class KardexController extends Controller
 {
@@ -62,6 +64,22 @@ class KardexController extends Controller
             }
         }
 
+        $empresa = auth()->user()?->empresa()->first();
+        $stockPropio = null;
+        if ($empresa?->isModuloConsignacionesLedgerActivo() && $request->id_inventario) {
+            $stockPropio = app(ConsignaDisponibleService::class)->stockPropioParaKardex(
+                (int) $producto->id,
+                (int) $request->id_inventario,
+                $request->lote_id ? (int) $request->lote_id : null
+            );
+        }
+
+        $kardex = app(KardexInventarioNormalService::class)->paraKardexFisico(
+            $kardex,
+            (int) $producto->id,
+            $empresa,
+            $stockPropio
+        );
 
         $producto->movimientos = $kardex;
 
@@ -250,8 +268,8 @@ class KardexController extends Controller
             }
         }
         
-        // Si es una venta
-        if (in_array($movimiento->detalle, ['Venta', 'Venta a consigna', 'Venta Anulada'])) {
+        // Si es una venta o liquidación consigna cliente (informativa)
+        if (in_array($movimiento->detalle, ['Venta', 'Venta a consigna', 'Remisión consigna', 'Venta Anulada', 'Liquidación consigna cliente'], true)) {
             $detalleVenta = \App\Models\Ventas\Detalle::where('id_venta', $movimiento->referencia)
                 ->where('id_producto', $idProducto)
                 ->first();

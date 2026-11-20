@@ -1,33 +1,61 @@
-<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
-    <h2 class="page-heading">Consignas de ventas</h2>
+<section class="d-flex flex-wrap justify-content-between align-items-center gap-2 bg-white p-2 p-md-4 rounded mb-3">
+    <h2 class="page-heading mb-0">Productos en consigna</h2>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
-        <div class="col">
-            @if (productos?.data?.length) {
-                <span class="text-muted">
-                    Mostrando {{ productos?.data?.length + ' registros' }}
+        <div class="col-md-6 mb-3">
+            @if (productos?.total) {
+                <span class="text-muted d-flex align-items-center gap-2 flex-wrap">
+                    Mostrando
+                    <select name="paginate" class="form-select w-auto" [(ngModel)]="filtros.paginate" (change)="cambiarPaginacion()">
+                        <option [ngValue]="25">25</option>
+                        <option [ngValue]="50">50</option>
+                        <option [ngValue]="100">100</option>
+                    </select>
+                    de {{ productos.total }} productos
                 </span>
             }
         </div>
 
-        <div class="col">
-            <div class="d-flex gap-2">
-                <!-- <app-importar-excel (loadAll)="loadAll()" [nombre]="'Productos'"></app-importar-excel> -->
-                <button [disabled]="downloading" tooltip="Descargar consignas" (click)="descargar()" class="btn btn-default tcla-F6">
-                    <img appLazyImage="/assets/icons/download.png" class="icon">
+        <div class="col-md-6 mb-3">
+            <div class="d-flex gap-2 flex-grow-1 justify-content-md-end">
+                <button
+                    type="button"
+                    [disabled]="downloading"
+                    class="btn btn-default tcla-F6"
+                    tooltip="Descargar productos en consigna (Excel)"
+                    (click)="descargar()">
+                    <img appLazyImage="/assets/icons/download.png" class="icon" alt="">
                 </button>
-                <!-- <form class="d-flex input-group" name="form" (ngSubmit)="search()" autocomplete="off"> -->
-                    <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador">
-                <!-- </form> -->
-                <!-- <button tooltip="Filtrar (F6)" (click)="search()" class="btn btn-default tcla-F6"><i class="fa fa-filter"></i></button> -->
+                <button
+                    type="button"
+                    class="btn btn-default"
+                    tooltip="Toma de inventario en consigna (PDF)"
+                    (click)="openModal(mtomaInventario)">
+                    <img appLazyImage="/assets/icons/filter.png" class="icon" alt="">
+                </button>
+                <form class="d-flex input-group flex-grow-1" (ngSubmit)="buscar()" autocomplete="off">
+                    <input
+                        type="text"
+                        name="buscador"
+                        class="form-control"
+                        placeholder="Buscar producto, cliente o Nº de factura..."
+                        [(ngModel)]="filtros.buscador" />
+                </form>
+                <button type="button" class="btn btn-default tcla-F6" [disabled]="loading" (click)="buscar()" tooltip="Buscar (F6)">
+                    @if (!loading) {
+                        <i class="fa fa-search"></i>
+                    } @else {
+                        <i class="fa fa-ellipsis-h"></i>
+                    }
+                </button>
             </div>
         </div>
     </div>
     <div class="d-flex flex-wrap gap-2 mb-3">
         <div class="ms-auto d-flex gap-2">
-            <ng-select name="categoria" [(ngModel)]="filtros.categoria" class="form-select p-0 border-0 bg-default">
+            <ng-select name="categoria" [(ngModel)]="filtros.categoria" (change)="buscar()" class="form-select p-0 border-0 bg-default">
                 <ng-option value="">Categoria</ng-option>
                 @for (categoria of categorias; track categoria.id) {
                     <ng-option [value]="categoria.nombre">
@@ -43,29 +71,34 @@
                 <thead>
                     <tr>
                         <th>Producto</th>
+                        <th class="d-none d-md-table-cell">Cliente</th>
                         <th class="d-none d-md-table-cell">Categoria</th>
                         <th class="d-none d-md-table-cell">Código</th>
-                        <th class="d-none d-md-table-cell text-right">Precio</th>
-                        <th class="text-center">Stock</th>
+                        @if (mostrarColumnasLote()) {
+                            <th class="d-none d-md-table-cell">Lote</th>
+                            <th class="d-none d-md-table-cell">Vencimiento</th>
+                        }
+                        <th class="d-none d-md-table-cell text-end">Precio</th>
+                        <th class="text-center">Cantidad en consigna</th>
                         <th class="text-center">Más</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (productos?.data?.length < 1 && !loading) {
                         <tr>
-                            <td colspan="8" class="text-center">
+                            <td [attr.colspan]="mostrarColumnasLote() ? 9 : 7" class="text-center">
                                 <span class="badge bg-primary">No tiene productos en consigna</span>
                             </td>
                         </tr>
                     }
                     @if (loading) {
                         <tr>
-                            <td colspan="8" class="text-center">
+                            <td [attr.colspan]="mostrarColumnasLote() ? 9 : 7" class="text-center">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
                         </tr>
                     }
-                    @for (producto of productos?.data | filter:['nombre']:buscador | filter:['nombre_categoria']:filtros.categoria; track producto.id) {
+                    @for (producto of productos?.data; track producto.row_key || producto.id) {
                         <tr>
                         <td>
                             <img [appLazyImage]="apiService.baseUrl + '/img/productos/default.jpg'" class="rounded-circle" width="50px">
@@ -75,14 +108,37 @@
                                 <span>{{ producto.nombre }}</span>
                             }
                         </td>
+                        <td class="d-none d-md-table-cell">{{ producto.clientes_texto || '—' }}</td>
                         <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
                         <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
-                        <td class="d-none d-md-table-cell text-right">{{ producto.precio | currency }}</td>
+                        @if (mostrarColumnasLote()) {
+                            <td class="d-none d-md-table-cell">
+                                {{ producto.lote_numero || '—' }}
+                            </td>
+                            <td class="d-none d-md-table-cell">
+                                @if (producto.lote_vencimiento) {
+                                    {{ producto.lote_vencimiento | date:'dd/MM/yyyy' }}
+                                } @else {
+                                    —
+                                }
+                            </td>
+                        }
+                        <td class="d-none d-md-table-cell text-end">{{ producto.precio | currency }}</td>
                         <td class="text-center"> {{ producto.stock }} </td>
                         <td class="text-center">
-                            <a (click)="openModal(mdetalles, producto)" class="btn" tooltip="Ver detalles">
-                                <img appLazyImage="/assets/icons/search.png" class="icon me-2">
-                            </a>
+                            <span class="btn" [popover]="accionesProducto" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesProducto>
+                                <div class="list-group border-0">
+                                    <button
+                                        type="button"
+                                        class="list-group-item list-group-item-action border-0 click"
+                                        (click)="abrirModalConsigna(mdetalles, producto)">
+                                        <i class="fa fa-fw fa-magnifying-glass"></i> Ver
+                                    </button>
+                                </div>
+                            </ng-template>
                         </td>
                     </tr>
                     }
@@ -90,7 +146,7 @@
             </table>
         </div>
 
-        @if (productos && productos.last_page && productos.last_page > 1) {
+        @if (productos?.last_page > 1) {
             <div class="col-12">
                 <app-pagination [items]="productos" (setPagination)="setPagination($event)"></app-pagination>
             </div>
@@ -98,54 +154,120 @@
     </div>
 </section>
 
+<ng-template #mtomaInventario>
+    <div class="modal-header">
+        <div class="modal-title text-center w-100">
+            <h2 class="text-center mb-0">Toma de inventario</h2>
+        </div>
+        <button type="button" class="btn-close" (click)="closeModal()" aria-label="Cerrar"></button>
+    </div>
+    <div class="modal-body">
+        <p class="alert bg-info mb-3">
+            Reporte en PDF con productos en consigna por cliente: cantidad sistema (saldo en ERP), columnas toma actual y facturar en blanco para llenar. Deje el cliente vacío para incluir todos.
+        </p>
+        <div class="form-group mb-3">
+            <label class="form-label" for="id_cliente_toma">Cliente (opcional)</label>
+            <ng-select
+                id="id_cliente_toma"
+                class="form-select p-0"
+                name="id_cliente_toma"
+                [items]="clientes"
+                bindValue="id"
+                [(ngModel)]="idClienteTomaInventario"
+                placeholder="Todos los clientes con consigna"
+                [clearable]="true"
+                [searchable]="true"
+                appendTo="body">
+                <ng-template ng-label-tmp let-item="item">
+                    {{ item ? etiquetaCliente(item) : etiquetaClienteToma() }}
+                </ng-template>
+                <ng-template ng-option-tmp let-item="item">
+                    {{ etiquetaCliente(item) }}
+                </ng-template>
+            </ng-select>
+        </div>
+        <div class="d-grid">
+            <button
+                type="button"
+                class="btn btn-primary"
+                [disabled]="downloadingTomaInventario"
+                (click)="descargarTomaInventarioPdf()">
+                @if (!downloadingTomaInventario) {
+                    <i class="fa fa-file-pdf-o me-1"></i> Descargar PDF
+                } @else {
+                    Descargando…
+                }
+            </button>
+        </div>
+    </div>
+</ng-template>
+
 <ng-template #mdetalles>
   <div class="modal-header">
     <div class="modal-title w-100 text-center">
         <h2 class="text-center no-margin">
-            {{ producto.nombre }} <span class="badge bg-default text-dark fs-6">{{ producto?.ventas | sum:'cantidad' }} en consigna</span>
+            {{ modalConsigna?.nombre }}
+            @if (modalConsigna?.lote_numero) {
+                <span class="badge bg-light text-dark fs-6 ms-1">Lote {{ modalConsigna.lote_numero }}</span>
+            }
+            <span class="badge bg-default text-dark fs-6">{{ modalConsigna?.stock ?? (modalConsigna?.ventas | sum:'cantidad') }} unidades en consigna</span>
         </h2>
+        <p class="text-muted small mb-0">Facturas / remisiones con este producto pendientes de liquidar</p>
     </div>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    <button type="button" class="btn-close" (click)="cerrarModalConsigna()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
-    <div class="table-responsive" style="max-height: 200px; overflow: auto;">
+    <div class="table-responsive" style="max-height: 70vh; overflow: auto;">
         <table class="table table-borderless table-hover">
             <thead>
                 <tr>
                     <th>Fecha</th>
                     <th>Cliente</th>
+                    <th>Factura / documento</th>
                     <th>Vencimiento</th>
-                    <th>Venta</th>
-                    <th class="text-right">Stock</th>
-                    <th class="text-right">Más</th>
+                    <th class="text-end">Cantidad</th>
+                    <th class="text-end">Más</th>
                 </tr>
             </thead>
             <tbody>
-                @for (venta of producto?.ventas; track venta.id) {
+                @if (!modalConsigna?.ventas?.length) {
                     <tr>
-                        <td>{{ venta.fecha | date:'dd/MM/yyy'}}</td>
-                        <td>{{ venta.cliente}}</td>
-                        <td>{{ venta.fecha_pago | date:'dd/MM/yyy' }}</td>
-                        <td>
-                            {{ venta.nombre_documento }} # {{ venta.correlativo }}
-                        </td>
+                        <td colspan="6" class="text-center text-muted py-3">No hay facturas en consigna con este producto.</td>
+                    </tr>
+                }
+                @for (venta of modalConsigna?.ventas; track venta.id + '-' + venta.cantidad + '-' + venta.fecha) {
+                    <tr>
+                        <td>{{ venta.fecha | date:'dd/MM/yyyy'}}</td>
+                        <td>{{ venta.cliente }}</td>
+                        <td>{{ venta.factura || (venta.nombre_documento + ' #' + venta.correlativo) }}</td>
+                        <td>{{ venta.fecha_pago | date:'dd/MM/yyyy' }}</td>
                         <td class="text-end">{{ venta.cantidad }}</td>
                         <td class="text-end">
-                            <a class="btn btn-default"  tooltip="Ver información de la venta" routerLink="/venta/{{venta.id}}">
-                                <img  appLazyImage="/assets/icons/search.png" class="icon">
-                            </a>
+                            <span class="btn" [popover]="accionesVenta" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesVenta>
+                                <div class="list-group border-0">
+                                    <button
+                                        type="button"
+                                        class="list-group-item list-group-item-action border-0 click"
+                                        (click)="verFacturaVentaConsigna(venta.id)">
+                                        <i class="fa fa-fw fa-file-invoice"></i> Ver factura
+                                    </button>
+                                </div>
+                            </ng-template>
                         </td>
                     </tr>
                 }
             </tbody>
-            <tbody>
+            <tfoot>
                 <tr>
                     <td colspan="4" class="text-end"><b>Total</b></td>
-                    <td class="text-end"><b>{{ producto.ventas | sum:'cantidad' }}</b></td>
+                    <td class="text-end"><b>{{ modalConsigna?.stock ?? (modalConsigna?.ventas | sum:'cantidad') }}</b></td>
+                    <td></td>
                 </tr>
-            </tbody>
+            </tfoot>
         </table>
     </div>
   </div>
 </ng-template>
-

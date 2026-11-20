@@ -1,0 +1,178 @@
+@if (!moduloActivo) {
+  <section class="bg-white p-4 rounded mb-3">
+    <p class="text-muted mb-0">El módulo de consignaciones no está habilitado para su empresa.</p>
+  </section>
+} @else {
+  <section class="bg-white p-4 rounded mb-3 d-flex justify-content-between align-items-center">
+    <div>
+      <h2 class="h5 mb-0">Kardex de consignaciones</h2>
+      @if (filtros.alcance === 'custodia') {
+        <small class="text-muted">Custodia clientes: entregas, liquidaciones (facturación parcial/total, solo evidencia) y devoluciones.</small>
+      } @else {
+        <small class="text-muted">Solo consigna de compra. Ventas con stock propio y remisiones a clientes van al kardex de producto y custodia.</small>
+      }
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      @if (apiService.hasPermission('inventario.consigna_kardex.exportar')) {
+        <button tooltip="Descargar Excel" type="button" class="btn btn-default btn-md tcla-F6 py-1" [disabled]="downloading" (click)="exportar()">
+          <img src="/assets/icons/download.png" class="icon" alt="">
+        </button>
+      }
+      <button tooltip="Regresar" type="button" routerLink="/consignas" class="btn btn-light text-danger">
+        <i class="fa fa-arrow-left"></i> Regresar
+      </button>
+    </div>
+  </section>
+
+  <section class="bg-white p-4 rounded mb-3">
+    <form name="form" (ngSubmit)="filtrar()" class="row g-3 mb-4">
+      <div class="col-12 col-lg-4">
+        <label class="form-label">Producto</label>
+        <ng-select
+          [(ngModel)]="productoSeleccionado"
+          name="producto_consigna_kardex"
+          [typeahead]="searchProductos$"
+          [loading]="searchLoading"
+          [clearable]="true"
+          placeholder="Buscar por nombre o código (mín. 2 caracteres)..."
+          class="form-select p-0"
+          bindLabel="nombre"
+          [compareWith]="compareProductos"
+          (change)="onProductoDesdeBuscador($event)">
+          <ng-option *ngFor="let p of opcionesBuscador" [value]="p">
+            <div>{{ p.nombre }}</div>
+            <small class="text-muted" *ngIf="p.codigo">Cód: {{ p.codigo }}</small>
+            <span *ngIf="p.marca" class="text-muted"> · {{ p.marca }}</span>
+          </ng-option>
+        </ng-select>
+      </div>
+      <div class="col-md-6 col-lg-2">
+        <label class="form-label">Bodega</label>
+        <select class="form-select" [(ngModel)]="filtros.id_bodega" name="id_bodega" (change)="onBodegaChange()">
+          <option [value]="bodega.id" *ngFor="let bodega of bodegas">{{ bodega.nombre }}</option>
+        </select>
+      </div>
+      <div class="col-md-6 col-lg-2" *ngIf="mostrarLote">
+        <label class="form-label">
+          Lote
+          <span class="text-danger" *ngIf="lotesRequeridos">*</span>
+        </label>
+        <select
+          class="form-select"
+          [(ngModel)]="filtros.lote_id"
+          name="lote_id"
+          (change)="loadAll()"
+          [disabled]="!filtros.id_bodega || lotesCargando">
+          <option value="">{{ lotesCargando ? 'Cargando lotes…' : 'Seleccione un lote' }}</option>
+          <option [value]="lote.id" *ngFor="let lote of lotes">{{ lote.numero_lote }}</option>
+        </select>
+        <small class="text-muted" *ngIf="!lotesCargando && lotes.length === 0 && filtros.id_producto && filtros.id_bodega">
+          No se encontraron lotes para filtrar; al buscar se muestran todos los movimientos de consigna del producto en esta bodega.
+        </small>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <label class="form-label">Tipo de movimiento</label>
+        <select class="form-select" [(ngModel)]="filtros.tipo" name="tipo">
+          <option value="">Todos</option>
+          <option *ngFor="let t of tiposMovimiento" [value]="t.value" [title]="t.ayuda || ''">{{ t.label }}</option>
+        </select>
+      </div>
+      <div class="col-md-5 col-lg-2">
+        <label class="form-label">Del</label>
+        <input type="date" class="form-control" [(ngModel)]="filtros.fecha_ini" name="fecha_ini" />
+      </div>
+      <div class="col-md-5 col-lg-2">
+        <label class="form-label">Al</label>
+        <div class="input-group">
+          <input type="date" class="form-control" [(ngModel)]="filtros.fecha_fin" name="fecha_fin" />
+          <button type="submit" class="btn btn-primary tcla-F6" [disabled]="loading" tooltip="Filtrar (F6)">
+            <i *ngIf="!loading" class="fa fa-search"></i>
+            <i *ngIf="loading" class="fa fa-ellipsis-h"></i>
+          </button>
+        </div>
+      </div>
+    </form>
+
+    <div class="border rounded p-3 mb-4">
+      <div class="text-center mb-2">
+        <h5 class="mb-0 text-uppercase">{{ apiService.auth_user()?.empresa?.nombre || 'Empresa' }}</h5>
+        <p class="mb-0 small">
+          KARDEX DE CONSIGNACIONES DEL {{ filtros.fecha_ini | date:'dd/MM/yyyy' }} AL {{ filtros.fecha_fin | date:'dd/MM/yyyy' }}
+        </p>
+        <p class="mb-0">COSTO PROMEDIO (REFERENCIA)</p>
+        <div class="d-flex justify-content-between small mt-1">
+          <span><strong>{{ 'country.tax.nitColon' | translate }}</strong> {{ apiService.auth_user()?.empresa?.nit || '—' }}</span>
+          <span><strong>{{ 'country.tax.ncrColon' | translate }}</strong> {{ apiService.auth_user()?.empresa?.ncr || '—' }}</span>
+        </div>
+      </div>
+      <div class="row small border-top pt-2 mt-2" *ngIf="mostrarLote">
+        <div class="col-md-4"><strong>ARTÍCULO:</strong> {{ producto?.nombre || '—' }}</div>
+        <div class="col-md-4 text-center"><strong>CÓDIGO:</strong> {{ producto?.codigo || '—' }}</div>
+        <div class="col-md-4 text-end"><strong>LOTE:</strong> {{ loteSeleccionadoNumero }}</div>
+      </div>
+      <div class="row small border-top pt-2 mt-2" *ngIf="!mostrarLote">
+        <div class="col-md-6"><strong>ARTÍCULO:</strong> {{ producto?.nombre || '—' }}</div>
+        <div class="col-md-6 text-end"><strong>CÓDIGO:</strong> {{ producto?.codigo || '—' }}</div>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-bordered table-sm">
+        <thead>
+          <tr class="table-light">
+            <th rowspan="2" class="align-middle text-center">N°</th>
+            <th rowspan="2" class="align-middle">Fecha</th>
+            <th rowspan="2" class="align-middle">N° del Documento</th>
+            <th rowspan="2" class="align-middle" *ngIf="mostrarLote">Lote</th>
+            <th rowspan="2" class="align-middle">Proveedor / Cliente</th>
+            <th rowspan="2" class="align-middle">Fuente de Referencia</th>
+            <th rowspan="2" class="align-middle">Descripción del Producto</th>
+            <th colspan="3" class="text-center">ENTRADAS</th>
+            <th colspan="3" class="text-center">SALIDAS</th>
+            <th colspan="3" class="text-center">EXISTENCIAS</th>
+          </tr>
+          <tr class="table-light">
+            <th class="text-center">Cantidad</th>
+            <th class="text-center" *ngIf="mostrarCostosInventario">Costo Uni</th>
+            <th class="text-center" *ngIf="mostrarCostosInventario">Total</th>
+            <th class="text-center">Cantidad</th>
+            <th class="text-center" *ngIf="mostrarCostosInventario">Costo Uni</th>
+            <th class="text-center" *ngIf="mostrarCostosInventario">Total</th>
+            <th class="text-center">Cantidad</th>
+            <th class="text-center" *ngIf="mostrarCostosInventario">Costo Uni</th>
+            <th class="text-center" *ngIf="mostrarCostosInventario">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="filasKardex.length < 1 && !loading">
+            <td [attr.colspan]="colspanTabla" class="text-center py-4 text-muted">No hay movimientos registrados</td>
+          </tr>
+          <tr *ngIf="loading">
+            <td [attr.colspan]="colspanTabla" class="text-center py-4">Cargando...</td>
+          </tr>
+          <tr *ngFor="let movimiento of filasKardex">
+            <td class="text-center">{{ movimiento.n }}</td>
+            <td>{{ movimiento.fecha | date:'dd/MM/yyyy' }}</td>
+            <td>{{ movimiento.documento || '—' }}</td>
+            <td class="text-center" *ngIf="mostrarLote">{{ movimiento.numero_lote || '—' }}</td>
+            <td>{{ movimiento.nombre_tercero }}</td>
+            <td [title]="movimiento.tipo_ayuda || ''">
+              {{ movimiento.detalle_movimiento || movimiento.tipo_etiqueta || '—' }}
+              <span *ngIf="movimiento.es_registro_contable" class="text-muted small d-block">(no modifica existencias del pool)</span>
+            </td>
+            <td>{{ producto?.nombre || movimiento.producto?.nombre || '—' }}</td>
+            <td class="text-center">{{ movimiento.entrada_cantidad > 0 ? (movimiento.entrada_cantidad | number:'1.0-4') : '' }}</td>
+            <td class="text-center" *ngIf="mostrarCostosInventario">{{ movimiento.entrada_cantidad > 0 ? (movimiento.costo_unitario | currency) : '' }}</td>
+            <td class="text-end" *ngIf="mostrarCostosInventario">{{ movimiento.entrada_cantidad > 0 ? (movimiento.entrada_valor | currency) : '' }}</td>
+            <td class="text-center">{{ movimiento.salida_cantidad > 0 ? (movimiento.salida_cantidad | number:'1.0-4') : '' }}</td>
+            <td class="text-center" *ngIf="mostrarCostosInventario">{{ movimiento.salida_cantidad > 0 ? (movimiento.costo_unitario | currency) : '' }}</td>
+            <td class="text-end" *ngIf="mostrarCostosInventario">{{ movimiento.salida_cantidad > 0 ? ((movimiento.salida_cantidad * movimiento.costo_unitario) | currency) : '' }}</td>
+            <td class="text-center">{{ movimiento.existencia_cantidad | number:'1.0-4' }}</td>
+            <td class="text-center" *ngIf="mostrarCostosInventario">{{ movimiento.costo_unitario | currency }}</td>
+            <td class="text-end" *ngIf="mostrarCostosInventario">{{ movimiento.total_valor | currency }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+}

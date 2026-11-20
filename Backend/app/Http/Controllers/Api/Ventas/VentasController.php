@@ -37,6 +37,7 @@ use App\Services\Ventas\AbonoService;
 use App\Services\Ventas\DocumentoService;
 use App\Services\Ventas\ReporteService;
 use App\Services\Ventas\FacturacionConsignaService;
+use App\Services\Inventario\ConsignaMovimientoService;
 use App\Services\Ventas\FacturacionService;
 use App\Support\FacturacionElectronica\CostaRica\DocumentoMoneda;
 use App\Services\Ventas\LibroIvaService;
@@ -352,7 +353,18 @@ class VentasController extends Controller
     public function read($id)
     {
         $venta = Venta::where('id', $id)
-            ->with('devoluciones', 'detalles.composiciones', 'detalles.vendedor', 'detalles.producto.impuestos', 'abonos.usuario', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')
+            ->with(
+                'devoluciones',
+                'detalles.composiciones',
+                'detalles.vendedor',
+                'detalles.producto.impuestos',
+                'detalles.lote:id,numero_lote,fecha_vencimiento',
+                'detalles.lotesAsignados.lote:id,numero_lote,fecha_vencimiento',
+                'abonos.usuario',
+                'cliente',
+                'impuestos.impuesto',
+                'metodos_de_pago'
+            )
             ->with(['giftCardsEmitidas' => function ($query) {
                 $query->select('id', 'id_venta_emision', 'codigo', 'saldo', 'estado', 'monto_inicial');
             }])
@@ -785,37 +797,52 @@ class VentasController extends Controller
 
         try {
             $venta = Venta::where('id', $request->id)->with('detalles')->firstOrFail();
-            if (round($venta->total, 2) > round($request->total, 2)) {
-                // Crear consigna
-                $consigna = new Venta();
-                $consigna->fill($request->except(DocumentoMoneda::CAMPOS_PERSISTIDOS));
+            $idDocumentoRemision = (int) $venta->id_documento;
+            $correlativoRemision = $venta->correlativo;
+            $documentoRemision = Documento::query()->find($idDocumentoRemision);
+            $etiquetaRemisionConsigna = ($documentoRemision?->nombre ?? 'Remisión') . ' #' . $correlativoRemision;
+            $esPagoParcial = round((float) $venta->total, 2) > round((float) $request->total, 2);
+
+            if ($esPagoParcial) {
+                $idDocumentoRemanente = $venta->id_documento;
+                $correlativoRemanente = $venta->correlativo;
+
+                $consigna = $venta->replicate();
+                $consigna->id_documento = $idDocumentoRemanente;
+                $consigna->correlativo = $correlativoRemanente;
                 $consigna->estado = 'Consigna';
                 $consigna->sub_total = $venta->sub_total - $request->sub_total;
-                $consigna->total_costo  = $venta->total_costo  - $request->total_costo;
+                $consigna->total_costo = $venta->total_costo - $request->total_costo;
                 $consigna->total = $venta->total - $request->total;
                 $consigna->iva = $venta->iva - $request->iva;
-                // Heredar moneda/TC de la venta origen (no del request).
-                $consigna->currency_code = $venta->currency_code ?? DocumentoMoneda::MONEDA_CRC;
-                $consigna->exchange_rate = $venta->exchange_rate ?? 1;
-                $consigna->exchange_rate_date = $venta->exchange_rate_date;
-                $rate = (float) ($consigna->exchange_rate ?: 1);
-                $consigna->equivalent_total = round((float) $consigna->total * $rate, 5);
-                $consigna->equivalent_iva = round((float) $consigna->iva * $rate, 5);
+                $rateRem = (float) ($consigna->exchange_rate ?: 1);
+                $consigna->equivalent_total = round((float) $consigna->total * $rateRem, 5);
+                $consigna->equivalent_iva = round((float) $consigna->iva * $rateRem, 5);
                 $consigna->save();
 
+                $metaDetallesPorId = [];
                 foreach ($request->detalles as $detalle) {
-
                     $detalle_venta = $venta->detalles()->where('id', $detalle['id'])->first();
                     if ($detalle_venta) {
-                        if ($detalle_venta->cantidad > $detalle['cantidad']) {
-                            $detalle_consigna = new Detalle();
-                            $detalle_consigna->id_producto = $detalle['id_producto'];
-                            $detalle_consigna->precio = $detalle['precio'];
-                            $detalle_consigna->cantidad = $detalle_venta->cantidad - $detalle['cantidad'];
-                            $detalle_consigna->total = $detalle_consigna->precio * $detalle_consigna->cantidad;
-                            $detalle_consigna->id_venta = $consigna->id;
-                            $detalle_consigna->save();
-                        }
+                        $metaDetallesPorId[(int) $detalle['id']] = [
+                            'lote_id' => $detalle_venta->lote_id,
+                            'origen_stock' => $detalle_venta->origen_stock,
+                            'costo' => $detalle_venta->costo,
+                        ];
+                    }
+                    if ($detalle_venta && $detalle_venta->cantidad > $detalle['cantidad']) {
+                        $costoRemanente = (float) ($detalle_venta->costo ?? $detalle['costo'] ?? 0);
+                        $detalle_consigna = new Detalle();
+                        $detalle_consigna->id_producto = $detalle['id_producto'];
+                        $detalle_consigna->precio = $detalle['precio'];
+                        $detalle_consigna->costo = $costoRemanente;
+                        $detalle_consigna->cantidad = $detalle_venta->cantidad - $detalle['cantidad'];
+                        $detalle_consigna->total = $detalle_consigna->precio * $detalle_consigna->cantidad;
+                        $detalle_consigna->total_costo = $detalle_consigna->cantidad * $costoRemanente;
+                        $detalle_consigna->id_venta = $consigna->id;
+                        $detalle_consigna->lote_id = $detalle_venta->lote_id;
+                        $detalle_consigna->origen_stock = $detalle_venta->origen_stock;
+                        $detalle_consigna->save();
                     }
                 }
 
@@ -824,22 +851,94 @@ class VentasController extends Controller
 
                 foreach ($request->detalles as $detalle) {
                     if ($detalle['cantidad'] > 0) {
+                        $meta = $metaDetallesPorId[(int) ($detalle['id'] ?? 0)] ?? null;
+                        $costoLinea = (float) ($meta['costo'] ?? $detalle['costo'] ?? 0);
                         $det = new Detalle();
                         $det->id_producto = $detalle['id_producto'];
                         $det->cantidad = $detalle['cantidad'];
                         $det->precio = $detalle['precio'];
+                        $det->costo = $costoLinea;
                         $det->total = $detalle['cantidad'] * $detalle['precio'];
+                        $det->total_costo = (float) $detalle['cantidad'] * $costoLinea;
                         $det->descuento = 0;
                         $det->id_venta = $venta->id;
+                        if ($meta) {
+                            $det->lote_id = $meta['lote_id'];
+                            $det->origen_stock = $meta['origen_stock'];
+                        }
                         $det->save();
+                        app(ConsignaMovimientoService::class)->liquidacionClienteDesdeVenta(
+                            $venta,
+                            $det,
+                            (float) $detalle['cantidad']
+                        );
                     }
+                }
+
+                $venta->fill($request->except(array_merge(['detalles', 'id', 'estado'], DocumentoMoneda::CAMPOS_PERSISTIDOS)));
+                $venta->id_documento = $request->id_documento;
+                $venta->total = $request->total;
+                $venta->iva = $request->iva;
+                $venta->sub_total = $request->sub_total;
+                $venta->total_costo = $request->total_costo;
+            } elseif ($venta->estado === 'Consigna' && round($venta->total, 2) <= round($request->total, 2)) {
+                $movimientoService = app(ConsignaMovimientoService::class);
+                $metaDetallesPorId = [];
+                foreach ($venta->detalles as $detalleVenta) {
+                    $metaDetallesPorId[(int) $detalleVenta->id] = [
+                        'lote_id' => $detalleVenta->lote_id,
+                        'origen_stock' => $detalleVenta->origen_stock,
+                        'costo' => $detalleVenta->costo,
+                    ];
+                }
+                $venta->detalles()->delete();
+
+                foreach ($request->detalles as $detalle) {
+                    if ((float) ($detalle['cantidad'] ?? 0) <= 0) {
+                        continue;
+                    }
+                    $meta = $metaDetallesPorId[(int) ($detalle['id'] ?? 0)] ?? null;
+                    $costoLinea = (float) ($meta['costo'] ?? $detalle['costo'] ?? 0);
+                    $det = new Detalle();
+                    $det->id_producto = $detalle['id_producto'];
+                    $det->cantidad = $detalle['cantidad'];
+                    $det->precio = $detalle['precio'];
+                    $det->costo = $costoLinea;
+                    $det->total = $detalle['cantidad'] * $detalle['precio'];
+                    $det->total_costo = (float) $detalle['cantidad'] * $costoLinea;
+                    $det->descuento = 0;
+                    $det->id_venta = $venta->id;
+                    if ($meta) {
+                        $det->lote_id = $meta['lote_id'];
+                        $det->origen_stock = $meta['origen_stock'];
+                    }
+                    $det->save();
+                    $movimientoService->liquidacionClienteDesdeVenta(
+                        $venta,
+                        $det,
+                        (float) $detalle['cantidad']
+                    );
                 }
 
                 $venta->total = $request->total;
                 $venta->iva = $request->iva;
                 $venta->sub_total = $request->sub_total;
+                $venta->total_costo = $request->total_costo;
+                $venta->fill($request->except(array_merge(['detalles', 'id', 'estado'], DocumentoMoneda::CAMPOS_PERSISTIDOS)));
+                $venta->id_documento = $request->id_documento;
             }
 
+            if ((int) $request->id_documento !== $idDocumentoRemision) {
+                $this->asignarCorrelativoDocumentoVentaFacturaConsigna($venta, (int) $request->id_documento);
+            }
+
+            $prefijoObservacion = $esPagoParcial
+                ? 'Pago parcial de remisión en consigna'
+                : 'Pago de remisión en consigna';
+            $venta->observaciones = $this->anexarObservacionRemisionConsigna(
+                $request->observaciones ?? $venta->observaciones,
+                $prefijoObservacion . ': ' . $etiquetaRemisionConsigna
+            );
 
             $venta->fecha = $request->fecha;
             $venta->estado = 'Pagada';
@@ -944,12 +1043,17 @@ class VentasController extends Controller
         $venta = Venta::where('id', $id)->with('detalles', 'empresa')->firstOrFail();
         $documento = Documento::findOrfail($venta->id_documento);
         $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
+        $mostrar_lotes_impresion = \App\Support\Inventario\ImpresionLoteEnDocumento::prepararVenta($venta, $empresa);
 
         if (Ticket80mm::aplica($empresa, $documento)) {
             return Ticket80mm::imprimir($venta, $empresa, $documento);
         }
 
-        if ($documento->nombre == 'Ticket' || $documento->nombre == 'Recibo') {
+        if (
+            $documento->nombre == 'Ticket'
+            || $documento->nombre == 'Recibo'
+            || strcasecmp((string) $documento->nombre, \App\Constants\DocumentoConstants::FACTURA_REMISION) === 0
+        ) {
             $documento = Documento::findOrfail($venta->id_documento);
 
             // SANTRÉ S de RL (818) — Ticket/Recibo
@@ -985,10 +1089,14 @@ class VentasController extends Controller
                 );
             }
 
-            return view('reportes.facturacion.ticket', compact('venta', 'empresa', 'documento'));
+            return view('reportes.facturacion.ticket', compact('venta', 'empresa', 'documento', 'mostrar_lotes_impresion'));
         }
 
-        if ($documento->nombre == 'Factura' || DocumentoImpresionHn::aplica($empresa, $documento)) {
+        if (
+            $documento->nombre == 'Factura'
+            || strcasecmp((string) $documento->nombre, \App\Constants\DocumentoConstants::FACTURA_REMISION) === 0
+            || DocumentoImpresionHn::aplica($empresa, $documento)
+        ) {
             $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
 
             // SANTRÉ S de RL (818) — Factura usa el mismo ticket
@@ -2239,6 +2347,35 @@ class VentasController extends Controller
             ->get();
 
         return response()->json($numsIds, 200);
+    }
+
+    private function asignarCorrelativoDocumentoVentaFacturaConsigna(Venta $venta, int $idDocumento): void
+    {
+        $documento = Documento::query()
+            ->where('id', $idDocumento)
+            ->where('id_empresa', $venta->id_empresa)
+            ->lockForUpdate()
+            ->first();
+
+        if (! $documento) {
+            return;
+        }
+
+        $venta->id_documento = $idDocumento;
+        $venta->correlativo = $documento->correlativo;
+        $documento->increment('correlativo');
+    }
+
+    private function anexarObservacionRemisionConsigna(?string $actual, string $sufijo, int $maxLen = 150): string
+    {
+        $actual = trim((string) $actual);
+        if ($actual !== '' && str_contains($actual, $sufijo)) {
+            return $actual;
+        }
+
+        $nuevo = $actual === '' ? $sufijo : $actual . ' — ' . $sufijo;
+
+        return mb_substr($nuevo, 0, $maxLen);
     }
 
 }

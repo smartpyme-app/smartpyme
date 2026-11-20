@@ -775,6 +775,7 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
         this.cliente.tipo_contribuyente = '';
         this.cliente.giro = '';
         this.cliente.empresa_telefono = '';
+        this.cliente.empresa_correo = '';
         this.cliente.empresa_direccion = '';
 
         // Campos de extranjero

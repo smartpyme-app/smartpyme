@@ -1,0 +1,496 @@
+<?php
+
+namespace App\Services\Inventario;
+
+use App\Constants\ConsignaMovimientoTipoConstants;
+use App\Constants\DocumentoConstants;
+use App\Models\Admin\Empresa;
+use App\Models\Inventario\ConsignaCustodia;
+use App\Models\Inventario\ConsignaMovimiento;
+use App\Models\Compras\Devoluciones\Devolucion as DevolucionCompra;
+use App\Models\Ventas\Devoluciones\Devolucion;
+use App\Models\Ventas\Detalle as DetalleVenta;
+use App\Models\Ventas\Venta;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+
+class ConsignaCustodiaService
+{
+    public function isLedgerActivo(int $idEmpresa): bool
+    {
+        return app(ConsignaMovimientoService::class)->isLedgerActivo($idEmpresa);
+    }
+
+    public function aplicarDesdeMovimiento(ConsignaMovimiento $movimiento): void
+    {
+        if (! $this->isLedgerActivo((int) $movimiento->id_empresa)) {
+            return;
+        }
+
+        $delta = $this->deltaDesdeMovimiento($movimiento);
+        if ($delta === null || abs($delta) < 0.00001) {
+            return;
+        }
+
+        $this->aplicarDelta(
+            (int) $movimiento->id_empresa,
+            (int) $movimiento->id_cliente,
+            (int) $movimiento->id_producto,
+            (int) $movimiento->id_bodega,
+            $delta
+        );
+    }
+
+    public function aplicarDelta(
+        int $idEmpresa,
+        ?int $idCliente,
+        int $idProducto,
+        int $idBodega,
+        float $delta
+    ): void {
+        if (! $idCliente || abs($delta) < 0.00001) {
+            return;
+        }
+
+        $fila = ConsignaCustodia::query()->firstOrNew([
+            'id_empresa' => $idEmpresa,
+            'id_cliente' => $idCliente,
+            'id_producto' => $idProducto,
+            'id_bodega' => $idBodega,
+        ]);
+
+        $nueva = max(0, (float) ($fila->cantidad ?? 0) + $delta);
+        if ($nueva <= 0.00001) {
+            if ($fila->exists) {
+                $fila->delete();
+            }
+
+            return;
+        }
+
+        $fila->cantidad = $nueva;
+        $fila->save();
+    }
+
+    public function deltaDesdeMovimiento(ConsignaMovimiento $movimiento): ?float
+    {
+        if (! $movimiento->id_cliente) {
+            return null;
+        }
+
+        $cantidad = (float) $movimiento->cantidad;
+
+        return match ($movimiento->tipo) {
+            ConsignaMovimientoTipoConstants::ENTREGA_CONSIGNA_PROPIO,
+            ConsignaMovimientoTipoConstants::ENTREGA_CONSIGNA_PROVEEDOR => abs($cantidad),
+            ConsignaMovimientoTipoConstants::LIQUIDACION_CLIENTE,
+            ConsignaMovimientoTipoConstants::DEVOLUCION_CLIENTE => -abs($cantidad),
+            ConsignaMovimientoTipoConstants::AJUSTE_CONSIGNA => $cantidad,
+            default => null,
+        };
+    }
+
+    /**
+     * ponytail: rebuild O(n) por empresa; upgrade: solo filas afectadas por backfill incremental.
+     */
+    public function reconstruirDesdeLedger(int $idEmpresa): int
+    {
+        ConsignaCustodia::query()->forEmpresa($idEmpresa)->delete();
+
+        $movimientos = ConsignaMovimiento::query()
+            ->forEmpresa($idEmpresa)
+            ->whereNotNull('id_cliente')
+            ->orderBy('fecha')
+            ->orderBy('id')
+            ->get();
+
+        foreach ($movimientos as $movimiento) {
+            $this->aplicarDesdeMovimiento($movimiento);
+        }
+
+        return ConsignaCustodia::query()->forEmpresa($idEmpresa)->count();
+    }
+
+    public function listar(Request $request, int $idEmpresa)
+    {
+        $query = ConsignaCustodia::query()
+            ->forEmpresa($idEmpresa)
+            ->with([
+                'producto:id,nombre,codigo',
+                'cliente' => fn ($q) => $q->withoutGlobalScopes()->select('id', 'nombre', 'apellido', 'nombre_comercial', 'nombre_empresa'),
+                'bodega:id,nombre',
+            ])
+            ->where('cantidad', '>', 0)
+            ->orderBy('id_cliente')
+            ->orderBy('id_producto');
+
+        if ($request->filled('id_cliente')) {
+            $query->where('id_cliente', (int) $request->id_cliente);
+        }
+        if ($request->filled('id_producto')) {
+            $query->where('id_producto', (int) $request->id_producto);
+        }
+        if ($request->filled('id_bodega')) {
+            $query->where('id_bodega', (int) $request->id_bodega);
+        }
+
+        return $query->limit(5000)->get();
+    }
+
+  /**
+   * Ventas en estado Consigna (remisiones pendientes), no agrupadas por producto.
+   */
+  public function listarVentasConsigna(Request $request, int $idEmpresa)
+    {
+        $query = Venta::query()
+            ->where('id_empresa', $idEmpresa)
+            ->where('estado', 'Consigna')
+            ->where('cotizacion', 0)
+            ->with([
+                'documento:id,nombre',
+                'cliente' => fn ($q) => $q->withoutGlobalScopes()->select(
+                    'id',
+                    'nombre',
+                    'apellido',
+                    'nombre_comercial',
+                    'nombre_empresa'
+                ),
+            ]);
+
+        if ($request->filled('id_cliente')) {
+            $query->where('id_cliente', (int) $request->id_cliente);
+        }
+
+        if ($request->filled('buscador')) {
+            $t = trim((string) $request->buscador);
+            $query->where(function ($q) use ($t) {
+                $q->where('correlativo', 'like', '%' . $t . '%');
+                if (ctype_digit($t)) {
+                    $q->orWhere('correlativo', (int) $t);
+                }
+                $q->orWhereHas('cliente', function ($c) use ($t) {
+                        $c->where('nombre', 'like', '%' . $t . '%')
+                            ->orWhere('apellido', 'like', '%' . $t . '%')
+                            ->orWhere('nombre_comercial', 'like', '%' . $t . '%')
+                            ->orWhere('nombre_empresa', 'like', '%' . $t . '%');
+                    })
+                    ->orWhereHas('documento', fn ($d) => $d->where('nombre', 'like', '%' . $t . '%'));
+            });
+        }
+
+        $paginate = (int) ($request->input('paginate', 25));
+        if ($paginate > 0) {
+            return $query
+                ->orderByDesc('fecha')
+                ->orderByDesc('id')
+                ->paginate(min($paginate, 100));
+        }
+
+        return $query->orderByDesc('fecha')->orderByDesc('id')->limit(5000)->get();
+    }
+
+    public function listarDevolucionesConsigna(Request $request, int $idEmpresa)
+    {
+        $query = Devolucion::query()
+            ->where('id_empresa', $idEmpresa)
+            ->where('enable', true)
+            ->whereHas('documento', fn ($d) => $d->whereRaw(
+                'LOWER(nombre) = LOWER(?)',
+                [DocumentoConstants::DEVOLUCION_CONSIGNA]
+            ))
+            ->with([
+                'documento:id,nombre',
+                'cliente' => fn ($q) => $q->withoutGlobalScopes()->select(
+                    'id',
+                    'nombre',
+                    'apellido',
+                    'nombre_comercial',
+                    'nombre_empresa'
+                ),
+                'venta.documento:id,nombre',
+            ]);
+
+        if ($request->filled('id_cliente')) {
+            $query->where('id_cliente', (int) $request->id_cliente);
+        }
+
+        if ($request->filled('buscador')) {
+            $t = trim((string) $request->buscador);
+            $query->where(function ($q) use ($t) {
+                $q->where('correlativo', 'like', '%' . $t . '%');
+                if (ctype_digit($t)) {
+                    $q->orWhere('correlativo', (int) $t);
+                }
+                $q->orWhere('observaciones', 'like', '%' . $t . '%')
+                    ->orWhereHas('cliente', function ($c) use ($t) {
+                        $c->where('nombre', 'like', '%' . $t . '%')
+                            ->orWhere('apellido', 'like', '%' . $t . '%')
+                            ->orWhere('nombre_comercial', 'like', '%' . $t . '%')
+                            ->orWhere('nombre_empresa', 'like', '%' . $t . '%');
+                    })
+                    ->orWhereHas('venta', function ($v) use ($t) {
+                        $v->where('correlativo', 'like', '%' . $t . '%');
+                        if (ctype_digit($t)) {
+                            $v->orWhere('correlativo', (int) $t);
+                        }
+                    });
+            });
+        }
+
+        $paginate = (int) ($request->input('paginate', 25));
+        if ($paginate > 0) {
+            return $query
+                ->orderByDesc('fecha')
+                ->orderByDesc('id')
+                ->paginate(min($paginate, 100));
+        }
+
+        return $query->orderByDesc('fecha')->orderByDesc('id')->limit(5000)->get();
+    }
+
+    public function incluirLoteEnExport(?Empresa $empresa): bool
+    {
+        return $empresa?->isModuloConsignacionesLedgerActivo()
+            && $empresa?->isLotesActivo();
+    }
+
+    /** @return Collection<int, array<string, mixed>> */
+    public function coleccionExportVentasConsigna(Request $request, int $idEmpresa, ?Empresa $empresa = null): Collection
+    {
+        $incluirLote = $this->incluirLoteEnExport($empresa);
+        $with = ['producto:id,nombre,codigo', 'venta.documento:id,nombre', 'venta.cliente'];
+        if ($incluirLote) {
+            $with[] = 'lote:id,numero_lote,fecha_vencimiento';
+        }
+
+        $query = DetalleVenta::query()
+            ->whereHas('venta', function ($q) use ($request, $idEmpresa) {
+                $q->where('id_empresa', $idEmpresa)
+                    ->where('estado', 'Consigna')
+                    ->where('cotizacion', 0);
+                if ($request->filled('id_cliente')) {
+                    $q->where('id_cliente', (int) $request->id_cliente);
+                }
+            })
+            ->when($request->filled('buscador'), function ($q) use ($request) {
+                $t = trim((string) $request->buscador);
+                $q->where(function ($w) use ($t) {
+                    $w->whereHas('venta', function ($v) use ($t) {
+                        $v->where(function ($vq) use ($t) {
+                            $vq->where('correlativo', 'like', '%' . $t . '%');
+                            if (ctype_digit($t)) {
+                                $vq->orWhere('correlativo', (int) $t);
+                            }
+                            $vq->orWhere('nombre_cliente', 'like', '%' . $t . '%')
+                                ->orWhereHas('documento', fn ($d) => $d->where('nombre', 'like', '%' . $t . '%'));
+                        });
+                    })->orWhereHas('producto', function ($p) use ($t) {
+                        $p->where('nombre', 'like', '%' . $t . '%')
+                            ->orWhere('codigo', 'like', '%' . $t . '%');
+                    });
+                    if ($t !== '') {
+                        $w->orWhereHas('lote', fn ($l) => $l->where('numero_lote', 'like', '%' . $t . '%'));
+                    }
+                });
+            })
+            ->with($with);
+
+        return $query
+            ->orderByDesc('id_venta')
+            ->get()
+            ->map(function (DetalleVenta $detalle) use ($incluirLote) {
+                $venta = $detalle->venta;
+                $doc = $venta->documento?->nombre ?? $venta->nombre_documento ?? 'Documento';
+
+                $row = [
+                    'id_cliente' => $venta->id_cliente,
+                    'fecha' => $venta->fecha,
+                    'cliente' => $venta->nombre_cliente,
+                    'documento' => $doc,
+                    'correlativo' => $venta->correlativo,
+                    'fecha_pago' => $venta->fecha_pago,
+                    'producto' => $detalle->producto?->nombre,
+                    'codigo' => $detalle->producto?->codigo,
+                    'cantidad' => $detalle->cantidad,
+                    'precio' => $detalle->precio,
+                    'total_linea' => $detalle->total,
+                ];
+                if ($incluirLote) {
+                    $row['lote_numero'] = $detalle->lote?->numero_lote;
+                    $row['lote_vencimiento'] = $detalle->lote?->fecha_vencimiento?->format('Y-m-d');
+                }
+
+                return $row;
+            });
+    }
+
+    /** @return Collection<int, array<string, mixed>> */
+    public function coleccionExportDevolucionesConsigna(Request $request, int $idEmpresa, ?Empresa $empresa = null): Collection
+    {
+        $incluirLote = $this->incluirLoteEnExport($empresa);
+
+        $query = Devolucion::query()
+            ->where('id_empresa', $idEmpresa)
+            ->where('enable', true)
+            ->whereHas('documento', fn ($d) => $d->whereRaw(
+                'LOWER(nombre) = LOWER(?)',
+                [DocumentoConstants::DEVOLUCION_CONSIGNA]
+            ))
+            ->where('id_cliente', (int) $request->id_cliente)
+            ->when($request->filled('buscador'), function ($q) use ($request) {
+                $t = trim((string) $request->buscador);
+                $q->where(function ($w) use ($t) {
+                    $w->where('correlativo', 'like', '%' . $t . '%')
+                        ->orWhere('observaciones', 'like', '%' . $t . '%');
+                });
+            });
+
+        $withDetalle = ['producto:id,nombre,codigo'];
+        if ($incluirLote) {
+            $withDetalle[] = 'lote:id,numero_lote,fecha_vencimiento';
+        }
+
+        $devoluciones = $query
+            ->with(['documento:id,nombre', 'venta.documento:id,nombre', 'detalles' => fn ($q) => $q->with($withDetalle)])
+            ->orderByDesc('fecha')
+            ->orderByDesc('id')
+            ->get();
+
+        $filas = collect();
+        foreach ($devoluciones as $devolucion) {
+            $docDev = $devolucion->documento?->nombre ?? $devolucion->nombre_documento ?? 'Devolución';
+            $venta = $devolucion->venta;
+            $docVenta = $venta?->documento?->nombre ?? $venta?->nombre_documento ?? '';
+            $ventaRef = $venta && $venta->correlativo
+                ? trim($docVenta . ' #' . $venta->correlativo)
+                : ($venta ? (string) $venta->id : '');
+
+            foreach ($devolucion->detalles as $detalle) {
+                $row = [
+                    'id_cliente' => $devolucion->id_cliente,
+                    'fecha' => $devolucion->fecha,
+                    'cliente' => $devolucion->nombre_cliente,
+                    'documento_devolucion' => $docDev,
+                    'correlativo_devolucion' => $devolucion->correlativo,
+                    'venta_origen' => $ventaRef,
+                    'id_venta' => $devolucion->id_venta,
+                    'producto' => $detalle->producto?->nombre,
+                    'codigo' => $detalle->producto?->codigo,
+                    'cantidad' => $detalle->cantidad,
+                    'precio' => $detalle->precio,
+                    'total_linea' => $detalle->total,
+                ];
+                if ($incluirLote) {
+                    $row['lote_numero'] = $detalle->lote?->numero_lote;
+                    $row['lote_vencimiento'] = $detalle->lote?->fecha_vencimiento?->format('Y-m-d');
+                }
+                $filas->push($row);
+            }
+        }
+
+        return $filas;
+    }
+
+    public function listarDevolucionesCompraConsigna(Request $request, int $idEmpresa)
+    {
+        $query = DevolucionCompra::query()
+            ->where('id_empresa', $idEmpresa)
+            ->where('enable', '1')
+            ->whereHas('compra', fn ($q) => $q->where('estado', 'Consigna')->where('cotizacion', 0))
+            ->with([
+                'proveedor' => fn ($q) => $q->withoutGlobalScopes()->select(
+                    'id', 'nombre', 'apellido', 'tipo', 'nombre_empresa', 'nombre_comercial', 'pais'
+                ),
+                'compra:id,tipo_documento,referencia,estado,id_proveedor',
+            ]);
+
+        if ($request->filled('id_proveedor')) {
+            $query->where('id_proveedor', (int) $request->id_proveedor);
+        }
+
+        if ($request->filled('buscador')) {
+            $t = trim((string) $request->buscador);
+            $query->where(function ($q) use ($t) {
+                $q->where('referencia', 'like', '%' . $t . '%')
+                    ->orWhere('observaciones', 'like', '%' . $t . '%')
+                    ->orWhereHas('proveedor', function ($p) use ($t) {
+                        $p->where('nombre', 'like', '%' . $t . '%')
+                            ->orWhere('nombre_empresa', 'like', '%' . $t . '%')
+                            ->orWhere('nombre_comercial', 'like', '%' . $t . '%');
+                    })
+                    ->orWhereHas('compra', function ($c) use ($t) {
+                        $c->where('referencia', 'like', '%' . $t . '%')
+                            ->orWhere('tipo_documento', 'like', '%' . $t . '%');
+                    });
+            });
+        }
+
+        $paginate = (int) ($request->input('paginate', 25));
+        if ($paginate > 0) {
+            return $query
+                ->orderByDesc('fecha')
+                ->orderByDesc('id')
+                ->paginate(min($paginate, 100));
+        }
+
+        return $query->orderByDesc('fecha')->orderByDesc('id')->limit(5000)->get();
+    }
+
+    /** @return Collection<int, array<string, mixed>> */
+    public function coleccionExportDevolucionesCompraConsigna(Request $request, int $idEmpresa, ?Empresa $empresa = null): Collection
+    {
+        $incluirLote = $this->incluirLoteEnExport($empresa);
+        $withDetalle = ['producto:id,nombre,codigo'];
+        if ($incluirLote) {
+            $withDetalle[] = 'lote:id,numero_lote,fecha_vencimiento';
+        }
+
+        $devoluciones = DevolucionCompra::query()
+            ->where('id_empresa', $idEmpresa)
+            ->where('enable', '1')
+            ->where('id_proveedor', (int) $request->id_proveedor)
+            ->whereHas('compra', fn ($q) => $q->where('estado', 'Consigna')->where('cotizacion', 0))
+            ->when($request->filled('buscador'), function ($q) use ($request) {
+                $t = trim((string) $request->buscador);
+                $q->where(function ($w) use ($t) {
+                    $w->where('referencia', 'like', '%' . $t . '%')
+                        ->orWhere('observaciones', 'like', '%' . $t . '%');
+                });
+            })
+            ->with(['compra:id,tipo_documento,referencia', 'detalles' => fn ($q) => $q->with($withDetalle)])
+            ->orderByDesc('fecha')
+            ->orderByDesc('id')
+            ->get();
+
+        $filas = collect();
+        foreach ($devoluciones as $devolucion) {
+            $compra = $devolucion->compra;
+            $compraRef = $compra
+                ? trim(($compra->tipo_documento ?? '') . ' #' . ($compra->referencia ?? ''))
+                : '';
+
+            foreach ($devolucion->detalles as $detalle) {
+                $row = [
+                    'id_proveedor' => $devolucion->id_proveedor,
+                    'fecha' => $devolucion->fecha,
+                    'proveedor' => $devolucion->nombre_proveedor,
+                    'tipo_documento' => $devolucion->tipo_documento,
+                    'referencia' => $devolucion->referencia,
+                    'compra_origen' => $compraRef,
+                    'producto' => $detalle->producto?->nombre,
+                    'codigo' => $detalle->producto?->codigo,
+                    'cantidad' => $detalle->cantidad,
+                    'costo' => $detalle->costo,
+                    'total_linea' => $detalle->total,
+                ];
+                if ($incluirLote) {
+                    $row['lote_numero'] = $detalle->lote?->numero_lote;
+                    $row['lote_vencimiento'] = $detalle->lote?->fecha_vencimiento?->format('Y-m-d');
+                }
+                $filas->push($row);
+            }
+        }
+
+        return $filas;
+    }
+}

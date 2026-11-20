@@ -123,6 +123,12 @@ class FuncionalidadesSeeder extends Seeder
                 'descripcion' => 'Préstamos que la empresa recibe (pasivo) con tabla de amortización y asientos',
                 'orden' => 24
             ],
+            [
+                'nombre' => 'Módulo de consignaciones',
+                'slug' => 'modulo-consignaciones',
+                'descripcion' => 'Kardex de consignación separado, trazabilidad entrada proveedor y salida a clientes (SP-2344)',
+                'orden' => 25
+            ],
             //Se pueden agregar mas funcionalidades con el mismo formato
         ];
 

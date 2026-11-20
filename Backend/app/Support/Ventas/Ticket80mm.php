@@ -8,6 +8,7 @@ use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Venta;
 use App\Support\Admin\DocumentosDefaultPorPais;
 use App\Support\Honduras\DocumentoImpresionHn;
+use App\Support\Inventario\ImpresionLoteEnDocumento;
 use Luecano\NumeroALetras\NumeroALetras;
 
 final class Ticket80mm
@@ -55,11 +56,11 @@ final class Ticket80mm
         $cliente = $venta->id_cliente
             ? Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente)
             : null;
-        $venta->loadMissing('detalles');
+        $mostrar_lotes_impresion = ImpresionLoteEnDocumento::prepararVenta($venta, $empresa);
         $partes = explode('.', number_format((float) $venta->total, 2, '.', ''));
         $letras = (new NumeroALetras())->toWords((float) $partes[0]);
         $centavos = str_pad($partes[1] ?? '00', 2, '0', STR_PAD_LEFT);
-        $datos = compact('venta', 'empresa', 'documento', 'cliente', 'letras', 'centavos');
+        $datos = compact('venta', 'empresa', 'documento', 'cliente', 'letras', 'centavos', 'mostrar_lotes_impresion');
         $enPdf = (bool) data_get($empresa->custom_empresa, 'configuraciones.ticket_en_pdf', false);
 
         if (! $enPdf) {

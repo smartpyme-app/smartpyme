@@ -2162,20 +2162,11 @@ export class FacturacionV2Component implements OnInit {
                 this.venta.consigna = false;
                 return;
             }
-            if (this.venta.detalles?.length) {
-                this.venta.detalles = [];
-                this.alertService.warning('Consigna', 'Se vació el detalle. Toda la factura quedará en consigna; no puede mezclar líneas de venta normal y consigna.');
-                this.sumTotal();
-            }
             this.venta.estado = 'Consigna';
             this.venta.credito = true;
             this.venta.condicion = 'Crédito';
             this.aplicarFiltroDocumentosVenta();
         } else {
-            if (this.venta.detalles?.length) {
-                this.venta.detalles = [];
-                this.sumTotal();
-            }
             this.setCredito();
             this.aplicarFiltroDocumentosVenta();
         }

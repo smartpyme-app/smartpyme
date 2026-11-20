@@ -55,6 +55,7 @@
                             <th>Producto</th>
                             <th class="text-center">Medida</th>
                             <th class="text-center">Cantidad</th>
+                            <th class="text-center" title="Unidades del pool consigna proveedor que se trasladan">Consigna</th>
                             <th class="text-center" *ngIf="traslado.estado == 'En Proceso'"><i class="fa fa-cog"></i></th>
                         </tr>
                     </thead>
@@ -64,6 +65,7 @@
                             <td>{{ de.nombre_producto }}</td>
                             <td class="text-center">{{ de.medida }}</td>
                             <td class="text-center">{{ de.cantidad }}</td>
+                            <td class="text-center">{{ de.cantidad_consigna ?? '—' }}</td>
                             <td style="width: 100px;" class="text-center" *ngIf="traslado.estado == 'En Proceso'">
                                 <a tooltip="Eliminar" class="btn btn-default" (click)="eliminarDetalle(de)"><i class="fa fa-trash"></i>
                                 </a>
@@ -158,6 +160,11 @@
             <small class="text-danger" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && detalle.lote_id && detalle.cantidad && !stockLoteSuficiente()">
                 Stock insuficiente en el lote seleccionado
             </small>
+        </div>
+        <div class="form-group col-sm-12">
+            <label for="cantidad_consigna">Cantidad en consigna (proveedor) <small class="text-muted">opcional</small>:</label>
+            <input id="cantidad_consigna" type="number" min="0" class="form-control text-center" [(ngModel)]="detalle.cantidad_consigna" name="cantidad_consigna">
+            <small class="text-muted">Si usa ledger de consigna, indique cuántas unidades del pool consigna viajan entre bodegas.</small>
         </div>
 
         <div class="row text-center">

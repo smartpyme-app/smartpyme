@@ -1,111 +1,252 @@
-﻿<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
-    <h2 class="page-heading">Consignas de compras</h2>
+<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
+  <h2 class="page-heading">Compras en consigna</h2>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
-        <div class="col">
-            <span class="text-muted" *ngIf="compras?.length">
-                Mostrando {{ compras?.length + ' registros' }}
-            </span>
+      <div class="col-md-6 mb-3">
+        @if (tabActiva === 'compras' && compras?.length) {
+          <span class="text-muted">Mostrando {{ compras.length }} registros</span>
+        }
+        @if (tabActiva === 'devoluciones' && devolucionesCompra?.total) {
+          <span class="text-muted d-flex align-items-center gap-2">
+            Mostrando
+            <select class="form-select w-auto" [(ngModel)]="filtros.paginate" (change)="loadDevoluciones()">
+              <option [ngValue]="25">25</option>
+              <option [ngValue]="50">50</option>
+              <option [ngValue]="100">100</option>
+            </select>
+            de {{ devolucionesCompra.total }} registros
+          </span>
+        }
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="d-flex gap-2 flex-grow-1 justify-content-md-end">
+          @if (tabActiva === 'historial') {
+            <ng-select
+              name="id_proveedor_historial"
+              class="form-select p-0 flex-grow-1"
+              [items]="proveedores"
+              bindValue="id"
+              [(ngModel)]="filtros.id_proveedor"
+              placeholder="Buscar proveedor…"
+              [searchable]="true"
+              [clearable]="true"
+              (change)="onHistorialProveedorChange()"
+              (clear)="onHistorialProveedorChange()">
+              <ng-template ng-label-tmp let-item="item">
+                {{ item ? etiquetaProveedor(item) : etiquetaProveedorSeleccionado() }}
+              </ng-template>
+              <ng-template ng-option-tmp let-item="item">
+                {{ etiquetaProveedor(item) }}
+              </ng-template>
+            </ng-select>
+          } @else {
+            <button [disabled]="downloading" tooltip="Descargar" (click)="descargar()" class="btn btn-default tcla-F6">
+              <img appLazyImage="/assets/icons/download.png" class="icon">
+            </button>
+            <form class="d-flex input-group flex-grow-1" (ngSubmit)="buscar()" autocomplete="off">
+              <input
+                type="text"
+                name="search"
+                class="form-control"
+                placeholder="Buscar..."
+                [(ngModel)]="buscador" />
+            </form>
+            @if (tabActiva === 'devoluciones') {
+              <button type="button" class="btn btn-default" (click)="buscar()"><i class="fa fa-search"></i></button>
+            }
+          }
+          <button type="button" tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3">
+            <img appLazyImage="/assets/icons/filter.png" class="icon">
+          </button>
         </div>
+      </div>
+    </div>
 
-        <div class="col">
-            <div class="d-flex gap-2">
-                <button [disabled]="downloading" tooltip="Descargar consignas de compras" (click)="descargar()" class="btn btn-default tcla-F6">
-                    <img src="/assets/icons/download.png" class="icon">
-                </button>
-                <input type="text" name="search" class="form-control pull-right" placeholder="Buscar por proveedor o documento..." [(ngModel)]="buscador">
-            </div>
-        </div>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <button type="button" class="btn" [class.btn-primary]="tabActiva === 'compras'" (click)="cambiarTab('compras')">
+        Compras en consigna
+      </button>
+      <button type="button" class="btn" [class.btn-primary]="tabActiva === 'devoluciones'" (click)="cambiarTab('devoluciones')">
+        Devoluciones
+      </button>
+      <button type="button" class="btn" [class.btn-primary]="tabActiva === 'historial'" (click)="cambiarTab('historial')">
+        Historial
+      </button>
     </div>
-    <div class="row">
-        <div class="col-12 table-responsive">
-            <table class="table table-borderless table-hover align-middle mb-0">
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Proveedor</th>
-                        <th class="d-none d-md-table-cell">Documento</th>
-                        <th class="d-none d-md-table-cell">Fecha pago</th>
-                        <th>Estado</th>
-                        <th class="text-end">Total</th>
-                        <th class="text-center"><i class="fa fa-cog"></i></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td colspan="7" class="text-center" *ngIf="compras?.length < 1 && !loading">
-                            <span class="badge bg-primary">No tiene compras en consigna</span>
-                        </td>
-                        <td colspan="7" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
-                    <tr *ngFor="let compra of compras | filter:['proveedor','referencia']:buscador">
-                        <td>{{ compra.fecha | date:'dd/MM/yyyy' }}</td>
-                        <td>{{ compra.proveedor | truncate:30 }}</td>
-                        <td class="d-none d-md-table-cell">{{ compra.tipo_documento }} #{{ compra.referencia }}</td>
-                        <td class="d-none d-md-table-cell">{{ compra.fecha_pago | date:'dd/MM/yyyy' }}</td>
-                        <td>
-                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : compra?.estado == 'Pendiente', 'bg-danger' : compra?.estado == 'Anulada', 'bg-info' : compra?.estado == 'Consigna', 'bg-success' : compra?.estado == 'Pagada', 'bg-primary' : compra?.estado == 'Pre-compra'}">
-                                {{ compra.estado }}
-                            </span>
-                        </td>
-                        <td class="text-end">{{ compra.total | currency }}</td>
-                        <td class="text-center">
-                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
-                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                            </span>
-                            <ng-template #accionesTemplate>
-                                <div class="list-group border-0">
-                                    <a *ngIf="apiService.canEdit() && !apiService.supervisorLimitadoRestringidoEnCompras()" routerLink="/compra/consigna/revisar/{{ compra.id }}" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fas fa-fw fa-hand-holding-usd"></i> Revisar consigna
-                                    </a>
-                                    <button type="button" (click)="openDetalles(mdetalles, compra)" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
-                                    </button>
-                                </div>
-                            </ng-template>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+
+    @if (tabActiva === 'compras') {
+      <div class="table-responsive">
+        <table class="table table-borderless table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Proveedor</th>
+              <th class="d-none d-md-table-cell">Documento</th>
+              <th class="d-none d-md-table-cell">Fecha pago</th>
+              <th>Estado</th>
+              <th class="text-end">Total</th>
+              <th class="text-center"><i class="fa fa-cog"></i></th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (compras?.length < 1 && !loading) {
+              <tr>
+                <td colspan="7" class="text-center"><span class="badge bg-primary">No hay compras en consigna</span></td>
+              </tr>
+            }
+            @if (loading) {
+              <tr>
+                <td colspan="7" class="text-center"><span class="badge bg-primary">Cargando...</span></td>
+              </tr>
+            }
+            @for (compra of compras | filter:['proveedor','referencia']:buscador; track compra.id) {
+              <tr>
+                <td>{{ compra.fecha | date:'dd/MM/yyyy' }}</td>
+                <td>{{ compra.proveedor | truncate:30 }}</td>
+                <td class="d-none d-md-table-cell">{{ compra.tipo_documento }} #{{ compra.referencia }}</td>
+                <td class="d-none d-md-table-cell">{{ compra.fecha_pago | date:'dd/MM/yyyy' }}</td>
+                <td>
+                  <span class="badge py-2 bg-info" style="font-size: 0.8rem;">{{ compra.estado }}</span>
+                </td>
+                <td class="text-end">{{ compra.total | currency }}</td>
+                <td class="text-center">
+                  <span class="btn" [popover]="accionesCompra" [outsideClick]="true" tooltip="Acciones">
+                    <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                  </span>
+                  <ng-template #accionesCompra>
+                    <div class="list-group border-0">
+                      @if (apiService.canEdit() && !apiService.supervisorLimitadoRestringidoEnCompras()) {
+                        <a routerLink="/compra/consigna/revisar/{{ compra.id }}" class="list-group-item list-group-item-action border-0 click">
+                          <i class="fas fa-fw fa-hand-holding-usd"></i> Revisar consigna
+                        </a>
+                      }
+                      <button type="button" (click)="openDetalles(mdetalles, compra)" class="list-group-item list-group-item-action border-0 click">
+                        <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
+                      </button>
+                    </div>
+                  </ng-template>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    @if (tabActiva === 'devoluciones') {
+      <div class="table-responsive">
+        <table class="table table-borderless table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Proveedor</th>
+              <th class="d-none d-md-table-cell">Devolución</th>
+              <th class="d-none d-md-table-cell">Compra origen</th>
+              <th class="text-end">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if ((devolucionesCompra?.data?.length ?? 0) < 1 && !loading) {
+              <tr><td colspan="5" class="text-center"><span class="badge bg-primary">No hay devoluciones</span></td></tr>
+            }
+            @if (loading) {
+              <tr><td colspan="5" class="text-center"><span class="badge bg-primary">Cargando...</span></td></tr>
+            }
+            @for (dev of devolucionesCompra?.data; track dev.id) {
+              <tr>
+                <td>{{ dev.fecha | date:'dd/MM/yyyy' }}</td>
+                <td>{{ dev.nombre_proveedor | truncate:30 }}</td>
+                <td class="d-none d-md-table-cell">{{ documentoDevolucion(dev) }}</td>
+                <td class="d-none d-md-table-cell">{{ compraOrigen(dev) }}</td>
+                <td class="text-end">{{ dev.total | currency }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (devolucionesCompra?.last_page > 1) {
+        <app-pagination [items]="devolucionesCompra" (setPagination)="setPagination($event)"></app-pagination>
+      }
+    }
+
+    @if (tabActiva === 'historial') {
+      <app-consigna-historial-panel alcance="compras" [idProveedor]="idProveedorHistorial()"></app-consigna-historial-panel>
+    }
 </section>
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center"><h2 class="mb-0 text-center">Filtrar</h2></div>
+    <button type="button" class="btn-close" (click)="modalManager.closeModal(modalFiltroRef)" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <div class="form-group">
+      <label>Proveedor:</label>
+      <ng-select
+        name="id_proveedor"
+        [(ngModel)]="filtros.id_proveedor"
+        class="form-select p-0"
+        [items]="proveedores"
+        bindValue="id"
+        placeholder="Buscar proveedor…"
+        [searchable]="true"
+        [clearable]="true">
+        <ng-template ng-option-tmp let-item="item">
+          {{ etiquetaProveedor(item) }}
+        </ng-template>
+        <ng-template ng-label-tmp let-item="item">
+          {{ item ? etiquetaProveedor(item) : '' }}
+        </ng-template>
+      </ng-select>
+      <small class="text-muted">La descarga Excel y el historial requieren un proveedor.</small>
+    </div>
+    <div class="d-grid mt-3">
+      <button type="button" class="btn btn-primary" (click)="aplicarFiltrosModal()">Filtrar</button>
+    </div>
+  </div>
+</ng-template>
 
 <ng-template #mdetalles>
   <div class="modal-header">
     <div class="modal-title w-100 text-center">
-        <h2 class="text-center no-margin">
-            {{ compra.proveedor }} — {{ compra.tipo_documento }} #{{ compra.referencia }}
-        </h2>
+      <h2 class="text-center no-margin">{{ compra.proveedor }} — {{ compra.tipo_documento }} #{{ compra.referencia }}</h2>
     </div>
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-        <table class="table table-borderless table-hover">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Código</th>
-                    <th class="text-end">Cantidad</th>
-                    <th class="text-end" *ngIf="apiService.canVerCostosInventario()">Costo</th>
-                    <th class="text-end">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr *ngFor="let detalle of compra?.detalles">
-                    <td>{{ detalle.producto }}</td>
-                    <td>{{ detalle.codigo }}</td>
-                    <td class="text-end">{{ detalle.cantidad }}</td>
-                    <td class="text-end" *ngIf="apiService.canVerCostosInventario()">{{ detalle.costo | currency }}</td>
-                    <td class="text-end">{{ detalle.total | currency }}</td>
-                </tr>
-            </tbody>
-        </table>
+      <table class="table table-borderless table-hover">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Código</th>
+            @if (mostrarColumnasLote()) {
+              <th>Lote</th>
+              <th>Vencimiento</th>
+            }
+            <th class="text-end">Cantidad</th>
+            <th class="text-end" *ngIf="apiService.canVerCostosInventario()">Costo</th>
+            <th class="text-end">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (detalle of compra?.detalles; track detalle.producto) {
+            <tr>
+              <td>{{ detalle.producto }}</td>
+              <td>{{ detalle.codigo }}</td>
+              @if (mostrarColumnasLote()) {
+                <td>{{ detalle.lote_numero || '—' }}</td>
+                <td>{{ detalle.lote_vencimiento ? (detalle.lote_vencimiento | date:'dd/MM/yyyy') : '—' }}</td>
+              }
+              <td class="text-end">{{ detalle.cantidad }}</td>
+              <td class="text-end" *ngIf="apiService.canVerCostosInventario()">{{ detalle.costo | currency }}</td>
+              <td class="text-end">{{ detalle.total | currency }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
     </div>
   </div>
 </ng-template>

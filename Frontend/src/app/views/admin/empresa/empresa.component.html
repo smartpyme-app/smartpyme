@@ -935,6 +935,21 @@
                                         name="venta_consigna" id="venta_consigna">
                                 </div>
                             </div>
+                            @if (tieneAccesoModuloConsignaciones) {
+                            <div class="empresa-pref-row">
+                                <div class="empresa-pref-row-text">
+                                    <label class="empresa-pref-row-label" for="consignaciones_ledger_activo">Kardex de consignaciones</label>
+                                    <p class="empresa-pref-row-help text-muted small mb-0">Registra movimientos de consigna en un ledger aparte (entrada proveedor, ventas y liquidaciones).</p>
+                                </div>
+                                <div class="form-switch m-0">
+                                    <input class="form-check-input" type="checkbox" role="switch"
+                                        id="consignaciones_ledger_activo"
+                                        [checked]="isConsignacionesLedgerActivo()"
+                                        (change)="toggleConsignacionesLedgerActivo()"
+                                        name="consignaciones_ledger_activo">
+                                </div>
+                            </div>
+                            }
                             <div class="empresa-pref-row">
                                 <div class="empresa-pref-row-text">
                                     <label class="empresa-pref-row-label" for="estado_cuenta_en_facturacion">Habilitar estado de cuenta en

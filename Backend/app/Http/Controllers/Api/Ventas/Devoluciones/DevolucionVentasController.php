@@ -31,6 +31,8 @@ use App\Http\Requests\Ventas\Devoluciones\UpdateDevolucionRequest;
 use App\Support\FacturacionElectronica\CostaRica\DocumentoMoneda;
 use App\Http\Requests\Ventas\Devoluciones\FacturacionDevolucionRequest;
 use App\Services\Ventas\DevolucionVentaService;
+use App\Services\Ventas\DevolucionConsignaVentaService;
+use App\Services\Inventario\ConsignaDevolucionLedgerService;
 use Illuminate\Support\Facades\Log;
 use App\Services\FidelizacionCliente\DevolucionPuntosService;
 use App\Services\Comisiones\ComisionService;
@@ -321,13 +323,19 @@ class DevolucionVentasController extends Controller
     public function facturacion(FacturacionDevolucionRequest $request)
     {
         try {
-            // Validar que la diferencia entre notas de crédito y notas de débito no supere el total de la venta
-            $this->devolucionVentaService->validarLimitesDevolucion(
-                $request->id_venta,
-                $request->id,
-                $request->id_documento,
-                $request->total
-            );
+            if ($this->devolucionVentaService->esDocumentoDevolucionConsigna($request->id_documento)) {
+                $this->devolucionVentaService->validarCantidadesDevolucionConsigna(
+                    (int) $request->id_venta,
+                    $request->detalles
+                );
+            } else {
+                $this->devolucionVentaService->validarLimitesDevolucion(
+                    $request->id_venta,
+                    $request->id,
+                    $request->id_documento,
+                    $request->total
+                );
+            }
         } catch (\Exception $e) {
             return Response()->json(['error' => $e->getMessage()], 400);
         }
@@ -397,6 +405,13 @@ class DevolucionVentasController extends Controller
                         $inventario->stock += $det['cantidad'];
                         $inventario->save();
                         $inventario->kardex($devolucion, $det['cantidad']);
+                        app(ConsignaDevolucionLedgerService::class)->despuesEntradaFisicaDevolucionVenta(
+                            $devolucion,
+                            (int) $det['id_producto'],
+                            (float) $det['cantidad'],
+                            isset($det['lote_id']) ? (int) $det['lote_id'] : null,
+                            isset($det['id']) ? (int) $det['id'] : null
+                        );
                     }
 
                     // Inventario compuestos
@@ -448,6 +463,17 @@ class DevolucionVentasController extends Controller
                     $paquete->save();
                 }
 
+            }
+
+            if (
+                $this->devolucionVentaService->esDocumentoDevolucionConsigna($devolucion->id_documento)
+                && $request->tipo !== 'descuento_ajuste'
+            ) {
+                $ventaConsigna = Venta::query()->findOrFail($request->id_venta);
+                app(DevolucionConsignaVentaService::class)->reducirRemanenteDesdeDevolucion(
+                    $ventaConsigna,
+                    $request->detalles
+                );
             }
 
         // Incrementar el correlarivo
@@ -502,12 +528,16 @@ class DevolucionVentasController extends Controller
         $venta = Devolucion::where('id', $id)
             ->with([
                 'detalles.producto',
+                'detalles.lote',
                 'cliente',
                 'empresa.currency',
                 'venta.vendedor',
                 'documento',
             ])
             ->firstOrFail();
+
+        $empresaDev = Empresa::find(Auth::user()->id_empresa);
+        $mostrar_lotes_impresion = \App\Support\Inventario\ImpresionLoteEnDocumento::prepararDevolucion($venta, $empresaDev);
 
         if(Auth::user()->id_empresa == 187 && $venta->nombre_documento == "Nota de crédito"){//187  OK V2
 
@@ -581,7 +611,10 @@ class DevolucionVentasController extends Controller
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.ND-Inversiones-Andre', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
             $pdf->setPaper('US Letter', 'portrait');
         }else{
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.nota-credito', compact('venta'));
+            $pdf = app('dompdf.wrapper')->loadView(
+                'reportes.facturacion.nota-credito',
+                compact('venta', 'mostrar_lotes_impresion')
+            );
             $pdf->setPaper('US Letter', 'portrait');
         }
 

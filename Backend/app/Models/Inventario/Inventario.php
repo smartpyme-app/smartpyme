@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Inventario\Kardex;
 use App\Models\Inventario\Lote;
 use App\Models\Admin\Empresa;
+use App\Constants\OrigenStockVentaConstants;
+use App\Services\Inventario\ConsignaDisponibleService;
+use App\Services\Inventario\KardexInventarioNormalService;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 
@@ -44,6 +47,14 @@ class Inventario extends Model {
 
         $clase = get_class($modelo);
 
+        // ponytail: con ledger on, la entrada consigna vive en consigna_movimientos; no duplicar en kardex físico
+        if ($clase === 'App\Models\Compras\Compra'
+            && $cantidad > 0
+            && $modelo->estado === 'Consigna'
+            && Empresa::query()->find($modelo->id_empresa)?->isModuloConsignacionesLedgerActivo()) {
+            return;
+        }
+
         $entradaCantidad =  null;
         $salidaCantidad =  null;
 
@@ -53,8 +64,22 @@ class Inventario extends Model {
             $sufijoShopify = $esShopify ? ' desde Shopify' : '';
 
             if ($cantidad > 0) {
+                $origenStock = $opciones['origen_stock'] ?? null;
+                if (OrigenStockVentaConstants::esConsignaCompra($origenStock)
+                    && Empresa::query()->find($modelo->id_empresa)?->isModuloConsignacionesLedgerActivo()) {
+                    return;
+                }
                 $salidaCantidad =  $cantidad;
-                $clase = $modelo->estado == 'Consigna' ? 'Venta a consigna' : ('Venta' . $sufijoShopify);
+                $esConsignaSalida = $modelo->estado == 'Consigna';
+                $ledgerActivo = $esConsignaSalida
+                    && Empresa::query()->find($modelo->id_empresa)?->isModuloConsignacionesLedgerActivo();
+                if ($esConsignaSalida && $ledgerActivo) {
+                    $clase = 'Remisión consigna' . $sufijoShopify;
+                } elseif ($esConsignaSalida) {
+                    $clase = 'Venta a consigna';
+                } else {
+                    $clase = 'Venta' . $sufijoShopify;
+                }
             }else{
                 $entradaCantidad =  abs($cantidad);
                 $clase = 'Venta Anulada' . $sufijoShopify;
@@ -63,7 +88,11 @@ class Inventario extends Model {
         else if ($clase == 'App\Models\Compras\Compra') {
             if ($cantidad > 0) {
                 $entradaCantidad =  $cantidad;
-                $clase = $modelo->estado == 'Consigna' ? 'Compra a consigna' : 'Compra';
+                $esConsignaCompra = $modelo->estado == 'Consigna';
+                // ponytail: consulta Empresa por línea de kardex; cache por request si hay ráfaga
+                $ledgerActivo = $esConsignaCompra
+                    && Empresa::query()->find($modelo->id_empresa)?->isModuloConsignacionesLedgerActivo();
+                $clase = ($esConsignaCompra && ! $ledgerActivo) ? 'Compra a consigna' : 'Compra';
             }else{
                 $salidaCantidad =  abs($cantidad);
                 $clase = 'Compra Anulada';
@@ -218,7 +247,10 @@ class Inventario extends Model {
             }
         }
 
-        // Calcular el stock total según si el producto usa lotes o no
+        $empresaKardex = $producto->empresa
+            ?? (Auth::user()?->empresa)
+            ?? Empresa::query()->find($producto->id_empresa);
+        // ponytail: con ledger, inventario/lote ya está actualizado; total_cantidad = saldo físico real.
         $totalCantidad = $this->calcularStockParaKardex($producto, $modelo, $clase, $opciones);
 
         $fechaKardex = $fecha ? (is_string($fecha) ? $fecha : $fecha->format('Y-m-d')) : date('Y-m-d');
@@ -278,6 +310,21 @@ class Inventario extends Model {
         }
 
         $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
+        $loteId = ! empty($opciones['lote_id'])
+            ? (int) $opciones['lote_id']
+            : null;
+
+        if ($empresa?->isModuloConsignacionesLedgerActivo()) {
+            if (! $loteId && $producto->inventario_por_lotes && $lotesActivo) {
+                $loteId = $this->obtenerLoteIdDesdeModelo($modelo, $clase, $producto->id);
+            }
+
+            return app(ConsignaDisponibleService::class)->stockPropioParaKardex(
+                (int) $this->id_producto,
+                (int) $this->id_bodega,
+                $loteId
+            );
+        }
 
         // Si el producto no usa lotes o los lotes no están activos, usar stock tradicional
         if (!$producto->inventario_por_lotes || !$lotesActivo) {
@@ -285,7 +332,7 @@ class Inventario extends Model {
         }
 
         // Si el producto usa lotes, buscar el lote_id desde el modelo de referencia
-        $loteId = $opciones['lote_id'] ?? $this->obtenerLoteIdDesdeModelo($modelo, $clase, $producto->id);
+        $loteId = $loteId ?? $this->obtenerLoteIdDesdeModelo($modelo, $clase, $producto->id);
 
         if ($loteId) {
             // Si hay un lote específico, usar su stock
@@ -323,7 +370,7 @@ class Inventario extends Model {
         }
 
         // Si es una venta
-        if (str_starts_with($clase, 'Venta') || $clase == 'Venta a consigna') {
+        if (str_starts_with($clase, 'Venta') || $clase === 'Venta a consigna' || str_starts_with($clase, 'Remisión consigna')) {
             $detalleVenta = \App\Models\Ventas\Detalle::where('id_venta', $modelo->id)
                 ->where('id_producto', $idProducto)
                 ->whereNotNull('lote_id')

@@ -101,13 +101,43 @@ Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, '
 
 // Consignas
     Route::get('/productos/consignas',         [ConsignasController::class, 'index'])->middleware('permission:ventas.consignas.ver');
+    Route::get('/productos/consignas/{idProducto}/ventas', [ConsignasController::class, 'ventasPorProducto'])->middleware('permission:ventas.consignas.ver');
     Route::post('/producto/sucursal',          [ConsignasController::class, 'store']);
     Route::delete('/producto/sucursal/{id}',   [ConsignasController::class, 'delete']);
     Route::get('/productos/consignas/exportar',        [ConsignasController::class, 'export'])->middleware('permission:ventas.consignas.ver');
+    Route::get('/productos/consignas/exportar-toma-inventario-pdf', [ConsignasController::class, 'exportarTomaInventarioConsignaPdf'])->middleware('permission:ventas.consignas.ver');
     Route::get('/productos/consignas-compras',         [ConsignasController::class, 'indexCompras'])->middleware('permission:compras.consignas.ver');
     Route::get('/productos/consignas-compras/exportar', [ConsignasController::class, 'exportCompras'])->middleware('permission:compras.consignas.ver');
     Route::get('/productos/consigna-disponible',      [ConsignasController::class, 'disponible']);
     Route::get('/productos/consigna-ventas',          [ConsignasController::class, 'ventasConsignaCompra']);
+    Route::get('/productos/consigna-kardex/lotes',  [\App\Http\Controllers\Api\Inventario\ConsignaKardexController::class, 'lotes'])
+        ->middleware('permission:inventario.consigna_kardex.ver');
+    Route::get('/productos/consigna-kardex',        [\App\Http\Controllers\Api\Inventario\ConsignaKardexController::class, 'index'])
+        ->middleware('permission:inventario.consigna_kardex.ver');
+    Route::get('/productos/consigna-kardex/exportar', [\App\Http\Controllers\Api\Inventario\ConsignaKardexController::class, 'export'])
+        ->middleware('permission:inventario.consigna_kardex.exportar');
+    Route::get('/productos/consigna-custodia', [\App\Http\Controllers\Api\Inventario\ConsignaCustodiaController::class, 'index'])
+        ->middleware('permission:inventario.consigna_kardex.ver');
+    Route::get('/productos/consigna-custodia/ventas', [\App\Http\Controllers\Api\Inventario\ConsignaCustodiaController::class, 'ventas'])
+        ->middleware('permission:inventario.consigna_kardex.ver');
+    Route::get('/productos/consigna-custodia/ventas/exportar', [\App\Http\Controllers\Api\Inventario\ConsignaCustodiaController::class, 'exportarVentas'])
+        ->middleware('permission:inventario.consigna_kardex.ver');
+    Route::get('/productos/consigna-custodia/devoluciones', [\App\Http\Controllers\Api\Inventario\ConsignaCustodiaController::class, 'devoluciones'])
+        ->middleware('permission:inventario.consigna_kardex.ver');
+    Route::get('/productos/consigna-custodia/devoluciones/exportar', [\App\Http\Controllers\Api\Inventario\ConsignaCustodiaController::class, 'exportarDevoluciones'])
+        ->middleware('permission:inventario.consigna_kardex.ver');
+    Route::post('/productos/consigna-custodia/conteo', [\App\Http\Controllers\Api\Inventario\ConsignaCustodiaController::class, 'conteo'])
+        ->middleware('permission:inventario.consigna_kardex.ver');
+    Route::get('/productos/consigna-historial', [\App\Http\Controllers\Api\Inventario\ConsignaHistorialController::class, 'index'])
+        ->middleware('permission:inventario.consigna_kardex.ver');
+    Route::get('/productos/consigna-historial/exportar', [\App\Http\Controllers\Api\Inventario\ConsignaHistorialController::class, 'exportar'])
+        ->middleware('permission:inventario.consigna_kardex.ver');
+    Route::get('/productos/consigna-historial/exportar-pdf', [\App\Http\Controllers\Api\Inventario\ConsignaHistorialController::class, 'exportarPdf'])
+        ->middleware('permission:inventario.consigna_kardex.ver');
+    Route::get('/productos/consigna-compras/devoluciones', [\App\Http\Controllers\Api\Inventario\ConsignaCustodiaController::class, 'devolucionesCompra'])
+        ->middleware('permission:inventario.consigna_kardex.ver');
+    Route::get('/productos/consigna-compras/devoluciones/exportar', [\App\Http\Controllers\Api\Inventario\ConsignaCustodiaController::class, 'exportarDevolucionesCompra'])
+        ->middleware('permission:inventario.consigna_kardex.ver');
 
 // Promociones
     Route::get('promociones',        [PromocionesController::class, 'index']);

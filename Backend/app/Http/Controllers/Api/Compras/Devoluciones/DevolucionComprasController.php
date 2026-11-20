@@ -14,6 +14,7 @@ use App\Models\Inventario\Lote;
 use Illuminate\Support\Facades\DB;
 use App\Exports\DevolucionesComprasExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Services\Inventario\ConsignaDevolucionLedgerService;
 
 class DevolucionComprasController extends Controller
 {
@@ -114,6 +115,11 @@ class DevolucionComprasController extends Controller
                         $inventario->stock -= $detalle->cantidad;
                         $inventario->save();
                         $inventario->kardex($compra, $detalle->cantidad);
+                        app(ConsignaDevolucionLedgerService::class)->despuesSalidaFisicaDevolucionCompra(
+                            $compra,
+                            (int) $detalle->id_producto,
+                            (float) $detalle->cantidad
+                        );
                     }
                 }
             }

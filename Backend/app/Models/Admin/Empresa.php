@@ -1183,6 +1183,26 @@ class Empresa extends Model
     }
 
     /**
+     * Funcionalidad asignada en Super Admin (empresa_funcionalidades).
+     */
+    public function tieneFuncionalidadModuloConsignaciones(): bool
+    {
+        return $this->tieneFuncionalidad('modulo-consignaciones');
+    }
+
+    /**
+     * Ledger consigna v2: licencia Super Admin + preferencia Mi cuenta.
+     */
+    public function isModuloConsignacionesLedgerActivo(): bool
+    {
+        if (!$this->tieneFuncionalidadModuloConsignaciones()) {
+            return false;
+        }
+
+        return (bool) $this->getCustomConfigValue('configuraciones', 'consignaciones_ledger_activo', false);
+    }
+
+    /**
      * Reporte Excel de inventario vs ventas desde enero del año hasta el mes de la descarga.
      */
     public function isInventarioReporteAnalisisVentasMensualHabilitado(): bool

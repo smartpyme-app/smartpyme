@@ -41,12 +41,9 @@ class FacturacionConsignaService
      */
     protected function crearConsigna(Venta $venta, array $data): void
     {
-        $consigna = new Venta();
-        $consigna->fill($data);
-        // Asegurar que la consigna herede el id_empresa de la venta original
-        if (!isset($data['id_empresa'])) {
-            $consigna->id_empresa = $venta->id_empresa;
-        }
+        $consigna = $venta->replicate();
+        $consigna->id_documento = $venta->id_documento;
+        $consigna->correlativo = $venta->correlativo;
         $consigna->estado = 'Consigna';
         $consigna->sub_total = $venta->sub_total - $data['sub_total'];
         $consigna->total_costo = $venta->total_costo - $data['total_costo'];

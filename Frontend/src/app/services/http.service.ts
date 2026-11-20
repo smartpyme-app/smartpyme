@@ -166,52 +166,47 @@ export class HttpService {
   }
 
   export(url: string, filtros: any, timeoutMs: number = 120000): Observable<Blob> {
-    return this.http.get(this.apiUrl + url, { responseType: 'blob', params: filtros }).pipe(
-      timeout(timeoutMs),
-      catchError((error) => {
-        if (error.error instanceof Blob && error.error.type?.includes('application/json')) {
-          return from<string>(error.error.text()).pipe(
-            switchMap((text: string) => {
-              try {
-                const errJson = JSON.parse(text);
-                return throwError(() => ({
-                  ...error,
-                  status: error.status,
-                  error: { message: errJson.error || errJson.message || text },
-                }));
-              } catch (_) {
-                return throwError(() => ({ ...error, error: { message: text } }));
-              }
-            }),
-          );
-        }
-        return throwError(() => error);
-      }),
-    );
+    const token = this.getAuthToken();
+    let headers = new HttpHeaders({ Accept: 'application/json' });
+    if (token) {
+      headers = headers.set('Authorization', 'Bearer ' + token);
+    }
+
+    return this.http
+      .get(this.apiUrl + url, { responseType: 'blob', params: filtros, headers })
+      .pipe(
+        timeout(timeoutMs),
+        catchError((error) => this.parseBlobHttpError(error)),
+      );
+  }
+
+  private parseBlobHttpError(error: HttpErrorResponse): Observable<never> {
+    if (error.error instanceof Blob) {
+      return from(error.error.text() as Promise<string>).pipe(
+        switchMap((text) => {
+          try {
+            const errJson = JSON.parse(text);
+            return throwError(() => ({
+              ...error,
+              status: error.status,
+              error: errJson,
+            }));
+          } catch (_) {
+            return throwError(() => ({
+              ...error,
+              error: { message: text || 'Error al descargar el archivo' },
+            }));
+          }
+        }),
+      );
+    }
+    return throwError(() => error);
   }
 
   exportPost(url: string, body: any, timeoutMs: number = 120000): Observable<Blob> {
     return this.http.post(this.apiUrl + url, body, { responseType: 'blob' }).pipe(
       timeout(timeoutMs),
-      catchError((error) => {
-        if (error.error instanceof Blob && error.error.type?.includes('application/json')) {
-          return from<string>(error.error.text()).pipe(
-            switchMap((text: string) => {
-              try {
-                const errJson = JSON.parse(text);
-                return throwError(() => ({
-                  ...error,
-                  status: error.status,
-                  error: { message: errJson.error || errJson.message || text },
-                }));
-              } catch (_) {
-                return throwError(() => ({ ...error, error: { message: text } }));
-              }
-            }),
-          );
-        }
-        return throwError(() => error);
-      }),
+      catchError((error) => this.parseBlobHttpError(error)),
     );
   }
 
@@ -254,31 +249,7 @@ export class HttpService {
       }),
     }).pipe(
       map((response) => new Blob([response])),
-      catchError((error) => {
-        if (error?.error instanceof Blob && error.error.type?.includes('application/json')) {
-          return from<string>(error.error.text()).pipe(
-            switchMap((text: string) => {
-              try {
-                const errJson = JSON.parse(text);
-                return throwError(() => ({
-                  ...error,
-                  error: {
-                    message:
-                      errJson.message || errJson.error || errJson.mensaje || text,
-                  },
-                }));
-              } catch {
-                return throwError(() => ({
-                  ...error,
-                  error: { message: 'Error al descargar el archivo' },
-                }));
-              }
-            })
-          );
-        }
-        console.error('Error al descargar el archivo:', error);
-        return throwError(() => error);
-      })
+      catchError((error) => this.parseBlobHttpError(error))
     );
   }
 

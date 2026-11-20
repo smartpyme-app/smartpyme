@@ -191,7 +191,13 @@
             $descLinea = trim((string) ($detalle->nombre_producto ?: $detalle->descripcion ?? ''));
         @endphp
         <tr>
-            <td class="left">{{ $descLinea }}</td>
+            <td class="left">
+                {{ $descLinea }}
+                @include('reportes.facturacion.partials.detalle-lote-impresion', [
+                    'detalle' => $detalle,
+                    'mostrar_lotes_impresion' => $mostrar_lotes_impresion ?? false,
+                ])
+            </td>
             <td class="num">{{ rtrim(rtrim(number_format($cant, 2, '.', ''), '0'), '.') }}</td>
             <td class="num">{{ number_format($precio, 2) }}</td>
             <td class="num">{{ number_format($totalLinea, 2) }}</td>

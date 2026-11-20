@@ -138,6 +138,7 @@ export const DOCUMENTO_NOMBRE_OPCIONES_DEFAULT: DocumentoNombreOption[] = [
   { value: 'Nota de débito', label: 'Nota de débito' },
   { value: 'Evento de retorno', label: 'Evento de retorno' },
   { value: 'Factura de remisión', label: 'Factura de remisión' },
+  { value: 'Devolución de consigna', label: 'Devolución de consigna' },
   { value: 'Sujeto excluido', label: 'Sujeto excluido' },
   { value: 'Factura de exportación', label: 'Factura de exportación' },
   { value: 'Abono de Venta', label: 'Abono de Venta' },

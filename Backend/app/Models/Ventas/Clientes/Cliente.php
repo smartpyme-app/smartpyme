@@ -38,6 +38,7 @@ class Cliente extends AuditableModel {
        'nombre_empresa',
        'nombre_comercial',
        'empresa_telefono',
+       'empresa_correo',
        'empresa_direccion',
        'direccion',
        'pais',
@@ -266,6 +267,20 @@ class Cliente extends AuditableModel {
     public function getTelefonoEfectivo()
     {
         return $this->tipo === 'Empresa' ? $this->empresa_telefono : $this->telefono;
+    }
+
+    /** Correo para FE/DTE del receptor (empresa: {@see empresa_correo}, distinto del contacto). */
+    public function getCorreoFeReceptor(): ?string
+    {
+        if ($this->tipo === 'Empresa') {
+            $empresa = trim((string) ($this->empresa_correo ?? ''));
+            if ($empresa !== '') {
+                return $empresa;
+            }
+        }
+        $contacto = trim((string) ($this->correo ?? ''));
+
+        return $contacto !== '' ? $contacto : null;
     }
 
     public function getDireccionEfectiva()

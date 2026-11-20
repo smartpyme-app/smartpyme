@@ -2,23 +2,29 @@
 
 namespace App\Services\Inventario;
 
+use App\Constants\ConsignaMovimientoTipoConstants;
 use App\Constants\OrigenStockVentaConstants;
+use App\Models\Admin\Empresa;
+use App\Models\Inventario\ConsignaMovimiento;
 use App\Models\Compras\Detalle as DetalleCompra;
 use App\Models\Compras\Compra;
 use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Lote;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\ProductoPresentacion;
 use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Services\Inventario\ConversionInventarioService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 
 class ConsignaDisponibleService
 {
     /**
-     * Pool virtual de compras en consigna (proveedor) menos ventas que descontaron de ese pool,
-     * neto de unidades ya liquidadas (convertidas a compra propia).
-     * El inventario físico sigue siendo uno solo; esto solo rastrea el origen contable.
+     * Unidades que aún se pueden vender con origen "consigna (compra)".
+     * La liquidación al proveedor no devuelve unidades al pool; solo salda la deuda.
+     *
+     * @param float $liquidado conservado en la firma por compatibilidad; no altera el pool vendible
      */
     public static function calcularDisponibleDesdeComponentes(
         float $entradaAbierta,
@@ -26,14 +32,20 @@ class ConsignaDisponibleService
         float $liquidado,
         float $stockFisico
     ): float {
-        $salidaEfectiva = max(0, $ventasConsigna - $liquidado);
-        $disponible = max(0, $entradaAbierta - $salidaEfectiva);
+        unset($liquidado);
+        $disponible = max(0, $entradaAbierta - $ventasConsigna);
 
         return min($disponible, $stockFisico);
     }
 
     public function calcularDisponible(int $idProducto, int $idBodega, ?int $excluirVentaId = null): float
     {
+        $idEmpresa = (int) (Producto::query()->where('id', $idProducto)->value('id_empresa') ?? 0);
+        $empresa = $idEmpresa > 0 ? Empresa::query()->find($idEmpresa) : null;
+        if ($empresa?->isModuloConsignacionesLedgerActivo()) {
+            return $this->calcularDisponibleProveedorDesdeLedger($idEmpresa, $idProducto, $idBodega);
+        }
+
         $entrada = $this->sumEntradaComprasConsigna($idProducto, $idBodega);
         $salida = $this->sumSalidaVentasDesdeConsignaCompra($idProducto, $idBodega, $excluirVentaId);
         $liquidado = $this->sumLiquidadoComprasConsigna($idProducto, $idBodega);
@@ -60,6 +72,31 @@ class ConsignaDisponibleService
             'stock_normal' => round(max(0, $stockFisico - $consignaDisponible), 4),
             'tiene_consigna_compra' => $entrada > 0,
         ];
+    }
+
+    /** Stock propio para kardex físico (excluye pool consigna compra en bodega/lote). */
+    public function stockPropioParaKardex(int $idProducto, int $idBodega, ?int $loteId = null): float
+    {
+        $idEmpresa = (int) (Producto::query()->where('id', $idProducto)->value('id_empresa') ?? 0);
+        $empresa = $idEmpresa > 0 ? Empresa::query()->find($idEmpresa) : null;
+        if (! $empresa?->isModuloConsignacionesLedgerActivo()) {
+            if ($loteId) {
+                return (float) (Lote::query()->find($loteId)?->stock ?? 0);
+            }
+
+            return $this->obtenerStockFisico($idProducto, $idBodega);
+        }
+
+        if ($loteId) {
+            $fisico = (float) (Lote::query()->find($loteId)?->stock ?? 0);
+            $pool = $this->calcularDisponibleProveedorDesdeLedger($idEmpresa, $idProducto, $idBodega, $loteId);
+
+            return max(0.0, round($fisico - $pool, 4));
+        }
+
+        $resumen = $this->obtenerResumenStock($idProducto, $idBodega);
+
+        return (float) $resumen['stock_normal'];
     }
 
     public function calcularDisponibleAgregadoProducto(int $idProducto, ?int $excluirVentaId = null): float
@@ -206,7 +243,32 @@ class ConsignaDisponibleService
 
     public function cantidadVendidaDesdeConsignaCompra(int $idProducto, int $idBodega, ?int $excluirVentaId = null): float
     {
-        return $this->sumSalidaVentasDesdeConsignaCompra($idProducto, $idBodega, $excluirVentaId);
+        return $this->cantidadPendienteLiquidarConsignaCompra($idProducto, $idBodega, $excluirVentaId);
+    }
+
+    public function cantidadPendienteLiquidarConsignaCompra(int $idProducto, int $idBodega, ?int $excluirVentaId = null): float
+    {
+        $vendido = $this->sumSalidaVentasDesdeConsignaCompra($idProducto, $idBodega, $excluirVentaId);
+        $liquidado = $this->sumLiquidadoConsignaCompra($idProducto, $idBodega);
+
+        return max(0.0, round($vendido - $liquidado, 4));
+    }
+
+    private function sumLiquidadoConsignaCompra(int $idProducto, int $idBodega): float
+    {
+        $idEmpresa = (int) (Producto::query()->where('id', $idProducto)->value('id_empresa') ?? 0);
+        $empresa = $idEmpresa > 0 ? Empresa::query()->find($idEmpresa) : null;
+        if ($empresa?->isModuloConsignacionesLedgerActivo()) {
+            return (float) ConsignaMovimiento::query()
+                ->where('id_empresa', $idEmpresa)
+                ->where('id_producto', $idProducto)
+                ->where('id_bodega', $idBodega)
+                ->where('tipo', ConsignaMovimientoTipoConstants::LIQUIDACION_PROVEEDOR)
+                ->get(['cantidad'])
+                ->sum(fn ($m) => abs((float) $m->cantidad));
+        }
+
+        return $this->sumLiquidadoComprasConsigna($idProducto, $idBodega);
     }
 
     /**
@@ -263,11 +325,37 @@ class ConsignaDisponibleService
             $ventas[$ventaId]['cantidad'] += $cantidadBase;
         }
 
-        return array_values(array_map(function (array $row) {
+        $filas = array_values(array_map(function (array $row) {
             $row['cantidad'] = round($row['cantidad'], 4);
 
             return $row;
         }, $ventas));
+
+        $pendiente = $this->cantidadPendienteLiquidarConsignaCompra($idProducto, $idBodega, $excluirVentaId);
+        if ($pendiente <= 0 || $filas === []) {
+            return [];
+        }
+
+        usort($filas, function (array $a, array $b) {
+            return strcmp((string) ($a['fecha'] ?? ''), (string) ($b['fecha'] ?? ''));
+        });
+
+        $restante = $pendiente;
+        $out = [];
+        foreach ($filas as $fila) {
+            if ($restante <= 0) {
+                break;
+            }
+            $asignado = min((float) $fila['cantidad'], $restante);
+            if ($asignado <= 0) {
+                continue;
+            }
+            $fila['cantidad'] = round($asignado, 4);
+            $out[] = $fila;
+            $restante = round($restante - $asignado, 4);
+        }
+
+        return $out;
     }
 
     /**
@@ -336,11 +424,103 @@ class ConsignaDisponibleService
 
     private function obtenerStockFisico(int $idProducto, int $idBodega): float
     {
+        $producto = Producto::query()->find($idProducto);
+        if (! $producto) {
+            return 0.0;
+        }
+
+        $empresa = $producto->id_empresa
+            ? Empresa::query()->find((int) $producto->id_empresa)
+            : null;
+
+        $desdeLotes = StockDisponibleService::obtenerParaVenta($producto, $idBodega, $empresa);
+        if ($desdeLotes !== null) {
+            return (float) $desdeLotes;
+        }
+
         $inventario = Inventario::query()
             ->where('id_producto', $idProducto)
             ->where('id_bodega', $idBodega)
             ->first();
 
-        return $inventario ? (float) $inventario->stock : 0;
+        return $inventario ? (float) $inventario->stock : 0.0;
+    }
+
+    /**
+     * Fase 1: solo diagnóstico en debug; no altera el pool usado en facturación.
+     */
+    public function assertConsistenteConLedger(int $idEmpresa, int $idProducto, int $idBodega, float $tolerance = 0.01): bool
+    {
+        if (! config('app.debug')) {
+            return true;
+        }
+
+        $empresa = Empresa::query()->find($idEmpresa);
+        if (! $empresa?->isModuloConsignacionesLedgerActivo()) {
+            return true;
+        }
+
+        $legacy = $this->calcularDisponible($idProducto, $idBodega);
+        $desdeLedger = $this->calcularDisponibleProveedorDesdeLedger($idEmpresa, $idProducto, $idBodega);
+
+        if (abs($legacy - $desdeLedger) <= $tolerance) {
+            return true;
+        }
+
+        Log::warning('ConsignaDisponible diverge from consigna_movimientos ledger', [
+            'id_empresa' => $idEmpresa,
+            'id_producto' => $idProducto,
+            'id_bodega' => $idBodega,
+            'legacy' => $legacy,
+            'ledger' => $desdeLedger,
+        ]);
+
+        return false;
+    }
+
+    // ponytail: O(n) scan por producto/bodega; upgrade: agregados SQL por tipo en ConsignaMovimientoService
+    public function calcularDisponibleProveedorDesdeLedger(
+        int $idEmpresa,
+        int $idProducto,
+        int $idBodega,
+        ?int $loteId = null
+    ): float {
+        $entrada = 0.0;
+        $ventasConsigna = 0.0;
+        $liquidado = 0.0;
+
+        $movimientos = ConsignaMovimiento::query()
+            ->where('id_empresa', $idEmpresa)
+            ->where('id_producto', $idProducto)
+            ->where('id_bodega', $idBodega)
+            ->when($loteId, fn ($q) => $q->where('lote_id', $loteId))
+            ->get(['tipo', 'cantidad']);
+
+        foreach ($movimientos as $movimiento) {
+            $cantidad = (float) $movimiento->cantidad;
+            switch ($movimiento->tipo) {
+                case ConsignaMovimientoTipoConstants::ENTRADA_PROVEEDOR:
+                    $entrada += $cantidad;
+                    break;
+                case ConsignaMovimientoTipoConstants::VENTA_REGULAR_CONSIGNA_PROVEEDOR:
+                case ConsignaMovimientoTipoConstants::ENTREGA_CONSIGNA_PROVEEDOR:
+                    $ventasConsigna += abs($cantidad);
+                    break;
+                case ConsignaMovimientoTipoConstants::LIQUIDACION_PROVEEDOR:
+                    $liquidado += abs($cantidad);
+                    break;
+                case ConsignaMovimientoTipoConstants::DEVOLUCION_PROVEEDOR:
+                    $entrada += $cantidad;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        $stockFisico = $loteId
+            ? (float) (Lote::query()->find($loteId)?->stock ?? 0)
+            : $this->obtenerStockFisico($idProducto, $idBodega);
+
+        return self::calcularDisponibleDesdeComponentes($entrada, $ventasConsigna, $liquidado, $stockFisico);
     }
 }
