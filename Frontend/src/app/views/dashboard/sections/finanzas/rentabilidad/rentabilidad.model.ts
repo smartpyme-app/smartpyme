@@ -123,6 +123,7 @@ export interface RentabilidadClienteComparacion100 {
 }
 
 export interface RentabilidadClienteFactura {
+  id?: number;
   codigo: string;
   fecha: string;
   monto: number;

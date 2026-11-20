@@ -1186,15 +1186,28 @@
             </div>
             @if (clienteDetalle(cli).facturas.length) {
               <div class="rent-cli-facturas-tabla">
-                <div class="rent-cli-facturas-h">Factura</div>
-                <div class="rent-cli-facturas-h">Vence</div>
-                <div class="rent-cli-facturas-h rent-cli-facturas-num">Monto</div>
-                <div class="rent-cli-facturas-h rent-cli-facturas-num">Días vencimiento</div>
+                <div class="rent-cli-facturas-head">
+                  <div>Factura</div>
+                  <div>Vence</div>
+                  <div class="rent-cli-facturas-num">Monto</div>
+                  <div class="rent-cli-facturas-num">Días vencimiento</div>
+                </div>
                 @for (fac of clienteDetalle(cli).facturas; track fac.codigo) {
-                  <div>{{ fac.codigo }}</div>
-                  <div class="rent-cli-vence">{{ fac.fecha }}</div>
-                  <div class="rent-cli-facturas-num">{{ formatMonto(fac.monto) }}</div>
-                  <div class="rent-cli-facturas-num" [class.rent-text-neg]="fac.notaAlerta">{{ fac.nota }}</div>
+                  @if (fac.id) {
+                    <a class="rent-cli-factura-fila" [href]="'/venta/' + fac.id" target="_blank" rel="noopener">
+                      <span>{{ fac.codigo }}</span>
+                      <span class="rent-cli-vence">{{ fac.fecha }}</span>
+                      <span class="rent-cli-facturas-num">{{ formatMonto(fac.monto) }}</span>
+                      <span class="rent-cli-facturas-num" [class.rent-text-neg]="fac.notaAlerta">{{ fac.nota }}</span>
+                    </a>
+                  } @else {
+                    <div class="rent-cli-factura-fila">
+                      <span>{{ fac.codigo }}</span>
+                      <span class="rent-cli-vence">{{ fac.fecha }}</span>
+                      <span class="rent-cli-facturas-num">{{ formatMonto(fac.monto) }}</span>
+                      <span class="rent-cli-facturas-num" [class.rent-text-neg]="fac.notaAlerta">{{ fac.nota }}</span>
+                    </div>
+                  }
                 }
               </div>
             } @else {
