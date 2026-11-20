@@ -55,10 +55,15 @@ class ComprasController extends Controller
             $columns[$dteIndex] = DB::raw("IF(COALESCE(compras.dte_s3_key,'') <> '', NULL, compras.dte) as dte");
         }
 
+        $relations = ['proveedor', 'usuario', 'sucursal', 'proyecto'];
+        if ($request->has('es_retaceo')) {
+            $relations[] = 'retaceo';
+        }
+
         $compras = ComprasListQuery::apply(Compra::select($columns), $request)
                         // Sin 'empresa': era la misma en todas las filas y nadie la usa en el listado
                         // (los DTE recargan la compra con su empresa en el servidor).
-                        ->with(['proveedor', 'usuario', 'sucursal', 'proyecto'])
+                        ->with($relations)
                         ->withSum(['abonos' => function ($query) {
                             $query->where('estado', 'Confirmado');
                         }], 'total')
