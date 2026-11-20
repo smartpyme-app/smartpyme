@@ -9,6 +9,9 @@ use Sentry\Laravel\Tracing\Middleware as SentryVendorTracingMiddleware;
 use App\Services\ContextService;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
+use Illuminate\Database\Events\MigrationsStarted;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use App\Models\Inventario\Inventario;
@@ -59,6 +62,20 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->ensureOpenSslCliOnPathWindows();
+
+        // En producción bloquea migrate:fresh, migrate:refresh, migrate:reset,
+        // migrate:rollback y db:wipe (borran tablas o datos de clientes).
+        DB::prohibitDestructiveCommands($this->app->isProduction());
+
+        // Una migración que altera una tabla en uso (p. ej. ALTER TABLE ventas) espera a que
+        // terminen las consultas abiertas y, mientras espera, bloquea a TODAS las nuevas
+        // (en ago/oct hubo ventas detenidas 4-6 minutos). Si en 15 s no consigue la tabla,
+        // la migración falla sin efectos y se vuelve a correr en un momento con menos uso.
+        Event::listen(MigrationsStarted::class, function () {
+            if (in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+                DB::statement('SET SESSION lock_wait_timeout = 15');
+            }
+        });
 
         // Registrar el observer de Inventario
         Cliente::observe(ClienteNivelObserver::class);

@@ -1,75 +1,30 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
 
+/**
+ * NEUTRALIZADA (2026-11): no hace nada a propósito.
+ *
+ * La versión original fusionaba y BORRABA filas duplicadas de `inventario`
+ * (producto + bodega) y luego creaba un índice único. Ejecutada por accidente
+ * en producción con `php artisan migrate` eliminaba stock de clientes sin
+ * respaldo, y el índice único hacía fallar cualquier inserción que hoy
+ * genere duplicados.
+ *
+ * Se deja vacía para que `migrate` la marque como ejecutada y no bloquee
+ * las migraciones siguientes. Si algún día se quieren eliminar duplicados,
+ * hacerlo con un script SQL revisado (respaldo + verificación + rollback),
+ * no con una migración. El código original está en el historial de git.
+ */
 class AddUniqueInventarioProductoBodegaAndRemoveDuplicates extends Migration
 {
-    /**
-     * Evita duplicados (producto + bodega): elimina filas duplicadas y añade índice único.
-     */
     public function up()
     {
-        $tableName = 'inventario';
-
-        if (!Schema::hasTable($tableName)) {
-            return;
-        }
-
-        // 1) Fusionar duplicados: sumar stock en la fila que se conserva (menor id) y eliminar el resto
-        $duplicates = DB::table($tableName)
-            ->select('id_producto', 'id_bodega')
-            ->groupBy('id_producto', 'id_bodega')
-            ->havingRaw('COUNT(*) > 1')
-            ->get();
-
-        foreach ($duplicates as $dup) {
-            $totalStock = DB::table($tableName)
-                ->where('id_producto', $dup->id_producto)
-                ->where('id_bodega', $dup->id_bodega)
-                ->sum('stock');
-
-            $keepId = DB::table($tableName)
-                ->where('id_producto', $dup->id_producto)
-                ->where('id_bodega', $dup->id_bodega)
-                ->orderBy('id')
-                ->value('id');
-
-            DB::table($tableName)
-                ->where('id', $keepId)
-                ->update(['stock' => $totalStock]);
-
-            DB::table($tableName)
-                ->where('id_producto', $dup->id_producto)
-                ->where('id_bodega', $dup->id_bodega)
-                ->where('id', '!=', $keepId)
-                ->delete();
-        }
-
-        // 2) Sustituir índice por único (eliminar el índice normal si existe)
-        if (Schema::hasTable($tableName)) {
-            Schema::table($tableName, function (Blueprint $table) {
-                try {
-                    $table->dropIndex('idx_inventarios_producto_bodega');
-                } catch (\Throwable $e) {
-                    // El índice puede no existir en algunas instalaciones
-                }
-                $table->unique(['id_producto', 'id_bodega'], 'inventario_producto_bodega_unique');
-            });
-        }
+        // Intencionalmente vacío. Ver comentario de la clase.
     }
 
     public function down()
     {
-        $tableName = 'inventario';
-        if (!Schema::hasTable($tableName)) {
-            return;
-        }
-        Schema::table($tableName, function (Blueprint $table) {
-            $table->dropUnique('inventario_producto_bodega_unique');
-            $table->index(['id_producto', 'id_bodega'], 'idx_inventarios_producto_bodega');
-        });
+        // Intencionalmente vacío.
     }
 }
