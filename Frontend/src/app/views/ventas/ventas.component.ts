@@ -1533,6 +1533,17 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       }
     };
 
+    // Siempre recargar venta con sello MH (SV): el listado no trae dte_invalidacion (SPT-688).
+    if (!this.esFeCostaRica() && venta.sello_mh) {
+      this.apiService.read('venta/', venta.id)
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (v: any) => abrir(v),
+          error: (e) => this.alertService.error(e),
+        });
+      return;
+    }
+
     if ((venta.dte_en_s3 || venta.sello_mh) && !venta.dte) {
       this.apiService.read('venta/', venta.id)
         .pipe(this.untilDestroyed())
