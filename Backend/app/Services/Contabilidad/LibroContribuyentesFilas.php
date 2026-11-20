@@ -4,6 +4,7 @@ namespace App\Services\Contabilidad;
 
 use App\Exports\Contabilidad\Honduras\LibroContribuyentesExport;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
+use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Venta;
 use App\Support\NombreComercial;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
@@ -310,7 +311,7 @@ class LibroContribuyentesFilas
         }
 
         if (! empty($row->id_cliente)) {
-            $venta->setRelation('cliente', (object) [
+            $venta->setRelation('cliente', (new Cliente())->setRawAttributes([
                 'ncr' => $row->cliente_ncr ?? null,
                 'nit' => $row->cliente_nit ?? null,
                 'nombre' => $row->cliente_nombre ?? null,
@@ -318,7 +319,7 @@ class LibroContribuyentesFilas
                 'nombre_empresa' => $row->cliente_nombre_empresa ?? null,
                 'nombre_comercial' => $row->cliente_nombre_comercial ?? null,
                 'tipo' => $row->cliente_tipo ?? null,
-            ]);
+            ], true));
         }
 
         return $venta;

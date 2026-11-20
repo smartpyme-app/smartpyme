@@ -2,14 +2,14 @@
 
 namespace App\Exports;
 
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Inventario\Paquete;
 
-class PaquetesExport implements FromCollection, WithHeadings, WithMapping
+class PaquetesExport implements FromQuery, WithHeadings, WithMapping
 {
     /**
     * @return \Illuminate\Support\Collection
@@ -46,7 +46,7 @@ class PaquetesExport implements FromCollection, WithHeadings, WithMapping
             $fields = [
               $row->fecha,
               $row->nombre_cliente,
-              $row->asesor() ? $row->asesor()->pluck('codigo')->first() : '',
+              $row->asesor?->codigo,
               $row->wr,
               $row->num_seguimiento,
               $row->num_guia,
@@ -63,7 +63,7 @@ class PaquetesExport implements FromCollection, WithHeadings, WithMapping
         return $fields;
     }
 
-    public function collection()
+    public function query()
     {
         $request = $this->request;
         $user = Auth::user();
@@ -71,7 +71,7 @@ class PaquetesExport implements FromCollection, WithHeadings, WithMapping
             ? ($request->filled('id_sucursal') ? $request->id_sucursal : null)
             : $user->id_sucursal;
 
-        return Paquete::with('cliente', 'proveedor')
+        return Paquete::with('cliente', 'proveedor', 'asesor')
                                 ->when($sucursalFiltro, function ($q) use ($sucursalFiltro) {
                                     return $q->where('id_sucursal', $sucursalFiltro);
                                 })
@@ -113,6 +113,7 @@ class PaquetesExport implements FromCollection, WithHeadings, WithMapping
                                     $q->where('estado', $request->estado);
                                 })
                                 ->orderBy($request->orden ? $request->orden : 'nombre', $request->direccion ? $request->direccion : 'desc')
-                    ->get();
+                                // Desempate estable: la lectura por partes pagina con offset.
+                                ->orderBy('paquetes.id');
     }
 }
