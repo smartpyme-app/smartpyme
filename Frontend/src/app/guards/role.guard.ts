@@ -42,7 +42,10 @@ export class RoleGuard  {
             'super_admin',      // ROL_SUPER_ADMIN
             'usuario_contador',   // ROL_CONTADOR_SUPERIOR
             'admin',            // ROL_ADMIN
-            'auxiliar_contable' // ROL_CONTADOR_AUXILIAR
+            'auxiliar_contable', // ROL_CONTADOR_AUXILIAR
+            'gerente_ventas',
+            'gerente_compras',
+            'gerente_operaciones',
         ].includes(userRole);
     }
 

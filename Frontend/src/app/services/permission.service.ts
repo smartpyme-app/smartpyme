@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
 import { HttpService } from '@services/http.service';
+import { esRolGerente } from '@shared/utils/gerente-roles.util';
 
 export interface UserPermissions {
   role: string;
@@ -33,6 +34,34 @@ export class PermissionService {
 
   formatRoleName(name: string): string {
     return name.replace(/_/g, ' ').replace(/\b\w/g, (char: string) => char.toUpperCase());
+  }
+
+  /** Gerente compras/ventas/operaciones: menú principal y AdminGuard (no es super_admin). */
+  isGerenteRole(): boolean {
+    const stored = localStorage.getItem('SP_user_permissions');
+    let slug: string | null = null;
+    if (stored) {
+      try {
+        const role = this.parseCacheado(stored).role;
+        if (typeof role === 'string' && role) {
+          slug = role;
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    const usuario = this.getAuthUser();
+    if (esRolGerente(slug, usuario?.tipo)) {
+      return true;
+    }
+    const roles = usuario?.roles;
+    if (Array.isArray(roles)) {
+      return roles.some((r: { name?: string } | string) => {
+        const name = typeof r === 'string' ? r : r?.name;
+        return esRolGerente(name, null);
+      });
+    }
+    return false;
   }
 
   getDisplayRoleName(): string {
@@ -211,6 +240,10 @@ export class PermissionService {
       return true;
     }
 
+    if (this.isGerenteRole()) {
+      return true;
+    }
+
     const stored = localStorage.getItem('SP_user_permissions');
     if (!stored) {
       return false;
@@ -318,6 +351,9 @@ export class PermissionService {
   }
 
   isAdminRole(): boolean {
+    if (this.isGerenteRole()) {
+      return true;
+    }
     let user = localStorage.getItem('SP_user_permissions');
     if (user) {
       let role = this.parseCacheado(user).role;
@@ -347,6 +383,20 @@ export class PermissionService {
       return role === 'usuario_citas';
     }
     return false;
+  }
+
+  /** Menú Inteligencia de negocios (/reportes): roles permitidos + permiso ver. */
+  puedeVerInteligenciaNegociosMenu(): boolean {
+    if (!this.hasPermission('inteligencia_negocios.ver')) {
+      return false;
+    }
+    return (
+      this.validateRole('admin', true) ||
+      this.validateRole('super_admin', true) ||
+      this.validateRole('usuario_contador', true) ||
+      this.validateRole('contador_superior', true) ||
+      this.isGerenteRole()
+    );
   }
 
   validateRole(roleToCheck: string, equals: boolean = true): boolean {

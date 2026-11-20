@@ -203,6 +203,7 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_VENTAS.formas_pago.eliminar'),
             config('permissions.PERMISSION_VENTAS.descuentos.aplicar'),
             config('permissions.PERMISSION_VENTAS.descuentos.autorizar'),
+            config('permissions.PERMISSION_INTELIGENCIA_NEGOCIOS.ver'),
         ]);
 
         // Usuario Supervisor --ROL_USUARIO_SUPERVISOR
@@ -323,6 +324,7 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_COMPRAS.editar'),
             config('permissions.PERMISSION_GASTOS.ver'),
             config('permissions.PERMISSION_GASTOS.editar'),
+            config('permissions.PERMISSION_INTELIGENCIA_NEGOCIOS.ver'),
         ]);
 
         // Gerente Compras --ROL_GERENTE_COMPRAS
@@ -349,6 +351,7 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_COMPRAS.retaceo.crear'),
             config('permissions.PERMISSION_COMPRAS.retaceo.editar'),
             config('permissions.PERMISSION_COMPRAS.retaceo.eliminar'),
+            config('permissions.PERMISSION_INTELIGENCIA_NEGOCIOS.ver'),
         ]);
 
         // Usuario Regular --ROL_USUARIO
