@@ -5,44 +5,90 @@
   </span>
   <span class="pl-gastos-leyenda__item">
     <span class="pl-gastos-tick" aria-hidden="true"></span>
-    {{ comparacionEtiqueta }}
+    {{ etiquetaComparacion() }}
   </span>
 </div>
 
 @if (data.filas.length === 0) {
   <p class="sf-note mb-0">Sin datos de estructura de gastos para este periodo.</p>
 } @else {
-<div class="pl-gastos-list">
-  @for (fila of data.filas; track fila.concepto) {
-    <div class="pl-gastos-row">
-      <div class="pl-gastos-label">{{ fila.concepto }}</div>
-      <div class="pl-gastos-bar-wrap">
-        <div class="sf-bar pl-gastos-bar-track" aria-hidden="true">
-          <span class="sf-bar__fill" [style.width.%]="anchoBarra(fila.pctMes)"></span>
-          <span class="pl-gastos-bar-marker" [style.left.%]="anchoBarra(fila.promedio6m)"></span>
+  <div class="pl-gastos-list">
+    @for (fila of data.filas; track fila.concepto) {
+      <div class="pl-gastos-item">
+        <button
+          type="button"
+          class="pl-gastos-row"
+          [class.is-open]="modal?.concepto === fila.concepto"
+          [attr.aria-expanded]="modal?.concepto === fila.concepto"
+          (click)="abrir(fila)">
+          <div class="pl-gastos-label">{{ fila.concepto }}</div>
+          <div class="pl-gastos-bar-wrap">
+            <div class="sf-bar pl-gastos-bar-track" aria-hidden="true">
+              <span class="sf-bar__fill" [style.width.%]="anchoBarra(fila.pctMes)"></span>
+              <span class="pl-gastos-bar-marker" [style.left.%]="anchoBarra(fila.pctComparacion)"></span>
+            </div>
+          </div>
+          <div class="pl-gastos-pct">{{ formatoPct(fila.pctMes) }}</div>
+          <div class="pl-gastos-ref">{{ formatoPct(fila.pctComparacion) }}</div>
+        </button>
+      </div>
+    }
+  </div>
+}
+
+@if (modal) {
+  <div class="pl-prov-overlay" (click)="cerrar()" (keydown.escape)="cerrar()" tabindex="-1">
+    <div
+      class="pl-prov-sheet"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="'Proveedores de ' + modal.concepto"
+      (click)="$event.stopPropagation()">
+      <header class="pl-prov-head">
+        <div>
+          <p class="pl-prov-kicker">{{ etiquetaMes() }}</p>
+          <h2 class="pl-prov-titulo">{{ modal.concepto }}</h2>
+          <p class="pl-prov-sub">
+            {{ formatoPct(modal.pctMes) }} de las ventas
+            · vs {{ etiquetaComparacion() }} {{ formatoPct(modal.pctComparacion) }}
+          </p>
+        </div>
+        <button type="button" class="pl-prov-cerrar" aria-label="Cerrar" (click)="cerrar()">×</button>
+      </header>
+
+      <div class="pl-prov-resumen">
+        <div>
+          <span>Monto del mes</span>
+          <strong>{{ formatMonto(totalRubro()) }}</strong>
+        </div>
+        <div>
+          <span>Proveedores</span>
+          <strong>{{ totalProveedores() }}</strong>
         </div>
       </div>
-      <div class="pl-gastos-pct">{{ formatoPct(fila.pctMes) }}</div>
-      <div
-        class="pl-gastos-delta"
-        [class.pl-delta-up]="fila.deltaPts > 0"
-        [class.pl-delta-down]="fila.deltaPts < 0"
-        [class.pl-delta-flat]="fila.deltaPts === 0">
-        {{ formatoDelta(fila.deltaPts) }} pts
-      </div>
-      <div class="pl-gastos-ref">{{ formatoPct(fila.promedio6m) }}</div>
-      <div class="pl-gastos-spark">
-        <svg class="pl-gastos-sparkline" viewBox="0 0 76 30" preserveAspectRatio="none" aria-hidden="true">
-          <path
-            [attr.d]="sparklinePath(fila)"
-            fill="none"
-            stroke="#6a6a6a"
-            stroke-width="1.75"
-            stroke-linecap="round"
-            stroke-linejoin="round" />
-        </svg>
+
+      <div class="pl-prov-cuerpo">
+        @if (cargando) {
+          <p class="pl-prov-estado">Cargando proveedores…</p>
+        } @else if (error) {
+          <p class="pl-prov-estado">{{ error }}</p>
+        } @else if (!proveedores.length) {
+          <p class="pl-prov-estado">Sin egresos de proveedores de este tipo en el mes.</p>
+        } @else {
+          <ul class="pl-prov-lista">
+            @for (prov of proveedores; track $index) {
+              <li class="pl-prov-fila" [class.pl-prov-fila--resto]="esCostoVendido(prov.nombre)">
+                <div class="pl-prov-nombre">{{ prov.nombre }}</div>
+                <div class="pl-prov-barra" aria-hidden="true">
+                  <span [style.width.%]="anchoProveedor(prov.monto)"></span>
+                </div>
+                <div class="pl-prov-monto">{{ formatMonto(prov.monto) }}</div>
+                <div class="pl-prov-pct">{{ formatoPct(prov.pct) }}</div>
+              </li>
+            }
+          </ul>
+        }
       </div>
     </div>
-  }
-</div>
+  </div>
 }

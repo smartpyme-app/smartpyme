@@ -8,6 +8,7 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ApiService } from '@services/api.service';
 import { PlEstadoResultadosFila, PlGastosPctVentasMock, PlVistaEstadoId } from './pl-gerencial.model';
 import {
@@ -29,7 +30,7 @@ const PL_GASTOS_PCT_VACIO: PlGastosPctVentasMock = { filas: [] };
   templateUrl: './pl-gerencial.component.html',
   styleUrls: ['./pl-gerencial.component.css'],
   standalone: true,
-  imports: [CommonModule, PlGastosPctVentasComponent],
+  imports: [CommonModule, TooltipModule, PlGastosPctVentasComponent],
 })
 export class PlGerencialComponent implements OnInit, OnChanges {
   private readonly api = inject(ApiService);
@@ -75,6 +76,7 @@ export class PlGerencialComponent implements OnInit, OnChanges {
     const seq = ++this.loadSeq;
     this.cargando = true;
     this.errorMensaje = null;
+    this.comparacionTitulo = '';
     this.cdr.markForCheck();
 
     this.plData
@@ -104,9 +106,8 @@ export class PlGerencialComponent implements OnInit, OnChanges {
           if (data.meta.periodoTitulo) {
             this.periodoTitulo = data.meta.periodoTitulo;
           }
-          if (data.meta.comparacionTitulo) {
-            this.comparacionTitulo = data.meta.comparacionTitulo;
-          }
+          // Título vs. solo del API: evita el flash de etiquetas del padre (hoy vs. periodo).
+          this.comparacionTitulo = (data.meta.comparacionTitulo || '').trim();
           if (data.meta.anioAcumulado) {
             this.anioAcumulado = data.meta.anioAcumulado;
           }
@@ -128,26 +129,41 @@ export class PlGerencialComponent implements OnInit, OnChanges {
     if (value === null || value === undefined) {
       return '—';
     }
-    return `${value}%`;
+    return `${Math.trunc(value)}%`;
   }
 
   formatVariacion(fila: PlEstadoResultadosFila): string {
     if (fila.vsAbs === 0 && fila.vsPct === 0) {
-      return '$0 (0%)';
+      return '$0';
     }
     const empresa = this.api.auth_user()?.empresa;
     const abs = formatEmpresaCurrencyInt(Math.abs(fila.vsAbs), empresa);
     const sign = fila.vsAbs > 0 ? '+' : fila.vsAbs < 0 ? '-' : '';
-    const pctSign = fila.vsPct > 0 ? '+' : '';
-    return `${sign}${abs} (${pctSign}${fila.vsPct}%)`;
+    return `${sign}${abs}`;
+  }
+
+  /** Porcentaje de variación (tooltip en columna vs.). */
+  tooltipVariacionPct(fila: PlEstadoResultadosFila): string {
+    const pct = fila.vsPct ?? 0;
+    if (Number.isNaN(pct)) {
+      return 'Variación % no disponible';
+    }
+    if (Math.abs(pct) < 0.005 && Math.abs(fila.vsAbs) > 0.005) {
+      return 'Variación %: no aplica (comparación en cero)';
+    }
+    const sign = pct > 0 ? '+' : pct < 0 ? '-' : '';
+    const abs = Math.abs(pct);
+    const cuerpo =
+      Math.abs(abs - Math.round(abs)) < 0.05 ? String(Math.round(abs)) : abs.toFixed(1);
+    return `Variación: ${sign}${cuerpo}%`;
   }
 
   variacionPositiva(fila: PlEstadoResultadosFila): boolean {
-    return fila.vsAbs > 0;
+    return fila.vsAbs > 0.005;
   }
 
   variacionNegativa(fila: PlEstadoResultadosFila): boolean {
-    return fila.vsAbs < 0;
+    return fila.vsAbs < -0.005;
   }
 
   estiloFila(fila: PlEstadoResultadosFila): PlEstadoResultadosFila['estilo'] {
@@ -166,7 +182,7 @@ export class PlGerencialComponent implements OnInit, OnChanges {
   /** Clases visuales del mock v4 (vista mes). */
   claseFilaMes(fila: PlEstadoResultadosFila): 'subtotal' | 'destacado' | 'normal' {
     const id = fila.lineId;
-    if (id === 'ventas_netas' || id === 'resultado_neto') {
+    if (id === 'resultado_neto') {
       return 'destacado';
     }
     if (id === 'utilidad_bruta' || id === 'utilidad_operativa') {
@@ -234,24 +250,6 @@ export class PlGerencialComponent implements OnInit, OnChanges {
     return `${this.anioAcumulado} (${base})`;
   }
 
-  /** Índice 0–11 del mes resaltado (mes anterior al hoy si el año coincide). */
-  indiceMesActivo(): number | null {
-    const hoy = new Date();
-    if (this.anioAcumulado !== hoy.getFullYear()) {
-      return null;
-    }
-    const ref = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
-    if (ref.getFullYear() !== this.anioAcumulado) {
-      return null;
-    }
-    return ref.getMonth();
-  }
-
-  esMesActivo(indice: number): boolean {
-    const activo = this.indiceMesActivo();
-    return activo != null && activo === indice;
-  }
-
   formatMontoAnual(value: number): string {
     const empresa = this.api.auth_user()?.empresa;
     const abs = formatEmpresaCurrencyInt(Math.abs(value), empresa);
@@ -265,7 +263,7 @@ export class PlGerencialComponent implements OnInit, OnChanges {
     if (value === null || value === undefined) {
       return '—';
     }
-    return `${value}%`;
+    return `${Math.trunc(value)}%`;
   }
 
   montoMesVista(row: PlFilaVistaAnual, indiceMes: number): number {

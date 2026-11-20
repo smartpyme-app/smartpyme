@@ -925,7 +925,6 @@ export class RentabilidadComponent implements OnInit, OnChanges {
         ...s,
         monto: Math.round(s.monto * f),
       })),
-      vendidoConDescuentoMonto: Math.round(base.vendidoConDescuentoMonto * f),
       clientes: base.clientes.map((c) => ({
         ...c,
         unidades: Math.round(c.unidades * f),
@@ -1270,26 +1269,43 @@ export class RentabilidadComponent implements OnInit, OnChanges {
     const lo = min ?? Math.min(...values);
     const hi = max ?? Math.max(...values);
     const range = hi - lo || 1;
+    const yOf = (v: number) => h - 4 - ((v - lo) / range) * (h - 10);
+    if (values.length === 1) {
+      const y = yOf(values[0]).toFixed(1);
+      return `M 0,${y} L ${w},${y}`;
+    }
     const coords = values.map((v, i) => {
-      const x = values.length === 1 ? 0 : (i / (values.length - 1)) * w;
-      const y = h - 4 - ((v - lo) / range) * (h - 10);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
+      const x = (i / (values.length - 1)) * w;
+      return `${x.toFixed(1)},${yOf(v).toFixed(1)}`;
     });
     return `M ${coords.join(' L ')}`;
   }
 
-  precioCostoPaths(detalle: NonNullable<RentabilidadProductoTablaFila['detalle']>): {
+  precioCostoChart(detalle: NonNullable<RentabilidadProductoTablaFila['detalle']>): {
     precio: string;
     costo: string;
+    puntos: { left: number; ancho: number; label: string; precio: number; costo: number }[];
   } {
     const w = 280;
     const h = 120;
     const all = [...detalle.precioSerie, ...detalle.costoSerie];
+    if (!all.length) {
+      return { precio: '', costo: '', puntos: [] };
+    }
     const min = Math.min(...all) - 0.5;
     const max = Math.max(...all) + 0.5;
+    const n = detalle.precioSerie.length;
+    const puntos = detalle.precioCostoLabels.map((label, i) => ({
+      left: n <= 1 ? 50 : (i / (n - 1)) * 100,
+      ancho: n <= 1 ? 100 : 100 / (n - 1),
+      label,
+      precio: detalle.precioSerie[i] ?? 0,
+      costo: detalle.costoSerie[i] ?? 0,
+    }));
     return {
       precio: this.seriePath(detalle.precioSerie, w, h, min, max),
       costo: this.seriePath(detalle.costoSerie, w, h, min, max),
+      puntos,
     };
   }
 

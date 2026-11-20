@@ -65,7 +65,7 @@ function estiloFilaAnual(lineId: string): PlFilaVistaAnualEstilo {
   if (lineId === 'resultado_neto') {
     return 'resultado';
   }
-  if (lineId === 'ventas_netas' || lineId === 'utilidad_bruta' || lineId === 'utilidad_operativa') {
+  if (lineId === 'utilidad_bruta' || lineId === 'utilidad_operativa') {
     return 'subtotal';
   }
   return 'normal';

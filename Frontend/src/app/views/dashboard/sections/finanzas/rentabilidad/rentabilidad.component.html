@@ -91,7 +91,7 @@
             placeholder="Todos"
             autocomplete="off"
             role="combobox"
-            aria-label="Buscar producto"
+            aria-label="Buscar producto por nombre o código"
             [attr.aria-expanded]="productoListaAbierta"
             aria-autocomplete="list"
             (input)="escribirProducto($event)"
@@ -108,13 +108,18 @@
               </li>
               @for (p of productoSugerencias; track p.id) {
                 <li>
-                  <button type="button" (mousedown)="$event.preventDefault(); elegirProducto(p)">{{ p.nombre }}</button>
+                  <button type="button" (mousedown)="$event.preventDefault(); elegirProducto(p)">
+                    <span>{{ p.nombre }}</span>
+                    @if (p.codigo) {
+                      <span class="rent-producto-sugerencias__codigo">{{ p.codigo }}</span>
+                    }
+                  </button>
                 </li>
               }
               @if (productoBuscando) {
                 <li class="rent-producto-sugerencias__nota">Buscando…</li>
               } @else if (productoTexto.trim().length < 2) {
-                <li class="rent-producto-sugerencias__nota">Escribe al menos 2 letras</li>
+                <li class="rent-producto-sugerencias__nota">Escribe al menos 2 caracteres</li>
               } @else if (!productoSugerencias.length) {
                 <li class="rent-producto-sugerencias__nota">Sin coincidencias</li>
               }
@@ -1145,7 +1150,7 @@
           <div class="rent-prod-detalle-col">
             <div>
             <div class="rent-cli-seccion">
-              <h3 class="rent-bloque-titulo">De precio de lista a lo que le queda</h3>
+              <h3 class="rent-bloque-titulo">De precio de lista a la ganancia</h3>
             </div>
             <div class="rent-puente">
               <div class="rent-puente-row rent-cli-head">
@@ -1155,7 +1160,7 @@
                 <div>% ventas</div>
               </div>
               @for (paso of clienteDetalle(cli).puente; track paso.etiqueta) {
-                <div class="rent-puente-row" [class.rent-puente-row--cierre]="paso.etiqueta === 'Le queda'">
+                <div class="rent-puente-row">
                   <div class="rent-puente-label">{{ paso.etiqueta }}</div>
                   <div class="rent-puente-track" aria-hidden="true">
                     <span
@@ -1163,10 +1168,10 @@
                       [style.width.%]="anchoPuenteCliente(paso.pct, clienteDetalle(cli).puente)">
                     </span>
                   </div>
-                  <div class="rent-puente-monto" [class.rent-text-neg]="paso.monto < 0" [class.rent-text-pos]="paso.etiqueta === 'Le queda' && paso.monto > 0">
+                  <div class="rent-puente-monto" [class.rent-text-neg]="paso.monto < 0">
                     {{ formatMonto(paso.monto) }}
                   </div>
-                  <div class="rent-puente-pct" [class.rent-text-neg]="paso.pct < 0" [class.rent-text-pos]="paso.etiqueta === 'Le queda' && paso.pct > 0">{{ formatPct(paso.pct) }}</div>
+                  <div class="rent-puente-pct" [class.rent-text-neg]="paso.pct < 0">{{ formatPct(paso.pct) }}</div>
                 </div>
               }
             </div>
@@ -1180,20 +1185,18 @@
               }
             </div>
             @if (clienteDetalle(cli).facturas.length) {
-              <div class="rent-puente-row rent-cli-head rent-cli-facturas">
-                <div>Factura</div>
-                <div>Vence</div>
-                <div>Monto</div>
-                <div>Atraso</div>
-              </div>
-              @for (fac of clienteDetalle(cli).facturas; track fac.codigo) {
-                <div class="rent-puente-row rent-cli-facturas">
-                  <div class="rent-puente-label">{{ fac.codigo }}</div>
+              <div class="rent-cli-facturas-tabla">
+                <div class="rent-cli-facturas-h">Factura</div>
+                <div class="rent-cli-facturas-h">Vence</div>
+                <div class="rent-cli-facturas-h rent-cli-facturas-num">Monto</div>
+                <div class="rent-cli-facturas-h rent-cli-facturas-num">Días vencimiento</div>
+                @for (fac of clienteDetalle(cli).facturas; track fac.codigo) {
+                  <div>{{ fac.codigo }}</div>
                   <div class="rent-cli-vence">{{ fac.fecha }}</div>
-                  <div class="rent-puente-monto">{{ formatMonto(fac.monto) }}</div>
-                  <div class="rent-puente-pct" [class.rent-text-neg]="fac.notaAlerta">{{ fac.nota }}</div>
-                </div>
-              }
+                  <div class="rent-cli-facturas-num">{{ formatMonto(fac.monto) }}</div>
+                  <div class="rent-cli-facturas-num" [class.rent-text-neg]="fac.notaAlerta">{{ fac.nota }}</div>
+                }
+              </div>
             } @else {
               <p class="rent-placeholder text-muted mb-0">Sin facturas pendientes.</p>
             }
@@ -1317,21 +1320,36 @@
           <div class="rent-prod-detalle-col">
             <h3 class="rent-bloque-titulo">Precio y costo por unidad — {{ etiquetaComparacionCorta() }} a {{ periodoTitulo }}</h3>
             <div class="rent-chart-wrap">
+              @if (precioCostoChart(productoDetalle(prod)); as graf) {
+              <div class="rent-chart-hover">
               <svg class="rent-chart" viewBox="0 0 280 120" preserveAspectRatio="none" aria-hidden="true">
-                <path class="rent-chart-precio" [attr.d]="precioCostoPaths(productoDetalle(prod)).precio" fill="none" stroke-width="2.5" stroke-linecap="round" />
-                <path class="rent-chart-costo" [attr.d]="precioCostoPaths(productoDetalle(prod)).costo" fill="none" stroke-width="2.5" stroke-linecap="round" />
+                <path class="rent-chart-precio" [attr.d]="graf.precio" fill="none" stroke-width="2.5" stroke-linecap="round" />
+                <path class="rent-chart-costo" [attr.d]="graf.costo" fill="none" stroke-width="2.5" stroke-linecap="round" />
               </svg>
+              @for (p of graf.puntos; track $index) {
+                <div class="rent-chart-hit" [style.left.%]="p.left" [style.width.%]="p.ancho">
+                  <div class="rent-chart-tip">
+                    <strong>{{ p.label }}</strong>
+                    <span>Precio {{ formatPrecio(p.precio) }}</span>
+                    <span>Costo {{ formatPrecio(p.costo) }}</span>
+                  </div>
+                </div>
+              }
+              </div>
+              }
               <div class="rent-chart-legend">
                 <span><span class="rent-legend-dot rent-legend-dot--precio"></span> Precio</span>
                 <span><span class="rent-legend-dot rent-legend-dot--costo"></span> Costo</span>
               </div>
               <div class="rent-chart-labels">
-                @for (label of productoDetalle(prod).precioCostoLabels; track label) {
+                @for (label of productoDetalle(prod).precioCostoLabels; track $index) {
                   <span>{{ label }}</span>
                 }
               </div>
             </div>
+          </div>
 
+          <div class="rent-prod-detalle-col">
             <h3 class="rent-bloque-titulo">Sucursales</h3>
             <div class="rent-barras">
               @for (suc of productoDetalle(prod).sucursales; track suc.etiqueta) {
@@ -1346,51 +1364,43 @@
               }
             </div>
           </div>
+        </div>
 
-          <div class="rent-prod-detalle-col">
-            <h3 class="rent-bloque-titulo">Clientes</h3>
-            @if (productoDetalle(prod).clientes.length) {
-            <table class="rent-mini rent-prod-clientes">
-              <thead>
+        <div class="rent-prod-clientes-bloque">
+          <h3 class="rent-bloque-titulo">Clientes</h3>
+          @if (productoDetalle(prod).clientes.length) {
+          <table class="rent-mini rent-prod-clientes">
+            <thead>
+              <tr>
+                <th scope="col">Cliente</th>
+                <th scope="col" class="rent-th-num">Unidades</th>
+                <th scope="col" class="rent-th-num">Precio</th>
+                <th scope="col" class="rent-th-num">Descuento</th>
+                <th scope="col" class="rent-th-num">Margen</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (cli of productoDetalle(prod).clientes; track cli.nombre) {
                 <tr>
-                  <th scope="col">Cliente</th>
-                  <th scope="col" class="rent-th-num">Unidades</th>
-                  <th scope="col" class="rent-th-num">Precio</th>
-                  <th scope="col" class="rent-th-num">Descuento</th>
-                  <th scope="col" class="rent-th-num">Margen</th>
+                  <td>{{ cli.nombre }}</td>
+                  <td class="rent-th-num">{{ formatUnidades(cli.unidades) }}</td>
+                  <td class="rent-th-num">{{ formatPrecio(cli.precio) }}</td>
+                  <td class="rent-th-num" [class.rent-text-neg]="cli.descuentoPct !== null && cli.descuentoPct >= 8">
+                    {{ cli.descuentoPct === null ? '—' : formatPct(cli.descuentoPct, 0) }}
+                  </td>
+                  <td
+                    class="rent-th-num"
+                    [class.rent-text-neg]="cli.margenBajo"
+                    [class.rent-text-pos]="!cli.margenBajo">
+                    {{ formatPct(cli.margenPct) }}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                @for (cli of productoDetalle(prod).clientes; track cli.nombre) {
-                  <tr>
-                    <td>{{ cli.nombre }}</td>
-                    <td class="rent-th-num">{{ formatUnidades(cli.unidades) }}</td>
-                    <td class="rent-th-num">{{ formatPrecio(cli.precio) }}</td>
-                    <td class="rent-th-num" [class.rent-text-neg]="cli.descuentoPct !== null && cli.descuentoPct >= 8">
-                      {{ cli.descuentoPct === null ? '—' : formatPct(cli.descuentoPct, 0) }}
-                    </td>
-                    <td
-                      class="rent-th-num"
-                      [class.rent-text-neg]="cli.margenBajo"
-                      [class.rent-text-pos]="!cli.margenBajo">
-                      {{ formatPct(cli.margenPct) }}
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-            } @else {
-              <p class="rent-placeholder text-muted mb-0">Sin ventas en el período.</p>
-            }
-
-            @if (prod.ventas > 0) {
-            <div class="rent-descuento-card">
-              <div class="rent-descuento-titulo">Vendido con descuento</div>
-              <div class="rent-descuento-valor">{{ productoDetalle(prod).vendidoConDescuentoPct }}%</div>
-              <div class="rent-descuento-monto">({{ formatMonto(productoDetalle(prod).vendidoConDescuentoMonto) }})</div>
-            </div>
-            }
-          </div>
+              }
+            </tbody>
+          </table>
+          } @else {
+            <p class="rent-placeholder text-muted mb-0">Sin ventas en el período.</p>
+          }
         </div>
       </section>
     </section>
@@ -1488,10 +1498,10 @@
         </div>
 
         <div>
-          <h3 class="rent-bloque-titulo">Ventas por tipo de producto</h3>
+          <h3 class="rent-bloque-titulo">Ventas por categoría de productos</h3>
           @if (sucursal.detalle.productos.length) {
             <div class="rent-tipo-head">
-              <span>Tipo de producto</span>
+              <span>Categoría de productos</span>
               <span></span>
               <span>Ventas</span>
               <span>Margen</span>

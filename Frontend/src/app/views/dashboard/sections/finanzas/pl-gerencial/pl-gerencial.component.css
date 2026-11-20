@@ -4,9 +4,38 @@
   gap: var(--sf-gap, 14px);
 }
 
+.pl-col-num,
+.pl-estado-table th:not(.pl-col-concepto),
+.pl-estado-table td:not(.pl-col-concepto) {
+  text-align: right;
+}
+
 .pl-col-concepto {
   min-width: 14rem;
   text-align: left;
+}
+
+.pl-estado-table--mes {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.pl-estado-table--mes .pl-col-concepto {
+  width: 30%;
+}
+
+.pl-estado-table--anual {
+  table-layout: fixed;
+  width: max-content;
+  min-width: 100%;
+  /* ponytail: separate evita bleed de celdas bajo sticky con border-collapse */
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.pl-estado-table--anual .pl-col-concepto {
+  width: 14rem;
+  box-sizing: border-box;
 }
 
 .pl-concepto-indent {
@@ -31,7 +60,9 @@
 }
 
 .pl-col-mes {
+  width: 4.5rem;
   min-width: 4.5rem;
+  box-sizing: border-box;
   white-space: nowrap;
 }
 
@@ -45,7 +76,9 @@
 }
 
 .pl-col-total-anual {
+  width: 5.5rem;
   min-width: 5.5rem;
+  box-sizing: border-box;
   font-weight: 600;
 }
 
@@ -59,21 +92,79 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.pl-estado-scroll--anual {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
 .pl-col-sticky {
   position: sticky;
   left: 0;
   z-index: 2;
-  background: inherit;
-  box-shadow: 1px 0 0 var(--sf-bg, #f2f0f4);
+  background: var(--sf-card, #fff);
+  box-shadow: 4px 0 8px -2px rgba(26, 27, 31, 0.12);
 }
 
 .pl-estado-table--anual thead th.pl-col-sticky {
-  z-index: 3;
-  background: var(--sf-card, #fff) !important;
+  z-index: 4;
+  background: var(--sf-card, #fff);
+}
+
+.pl-estado-table--anual tbody td.pl-col-sticky {
+  background: var(--sf-card, #fff);
 }
 
 .pl-anual-row-margen td {
   font-size: 12px;
+}
+
+.pl-estado-table .sf-row--highlight td {
+  background: var(--sf-blue-tint, #ecf0ff);
+}
+
+.pl-estado-table .sf-row--highlight td.pl-col-sticky {
+  background: var(--sf-blue-tint, #ecf0ff) !important;
+  box-shadow: 4px 0 8px -2px rgba(26, 27, 31, 0.1);
+}
+
+.pl-col-variacion {
+  cursor: help;
+}
+
+.pl-variacion-valor {
+  display: inline-block;
+  outline: none;
+  vertical-align: middle;
+}
+
+/* ::ng-deep: ngx-bootstrap renderiza el tooltip fuera del componente */
+:host ::ng-deep .tooltip.pl-variacion-tooltip {
+  pointer-events: none;
+}
+
+:host ::ng-deep .tooltip.pl-variacion-tooltip .tooltip-inner {
+  max-width: 16rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pl-estado-table--mes td.pl-col-variacion.pl-col-variacion--pos {
+  color: var(--sf-good, #16a34a);
+  font-weight: 600;
+}
+
+.pl-estado-table--mes td.pl-col-variacion.pl-col-variacion--neg {
+  color: var(--sf-alert, #ba1a1a);
+  font-weight: 600;
+}
+
+.pl-estado-table .sf-row--highlight td.pl-col-variacion.pl-col-variacion--pos {
+  color: var(--sf-good, #16a34a);
+}
+
+.pl-estado-table .sf-row--highlight td.pl-col-variacion.pl-col-variacion--neg {
+  color: var(--sf-alert, #ba1a1a);
 }
 
 @media (max-width: 768px) {

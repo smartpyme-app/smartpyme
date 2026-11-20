@@ -23,7 +23,7 @@ const cards = kpisDesdeResumen(
 if (cards.length !== 4) throw new Error('deben ser 4 cards');
 if (cards[0].titulo !== 'Utilidad operativa · sep') throw new Error(cards[0].titulo);
 if (cards[0].sublinea !== '↓ -6.2% vs. sep 2025 · $2760') throw new Error(cards[0].sublinea);
-if (cards[1].sublinea !== '↓ -1.1 pts vs. sep 2025 · 7.9%') throw new Error(cards[1].sublinea);
+if (cards[1].sublinea !== '6.8% vs. sep 2025 7.9%') throw new Error(cards[1].sublinea);
 if (cards[2].valor !== '36.1%') throw new Error(cards[2].valor);
 if (cards[3].valor !== '1 de 3' || !cards[3].alerta) throw new Error(cards[3].valor);
 if (cards[3].sublinea !== 'San Miguel · -$140') throw new Error(cards[3].sublinea);

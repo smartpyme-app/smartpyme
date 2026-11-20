@@ -32,17 +32,13 @@
             </h3>
           </div>
         </header>
-        <div class="sf-table-wrap pl-estado-scroll">
+        <div class="sf-table-wrap pl-estado-scroll pl-estado-scroll--anual">
           <table class="sf-table sf-table--compact pl-estado-table pl-estado-table--anual">
             <thead>
               <tr>
                 <th scope="col" class="pl-col-concepto pl-col-sticky">Concepto</th>
-                @for (abr of mesesAbr; track abr; let idx = $index) {
-                  <th scope="col" class="pl-col-mes" [class.pl-col-mes-activo]="esMesActivo(idx)">
-                    {{ abr }}@if (esMesActivo(idx)) {
-                      <span class="pl-mes-activo-mark" aria-hidden="true">*</span>
-                    }
-                  </th>
+                @for (abr of mesesAbr; track abr) {
+                  <th scope="col" class="pl-col-mes">{{ abr }}</th>
                 }
                 <th scope="col" class="pl-col-total-anual">Total</th>
               </tr>
@@ -66,9 +62,7 @@
                   </td>
                   @if (row.estilo === 'margen') {
                     @for (idx of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]; track idx) {
-                      <td
-                        class="pl-col-mes pl-celda-margen"
-                        [class.pl-col-mes-activo]="esMesActivo(idx)">
+                      <td class="pl-col-mes pl-celda-margen">
                         {{ formatMargenAnual(row.margenMeses?.[idx]) }}
                       </td>
                     }
@@ -77,9 +71,7 @@
                     </td>
                   } @else {
                     @for (idx of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]; track idx) {
-                      <td
-                        class="pl-col-mes"
-                        [class.pl-col-mes-activo]="esMesActivo(idx)">
+                      <td class="pl-col-mes">
                         {{ formatMontoAnual(montoMesVista(row, idx)) }}
                       </td>
                     }
@@ -118,11 +110,11 @@
             <thead>
               <tr>
                 <th scope="col" class="pl-col-concepto">Concepto</th>
-                <th scope="col">{{ etiquetaColumnaMes() }}</th>
-                <th scope="col">% ventas</th>
-                <th scope="col">vs. {{ comparacionTitulo }}</th>
-                <th scope="col">Acum. {{ anioAcumulado }}</th>
-                <th scope="col">% ventas</th>
+                <th scope="col" class="pl-col-num">{{ etiquetaColumnaMes() }}</th>
+                <th scope="col" class="pl-col-num">% ventas</th>
+                <th scope="col" class="pl-col-num">vs. {{ comparacionTitulo || '…' }}</th>
+                <th scope="col" class="pl-col-num">Acum. {{ anioAcumulado }}</th>
+                <th scope="col" class="pl-col-num">% ventas</th>
               </tr>
             </thead>
             <tbody>
@@ -134,15 +126,27 @@
                     }
                     <span class="pl-concepto-text">{{ fila.concepto }}</span>
                   </td>
-                  <td>{{ formatMontoAnual(fila.mes) }}</td>
-                  <td class="pl-celda-pct">{{ formatPct(fila.pctVentasMes) }}</td>
+                  <td class="pl-col-num">{{ formatMontoAnual(fila.mes) }}</td>
+                  <td class="pl-col-num pl-celda-pct">{{ formatPct(fila.pctVentasMes) }}</td>
                   <td
-                    [class.sf-cell-pos]="variacionPositiva(fila)"
-                    [class.sf-cell-neg]="variacionNegativa(fila)">
-                    {{ formatVariacion(fila) }}
+                    class="pl-col-num pl-col-variacion"
+                    [class.pl-col-variacion--pos]="variacionPositiva(fila)"
+                    [class.pl-col-variacion--neg]="variacionNegativa(fila)">
+                    <span
+                      class="pl-variacion-valor"
+                      tabindex="0"
+                      [tooltip]="tooltipVariacionPct(fila)"
+                      tooltipClass="pl-variacion-tooltip"
+                      container="body"
+                      placement="top-end"
+                      triggers="hover focus"
+                      [adaptivePosition]="false"
+                      [delay]="0">
+                      {{ formatVariacion(fila) }}
+                    </span>
                   </td>
-                  <td class="sf-cell-strong">{{ formatMontoAnual(fila.acum) }}</td>
-                  <td class="pl-celda-pct">{{ formatPct(fila.pctVentasAcum) }}</td>
+                  <td class="pl-col-num sf-cell-strong">{{ formatMontoAnual(fila.acum) }}</td>
+                  <td class="pl-col-num pl-celda-pct">{{ formatPct(fila.pctVentasAcum) }}</td>
                 </tr>
               }
             </tbody>
@@ -151,25 +155,28 @@
       </section>
     }
 
-    <section class="sf-card">
-      <header class="sf-card-head">
-        <div class="sf-card-head__main">
-          <span class="sf-card-head__icon" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 20V5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-              <path d="M4 20h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-              <path d="M8 17v-5M12 17V8M16 17v-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-            </svg>
-          </span>
-          <h3 class="sf-card-head__title mb-0">
-            Gastos como % de ventas · vs. {{ etiquetaComparacion() }}
-          </h3>
-        </div>
-      </header>
-      <app-pl-gastos-pct-ventas
-        [mesEtiqueta]="etiquetaMesTitulo()"
-        [comparacionEtiqueta]="etiquetaComparacion()"
-        [data]="gastosPctVentas"></app-pl-gastos-pct-ventas>
-    </section>
+    @if (!esVistaAnualMensual()) {
+      <section class="sf-card">
+        <header class="sf-card-head">
+          <div class="sf-card-head__main">
+            <span class="sf-card-head__icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 20V5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                <path d="M4 20h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                <path d="M8 17v-5M12 17V8M16 17v-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+            </span>
+            <h3 class="sf-card-head__title mb-0">
+              Gastos como % de ventas · vs. {{ etiquetaComparacion() }}
+            </h3>
+          </div>
+        </header>
+        <app-pl-gastos-pct-ventas
+          [query]="query"
+          [mesEtiqueta]="etiquetaMesTitulo()"
+          [comparacionEtiqueta]="etiquetaComparacion()"
+          [data]="gastosPctVentas"></app-pl-gastos-pct-ventas>
+      </section>
+    }
   }
 </div>

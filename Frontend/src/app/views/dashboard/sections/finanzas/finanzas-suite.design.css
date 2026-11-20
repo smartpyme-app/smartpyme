@@ -119,6 +119,11 @@
   padding: 16px 0 4px;
 }
 
+.sf-field select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .sf-field select,
 .sf-field input {
   appearance: none;

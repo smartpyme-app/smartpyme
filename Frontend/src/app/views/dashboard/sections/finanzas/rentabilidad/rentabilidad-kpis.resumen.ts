@@ -70,6 +70,9 @@ export function kpisDesdeResumen(
     vs,
     formatPct,
   );
+  if (resumen.margenOperativo !== null && resumen.margenOperativoPrev !== null) {
+    margenOp.sublinea = `${formatPct(resumen.margenOperativo)} vs. ${vs} ${formatPct(resumen.margenOperativoPrev)}`;
+  }
   const margenBruto = cardMargen(
     'Margen bruto',
     resumen.margenBruto,
@@ -106,7 +109,7 @@ function cardMargen(
   };
   if (actual !== null && prev !== null) {
     const delta = actual - prev;
-    card.sublinea = `${flecha(delta)} ${signoNum(delta)} pts vs. ${vs} · ${formatPct(prev)}`;
+    card.sublinea = `${flecha(delta)} vs. ${vs} · ${formatPct(prev)}`;
     card.sublineaTono = tonoDelta(delta);
   }
   return card;
@@ -135,15 +138,4 @@ function tonoDelta(delta: number): 'neg' | 'pos' | undefined {
 function signoPct(value: number): string {
   const n = value.toFixed(1);
   return value > 0 ? `+${n}%` : `${n}%`;
-}
-
-function signoNum(value: number): string {
-  const n = Math.abs(value).toFixed(1);
-  if (value > 0) {
-    return `+${n}`;
-  }
-  if (value < 0) {
-    return `-${n}`;
-  }
-  return '0.0';
 }

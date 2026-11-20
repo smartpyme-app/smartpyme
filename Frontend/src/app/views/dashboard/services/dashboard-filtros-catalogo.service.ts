@@ -10,6 +10,7 @@ import { environment } from '../../../../environments/environment';
 export interface DashboardFiltroCatalogoItem {
   id: string;
   nombre: string;
+  codigo?: string;
 }
 
 /**
@@ -157,7 +158,7 @@ export class DashboardFiltrosCatalogoService {
     return this.productos$;
   }
 
-  /** Página de 20. `q` filtra por nombre en el servidor; no usa el catálogo completo. */
+  /** Página de 20. `q` filtra por nombre o código en el servidor. */
   buscarProductos(q: string, offset = 0): Observable<DashboardFiltroCatalogoItem[]> {
     return this.buscarDimension('/api/dimensiones/productos', q, offset);
   }
@@ -184,10 +185,14 @@ export class DashboardFiltrosCatalogoService {
       })
       .pipe(
         map((list) =>
-          (list || []).map((x) => ({
-            id: String(x.id),
-            nombre: String(x.nombre ?? '').trim(),
-          }))
+          (list || []).map((x) => {
+            const codigo = String(x.codigo ?? '').trim();
+            return {
+              id: String(x.id),
+              nombre: String(x.nombre ?? '').trim(),
+              ...(codigo ? { codigo } : {}),
+            };
+          })
         ),
         catchError(() => of([]))
       );

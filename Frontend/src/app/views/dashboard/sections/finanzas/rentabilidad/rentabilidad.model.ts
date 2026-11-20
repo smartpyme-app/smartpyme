@@ -64,8 +64,6 @@ export interface RentabilidadProductoDetalle {
   costoSerie: number[];
   sucursales: RentabilidadMontoPct[];
   clientes: RentabilidadProductoClienteFila[];
-  vendidoConDescuentoPct: number;
-  vendidoConDescuentoMonto: number;
 }
 
 export interface RentabilidadProductoTablaFila {

@@ -16,8 +16,6 @@ const VACIO: RentabilidadProductoDetalle = {
   costoSerie: [],
   sucursales: [],
   clientes: [],
-  vendidoConDescuentoPct: 0,
-  vendidoConDescuentoMonto: 0,
 };
 
 export function detalleProductoDesdeFila(

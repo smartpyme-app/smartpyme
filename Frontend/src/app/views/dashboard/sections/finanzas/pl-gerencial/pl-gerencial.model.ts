@@ -21,14 +21,20 @@ export interface PlEstadoResultadosFila {
 
 export type PlGastoPctBarTone = 'orange' | 'blue';
 
+export interface PlGastoProveedor {
+  nombre: string;
+  monto: number;
+  pct: number;
+}
+
 export interface PlGastoPctVentaFila {
   concepto: string;
+  rubro?: string;
+  montoMes?: number;
   pctMes: number;
-  promedio6m: number;
-  deltaPts: number;
+  pctComparacion: number;
   barTone: PlGastoPctBarTone;
-  tendenciaAlcista: boolean;
-  tendencia: number[];
+  proveedores?: PlGastoProveedor[];
 }
 
 export interface PlGastosPctVentasMock {

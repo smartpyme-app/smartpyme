@@ -61,9 +61,7 @@ Por cada concepto:
 Mismos rubros que COGS + OPEX (sin “ventas netas” como fila de gasto). Por rubro:
 
 - `pctMes` = rubro / ventas netas del mes
-- `promedio6m`, `deltaPts` (mes vs promedio)
-- `tendencia[]` — serie histórica (mock ~9 puntos)
-- `barTone`, `tendenciaAlcista` — solo UX
+- `pctComparacion` = rubro / ventas netas del periodo de comparación elegido (mes anterior, mismo mes año anterior o presupuesto)
 
 ---
 
@@ -128,11 +126,9 @@ No definido en analytics. Opciones: partidas contables fuera de OPEX, ajustes ma
 
 ### 4.4 Comparación vs presupuesto
 
-- Laravel: `presupuestos` (`Presupuesto` model): `ingresos`, `egresos`, `costo_de_venta`, `planilla`, `servicios`, `marketing`, `gastos_administrativos`, `prestamos`, etc.
-- Go: `/api/ventas/vs-presupuesto`, `/api/gastos/vs-presupuesto` (series mensuales, no líneas P&L completas).
-- Modelado mock: presupuesto 2026 por mes — puede ser otro store si no se unifica.
+**Implementado (sp-analytics `loadPresupuestoComparacion`):** mismos anuales que la pestaña **Modelado** (`modelado_presupuesto_lineas` + reparto/estacionalidad; si no hay líneas, import desde `presupuestos` operativo vía `presupuestoFinanzas`). El mes se prorratea con `modelado.SplitMes`. Con sucursal en el filtro, usa `modelado_presupuesto_sucursal_lineas` cuando existe.
 
-Hay que **alinear rubros del mock con columnas de `presupuestos`** o presupuesto mensual del modelado.
+El rubro `ventas` del modelado se mapea a **ventas brutas** del P&L (sin desglose devoluciones en presupuesto). Ya no se usa `fact_presupuestos_mensuales` ni el reparto fijo 65/15/10/10.
 
 ---
 

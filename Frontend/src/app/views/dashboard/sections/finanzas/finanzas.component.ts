@@ -27,7 +27,7 @@ export interface FinanzasSuiteTab {
 
 export type PlPeriodoId = 'mes' | 'anio_completo';
 export type PlBaseId = 'gerencial' | 'caja';
-export type PlComparacionId = 'mes_anterior' | 'mes_anterior_2' | 'presupuesto';
+export type PlComparacionId = 'mes_anterior' | 'mes_anio_anterior' | 'mes_anterior_2' | 'presupuesto';
 export interface PlSegmentOption<T extends string = string> {
   id: T;
   label: string;
@@ -98,7 +98,7 @@ export class FinanzasComponent implements OnInit {
     { id: 'trimestre', label: 'Trimestre' },
     { id: 'anio', label: 'Año' },
   ];
-  plComparacion: PlComparacionId = 'mes_anterior';
+  plComparacion: PlComparacionId = 'mes_anio_anterior';
 
   plComparacionOpciones: PlSegmentOption<PlComparacionId>[] = [];
   plSucursalOpciones: PlSegmentOption[] = [
@@ -108,7 +108,7 @@ export class FinanzasComponent implements OnInit {
     periodo: 'anio_completo',
     base: 'gerencial',
     sucursalId: 'consolidado',
-    comparacion: 'mes_anterior',
+    comparacion: 'mes_anio_anterior',
     anio: new Date().getFullYear(),
     mes: 0,
   };
@@ -119,8 +119,8 @@ export class FinanzasComponent implements OnInit {
     this.plPeriodo = 'anio_completo';
     this.suiteAnio = ref.getFullYear();
     this.suiteAnioOpciones = this.aniosDisponibles();
+    this.refreshComparacionOpciones();
     this.refreshPlQuery();
-    this.plComparacionOpciones = this.buildComparacionOpciones();
     this.catalogo
       .sucursalesParaFiltro()
       .pipe(this.untilDestroyed())
@@ -157,11 +157,13 @@ export class FinanzasComponent implements OnInit {
   seleccionarSuiteMes(event: Event): void {
     this.suiteMes = Number((event.target as HTMLSelectElement).value);
     this.plPeriodo = this.suiteMes === 0 ? 'anio_completo' : 'mes';
+    this.refreshComparacionOpciones();
     this.refreshPlQuery();
   }
 
   seleccionarSuiteAnio(event: Event): void {
     this.suiteAnio = Number((event.target as HTMLSelectElement).value);
+    this.refreshComparacionOpciones();
     this.refreshPlQuery();
   }
 
@@ -173,6 +175,7 @@ export class FinanzasComponent implements OnInit {
     if (this.suiteMes === 0 && id !== 'anio') {
       this.suiteMes = this.mesReferenciaInicial().getMonth() + 1;
       this.plPeriodo = 'mes';
+      this.refreshComparacionOpciones();
       this.refreshPlQuery();
     }
     this.rentHorizonte = id;
@@ -195,6 +198,16 @@ export class FinanzasComponent implements OnInit {
     this.plQuery = this.buildPlQuery();
   }
 
+  private refreshComparacionOpciones(): void {
+    this.plComparacionOpciones = this.buildComparacionOpciones();
+    if (this.plComparacionOpciones.length === 0) {
+      return;
+    }
+    if (!this.plComparacionOpciones.some((o) => o.id === this.plComparacion)) {
+      this.plComparacion = this.plComparacionOpciones[0]?.id ?? 'mes_anio_anterior';
+    }
+  }
+
   private buildPlQuery(): PlGerencialQuery {
     return {
       periodo: this.plPeriodo,
@@ -207,17 +220,21 @@ export class FinanzasComponent implements OnInit {
   }
 
   private buildComparacionOpciones(): PlSegmentOption<PlComparacionId>[] {
-    const hoy = new Date();
-    const mesAnterior = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
-    const dosMesesAtras = new Date(hoy.getFullYear(), hoy.getMonth() - 2, 1);
+    const anio = this.suiteAnio || new Date().getFullYear();
+    if (this.suiteMes === 0) {
+      return [];
+    }
+    const mes = this.suiteMes;
+    const mesAnt = mes === 1 ? 12 : mes - 1;
+    const anioAnt = mes === 1 ? anio - 1 : anio;
     return [
       {
         id: 'mes_anterior',
-        label: `vs. ${this.mesAbr(mesAnterior)} ${mesAnterior.getFullYear()}`,
+        label: `vs. ${this.mesAbrNum(mesAnt)} ${anioAnt}`,
       },
       {
-        id: 'mes_anterior_2',
-        label: `vs. ${this.mesAbr(dosMesesAtras)} ${dosMesesAtras.getFullYear()}`,
+        id: 'mes_anio_anterior',
+        label: `vs. ${this.mesAbrNum(mes)} ${anio - 1}`,
       },
       { id: 'presupuesto', label: 'vs. presupuesto' },
     ];
@@ -241,7 +258,7 @@ export class FinanzasComponent implements OnInit {
     return nombres[fecha.getMonth()] ?? '—';
   }
 
-  private mesAbr(fecha: Date): string {
+  private mesAbrNum(mes: number): string {
     const abr = [
       'ene',
       'feb',
@@ -256,7 +273,7 @@ export class FinanzasComponent implements OnInit {
       'nov',
       'dic',
     ];
-    return abr[fecha.getMonth()] ?? '—';
+    return abr[mes - 1] ?? '—';
   }
 
   get plPeriodoTitulo(): string {
@@ -268,12 +285,6 @@ export class FinanzasComponent implements OnInit {
 
   get suiteMesParaRentabilidad(): number {
     return this.suiteMes || this.mesReferenciaInicial().getMonth() + 1;
-  }
-
-  get plComparacionTitulo(): string {
-    const opt = this.plComparacionOpciones.find((o) => o.id === this.plComparacion);
-    const raw = opt?.label ?? '';
-    return raw.replace(/^vs\.\s*/i, '').toUpperCase();
   }
 
   get plAnioAcumulado(): number {

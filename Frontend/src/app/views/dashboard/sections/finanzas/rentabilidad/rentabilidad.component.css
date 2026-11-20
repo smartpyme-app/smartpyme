@@ -94,7 +94,10 @@
 }
 
 .rent-producto-sugerencias button {
-  display: block;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
   width: 100%;
   border: 0;
   background: transparent;
@@ -103,6 +106,12 @@
   color: var(--sf-text, #1b1b1f);
   font: 600 14px/20px 'Open Sans', system-ui, sans-serif;
   cursor: pointer;
+}
+
+.rent-producto-sugerencias__codigo {
+  flex: none;
+  color: var(--sf-muted, #46464a);
+  font-weight: 500;
 }
 
 .rent-producto-sugerencias button:hover {
@@ -379,6 +388,19 @@
   grid-template-columns: repeat(6, minmax(7rem, 1fr));
 }
 
+.rent-prod-detalle-kpis .rent-kpi-valor,
+.rent-prod-detalle-kpis .rent-kpi-valor--azul {
+  color: #64748b;
+}
+
+.rent-prod-detalle-kpis .rent-kpi-valor--verde {
+  color: #16a34a;
+}
+
+.rent-prod-detalle-kpis .rent-kpi-valor--rojo {
+  color: #dc2626;
+}
+
 .rent-prod-detalle-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -399,18 +421,63 @@
   background: #fafbfc;
 }
 
+.rent-chart-hover {
+  position: relative;
+}
+
 .rent-chart {
   width: 100%;
   height: 7.5rem;
   display: block;
 }
 
+.rent-chart-hit {
+  position: absolute;
+  top: 0;
+  height: 7.5rem;
+  transform: translateX(-50%);
+  cursor: crosshair;
+}
+
+.rent-chart-hit:hover {
+  background: var(--sf-blue-tint, #ecf0ff);
+}
+
+.rent-chart-tip {
+  display: none;
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--sf-card, #fff);
+  color: var(--sf-text, #1a1b1f);
+  border: 1px solid var(--sf-line, #c7c6ca);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  font: 600 12px/16px 'Open Sans', system-ui, sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.rent-chart-hit:hover .rent-chart-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rent-chart-tip span {
+  font-weight: 500;
+  color: var(--sf-muted, #46464a);
+}
+
 .rent-chart-precio {
-  stroke: #3b82f6;
+  stroke: #8eafdc;
 }
 
 .rent-chart-costo {
-  stroke: #fb923c;
+  stroke: #e0bca0;
 }
 
 .rent-chart-legend {
@@ -430,11 +497,19 @@
 }
 
 .rent-legend-dot--precio {
-  background: #3b82f6;
+  background: #8eafdc;
 }
 
 .rent-legend-dot--costo {
-  background: #fb923c;
+  background: #e0bca0;
+}
+
+.rent-prod-detalle-grid .rent-barra-track {
+  background: #f2f0f5;
+}
+
+.rent-prod-detalle-grid .rent-barra-fill--azul {
+  background: #8eafdc;
 }
 
 .rent-chart-labels {
@@ -445,40 +520,13 @@
   color: #94a3b8;
 }
 
-.rent-prod-clientes td:first-child {
-  max-width: 11rem;
+.rent-prod-clientes-bloque {
+  margin-top: 1.5rem;
 }
 
-.rent-descuento-card {
-  align-self: flex-start;
-  min-width: 10rem;
-  padding: 0.85rem 1rem;
-  border-radius: var(--sf-radius, 8px);
-  border: 1px solid var(--sf-line, #c7c6ca);
-  background: var(--sf-card, #fff);
+.rent-prod-clientes {
+  width: 100%;
 }
-
-.rent-descuento-titulo {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #9a3412;
-}
-
-.rent-descuento-valor {
-  margin-top: 0.2rem;
-  font-size: 1.65rem;
-  font-weight: 700;
-  color: #ea580c;
-  line-height: 1.1;
-}
-
-.rent-descuento-monto {
-  font-size: 0.82rem;
-  color: #9a3412;
-}
-
 
 .rent-precio-costo {
   white-space: nowrap;
@@ -1426,12 +1474,28 @@
   text-align: right;
 }
 
-.rent-cli-prod {
+.rent-puente-row.rent-cli-prod {
   grid-template-columns: minmax(8rem, 12rem) minmax(3rem, 1fr) auto auto auto;
 }
 
-.rent-cli-facturas {
-  grid-template-columns: minmax(5.5rem, 8rem) minmax(4rem, 1fr) auto auto;
+.rent-cli-facturas-tabla {
+  display: grid;
+  grid-template-columns: minmax(5rem, 0.7fr) minmax(11.5rem, 1.2fr) auto auto;
+  column-gap: 0.75rem;
+  row-gap: 0.45rem;
+  align-items: center;
+}
+
+.rent-cli-facturas-h {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.rent-cli-facturas-num {
+  text-align: right;
+  white-space: nowrap;
+  font-weight: 700;
 }
 
 .rent-cli-vence {
@@ -1706,8 +1770,8 @@
     grid-template-columns: minmax(5.5rem, 8rem) minmax(2rem, 1fr) auto auto auto;
   }
 
-  .rent-cli-detalle .rent-cli-facturas {
-    grid-template-columns: minmax(4.5rem, 7rem) minmax(3.5rem, 1fr) auto auto;
+  .rent-cli-facturas-tabla {
+    grid-template-columns: minmax(4.5rem, 0.7fr) minmax(9rem, 1.2fr) auto auto;
   }
 }
 

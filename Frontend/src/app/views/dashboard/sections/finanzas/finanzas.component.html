@@ -117,7 +117,9 @@
             (change)="seleccionarRentHorizonte($event)"
               aria-label="Horizonte de rentabilidad">
               @for (opt of rentHorizonteOpciones; track opt.id) {
-                <option [value]="opt.id">{{ opt.label }}</option>
+                <option [value]="opt.id" [disabled]="suiteMes === 0 && opt.id !== 'anio'">
+                  {{ opt.label }}
+                </option>
               }
             </select>
           </div>
@@ -137,18 +139,20 @@
             }
           </div>
 
-          <div class="sf-seg" role="group" aria-label="Comparación">
-            @for (opt of plComparacionOpciones; track opt.id) {
-              <button
-                type="button"
-                class="sf-seg__btn"
-                [class.is-active]="plComparacion === opt.id"
-                [attr.aria-pressed]="plComparacion === opt.id"
-                (click)="seleccionarPlComparacion(opt.id)">
-                {{ opt.label }}
-              </button>
-            }
-          </div>
+          @if (plComparacionOpciones.length) {
+            <div class="sf-seg" role="group" aria-label="Comparación">
+              @for (opt of plComparacionOpciones; track opt.id) {
+                <button
+                  type="button"
+                  class="sf-seg__btn"
+                  [class.is-active]="plComparacion === opt.id"
+                  [attr.aria-pressed]="plComparacion === opt.id"
+                  (click)="seleccionarPlComparacion(opt.id)">
+                  {{ opt.label }}
+                </button>
+              }
+            </div>
+          }
         }
       </div>
     }
@@ -159,7 +163,6 @@
       <app-pl-gerencial
         [query]="plQuery"
         [periodoTitulo]="plPeriodoTitulo"
-        [comparacionTitulo]="plComparacionTitulo"
         [anioAcumulado]="plAnioAcumulado">
       </app-pl-gerencial>
     }

@@ -5,6 +5,7 @@ import { DashboardAnalyticsApiService } from './dashboard-analytics-api.service'
 import {
   PlEstadoResultadosFila,
   PlGastoPctVentaFila,
+  PlGastoProveedor,
   PlGastosPctVentasMock,
   PlVistaEstadoId,
 } from '../sections/finanzas/pl-gerencial/pl-gerencial.model';
@@ -12,7 +13,7 @@ export interface PlGerencialQuery {
   periodo: 'mes' | 'anio_completo';
   base: 'gerencial' | 'caja';
   sucursalId: string;
-  comparacion: 'mes_anterior' | 'mes_anterior_2' | 'presupuesto';
+  comparacion: 'mes_anterior' | 'mes_anio_anterior' | 'mes_anterior_2' | 'presupuesto';
   anio: number;
   mes: number;
 }
@@ -67,6 +68,26 @@ export class FinanzasPlDataService {
         console.error('Error loading /api/finanzas/pl-gerencial:', url, err);
         return throwError(() => err);
       }),
+    );
+  }
+
+  obtenerProveedoresRubro(
+    q: PlGerencialQuery,
+    rubro: string,
+    monto: number,
+  ): Observable<PlGastoProveedor[] | null> {
+    const empresa = this.analytics.idEmpresa;
+    if (!empresa || !rubro) {
+      return of(null);
+    }
+    let p = `empresa=${empresa}&anio=${q.anio}&mes=${q.mes}&base=${q.base}&rubro=${encodeURIComponent(rubro)}&monto=${monto}`;
+    if (q.sucursalId && q.sucursalId !== 'consolidado') {
+      p += `&sucursal=${encodeURIComponent(q.sucursalId)}`;
+    }
+    const url = `${this.analytics.baseUrl}/api/finanzas/pl-gerencial/proveedores?${p}`;
+    return this.analytics.get<{ proveedores?: PlGastoProveedor[] }>(url).pipe(
+      timeout(60_000),
+      map((raw) => raw?.proveedores ?? null),
     );
   }
 
