@@ -58,6 +58,7 @@ export interface ModeladoGastoFila {
   proveedor?: string;
   sucursal?: string;
   diaPago?: string;
+  suspendido?: boolean;
 }
 
 export interface ModeladoVista {
@@ -123,6 +124,30 @@ export interface ModeladoPresupuestoBloque {
     montoAnual: number;
   };
   sucursales: ModeladoPresupuestoSucursales | null;
+  areas: ModeladoPresupuestoAreas | null;
+}
+
+export interface ModeladoPresupuestoAreaCol {
+  id: number;
+  nombre: string;
+}
+
+export interface ModeladoPresupuestoAreaFila {
+  id: string;
+  categoria: string;
+  porArea: Record<string, number>;
+  suma: number;
+  empresa: number;
+}
+
+export interface ModeladoPresupuestoAreas {
+  areas: ModeladoPresupuestoAreaCol[];
+  filas: ModeladoPresupuestoAreaFila[];
+  contribucion: {
+    porArea: Record<string, number>;
+    suma: number;
+    empresa: number;
+  };
 }
 
 export interface ModeladoPresupuestoSucursalCol {

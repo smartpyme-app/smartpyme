@@ -495,66 +495,6 @@
   color: #2563eb;
 }
 
-.modelado-gasto-form-titulo {
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: var(--sf-blue-dark, #001b3f);
-}
-
-.modelado-gasto-form-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #475569;
-  margin-bottom: 0.25rem;
-}
-
-.modelado-comportamiento {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  padding: 0.2rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 999px;
-  background: #fff;
-  max-width: 100%;
-}
-
-.modelado-comportamiento-btn {
-  flex: 1 1 12rem;
-  border: none;
-  background: transparent;
-  color: #64748b;
-  font-size: 0.78rem;
-  font-weight: 600;
-  padding: 0.45rem 0.75rem;
-  border-radius: 999px;
-  cursor: pointer;
-  text-align: center;
-}
-
-.modelado-comportamiento-btn--active {
-  background: var(--sf-blue-dark, #001b3f);
-  color: #fff;
-}
-
-.modelado-gasto-form-hint {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.modelado-gasto-form-impacto {
-  display: block;
-  margin-top: 0.35rem;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #dc2626;
-}
-
-.modelado-gasto-form-iva {
-  margin-bottom: 0.35rem;
-}
-
 .modelado-gasto-nombre {
   display: flex;
   flex-wrap: wrap;
@@ -578,6 +518,10 @@
   font-weight: 600;
 }
 
+.modelado-gasto-row--suspendido .modelado-gasto-info {
+  opacity: 0.58;
+}
+
 .modelado-gasto-tag {
   padding: 0.05rem 0.4rem;
   border-radius: 999px;
@@ -586,6 +530,11 @@
   font-weight: 600;
   color: #c2410c;
   text-transform: none;
+}
+
+.modelado-gasto-tag--suspendido {
+  background: #e2e8f0;
+  color: #475569;
 }
 
 .modelado-gasto-meta {
@@ -601,6 +550,12 @@
   color: #94a3b8;
   font-size: 13px;
   font-weight: 500;
+}
+
+.modelado-gasto-acciones {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .modelado-gasto-seg {
@@ -619,6 +574,11 @@
   cursor: pointer;
 }
 
+.modelado-gasto-seg-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .modelado-gasto-seg-btn.is-fijo {
   background: #dbeafe;
   color: #1d4ed8;
@@ -627,6 +587,70 @@
 .modelado-gasto-seg-btn.is-variable {
   background: #ffedd5;
   color: #c2410c;
+}
+
+.modelado-gasto-menu-wrap {
+  position: relative;
+}
+
+.modelado-gasto-kebab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #64748b;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modelado-gasto-kebab:hover,
+.modelado-gasto-kebab[aria-expanded='true'] {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.modelado-gasto-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  min-width: 130px;
+  padding: 0.3rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+}
+
+.modelado-gasto-menu button {
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e293b;
+  padding: 0.4rem 0.65rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.modelado-gasto-menu button:hover {
+  background: #f8fafc;
+}
+
+.modelado-gasto-menu button.is-danger {
+  color: #dc2626;
+}
+
+.modelado-gasto-menu button.is-danger:hover {
+  background: #fef2f2;
 }
 
 .modelado-agregar-gasto {
@@ -670,25 +694,6 @@
 
 .modelado-calendario-table tbody tr:nth-child(even):not(.modelado-cal-pendiente) {
   background-color: #f7f7f7;
-}
-
-.modelado-cal-acciones-col {
-  width: 2.5rem;
-  white-space: nowrap;
-}
-
-.modelado-cal-quitar {
-  font-size: 1.25rem;
-  line-height: 1;
-  color: #94a3b8;
-  text-decoration: none;
-  min-width: 1.75rem;
-}
-
-.modelado-cal-quitar:hover,
-.modelado-cal-quitar:focus {
-  color: #dc2626;
-  text-decoration: none;
 }
 
 .modelado-cal-nombre {
@@ -753,9 +758,12 @@
   color: #475569;
 }
 
-.modelado-agregar-costo {
-  font-weight: 600;
-  text-decoration: none;
+.modelado-paso3.sf-card {
+  padding: 0 !important;
+}
+
+.modelado-paso3 .card-body {
+  padding: 1.25rem 1.4rem !important;
 }
 
 .modelado-p3-header {
@@ -764,7 +772,52 @@
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.modelado-p3-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.modelado-p3-titulo svg {
+  color: #64748b;
+}
+
+.modelado-p3-seg {
+  display: inline-flex;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.modelado-p3-seg button {
+  border: none;
+  background: #fff;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0.4rem 0.85rem;
+  cursor: pointer;
+}
+
+.modelado-p3-seg button + button {
+  border-left: 1px solid #e2e8f0;
+}
+
+.modelado-p3-seg button.is-active {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.modelado-p3-seg button:disabled {
+  color: #94a3b8;
+  cursor: default;
 }
 
 .modelado-p3-toolbar {
@@ -772,64 +825,96 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 0.65rem;
+  margin-bottom: 0.85rem;
 }
 
 .modelado-p3-reparto-label {
-  font-size: 0.84rem;
-  font-weight: 600;
-  color: #334155;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
 }
 
-.modelado-estacionalidad-chart {
-  display: inline-flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 28px;
-  margin-left: 0.15rem;
+.modelado-p3-areas-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.85rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
 }
 
-.modelado-estacionalidad-chart--plano .modelado-estacionalidad-bar {
-  height: 70% !important;
-  background: #93c5fd;
+.modelado-p3-areas-info {
+  font-size: 13px;
+  color: #475569;
 }
 
-.modelado-estacionalidad-chart--plano .modelado-estacionalidad-bar--destacado {
-  background: #93c5fd;
+.modelado-p3-areas-info strong {
+  color: #0f172a;
 }
 
-.modelado-estacionalidad-bar {
-  width: 5px;
-  min-height: 4px;
-  border-radius: 2px 2px 0 0;
-  background: #3b82f6;
+.modelado-p3-areas-acciones {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
-.modelado-estacionalidad-bar--destacado {
-  background: #f97316;
+.modelado-p3-areas-empty {
+  padding: 1.75rem 1.25rem;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #f8fafc;
+  text-align: center;
 }
 
-.modelado-presupuesto-table thead th {
-  background-color: #66a3ff !important;
-  color: #ffffff !important;
-  font-weight: 600;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+.modelado-p3-areas-empty-titulo {
+  margin: 0 0 0.35rem;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.modelado-p3-areas-empty-sub {
+  max-width: 34rem;
+  margin: 0 auto 1rem;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.modelado-presupuesto-table thead th,
+.modelado-pres-suc-table thead th,
+.modelado-pres-suc-cmp-table thead th {
+  background: #fff !important;
+  color: #64748b !important;
+  font-weight: 500;
+  font-size: 12px;
   border: none;
-  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0.6rem 0.5rem;
   vertical-align: middle;
 }
 
 .modelado-presupuesto-table tbody td {
-  padding: 10px 12px;
-  font-size: 0.84rem;
+  padding: 0.9rem 0.5rem;
+  font-size: 14px;
   vertical-align: middle;
   border: none;
-  border-bottom: 1px solid #eef2f7;
+  border-bottom: 1px solid #eef0f4;
+  background: #fff;
 }
 
-.modelado-presupuesto-table tbody tr:nth-child(even) {
-  background-color: #f7f7f7;
+.modelado-pres-grupo-row td {
+  padding: 0.95rem 0.5rem 0.45rem !important;
+  font-size: 11px !important;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8 !important;
+  border-bottom: 1px solid #eef0f4;
 }
 
 .modelado-pres-categoria {
@@ -838,30 +923,50 @@
 }
 
 .modelado-pres-input {
-  max-width: 6.5rem;
+  max-width: 7.25rem;
   margin-left: auto;
   text-align: right;
+  font-size: 14px;
   font-weight: 600;
+  color: #0f172a;
   border-color: #cbd5e1;
-  background: #f8fafc;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.35rem 0.65rem;
+}
+
+.modelado-pres-row--ventas .modelado-pres-input {
+  font-weight: 700;
+}
+
+.modelado-pres-sub {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 11px;
+  color: #64748b;
 }
 
 .modelado-pres-input--meta {
-  max-width: 7.5rem;
+  max-width: 7.75rem;
   margin-left: 0;
   font-size: 0.95rem;
 }
 
 .modelado-pres-mes,
 .modelado-pres-ejecutado {
-  font-weight: 600;
+  font-weight: 500;
   color: #334155;
   white-space: nowrap;
 }
 
-.modelado-pres-ejecutado {
-  font-weight: 500;
-  color: #475569;
+.modelado-pres-ejec-actual {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.modelado-pres-ejec-ref {
+  font-weight: 400;
+  color: #64748b;
 }
 
 .modelado-pres-vs {
@@ -869,8 +974,12 @@
   color: #0f172a;
 }
 
-.modelado-pres-vs--neg {
+.modelado-pres-vs--alerta {
   color: #dc2626;
+}
+
+.modelado-pres-vs--ok {
+  color: #16a34a;
 }
 
 .modelado-pres-utilidad {
@@ -1029,37 +1138,28 @@
   font-weight: 700;
 }
 
-.modelado-pres-suc-table thead th,
-.modelado-pres-suc-cmp-table thead th {
-  background-color: #66a3ff !important;
-  color: #fff !important;
-  font-weight: 600;
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  border: none;
-  padding: 8px 10px;
-  vertical-align: middle;
-}
-
 .modelado-pres-suc-anual-col {
   min-width: 9rem;
 }
 
 .modelado-pres-suc-table tbody td,
 .modelado-pres-suc-cmp-table tbody td {
-  padding: 8px 10px;
-  font-size: 0.82rem;
+  padding: 0.75rem 0.5rem;
+  font-size: 13.5px;
   vertical-align: middle;
-  border-bottom: 1px solid #eef2f7;
+  border: none;
+  border-bottom: 1px solid #eef0f4;
+  background: #fff;
 }
 
 .modelado-pres-suc-input {
-  max-width: 6.5rem;
+  max-width: 6.75rem;
   margin-left: auto;
   text-align: right;
   font-weight: 600;
-  border-color: #93c5fd;
+  border-color: #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
 }
 
 .modelado-pres-suc-readonly {

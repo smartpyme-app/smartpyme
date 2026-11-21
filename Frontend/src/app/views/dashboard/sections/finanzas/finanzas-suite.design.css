@@ -359,6 +359,46 @@
   padding: 8px 10px;
 }
 
+.sf-th-sort {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.28rem;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sf-table th:first-child .sf-th-sort,
+.sf-cell-left .sf-th-sort {
+  justify-content: flex-start;
+}
+
+.sf-th-sort:hover,
+.sf-th-sort--activa {
+  color: var(--sf-text);
+}
+
+.sf-th-sort-icon {
+  font-size: 11px;
+  line-height: 1;
+  opacity: 0.45;
+}
+
+.sf-th-sort:hover .sf-th-sort-icon {
+  opacity: 0.85;
+}
+
+.sf-th-sort--activa .sf-th-sort-icon {
+  opacity: 1;
+  color: var(--sf-blue);
+}
+
 .sf-row--highlight td {
   background: var(--sf-bg);
   font-weight: 600;

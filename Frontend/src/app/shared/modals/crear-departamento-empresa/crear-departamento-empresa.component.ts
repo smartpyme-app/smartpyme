@@ -21,6 +21,8 @@ export class CrearDepartamentoComponent extends BaseModalComponent implements On
 
     public departamento: any = {};
     @Input() id_departamento: any = null;
+    @Input() label = '';
+    @Input() btnClass = 'btn btn-default tcla-F1';
     @Output() update = new EventEmitter();
     public override loading = false;
     public override saving = false;

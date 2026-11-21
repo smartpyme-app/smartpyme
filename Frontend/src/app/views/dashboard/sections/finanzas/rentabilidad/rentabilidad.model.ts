@@ -126,6 +126,11 @@ export interface RentabilidadClienteFactura {
   id?: number;
   codigo: string;
   fecha: string;
+  /** Total de la factura (con IVA). */
+  total?: number;
+  /** Abonado hasta hoy (con IVA). */
+  abonos?: number;
+  /** Saldo restante (con IVA). */
   monto: number;
   nota: string;
   notaAlerta: boolean;
@@ -197,15 +202,14 @@ export interface RentabilidadProveedorProductoFila {
   pct: number;
   compras: number;
   unidades: number;
-  costoHoy: number;
-  costo6m: number;
-  costoVsPct: number;
-  precioVsPct: number;
-  costoSubioMas: boolean;
+  ventas?: number;
+  unidadesVendidas?: number;
   margenPct: number;
 }
 
 export interface RentabilidadProveedorFactura {
+  id?: number;
+  tipo?: 'Compra' | 'Gasto';
   codigo: string;
   fecha: string;
   nota: string;
@@ -216,6 +220,7 @@ export interface RentabilidadProveedorFactura {
 export interface RentabilidadProveedorClienteFila {
   nombre: string;
   ventas: number;
+  unidadesVendidas?: number;
   margenPct: number;
   margenBajo: boolean;
   margenAlto?: boolean;

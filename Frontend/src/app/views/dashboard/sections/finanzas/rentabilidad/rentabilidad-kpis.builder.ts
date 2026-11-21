@@ -120,7 +120,7 @@ export function kpisDesdeCliente(
 
   return [
     {
-      titulo: `Compró — ${suf}`,
+      titulo: `Total ventas — ${suf}`,
       valor: ctx.formatMonto(escala(fila.compro, h)),
       tono: 'azul',
       sublinea: `${fila.parteVentasPct}% de sus ventas`,

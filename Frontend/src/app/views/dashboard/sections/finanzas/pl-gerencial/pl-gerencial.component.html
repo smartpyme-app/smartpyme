@@ -36,15 +36,30 @@
           <table class="sf-table sf-table--compact pl-estado-table pl-estado-table--anual">
             <thead>
               <tr>
-                <th scope="col" class="pl-col-concepto pl-col-sticky">Concepto</th>
-                @for (abr of mesesAbr; track abr) {
-                  <th scope="col" class="pl-col-mes">{{ abr }}</th>
+                <th scope="col" class="pl-col-concepto pl-col-sticky" [attr.aria-sort]="ariaSortAnual('concepto')">
+                  <button type="button" class="sf-th-sort" [class.sf-th-sort--activa]="ordenAnual.col === 'concepto'" (click)="ordenarAnual('concepto')">
+                    <span>Concepto</span>
+                    <span class="sf-th-sort-icon" aria-hidden="true">{{ ordenAnual.col === 'concepto' ? (ordenAnual.dir === 'asc' ? '↑' : '↓') : '↕' }}</span>
+                  </button>
+                </th>
+                @for (abr of mesesAbr; track abr; let idx = $index) {
+                  <th scope="col" class="pl-col-mes" [attr.aria-sort]="ariaSortAnual(colMesAnual(idx))">
+                    <button type="button" class="sf-th-sort" [class.sf-th-sort--activa]="ordenAnual.col === colMesAnual(idx)" (click)="ordenarAnual(colMesAnual(idx))">
+                      <span>{{ abr }}</span>
+                      <span class="sf-th-sort-icon" aria-hidden="true">{{ ordenAnual.col === colMesAnual(idx) ? (ordenAnual.dir === 'asc' ? '↑' : '↓') : '↕' }}</span>
+                    </button>
+                  </th>
                 }
-                <th scope="col" class="pl-col-total-anual">Total</th>
+                <th scope="col" class="pl-col-total-anual" [attr.aria-sort]="ariaSortAnual('total')">
+                  <button type="button" class="sf-th-sort" [class.sf-th-sort--activa]="ordenAnual.col === 'total'" (click)="ordenarAnual('total')">
+                    <span>Total</span>
+                    <span class="sf-th-sort-icon" aria-hidden="true">{{ ordenAnual.col === 'total' ? (ordenAnual.dir === 'asc' ? '↑' : '↓') : '↕' }}</span>
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody>
-              @for (row of filasVistaAnual; track row.key) {
+              @for (row of filasVistaAnualVisibles(); track row.key) {
                 <tr
                   [class.sf-row--highlight]="row.estilo === 'subtotal' || row.estilo === 'resultado'"
                   [class.pl-anual-row-margen]="row.estilo === 'margen'">
@@ -109,16 +124,46 @@
           <table class="sf-table sf-table--compact pl-estado-table pl-estado-table--mes">
             <thead>
               <tr>
-                <th scope="col" class="pl-col-concepto">Concepto</th>
-                <th scope="col" class="pl-col-num">{{ etiquetaColumnaMes() }}</th>
-                <th scope="col" class="pl-col-num">% ventas</th>
-                <th scope="col" class="pl-col-num">vs. {{ comparacionTitulo || '…' }}</th>
-                <th scope="col" class="pl-col-num">Acum. {{ anioAcumulado }}</th>
-                <th scope="col" class="pl-col-num">% ventas</th>
+                <th scope="col" class="pl-col-concepto" [attr.aria-sort]="ariaSortMes('concepto')">
+                  <button type="button" class="sf-th-sort" [class.sf-th-sort--activa]="ordenMes.col === 'concepto'" (click)="ordenarMes('concepto')">
+                    <span>Concepto</span>
+                    <span class="sf-th-sort-icon" aria-hidden="true">{{ ordenMes.col === 'concepto' ? (ordenMes.dir === 'asc' ? '↑' : '↓') : '↕' }}</span>
+                  </button>
+                </th>
+                <th scope="col" class="pl-col-num" [attr.aria-sort]="ariaSortMes('mes')">
+                  <button type="button" class="sf-th-sort" [class.sf-th-sort--activa]="ordenMes.col === 'mes'" (click)="ordenarMes('mes')">
+                    <span>{{ etiquetaColumnaMes() }}</span>
+                    <span class="sf-th-sort-icon" aria-hidden="true">{{ ordenMes.col === 'mes' ? (ordenMes.dir === 'asc' ? '↑' : '↓') : '↕' }}</span>
+                  </button>
+                </th>
+                <th scope="col" class="pl-col-num" [attr.aria-sort]="ariaSortMes('pctVentasMes')">
+                  <button type="button" class="sf-th-sort" [class.sf-th-sort--activa]="ordenMes.col === 'pctVentasMes'" (click)="ordenarMes('pctVentasMes')">
+                    <span>% ventas</span>
+                    <span class="sf-th-sort-icon" aria-hidden="true">{{ ordenMes.col === 'pctVentasMes' ? (ordenMes.dir === 'asc' ? '↑' : '↓') : '↕' }}</span>
+                  </button>
+                </th>
+                <th scope="col" class="pl-col-num" [attr.aria-sort]="ariaSortMes('vsAbs')">
+                  <button type="button" class="sf-th-sort" [class.sf-th-sort--activa]="ordenMes.col === 'vsAbs'" (click)="ordenarMes('vsAbs')">
+                    <span>vs. {{ comparacionTitulo || '…' }}</span>
+                    <span class="sf-th-sort-icon" aria-hidden="true">{{ ordenMes.col === 'vsAbs' ? (ordenMes.dir === 'asc' ? '↑' : '↓') : '↕' }}</span>
+                  </button>
+                </th>
+                <th scope="col" class="pl-col-num" [attr.aria-sort]="ariaSortMes('acum')">
+                  <button type="button" class="sf-th-sort" [class.sf-th-sort--activa]="ordenMes.col === 'acum'" (click)="ordenarMes('acum')">
+                    <span>Acum. {{ anioAcumulado }}</span>
+                    <span class="sf-th-sort-icon" aria-hidden="true">{{ ordenMes.col === 'acum' ? (ordenMes.dir === 'asc' ? '↑' : '↓') : '↕' }}</span>
+                  </button>
+                </th>
+                <th scope="col" class="pl-col-num" [attr.aria-sort]="ariaSortMes('pctVentasAcum')">
+                  <button type="button" class="sf-th-sort" [class.sf-th-sort--activa]="ordenMes.col === 'pctVentasAcum'" (click)="ordenarMes('pctVentasAcum')">
+                    <span>% ventas</span>
+                    <span class="sf-th-sort-icon" aria-hidden="true">{{ ordenMes.col === 'pctVentasAcum' ? (ordenMes.dir === 'asc' ? '↑' : '↓') : '↕' }}</span>
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody>
-              @for (fila of filas; track fila.lineId ?? fila.concepto) {
+              @for (fila of filasMesVisibles(); track fila.lineId ?? fila.concepto) {
                 <tr [class.sf-row--highlight]="claseFilaMes(fila) === 'subtotal' || claseFilaMes(fila) === 'destacado'">
                   <td class="pl-col-concepto" [class.pl-concepto-indent]="fila.indent">
                     @if (fila.indent) {

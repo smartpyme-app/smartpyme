@@ -9,6 +9,7 @@ import {
   ModeladoCalendarioPendiente,
   ModeladoGastoFila,
   ModeladoGastoTipo,
+  ModeladoPresupuestoAreas,
   ModeladoPresupuestoReparto,
   ModeladoPresupuestoSucursales,
   ModeladoVista,
@@ -70,6 +71,7 @@ export const MODELADO_VACIA: ModeladoVista = {
       montoAnual: 0,
     },
     sucursales: null,
+    areas: null,
   },
   paso4Titulo: 'Paso 4 · Parámetros del pronóstico',
   parametrosPronostico: {
@@ -146,6 +148,7 @@ interface ModeladoApi {
     proveedor?: string;
     sucursal?: string;
     diaPago?: string;
+    suspendido?: boolean;
   }[];
   ventasPromedio3Meses?: number;
   calendario?: {
@@ -160,7 +163,7 @@ interface ModeladoApi {
     origen?: string;
     editable?: boolean;
   }[];
-  calendarioPendiente?: { clave?: string; nombre?: string; monto?: number; nuevo?: boolean } | null;
+  calendarioPendiente?: { clave?: string; nombre?: string; monto?: number; diaPago?: string; nuevo?: boolean } | null;
   presupuesto?: {
     mesColumna?: string;
     reparto?: string;
@@ -212,6 +215,21 @@ interface ModeladoApi {
         }[];
       };
     } | null;
+    areas?: {
+      areas?: { id?: number; nombre?: string }[];
+      filas?: {
+        id?: string;
+        categoria?: string;
+        porArea?: Record<string, number>;
+        suma?: number;
+        empresa?: number;
+      }[];
+      contribucion?: {
+        porArea?: Record<string, number>;
+        suma?: number;
+        empresa?: number;
+      };
+    } | null;
   };
   pronostico?: {
     efectivo?: number | null;
@@ -248,8 +266,11 @@ export class FinanzasModeladoDataService {
 
   guardarClasificacion(
     gasto: ModeladoGastoFila,
-    extra?: { pctVentas?: number | null; diaPago?: string | null; proveedor?: string | null; sucursal?: string | null },
+    extra?: { pctVentas?: number | null; diaPago?: string | null; proveedor?: string | null; sucursal?: string | null; suspendido?: boolean },
   ): Observable<unknown> {
+    const suspendido = extra && Object.prototype.hasOwnProperty.call(extra, 'suspendido')
+      ? extra.suspendido
+      : gasto.suspendido;
     return this.api.putToUrl('finanzas/modelado/clasificacion', {
       clave: gasto.id,
       nombre: gasto.nombre,
@@ -260,7 +281,12 @@ export class FinanzasModeladoDataService {
       diaPago: propio(extra, 'diaPago', gasto.diaPago),
       proveedor: propio(extra, 'proveedor', gasto.proveedor),
       sucursal: propio(extra, 'sucursal', gasto.sucursal),
+      ...(suspendido !== undefined ? { suspendido } : {}),
     });
+  }
+
+  borrarClasificacion(clave: string): Observable<unknown> {
+    return this.api.store('finanzas/modelado/clasificacion/eliminar', { clave });
   }
 
   crearCalendario(body: {
@@ -297,6 +323,10 @@ export class FinanzasModeladoDataService {
       idSucursal: number;
       filas: { rubro: string; anual: number }[];
     }[],
+    areas?: {
+      idArea: number;
+      filas: { rubro: string; anual: number }[];
+    }[],
   ): Observable<unknown> {
     const estacionalidad =
       reparto === 'estacionalidad'
@@ -310,6 +340,7 @@ export class FinanzasModeladoDataService {
       filas: filas.map((f) => ({ rubro: f.id, anual: Number(f.anual) || 0 })),
       estacionalidad,
       sucursales,
+      areas,
     });
   }
 
@@ -388,6 +419,7 @@ function mapModelado(raw: ModeladoApi, anio: number): ModeladoVista {
         montoAnual: raw.presupuesto?.metaVentas?.montoAnual ?? 0,
       },
       sucursales: mapPresupuestoSucursales(raw.presupuesto?.sucursales),
+      areas: mapPresupuestoAreas(raw.presupuesto?.areas),
     },
     paso4Titulo: 'Paso 4 · Parámetros del pronóstico',
     parametrosPronostico: {
@@ -424,6 +456,7 @@ function mapGasto(g: NonNullable<ModeladoApi['gastos']>[number]): ModeladoGastoF
     proveedor: g.proveedor || undefined,
     sucursal: g.sucursal || undefined,
     diaPago: g.diaPago || undefined,
+    suspendido: g.suspendido === true,
   };
 }
 
@@ -471,6 +504,32 @@ function mapPresupuestoSucursales(
         contribVar: f.contribVar ?? 0,
         destacar: f.destacar === true,
       })),
+    },
+  };
+}
+
+function mapPresupuestoAreas(
+  raw: NonNullable<ModeladoApi['presupuesto']>['areas'],
+): ModeladoPresupuestoAreas | null {
+  if (!raw?.areas?.length) {
+    return null;
+  }
+  return {
+    areas: (raw.areas ?? []).map((a) => ({
+      id: Number(a.id) || 0,
+      nombre: a.nombre ?? '',
+    })),
+    filas: (raw.filas ?? []).map((f) => ({
+      id: f.id ?? '',
+      categoria: f.categoria ?? '',
+      porArea: { ...(f.porArea ?? {}) },
+      suma: f.suma ?? 0,
+      empresa: f.empresa ?? 0,
+    })),
+    contribucion: {
+      porArea: { ...(raw.contribucion?.porArea ?? {}) },
+      suma: raw.contribucion?.suma ?? 0,
+      empresa: raw.contribucion?.empresa ?? 0,
     },
   };
 }
@@ -555,7 +614,7 @@ function mapPendiente(
     clave: raw.clave ?? '',
     nombre: raw.nombre || raw.clave || '',
     monto: raw.monto ?? 0,
-    dia: '1',
+    dia: raw.diaPago?.trim() || '1',
     nuevo: raw.nuevo === true,
   };
 }

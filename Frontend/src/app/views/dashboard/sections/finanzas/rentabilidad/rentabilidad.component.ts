@@ -53,6 +53,11 @@ import { detalleProyectoDesdeFila } from './rentabilidad-proyecto-detalle.builde
 import { detalleProductoDesdeFila } from './rentabilidad-producto-detalle.builder';
 import { MetricCard } from '../../../models/chart-config.model';
 import { FinanzasKpiCardComponent } from '../finanzas-kpi-card.component';
+import {
+  alternarOrden,
+  EstadoOrden,
+  ordenarFilas,
+} from '../finanzas-table-sort.helper';
 
 export interface RentKpiChartItem {
   metric: MetricCard;
@@ -141,6 +146,24 @@ export class RentabilidadComponent implements OnInit, OnChanges {
   proveedorFiltroNombre = '';
   proveedorTexto = '';
   proveedorListaAbierta = false;
+  readonly proveedorColumnas: {
+    col: 'nombre' | 'compro' | 'parteComprasPct' | 'ganoAlVender' | 'ganaPorDolar';
+    label: string;
+    num?: boolean;
+  }[] = [
+    { col: 'nombre', label: 'Proveedor' },
+    { col: 'compro', label: 'Total compras', num: true },
+    { col: 'parteComprasPct', label: 'Porcentaje compras', num: true },
+    { col: 'ganoAlVender', label: 'Margen', num: true },
+    { col: 'ganaPorDolar', label: 'Ganancia', num: true },
+  ];
+  readonly ordenPorDimension: Record<RentabilidadDimensionId, EstadoOrden> = {
+    sucursal: { col: null, dir: 'asc' },
+    producto: { col: null, dir: 'asc' },
+    cliente: { col: null, dir: 'asc' },
+    proveedor: { col: null, dir: 'asc' },
+    proyecto: { col: null, dir: 'asc' },
+  };
   proyectoFiltroNombre = '';
   proyectoTexto = '';
   proyectoListaAbierta = false;
@@ -459,15 +482,38 @@ export class RentabilidadComponent implements OnInit, OnChanges {
       });
   }
 
+  filasSucursalVisibles(): RentabilidadSucursalFila[] {
+    const st = this.ordenPorDimension.sucursal;
+    if (!st.col) {
+      return this.data.filasSucursal;
+    }
+    const col = st.col as keyof Pick<
+      RentabilidadSucursalFila,
+      'nombre' | 'ventas' | 'gastos' | 'utilidad' | 'margenPct' | 'cxc' | 'cxp' | 'ventasVsAnioPct'
+    >;
+    return ordenarFilas(this.data.filasSucursal, st.dir, (fila) => fila[col]);
+  }
+
   filasProductoVisibles(): RentabilidadProductoTablaFila[] {
-    if (this.productoFiltroId === 'todos') {
-      return this.data.filasProducto;
+    const base = this.productoFiltroId === 'todos'
+      ? this.data.filasProducto
+      : (this.productoFiltroNombre.trim()
+          ? this.data.filasProducto.filter((fila) => fila.nombre.trim() === this.productoFiltroNombre.trim())
+          : []);
+    const st = this.ordenPorDimension.producto;
+    if (!st.col) {
+      return base;
     }
-    const nombre = this.productoFiltroNombre.trim();
-    if (!nombre) {
-      return [];
-    }
-    return this.data.filasProducto.filter((fila) => fila.nombre.trim() === nombre);
+    return ordenarFilas(base, st.dir, (fila) => {
+      if (st.col === 'inventario') {
+        return fila.inventario.tipo === 'sinVenta' ? null : fila.inventario.dias;
+      }
+      const col = st.col as keyof Pick<
+        RentabilidadProductoTablaFila,
+        'nombre' | 'unidades' | 'ventas' | 'ventasVsPct' | 'utilidad' | 'margenPct' | 'margenAnioPct' | 'precioVsPct'
+      >;
+      return fila[col];
+    });
   }
 
   private aplicarFiltroProducto(): void {
@@ -558,14 +604,28 @@ export class RentabilidadComponent implements OnInit, OnChanges {
   }
 
   filasClienteVisibles(): RentabilidadClienteFila[] {
-    if (this.clienteFiltroId === 'todos') {
-      return this.data.filasCliente;
+    const base = this.clienteFiltroId === 'todos'
+      ? this.data.filasCliente
+      : (this.clienteFiltroNombre.trim()
+          ? this.data.filasCliente.filter((fila) => fila.nombre.trim() === this.clienteFiltroNombre.trim())
+          : []);
+    const st = this.ordenPorDimension.cliente;
+    if (!st.col) {
+      return base;
     }
-    const nombre = this.clienteFiltroNombre.trim();
-    if (!nombre) {
-      return [];
-    }
-    return this.data.filasCliente.filter((fila) => fila.nombre.trim() === nombre);
+    return ordenarFilas(base, st.dir, (fila) => {
+      if (st.col === 'pagoDias') {
+        return fila.pagoContado ? 0 : fila.pagoDias;
+      }
+      if (st.col === 'ultimaCompra') {
+        return fila.ultimaCompra || null;
+      }
+      const col = st.col as keyof Pick<
+        RentabilidadClienteFila,
+        'nombre' | 'compro' | 'ganancia' | 'deCada100' | 'alFinalQuedan' | 'leDebe' | 'parteVentasPct'
+      >;
+      return fila[col];
+    });
   }
 
   private aplicarFiltroCliente(): void {
@@ -657,141 +717,64 @@ export class RentabilidadComponent implements OnInit, OnChanges {
 
   filasProyectoVisibles(): RentabilidadProyectoFila[] {
     const nombre = this.proyectoFiltroNombre.trim();
-    if (!nombre) {
-      return this.data.filasProyecto;
+    const base = nombre
+      ? this.data.filasProyecto.filter((fila) => fila.nombre.trim() === nombre)
+      : this.data.filasProyecto;
+    const st = this.ordenPorDimension.proyecto;
+    if (!st.col) {
+      return base;
     }
-    return this.data.filasProyecto.filter((fila) => fila.nombre.trim() === nombre);
-  }
-
-  lineaMaterial(cant?: number | null, unit?: number | null): string | null {
-    if (cant == null || unit == null || cant <= 0) {
-      return null;
-    }
-    const qty = Number.isInteger(cant) ? String(cant) : cant.toFixed(1);
-    return `${qty} × ${this.formatMonto(unit)}`;
-  }
-
-  totalMateriales(mats: RentabilidadProyectoDetalle['materiales']): { cot: number | null; com: number | null; dif: number | null } | null {
-    if (!mats.length) {
-      return null;
-    }
-    let cot = 0;
-    let com = 0;
-    let dif = 0;
-    let hayCot = false;
-    let hayCom = false;
-    let hayDif = false;
-    for (const mat of mats) {
-      if (mat.cotizadoMonto != null) {
-        cot += mat.cotizadoMonto;
-        hayCot = true;
-      }
-      if (mat.compradoMonto != null) {
-        com += mat.compradoMonto;
-        hayCom = true;
-      }
-      if (mat.difPrecio != null) {
-        dif += mat.difPrecio;
-        hayDif = true;
-      }
-    }
-    return { cot: hayCot ? cot : null, com: hayCom ? com : null, dif: hayDif ? dif : null };
-  }
-
-  proyectoGrafico(detalle: RentabilidadProyectoDetalle): {
-    w: number;
-    h: number;
-    ticks: { y: number; text: string }[];
-    area: string;
-    lineG: string;
-    lineF: string;
-    dotsG: { x: number; y: number }[];
-    dotsF: { x: number; y: number }[];
-    dotsC: { x: number; y: number }[];
-    labels: { x: number; text: string }[];
-  } | null {
-    const labels = detalle.chartLabels ?? [];
-    const n = labels.length;
-    if (!n) {
-      return null;
-    }
-    const gastado = detalle.chartGastado ?? [];
-    const facturado = detalle.chartFacturado ?? [];
-    const cobrado = detalle.chartCobrado ?? [];
-    const max = Math.max(...gastado, ...facturado, ...cobrado, 1);
-    const w = 360;
-    const h = 168;
-    const left = 42;
-    const right = 8;
-    const top = 10;
-    const bottom = 22;
-    const innerW = w - left - right;
-    const innerH = h - top - bottom;
-    const x = (i: number) => left + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW);
-    const y = (v: number) => top + innerH - (v / max) * innerH;
-    const path = (vals: number[]) =>
-      vals.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-    const base = top + innerH;
-    const area = `${path(cobrado)} L${x(n - 1).toFixed(1)},${base.toFixed(1)} L${x(0).toFixed(1)},${base.toFixed(1)} Z`;
-    const dots = (vals: number[]) => vals.map((v, i) => ({ x: x(i), y: y(v) }));
-    return {
-      w,
-      h,
-      ticks: [1, 0.5, 0].map((p) => ({ y: y(max * p), text: this.ejeMonto(max * p) })),
-      area,
-      lineG: path(gastado),
-      lineF: path(facturado),
-      dotsG: dots(gastado),
-      dotsF: dots(facturado),
-      dotsC: dots(cobrado),
-      labels: labels.map((text, i) => ({ x: x(i), text })),
-    };
+    const col = st.col as keyof Pick<
+      RentabilidadProyectoFila,
+      | 'nombre'
+      | 'contrato'
+      | 'facturadoPct'
+      | 'presupuestoGastadoPct'
+      | 'margenPlaneadoPct'
+      | 'margenFechaPct'
+      | 'porCobrar'
+    >;
+    return ordenarFilas(base, st.dir, (fila) => fila[col]);
   }
 
   filasProveedorVisibles(): RentabilidadProveedorFila[] {
     const nombre = this.proveedorFiltroNombre.trim();
-    if (!nombre) {
-      return this.data.filasProveedor;
+    const base = nombre
+      ? this.data.filasProveedor.filter((fila) => fila.nombre.trim() === nombre)
+      : this.data.filasProveedor;
+    const st = this.ordenPorDimension.proveedor;
+    if (!st.col) {
+      return base;
     }
-    return this.data.filasProveedor.filter((fila) => fila.nombre.trim() === nombre);
+    const col = st.col as keyof Pick<
+      RentabilidadProveedorFila,
+      'nombre' | 'compro' | 'parteComprasPct' | 'ganoAlVender' | 'ganaPorDolar'
+    >;
+    return ordenarFilas(base, st.dir, (fila) => fila[col]);
+  }
+
+  ordenarTabla(dim: RentabilidadDimensionId, col: string): void {
+    this.ordenPorDimension[dim] = alternarOrden(this.ordenPorDimension[dim], col);
+  }
+
+  ariaSortTabla(dim: RentabilidadDimensionId, col: string): 'ascending' | 'descending' | 'none' {
+    const st = this.ordenPorDimension[dim];
+    if (st.col !== col) {
+      return 'none';
+    }
+    return st.dir === 'asc' ? 'ascending' : 'descending';
+  }
+
+  iconoOrden(dim: RentabilidadDimensionId, col: string): string {
+    const st = this.ordenPorDimension[dim];
+    if (st.col !== col) {
+      return '↕';
+    }
+    return st.dir === 'asc' ? '↑' : '↓';
   }
 
   tonoGananciaCompra(fila: RentabilidadProveedorFila): string {
     return fila.ganaPorDolar >= 0.45 ? 'rent-text-pos' : '';
-  }
-
-  tonoPrecioProveedor(pct: number): string {
-    if (pct >= 5) {
-      return 'rent-text-neg';
-    }
-    if (pct > 0) {
-      return 'rent-text-warn';
-    }
-    if (pct < 0) {
-      return 'rent-text-pos';
-    }
-    return '';
-  }
-
-  tonoDiasPago(fila: RentabilidadProveedorFila): string {
-    const dias = fila.diasPago;
-    if (dias > 0 && dias <= 15) {
-      return 'rent-text-info';
-    }
-    if (dias > 0 && dias <= 21) {
-      return 'rent-text-neg';
-    }
-    if (dias >= 45) {
-      return 'rent-text-pos';
-    }
-    if (fila.dependenciaAlta && dias >= 30) {
-      return 'rent-text-warn';
-    }
-    return '';
-  }
-
-  proveedorAlerta(fila: RentabilidadProveedorFila): boolean {
-    return fila.diasPago > 0 && fila.diasPago <= 21;
   }
 
   abrirProducto(fila: RentabilidadProductoTablaFila): void {
@@ -975,43 +958,6 @@ export class RentabilidadComponent implements OnInit, OnChanges {
     return fila.formato === 'pct' ? this.formatPct(value) : this.formatMonto(value);
   }
 
-  formatDifPrecio(value: number): string {
-    const abs = this.formatMonto(value).replace(/^-/, '');
-    return value > 0 ? `+${abs}` : `-${abs}`;
-  }
-
-  maxProyectoAcumulado(detalle: RentabilidadProyectoDetalle): number {
-    return Math.max(
-      ...detalle.chartGastado,
-      ...detalle.chartFacturado,
-      ...detalle.chartCobrado,
-      1,
-    );
-  }
-
-  proyectoAcumuladoLinea(
-    valores: number[],
-    detalle: RentabilidadProyectoDetalle,
-    w = 300,
-    h = 88,
-  ): string {
-    const max = this.maxProyectoAcumulado(detalle);
-    return this.seriePath(valores, w, h, 0, max);
-  }
-
-  proyectoAcumuladoArea(
-    valores: number[],
-    detalle: RentabilidadProyectoDetalle,
-    w = 300,
-    h = 88,
-  ): string {
-    const linea = this.proyectoAcumuladoLinea(valores, detalle, w, h);
-    if (!linea) {
-      return '';
-    }
-    return `${linea} L ${w},${h} L 0,${h} Z`;
-  }
-
   anchoRelativoCategoriaGasto(
     pct: number,
     filas: { pctGasto: number }[],
@@ -1147,9 +1093,11 @@ export class RentabilidadComponent implements OnInit, OnChanges {
     return this.formatPrecio(value);
   }
 
-  formatPrecio6m(value: number): string {
-    const sign = value > 0 ? '+' : '';
-    return `${sign}${value.toFixed(1)}%`;
+  urlFacturaProveedor(fac: { id?: number; tipo?: 'Compra' | 'Gasto' }): string | null {
+    if (!fac.id) {
+      return null;
+    }
+    return fac.tipo === 'Gasto' ? `/gasto/detalles/${fac.id}` : `/compra/${fac.id}`;
   }
 
   claseValorTono(tono: 'normal' | 'naranja' | 'verde' | 'rojo'): string {
@@ -1166,7 +1114,11 @@ export class RentabilidadComponent implements OnInit, OnChanges {
     if (fila.pagoContado) {
       return 'contado';
     }
-    return `${fila.pagoDias} (pactó ${fila.pagoPactado})`;
+    const pacto = fila.pagoPactado === null ? '' : ` (pactó ${fila.pagoPactado})`;
+    if (fila.pagoDias === null) {
+      return fila.pagoPactado === null ? '—' : `pactó ${fila.pagoPactado}`;
+    }
+    return `${fila.pagoDias}${pacto}`;
   }
 
   tonoPago(fila: RentabilidadClienteFila): 'pos' | 'warn' | 'neg' | 'normal' {

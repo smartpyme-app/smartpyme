@@ -1,5 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
+import { ChangeDetectorRef, Component, HostListener, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -9,7 +8,9 @@ import { ApiService } from '@services/api.service';
 import { SharedDataService } from '@services/shared-data.service';
 import { formatEmpresaCurrency } from '@helpers/currency-format.helper';
 import { finalize, switchMap, take } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
+import { CrearDepartamentoComponent } from '@shared/modals/crear-departamento-empresa/crear-departamento-empresa.component';
+import { CrearAreaEmpresaComponent } from '@shared/modals/crear-area-empresa/crear-area-empresa.component';
 import {
   MODELADO_VACIA,
   FinanzasModeladoDataService,
@@ -18,6 +19,7 @@ import {
   ModeladoCalendarioCostoFila,
   ModeladoGastoFila,
   ModeladoGastoTipo,
+  ModeladoPresupuestoAreas,
   ModeladoPresupuestoFila,
   ModeladoPresupuestoReparto,
   ModeladoPresupuestoSucursales,
@@ -33,8 +35,6 @@ const FRECUENCIA: Record<string, string> = {
   anual: 'Anual',
 };
 
-const AREAS_GASTO = [{ id: 'empresa', label: 'Empresa (consolidado)' }];
-
 interface ModeladoGastoNuevoForm {
   nombre: string;
   proveedor: string;
@@ -46,6 +46,7 @@ interface ModeladoGastoNuevoForm {
   diaPago: string;
   llevaIva: boolean;
   estimado?: boolean;
+  editandoClave?: string | null;
 }
 
 const RUBROS_GASTO: { id: string; label: string }[] = [
@@ -69,7 +70,7 @@ const RUBROS_COSTO: { id: string; label: string }[] = [
   templateUrl: './modelado.component.html',
   styleUrls: ['./modelado.component.css'],
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, NgSelectModule, TooltipModule],
+  imports: [CommonModule, FormsModule, RouterLink, NgSelectModule, TooltipModule, CrearDepartamentoComponent, CrearAreaEmpresaComponent],
 })
 export class ModeladoComponent implements OnInit {
   private readonly api = inject(ApiService);
@@ -84,16 +85,19 @@ export class ModeladoComponent implements OnInit {
   calendarioPendiente = MODELADO_VACIA.calendarioPendiente;
   presupuestoFilas: ModeladoPresupuestoFila[] = [];
   presupuestoSucursales: ModeladoPresupuestoSucursales | null = null;
+  presupuestoAreas: ModeladoPresupuestoAreas | null = null;
   presupuestoReparto: ModeladoPresupuestoReparto = 'igual';
   metaVentasAnual = 0;
   pronostico = { ...MODELADO_VACIA.parametrosPronostico };
   costoNuevo: ModeladoGastoNuevoForm | null = null;
   gastoNuevo: ModeladoGastoNuevoForm | null = null;
+  menuGastoId: string | null = null;
   proveedores: { id: number; etiqueta: string }[] = [];
   sucursales: { id: number; nombre: string }[] = [];
+  departamentosEmpresa: { id: number; nombre: string }[] = [];
+  areasEmpresa: { id: number; nombre: string; id_departamento?: number }[] = [];
   readonly rubrosGasto = RUBROS_GASTO;
   readonly rubrosCosto = RUBROS_COSTO;
-  readonly areasGasto = AREAS_GASTO;
   cargando = false;
   contenidoListo = false;
   errorMensaje: string | null = null;
@@ -101,11 +105,16 @@ export class ModeladoComponent implements OnInit {
   readonly presupuestoVistas: { id: ModeladoPresupuestoVista; label: string; activo: boolean }[] = [
     { id: 'empresa', label: 'Empresa', activo: true },
     { id: 'sucursales', label: 'Sucursales', activo: true },
-    { id: 'areas', label: 'Áreas', activo: false },
+    { id: 'areas', label: 'Áreas', activo: true },
   ];
   presupuestoVista: ModeladoPresupuestoVista = 'empresa';
 
   private loadSeq = 0;
+
+  @HostListener('document:click')
+  cerrarMenuGasto(): void {
+    this.menuGastoId = null;
+  }
 
   ngOnInit(): void {
     this.cargar();
@@ -124,6 +133,39 @@ export class ModeladoComponent implements OnInit {
       this.sucursales = rows ?? [];
       this.cdr.markForCheck();
     });
+    this.cargarDepartamentosYAreas();
+  }
+
+  cargarDepartamentosYAreas(): void {
+    forkJoin({
+      deps: this.api.getAll('area-empresa/list_departamentos'),
+      areas: this.api.getAll('area-empresa/list'),
+    })
+      .pipe(take(1))
+      .subscribe({
+        next: ({ deps, areas }) => {
+          this.departamentosEmpresa = deps ?? [];
+          this.areasEmpresa = areas ?? [];
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.departamentosEmpresa = [];
+          this.areasEmpresa = [];
+        },
+      });
+  }
+
+  onDepartamentoCreado(): void {
+    this.cargarDepartamentosYAreas();
+  }
+
+  onAreaCreada(): void {
+    this.cargarDepartamentosYAreas();
+    this.cargar();
+  }
+
+  resumenDepartamentos(): string {
+    return this.departamentosEmpresa.map((d) => d.nombre).filter(Boolean).join(', ');
   }
 
   private etiquetaProveedor(p: { tipo?: string; nombre_empresa?: string; nombre_completo?: string; nombre?: string; nombre_comercial?: string }): string {
@@ -166,6 +208,10 @@ export class ModeladoComponent implements OnInit {
     if (gasto.tipo === 'variable' && gasto.pctVentas != null) {
       partes.push(`${gasto.pctVentas}% ventas`);
     }
+    if (gasto.tipo === 'fijo' && gasto.diaPago) {
+      const dia = gasto.diaPago.trim();
+      partes.push(/^d[ií]a\b/i.test(dia) ? dia : `día ${dia}`);
+    }
     partes.push(`${this.formatMonto(gasto.montoMensual)}/mes`);
     return partes.join(' · ');
   }
@@ -190,21 +236,13 @@ export class ModeladoComponent implements OnInit {
     return (this.ventasPromedioMes() * Number(n.pctVentas)) / 100;
   }
 
-  nuevoGastoMontoVariable(): number {
-    return this.montoVariableDe(this.gastoNuevo);
-  }
-
-  nuevoCostoMontoVariable(): number {
-    return this.montoVariableDe(this.costoNuevo);
-  }
-
   frecuenciaTexto(codigo: string): string {
     return FRECUENCIA[codigo] ?? codigo;
   }
 
   elegirTipo(gasto: ModeladoGastoFila, tipo: ModeladoGastoTipo, ev: Event): void {
     ev.preventDefault();
-    if (gasto.origen || gasto.tipo === tipo) {
+    if (gasto.origen || gasto.suspendido || gasto.tipo === tipo) {
       return;
     }
     const previo = gasto.tipo;
@@ -214,6 +252,95 @@ export class ModeladoComponent implements OnInit {
       gasto.tipo = previo;
       this.cdr.markForCheck();
     });
+  }
+
+  toggleMenuGasto(id: string, ev: Event): void {
+    ev.stopPropagation();
+    this.menuGastoId = this.menuGastoId === id ? null : id;
+  }
+
+  editarGasto(gasto: ModeladoGastoFila): void {
+    this.menuGastoId = null;
+    if (gasto.origen) {
+      return;
+    }
+    this.gastoNuevo = {
+      nombre: gasto.nombre,
+      proveedor: gasto.proveedor ?? '',
+      sucursal: gasto.sucursal ?? '',
+      rubro: this.rubrosGasto.some((r) => r.id === gasto.rubro) ? gasto.rubro : 'otros',
+      tipo: gasto.tipo ?? 'fijo',
+      montoMensual: gasto.montoMensual ?? null,
+      pctVentas: gasto.pctVentas ?? null,
+      diaPago: gasto.diaPago ?? '5',
+      llevaIva: false,
+      estimado: true,
+      editandoClave: gasto.id,
+    };
+  }
+
+  alternarSuspensionGasto(gasto: ModeladoGastoFila): void {
+    this.menuGastoId = null;
+    if (gasto.origen) {
+      return;
+    }
+    const suspendido = !gasto.suspendido;
+    const actualizado: ModeladoGastoFila = {
+      ...gasto,
+      tipo: gasto.tipo ?? 'fijo',
+      suspendido,
+    };
+    this.modeladoData
+      .guardarClasificacion(actualizado, { suspendido })
+      .pipe(
+        switchMap(() => {
+          if (!suspendido && actualizado.tipo === 'fijo' && actualizado.diaPago) {
+            const yaEnCal = this.calendarioFilas.some((c) => c.clave === actualizado.id);
+            if (!yaEnCal) {
+              const dia = actualizado.diaPago.trim();
+              return this.modeladoData.crearCalendario({
+                clave: actualizado.id,
+                nombre: actualizado.nombre,
+                monto: actualizado.montoMensual,
+                frecuencia: this.frecuenciaDeDia(dia),
+                dia,
+              });
+            }
+          }
+          return of(null);
+        }),
+        take(1),
+      )
+      .subscribe({
+        next: () => this.cargar(),
+        error: () => this.falloGuardar(suspendido ? 'No se suspendió el gasto.' : 'No se reactivó el gasto.'),
+      });
+  }
+
+  eliminarGasto(gasto: ModeladoGastoFila): void {
+    this.menuGastoId = null;
+    if (gasto.origen) {
+      return;
+    }
+    const esManual = gasto.id.startsWith('m:') || gasto.montoMensual <= 0;
+    const mensaje = esManual
+      ? `¿Eliminar "${gasto.nombre}"?\n\nSe quitará del Paso 1 y del Calendario de costos.`
+      : `"${gasto.nombre}" proviene de facturas registradas en contabilidad.\n\nAl eliminar su regla se quitará del Calendario y volverá a quedar sin clasificar. Si prefieres ocultarlo del modelado, usa "Suspender".\n\n¿Eliminar regla de todas formas?`;
+    if (!window.confirm(mensaje)) {
+      return;
+    }
+    this.modeladoData
+      .borrarClasificacion(gasto.id)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          if (this.gastoNuevo?.editandoClave === gasto.id) {
+            this.gastoNuevo = null;
+          }
+          this.cargar();
+        },
+        error: () => this.falloGuardar('No se eliminó el gasto.'),
+      });
   }
 
   guardarMonto(gasto: ModeladoGastoFila, ev: Event): void {
@@ -229,19 +356,23 @@ export class ModeladoComponent implements OnInit {
     this.persistirGasto(gasto);
   }
 
-  mostrarGastoNuevo(): void {
-    this.gastoNuevo = {
+  private crearFormItemNuevo(rubro: string, tipo: ModeladoGastoTipo): ModeladoGastoNuevoForm {
+    return {
       nombre: '',
       proveedor: '',
       sucursal: '',
-      rubro: 'otros',
-      tipo: 'variable',
+      rubro,
+      tipo,
       montoMensual: null,
       pctVentas: null,
       diaPago: '5',
       llevaIva: false,
       estimado: true,
     };
+  }
+
+  mostrarGastoNuevo(): void {
+    this.gastoNuevo = this.crearFormItemNuevo('otros', 'variable');
   }
 
   cancelarGastoNuevo(): void {
@@ -257,7 +388,18 @@ export class ModeladoComponent implements OnInit {
   private persistirGasto(gasto: ModeladoGastoFila, alFallar?: () => void): void {
     this.modeladoData
       .guardarClasificacion(gasto)
-      .pipe(take(1))
+      .pipe(
+        switchMap(() => {
+          if (gasto.tipo === 'variable') {
+            const calExistente = this.calendarioFilas.find((c) => c.clave === gasto.id && c.id > 0 && !c.origenModulo);
+            if (calExistente) {
+              return this.modeladoData.borrarCalendario(calExistente.id);
+            }
+          }
+          return of(null);
+        }),
+        take(1),
+      )
       .subscribe({
         next: () => this.cargar(),
         error: () => {
@@ -279,12 +421,63 @@ export class ModeladoComponent implements OnInit {
     return `${sign}${pct}%`;
   }
 
+  vsPresupuestoClase(fila: ModeladoPresupuestoFila): string {
+    const pct = fila.vsPresupuestoPct;
+    if (pct == null) {
+      return '';
+    }
+    if (fila.id === 'ventas') {
+      if (pct < -5) {
+        return 'modelado-pres-vs--alerta';
+      }
+      if (pct > 2) {
+        return 'modelado-pres-vs--ok';
+      }
+      return '';
+    }
+    if (pct > 5) {
+      return 'modelado-pres-vs--alerta';
+    }
+    if (pct < -2) {
+      return 'modelado-pres-vs--ok';
+    }
+    return '';
+  }
+
   presupuestoSucursalesActivo(): boolean {
     return (this.presupuestoSucursales?.sucursales.length ?? 0) > 0;
   }
 
+  presupuestoEntidadCelda(mapa: Record<string, number>, idEntidad: number): number {
+    return Number(mapa[String(idEntidad)]) || 0;
+  }
+
+  presupuestoEntidadSetCelda(mapa: Record<string, number>, idEntidad: number, value: number): void {
+    mapa[String(idEntidad)] = value;
+  }
+
+  presupuestoSumaEntidadFila(mapa: Record<string, number>, cols: { id: number }[]): number {
+    return cols.reduce((sum, c) => sum + (Number(mapa[String(c.id)]) || 0), 0);
+  }
+
+  private contribEntidad<T extends { id: string }>(
+    filas: T[] | undefined,
+    leerMapa: (fila: T) => Record<string, number>,
+    idEntidad: number,
+  ): number {
+    if (!filas) {
+      return 0;
+    }
+    let total = 0;
+    for (const fila of filas) {
+      const v = Number(leerMapa(fila)[String(idEntidad)]) || 0;
+      total += fila.id === 'ventas' ? v : -v;
+    }
+    return total;
+  }
+
   presupuestoSucursalCelda(fila: { porSucursal: Record<string, number> }, idSucursal: number): number {
-    return Number(fila.porSucursal[String(idSucursal)]) || 0;
+    return this.presupuestoEntidadCelda(fila.porSucursal, idSucursal);
   }
 
   presupuestoSucursalSetCelda(
@@ -292,36 +485,33 @@ export class ModeladoComponent implements OnInit {
     idSucursal: number,
     value: number,
   ): void {
-    fila.porSucursal[String(idSucursal)] = value;
+    this.presupuestoEntidadSetCelda(fila.porSucursal, idSucursal, value);
   }
 
   presupuestoSumaFila(fila: { porSucursal: Record<string, number> }): number {
-    if (!this.presupuestoSucursales) {
-      return 0;
-    }
-    return this.presupuestoSucursales.sucursales.reduce(
-      (sum, s) => sum + (Number(fila.porSucursal[String(s.id)]) || 0),
+    return this.presupuestoSumaEntidadFila(fila.porSucursal, this.presupuestoSucursales?.sucursales ?? []);
+  }
+
+  presupuestoContribSucursal(idSucursal: number): number {
+    return this.contribEntidad(this.presupuestoSucursales?.filas, (f) => f.porSucursal, idSucursal);
+  }
+
+  presupuestoContribSuma(): number {
+    return (this.presupuestoSucursales?.sucursales ?? []).reduce(
+      (sum, s) => sum + this.presupuestoContribSucursal(s.id),
       0,
     );
   }
 
-  presupuestoContribSucursal(idSucursal: number): number {
-    if (!this.presupuestoSucursales) {
-      return 0;
-    }
-    let total = 0;
-    for (const fila of this.presupuestoSucursales.filas) {
-      const v = Number(fila.porSucursal[String(idSucursal)]) || 0;
-      total += fila.id === 'ventas' ? v : -v;
-    }
-    return total;
+  presupuestoContribArea(idArea: number): number {
+    return this.contribEntidad(this.presupuestoAreas?.filas, (f) => f.porArea, idArea);
   }
 
-  presupuestoContribSuma(): number {
-    if (!this.presupuestoSucursales) {
-      return 0;
-    }
-    return this.presupuestoSucursales.sucursales.reduce((sum, s) => sum + this.presupuestoContribSucursal(s.id), 0);
+  presupuestoContribAreasSuma(): number {
+    return (this.presupuestoAreas?.areas ?? []).reduce(
+      (sum, a) => sum + this.presupuestoContribArea(a.id),
+      0,
+    );
   }
 
   presupuestoContribClase(valor: number): string {
@@ -372,18 +562,23 @@ export class ModeladoComponent implements OnInit {
     return Math.round(monto * (1 + iva / 100) * 100) / 100;
   }
 
+  private frecuenciaDeDia(dia: string): 'mensual' | 'quincenal' {
+    return (dia.match(/\d+/g)?.length ?? 0) >= 2 ? 'quincenal' : 'mensual';
+  }
+
   agregarCalendarioPendiente(): void {
     const p = this.calendarioPendiente;
     if (!p) {
       return;
     }
+    const dia = String(p.dia ?? '').trim() || '1';
     this.modeladoData
       .crearCalendario({
         clave: p.clave || null,
         nombre: p.nombre,
         monto: p.monto,
-        frecuencia: 'mensual',
-        dia: p.dia || '1',
+        frecuencia: this.frecuenciaDeDia(dia),
+        dia,
       })
       .pipe(take(1))
       .subscribe({
@@ -393,17 +588,7 @@ export class ModeladoComponent implements OnInit {
   }
 
   mostrarCostoNuevo(): void {
-    this.costoNuevo = {
-      nombre: '',
-      proveedor: '',
-      sucursal: '',
-      rubro: 'costo',
-      tipo: 'fijo',
-      montoMensual: null,
-      pctVentas: null,
-      diaPago: '5',
-      llevaIva: true,
-    };
+    this.costoNuevo = this.crearFormItemNuevo('costo', 'fijo');
   }
 
   cancelarCostoNuevo(): void {
@@ -426,41 +611,6 @@ export class ModeladoComponent implements OnInit {
       .subscribe({
         next: () => this.cargar(),
         error: () => this.falloGuardar('No se actualizó el calendario.'),
-      });
-  }
-
-  puedeEliminarCalendario(fila: ModeladoCalendarioCostoFila): boolean {
-    return fila.editableMonto && fila.id > 0 && !fila.origenModulo;
-  }
-
-  eliminarCalendario(fila: ModeladoCalendarioCostoFila): void {
-    const id = Math.trunc(Number(fila.id));
-    if (!this.puedeEliminarCalendario(fila) || id < 1) {
-      return;
-    }
-    const ok = window.confirm(
-      `¿Quitar "${fila.nombre}" del calendario?\n\nNo borra el gasto del P&L; solo la regla de cuándo sale de caja.`,
-    );
-    if (!ok) {
-      return;
-    }
-    this.modeladoData
-      .borrarCalendario(id)
-      .pipe(take(1))
-      .subscribe({
-        next: () => {
-          this.calendarioFilas = this.calendarioFilas.filter((f) => f.id !== id);
-          this.cdr.markForCheck();
-          this.cargar();
-        },
-        error: (err: HttpErrorResponse) => {
-          if (err.status === 404) {
-            this.calendarioFilas = this.calendarioFilas.filter((f) => f.id !== id);
-            this.cargar();
-            return;
-          }
-          this.falloGuardar('No se eliminó la regla del calendario.');
-        },
       });
   }
 
@@ -491,6 +641,7 @@ export class ModeladoComponent implements OnInit {
         this.presupuestoFilas,
         this.data.presupuesto.estacionalidadPesos,
         this.payloadPresupuestoSucursales(),
+        this.payloadPresupuestoAreas(),
       )
       .pipe(take(1))
       .subscribe({
@@ -503,23 +654,44 @@ export class ModeladoComponent implements OnInit {
     this.guardarPresupuesto();
   }
 
-  private payloadPresupuestoSucursales():
-    | { idSucursal: number; filas: { rubro: string; anual: number }[] }[]
-    | undefined {
-    const bloque = this.presupuestoSucursales;
-    if (!bloque?.sucursales.length) {
+  private payloadPresupuestoPorEntidad<T extends { id: string }>(
+    cols: { id: number }[] | undefined,
+    filas: T[] | undefined,
+    leerMapa: (fila: T) => Record<string, number>,
+  ): { id: number; filas: { rubro: string; anual: number }[] }[] | undefined {
+    if (!cols?.length || !filas) {
       return undefined;
     }
-    return bloque.sucursales.map((s) => ({
-      idSucursal: s.id,
+    return cols.map((col) => ({
+      id: col.id,
       filas: PRESUPUESTO_RUBROS.map((rubro) => {
-        const fila = bloque.filas.find((f) => f.id === rubro);
+        const fila = filas.find((f) => f.id === rubro);
         return {
           rubro,
-          anual: Number(fila?.porSucursal[String(s.id)]) || 0,
+          anual: fila ? Number(leerMapa(fila)[String(col.id)]) || 0 : 0,
         };
       }),
     }));
+  }
+
+  private payloadPresupuestoSucursales():
+    | { idSucursal: number; filas: { rubro: string; anual: number }[] }[]
+    | undefined {
+    return this.payloadPresupuestoPorEntidad(
+      this.presupuestoSucursales?.sucursales,
+      this.presupuestoSucursales?.filas,
+      (f) => f.porSucursal,
+    )?.map(({ id, filas }) => ({ idSucursal: id, filas }));
+  }
+
+  private payloadPresupuestoAreas():
+    | { idArea: number; filas: { rubro: string; anual: number }[] }[]
+    | undefined {
+    return this.payloadPresupuestoPorEntidad(
+      this.presupuestoAreas?.areas,
+      this.presupuestoAreas?.filas,
+      (f) => f.porArea,
+    )?.map(({ id, filas }) => ({ idArea: id, filas }));
   }
 
   guardarPronostico(): void {
@@ -566,10 +738,13 @@ export class ModeladoComponent implements OnInit {
       }
       monto = Number(n.montoMensual);
     }
-    const clave = claveManual(n.nombre);
-    const proveedor = n.proveedor.trim();
-    const sucursal = n.sucursal.trim();
-    const dia = n.tipo === 'fijo' && n.diaPago.trim() ? n.diaPago.trim() : null;
+    const esEdicion = !!n.editandoClave;
+    const clave = n.editandoClave || claveManual(n.nombre);
+    const prev = esEdicion ? this.gastos.find((g) => g.id === clave) : undefined;
+    const proveedor = String(n.proveedor ?? '').trim();
+    const sucursal = String(n.sucursal ?? '').trim();
+    const diaTexto = String(n.diaPago ?? '').trim();
+    const dia = n.tipo === 'fijo' && diaTexto ? diaTexto : null;
     const gasto: ModeladoGastoFila = {
       id: clave,
       nombre: n.nombre.trim(),
@@ -581,19 +756,27 @@ export class ModeladoComponent implements OnInit {
       proveedor: proveedor || undefined,
       sucursal: sucursal || undefined,
       diaPago: dia || undefined,
+      suspendido: prev?.suspendido,
     };
     this.modeladoData
       .guardarClasificacion(gasto, { pctVentas, diaPago: dia, proveedor: proveedor || null, sucursal: sucursal || null })
       .pipe(
         switchMap(() => {
-          if (n.tipo === 'fijo' && dia) {
-            return this.modeladoData.crearCalendario({
+          const calExistente = this.calendarioFilas.find((c) => c.clave === clave && c.id > 0 && !c.origenModulo);
+          if (!gasto.suspendido && n.tipo === 'fijo' && dia) {
+            const bodyCal = {
               clave,
               nombre: gasto.nombre,
               monto: this.montoCaja(monto, n.llevaIva),
-              frecuencia: 'mensual',
+              frecuencia: this.frecuenciaDeDia(dia),
               dia,
-            });
+            };
+            return calExistente
+              ? this.modeladoData.actualizarCalendario({ ...calExistente, ...bodyCal })
+              : this.modeladoData.crearCalendario(bodyCal);
+          }
+          if (esEdicion && calExistente) {
+            return this.modeladoData.borrarCalendario(calExistente.id);
           }
           return of(null);
         }),
@@ -672,7 +855,21 @@ export class ModeladoComponent implements OnInit {
     if (this.presupuestoVista === 'sucursales' && !this.presupuestoSucursalesActivo()) {
       this.presupuestoVista = 'empresa';
     }
-    this.presupuestoReparto = payload.presupuesto.reparto;
+    this.presupuestoAreas = payload.presupuesto.areas
+      ? {
+          areas: payload.presupuesto.areas.areas.map((a) => ({ ...a })),
+          filas: payload.presupuesto.areas.filas.map((f) => ({
+            ...f,
+            porArea: { ...f.porArea },
+          })),
+          contribucion: {
+            porArea: { ...payload.presupuesto.areas.contribucion.porArea },
+            suma: payload.presupuesto.areas.contribucion.suma,
+            empresa: payload.presupuesto.areas.contribucion.empresa,
+          },
+        }
+      : null;
+    this.presupuestoReparto = 'igual';
     this.metaVentasAnual = payload.presupuesto.metaVentas.montoAnual;
     this.pronostico = {
       ...payload.parametrosPronostico,

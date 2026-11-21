@@ -22,6 +22,14 @@ import {
   PlGerencialQuery,
 } from '../../../services/finanzas-pl-data.service';
 import { finalize, take } from 'rxjs/operators';
+import {
+  alternarOrden,
+  EstadoOrden,
+  ordenarFilas,
+} from '../finanzas-table-sort.helper';
+
+type PlMesSortCol = 'concepto' | 'mes' | 'pctVentasMes' | 'vsAbs' | 'acum' | 'pctVentasAcum';
+type PlAnualSortCol = 'concepto' | 'total' | `mes_${number}`;
 
 const PL_GASTOS_PCT_VACIO: PlGastosPctVentasMock = { filas: [] };
 
@@ -51,6 +59,9 @@ export class PlGerencialComponent implements OnInit, OnChanges {
   vistaEstado: PlVistaEstadoId = 'mes';
 
   readonly mesesAbr = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'] as const;
+
+  ordenMes: EstadoOrden<PlMesSortCol> = { col: null, dir: 'asc' };
+  ordenAnual: EstadoOrden<PlAnualSortCol> = { col: null, dir: 'asc' };
 
   private loadSeq = 0;
 
@@ -278,5 +289,54 @@ export class PlGerencialComponent implements OnInit, OnChanges {
       return 0;
     }
     return this.totalAnualFila(row.fuente);
+  }
+
+  ordenarMes(col: PlMesSortCol): void {
+    this.ordenMes = alternarOrden(this.ordenMes, col, true);
+  }
+
+  ariaSortMes(col: PlMesSortCol): 'ascending' | 'descending' | 'none' {
+    return this.ordenMes.col === col
+      ? (this.ordenMes.dir === 'asc' ? 'ascending' : 'descending')
+      : 'none';
+  }
+
+  filasMesVisibles(): PlEstadoResultadosFila[] {
+    const col = this.ordenMes.col;
+    if (!col) {
+      return this.filas;
+    }
+    return ordenarFilas(this.filas, this.ordenMes.dir, (f) => f[col]);
+  }
+
+  colMesAnual(idx: number): PlAnualSortCol {
+    return `mes_${idx}`;
+  }
+
+  ordenarAnual(col: PlAnualSortCol): void {
+    this.ordenAnual = alternarOrden(this.ordenAnual, col, true);
+  }
+
+  ariaSortAnual(col: PlAnualSortCol): 'ascending' | 'descending' | 'none' {
+    return this.ordenAnual.col === col
+      ? (this.ordenAnual.dir === 'asc' ? 'ascending' : 'descending')
+      : 'none';
+  }
+
+  filasVistaAnualVisibles(): PlFilaVistaAnual[] {
+    const col = this.ordenAnual.col;
+    if (!col) {
+      return this.filasVistaAnual;
+    }
+    return ordenarFilas(this.filasVistaAnual, this.ordenAnual.dir, (row) => {
+      if (col === 'concepto') {
+        return row.concepto;
+      }
+      if (col === 'total') {
+        return row.estilo === 'margen' ? row.margenTotal ?? null : this.totalAnualVista(row);
+      }
+      const idx = Number(col.slice(4));
+      return row.estilo === 'margen' ? row.margenMeses?.[idx] ?? null : this.montoMesVista(row, idx);
+    });
   }
 }

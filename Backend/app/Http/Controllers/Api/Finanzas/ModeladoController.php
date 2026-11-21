@@ -23,7 +23,7 @@ class ModeladoController extends Controller
             'clasificaciones' => DB::table('modelado_clasificaciones')
                 ->where('id_empresa', $empresa)
                 ->orderBy('nombre')
-                ->get(['clave', 'nombre', 'rubro', 'tipo', 'monto', 'pct_ventas', 'dia_pago', 'proveedor', 'sucursal']),
+                ->get(['clave', 'nombre', 'rubro', 'tipo', 'monto', 'pct_ventas', 'dia_pago', 'proveedor', 'sucursal', 'suspendido']),
             'calendario' => DB::table('modelado_calendario')
                 ->where('id_empresa', $empresa)
                 ->orderBy('id')
@@ -68,6 +68,7 @@ class ModeladoController extends Controller
             'diaPago' => 'nullable|string|max:32',
             'proveedor' => 'nullable|string|max:191',
             'sucursal' => 'nullable|string|max:191',
+            'suspendido' => 'nullable|boolean',
         ]);
         $empresa = $this->empresaId();
         $now = now();
@@ -83,11 +84,27 @@ class ModeladoController extends Controller
             'sucursal' => $data['sucursal'] ?? null,
             'updated_at' => $now,
         ];
-        if (DB::table('modelado_clasificaciones')->where($where)->exists()) {
-            DB::table('modelado_clasificaciones')->where($where)->update($values);
-        } else {
-            DB::table('modelado_clasificaciones')->insert($where + $values + ['created_at' => $now]);
+        if (array_key_exists('suspendido', $data) && $data['suspendido'] !== null) {
+            $values['suspendido'] = (bool) $data['suspendido'];
         }
+        DB::transaction(function () use ($where, $values, $empresa, $data, $now) {
+            if (DB::table('modelado_clasificaciones')->where($where)->exists()) {
+                DB::table('modelado_clasificaciones')->where($where)->update($values);
+            } else {
+                DB::table('modelado_clasificaciones')->insert($where + $values + [
+                    'suspendido' => $values['suspendido'] ?? false,
+                    'created_at' => $now,
+                ]);
+            }
+
+            if (! empty($values['suspendido'])) {
+                DB::table('modelado_calendario')
+                    ->where('id_empresa', $empresa)
+                    ->where('clave', $data['clave'])
+                    ->where('origen', 'manual')
+                    ->delete();
+            }
+        });
 
         return response()->json(['ok' => true]);
     }
@@ -95,10 +112,19 @@ class ModeladoController extends Controller
     public function borrarClasificacion(Request $request)
     {
         $data = $request->validate(['clave' => 'required|string|max:120']);
-        DB::table('modelado_clasificaciones')
-            ->where('id_empresa', $this->empresaId())
-            ->where('clave', $data['clave'])
-            ->delete();
+        $empresa = $this->empresaId();
+        DB::transaction(function () use ($empresa, $data) {
+            DB::table('modelado_clasificaciones')
+                ->where('id_empresa', $empresa)
+                ->where('clave', $data['clave'])
+                ->delete();
+
+            DB::table('modelado_calendario')
+                ->where('id_empresa', $empresa)
+                ->where('clave', $data['clave'])
+                ->where('origen', 'manual')
+                ->delete();
+        });
 
         return response()->json(['ok' => true]);
     }
@@ -125,9 +151,11 @@ class ModeladoController extends Controller
     public function actualizarCalendario(Request $request, int $id)
     {
         $data = $this->validarCalendario($request);
+        $empresa = $this->empresaId();
+        $now = now();
         $n = DB::table('modelado_calendario')
             ->where('id', $id)
-            ->where('id_empresa', $this->empresaId())
+            ->where('id_empresa', $empresa)
             ->where('origen', 'manual')
             ->update([
                 'clave' => $data['clave'] ?? null,
@@ -136,10 +164,19 @@ class ModeladoController extends Controller
                 'monto' => $data['monto'],
                 'frecuencia' => $data['frecuencia'],
                 'dia' => $data['dia'],
-                'updated_at' => now(),
+                'updated_at' => $now,
             ]);
         if ($n === 0) {
             return response()->json(['message' => 'No se encontró la regla'], 404);
+        }
+        if (! empty($data['clave'])) {
+            DB::table('modelado_clasificaciones')
+                ->where('id_empresa', $empresa)
+                ->where('clave', $data['clave'])
+                ->update([
+                    'dia_pago' => $data['dia'],
+                    'updated_at' => $now,
+                ]);
         }
 
         return response()->json(['ok' => true]);
@@ -174,6 +211,11 @@ class ModeladoController extends Controller
             'sucursales.*.filas' => 'required|array|min:1',
             'sucursales.*.filas.*.rubro' => 'required|in:'.self::RUBROS_PRESUPUESTO,
             'sucursales.*.filas.*.anual' => 'required|numeric|min:0',
+            'areas' => 'nullable|array',
+            'areas.*.idArea' => 'required|integer|min:1',
+            'areas.*.filas' => 'required|array|min:1',
+            'areas.*.filas.*.rubro' => 'required|in:'.self::RUBROS_PRESUPUESTO,
+            'areas.*.filas.*.anual' => 'required|numeric|min:0',
         ]);
         if ($data['reparto'] === 'estacionalidad' && empty($data['estacionalidad'])) {
             return response()->json(['message' => 'estacionalidad requiere 12 pesos'], 422);
@@ -222,29 +264,60 @@ class ModeladoController extends Controller
                 }
             }
             if (! empty($data['sucursales'])) {
-                DB::table('modelado_presupuesto_sucursal_lineas')
-                    ->where('id_empresa', $empresa)
-                    ->where('anio', $anio)
-                    ->delete();
-                foreach ($data['sucursales'] as $bloque) {
-                    $idSuc = (int) $bloque['idSucursal'];
-                    foreach ($bloque['filas'] as $fila) {
-                        DB::table('modelado_presupuesto_sucursal_lineas')->insert([
-                            'id_empresa' => $empresa,
-                            'anio' => $anio,
-                            'id_sucursal' => $idSuc,
-                            'rubro' => $fila['rubro'],
-                            'monto_anual' => $fila['anual'],
-                            'created_at' => $now,
-                            'updated_at' => $now,
-                        ]);
-                    }
-                }
+                $this->guardarLineasPresupuestoPorEntidad(
+                    'modelado_presupuesto_sucursal_lineas',
+                    'id_sucursal',
+                    'idSucursal',
+                    $empresa,
+                    $anio,
+                    $data['sucursales'],
+                    $now
+                );
+            }
+            if (! empty($data['areas'])) {
+                $this->guardarLineasPresupuestoPorEntidad(
+                    'modelado_presupuesto_area_lineas',
+                    'id_area_empresa',
+                    'idArea',
+                    $empresa,
+                    $anio,
+                    $data['areas'],
+                    $now
+                );
             }
             $this->crearPresupuestoFinanzasSiFalta($empresa, $anio, $data['filas'], $now);
         });
 
         return response()->json(['ok' => true]);
+    }
+
+    private function guardarLineasPresupuestoPorEntidad(
+        string $tabla,
+        string $colId,
+        string $claveId,
+        int $empresa,
+        int $anio,
+        array $bloques,
+        $now
+    ): void {
+        DB::table($tabla)
+            ->where('id_empresa', $empresa)
+            ->where('anio', $anio)
+            ->delete();
+        foreach ($bloques as $bloque) {
+            $entidadId = (int) $bloque[$claveId];
+            foreach ($bloque['filas'] as $fila) {
+                DB::table($tabla)->insert([
+                    'id_empresa' => $empresa,
+                    'anio' => $anio,
+                    $colId => $entidadId,
+                    'rubro' => $fila['rubro'],
+                    'monto_anual' => $fila['anual'],
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+        }
     }
 
     // Copia el anual de la suite a presupuestos de Finanzas solo si la empresa

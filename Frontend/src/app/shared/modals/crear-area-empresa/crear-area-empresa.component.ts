@@ -22,6 +22,8 @@ export class CrearAreaEmpresaComponent extends BaseModalComponent implements OnI
     public departamentos: any = [];
     @Input() id_area: any = null;
     @Input() id_departamento_preselected: any = null;
+    @Input() label = '';
+    @Input() btnClass = 'btn btn-default tcla-F1';
     @Output() update = new EventEmitter();
     public override loading = false;
     public override saving = false;
@@ -38,22 +40,19 @@ export class CrearAreaEmpresaComponent extends BaseModalComponent implements OnI
     }
 
     override openModal(template: TemplateRef<any>) {
-
-        if(!this.departamentos.length){
-            this.loading = true;
-            this.apiService.getAll('departamentosEmpresa/list')
-                .pipe(this.untilDestroyed())
-                .subscribe(departamentos => {
-                this.departamentos = departamentos.map((dept: any) => ({
+        this.loading = true;
+        this.apiService.getAll('area-empresa/list_departamentos')
+            .pipe(this.untilDestroyed())
+            .subscribe(departamentos => {
+                this.departamentos = (departamentos ?? []).map((dept: any) => ({
                     ...dept,
                     id: dept.id.toString()
                 }));
                 this.loading = false;
             }, error => {
-                this.alertService.error(error); 
+                this.alertService.error(error);
                 this.loading = false;
             });
-        }
 
         if(this.id_area){
             this.loading = true;

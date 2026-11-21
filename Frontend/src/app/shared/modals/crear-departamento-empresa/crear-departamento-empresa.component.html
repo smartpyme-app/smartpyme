@@ -1,10 +1,14 @@
 
-<button type="button" class="btn btn-default tcla-F1" (click)="openModal(mDepartamento)">
-    @if (!id_departamento) {
-        <i tooltip="Crear nuevo departamento (F1)" class="fa fa-plus"></i>
-    }
-    @if (id_departamento) {
-        <i tooltip="Editar departamento (F1)" class="fa fa-pencil-alt"></i>
+<button type="button" [class]="btnClass" (click)="openModal(mDepartamento)">
+    @if (label) {
+        <i class="fa fa-plus me-1" aria-hidden="true"></i> {{ label }}
+    } @else {
+        @if (!id_departamento) {
+            <i tooltip="Crear nuevo departamento (F1)" class="fa fa-plus"></i>
+        }
+        @if (id_departamento) {
+            <i tooltip="Editar departamento (F1)" class="fa fa-pencil-alt"></i>
+        }
     }
 </button>
 
