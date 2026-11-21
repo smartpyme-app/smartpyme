@@ -6,50 +6,55 @@ use App\Contracts\EmailReaderInterface;
 use App\Models\DteManagement\UserEmailAccount;
 use App\Support\Dte\DteEmailAttachmentHelper;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Enumerable;
+use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Facades\Log;
 use Webklex\PHPIMAP\ClientManager;
 
 class ImapReaderService implements EmailReaderInterface
 {
-    public function getEmailsWithDteAttachments(UserEmailAccount $account, Carbon $from, Carbon $to): Collection
+    /**
+     * Devuelve los DTE de los correos uno por uno (LazyCollection) para no juntar en memoria
+     * los adjuntos de todo el rango.
+     */
+    public function getEmailsWithDteAttachments(UserEmailAccount $account, Carbon $from, Carbon $to): Enumerable
     {
-        $clientConfig = $this->buildClientConfig($account);
-        $client = (new ClientManager())->make($clientConfig);
+        return LazyCollection::make(function () use ($account, $from, $to) {
+            $clientConfig = $this->buildClientConfig($account);
+            $client = (new ClientManager())->make($clientConfig);
 
-        $client->connect();
+            $client->connect();
 
-        $results = collect();
-
-        try {
-            $folder = $client->getFolderByName('INBOX');
-            if (!$folder) {
-                return $results;
-            }
-
-            $messages = $folder->query()
-                ->since($from)
-                ->before($to->addDay())
-                ->get();
-
-            foreach ($messages as $message) {
-                try {
-                    $items = $this->extractDteAttachments($message, $account);
-                    foreach ($items as $item) {
-                        $results->push($item);
-                    }
-                } catch (\Throwable $e) {
-                    Log::warning('IMAP: Error reading message', [
-                        'uid' => $message->getUid(),
-                        'error' => $e->getMessage(),
-                    ]);
+            try {
+                $folder = $client->getFolderByName('INBOX');
+                if (!$folder) {
+                    return;
                 }
-            }
-        } finally {
-            $client->disconnect();
-        }
 
-        return $results;
+                $messages = $folder->query()
+                    ->since($from)
+                    ->before($to->copy()->addDay())
+                    ->get();
+
+                foreach ($messages as $message) {
+                    try {
+                        $items = $this->extractDteAttachments($message, $account);
+                    } catch (\Throwable $e) {
+                        Log::warning('IMAP: Error reading message', [
+                            'uid' => $message->getUid(),
+                            'error' => $e->getMessage(),
+                        ]);
+
+                        continue;
+                    }
+                    foreach ($items as $item) {
+                        yield $item;
+                    }
+                }
+            } finally {
+                $client->disconnect();
+            }
+        });
     }
 
     /**
