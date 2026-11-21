@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { LayoutComponent } from '../../layout/layout.component';
 import { PermissionGuard } from '../../guards/permission.guard';
 import { FuncionalidadGuard } from '../../guards/funcionalidad.guard';
 import { PedidosShellComponent } from './pedidos-shell.component';
@@ -10,7 +9,6 @@ import { PedidoFormComponent } from './pedido-form/pedido-form.component';
 const routes: Routes = [
   {
     path: '',
-    component: LayoutComponent,
     title: 'Pedidos',
     canActivate: [FuncionalidadGuard, PermissionGuard],
     data: {

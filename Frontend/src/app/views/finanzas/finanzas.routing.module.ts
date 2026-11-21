@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { LayoutComponent } from '../../layout/layout.component';
 import { PermissionGuard } from '@guards/permission.guard';
 import { FuncionalidadGuard } from '@guards/funcionalidad.guard';
 import { SLUG_PRESTAMOS_EMPRESA } from './prestamos/prestamos-acceso';
@@ -11,7 +10,6 @@ const prestamosData = { permission: 'finanzas.prestamos.ver', funcionalidadSlug:
 const routes: Routes = [
   {
     path: '',
-    component: LayoutComponent,
     children: [
       {
         path: 'prestamos',

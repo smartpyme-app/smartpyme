@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { LayoutComponent } from '../../layout/layout.component';
 import { FuncionalidadGuard } from '@guards/funcionalidad.guard';
 import { PermissionGuard } from '../../guards/permission.guard';
 import { ConfigCategoriasComponent } from './config-categorias/config-categorias.component';
@@ -11,7 +10,6 @@ import { ReportesComponent } from './reportes/reportes.component';
 const routes: Routes = [
   {
     path: '',
-    component: LayoutComponent,
     title: 'Comisiones',
     canActivate: [FuncionalidadGuard, PermissionGuard],
     data: { funcionalidadSlug: 'comisiones-vendedores', permission: 'planilla.comisiones.ver' },

@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { LayoutComponent } from '../../layout/layout.component';
 import { AdminGuard } from '../../guards/admin.guard';
 import { FacturacionVersionGuard } from '../../guards/facturacion-version.guard';
 import { CotizacionesComponent } from '@views/ventas/cotizaciones/cotizaciones.component';
@@ -49,7 +48,6 @@ import { CrearOrdenProduccionComponent } from '@views/ventas/orden_produccion/cr
 const routes: Routes = [
   {
     path: '',
-    component: LayoutComponent,
     title: 'Ventas',
     children: [
 

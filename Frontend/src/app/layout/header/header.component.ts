@@ -15,6 +15,7 @@ import { ContadorEmpresaBarComponent } from './contador-empresa-bar.component';
 import { ContadoresPortalService } from '@services/contadores-portal.service';
 import { syncLayoutSidebarInset } from '../layout-sidebar-inset';
 import { pathLogoEmpresa, urlImagenEmpresaOAvatar } from '@shared/utils/imagen-empresa-o-avatar';
+import { RefrescoLayoutService } from '../../services/refresco-layout.service';
 
 // declare var $:any;
 
@@ -38,6 +39,7 @@ export class HeaderComponent implements OnInit {
 
     private destroyRef = inject(DestroyRef);
     private cdr = inject(ChangeDetectorRef);
+    private refrescoLayout = inject(RefrescoLayoutService);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
      constructor(
@@ -73,7 +75,20 @@ export class HeaderComponent implements OnInit {
         this.elem = document.documentElement;
 
         this.loadNotificaciones();
+        this.refrescarEmpresa();
 
+        // El layout ya no se recrea por módulo: refrescar al navegar con un mínimo entre cargas.
+        this.refrescoLayout.marcar('header-notificaciones');
+        this.refrescoLayout.marcar('header-empresa');
+        this.refrescoLayout.alNavegar('header-notificaciones', 60_000)
+            .pipe(this.untilDestroyed())
+            .subscribe(() => this.loadNotificaciones());
+        this.refrescoLayout.alNavegar('header-empresa', 5 * 60_000)
+            .pipe(this.untilDestroyed())
+            .subscribe(() => this.refrescarEmpresa());
+    }
+
+    private refrescarEmpresa(): void {
         this.apiService.refreshEmpresaEnSesion()
             .pipe(this.untilDestroyed())
             .subscribe(() => {

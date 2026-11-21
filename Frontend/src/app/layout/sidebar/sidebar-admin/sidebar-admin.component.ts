@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
@@ -18,6 +18,7 @@ import { debounceTime, switchMap, filter, filter as rxFilter } from 'rxjs/operat
 import { Subject, takeUntil } from 'rxjs';
 import { BaseComponent } from '@shared/base/base.component';
 import { RestauranteSidebarLinksComponent } from '../restaurante-sidebar-links.component';
+import { RefrescoLayoutService } from '../../../services/refresco-layout.service';
 
 @Component({
     selector: 'app-sidebar-admin',
@@ -28,6 +29,7 @@ import { RestauranteSidebarLinksComponent } from '../restaurante-sidebar-links.c
 })
 
 export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDestroy {
+    private refrescoLayout = inject(RefrescoLayoutService);
     public sidebarCollapsed:boolean = false;
 
     public productosIsCollapsed:boolean = true;
@@ -232,6 +234,11 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
           });
 
         this.loadNotificaciones();
+        // El layout ya no se recrea por módulo: refrescar notificaciones al navegar, máximo cada 60 s.
+        this.refrescoLayout.marcar('menu-notificaciones');
+        this.refrescoLayout.alNavegar('menu-notificaciones', 60_000)
+            .pipe(this.untilDestroyed())
+            .subscribe(() => this.loadNotificaciones());
         this.loadModules();
         this.verificarAccesoContabilidad();
         this.verificarFidelizacionHabilitada();

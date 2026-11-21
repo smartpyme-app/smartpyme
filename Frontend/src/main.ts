@@ -12,7 +12,7 @@ initSentry();
 ModuleRegistry.registerModules([ AllCommunityModule ]);
 
 import { importProvidersFrom } from '@angular/core';
-import { provideRouter, withPreloading } from '@angular/router';
+import { provideRouter, withPreloading, RouteReuseStrategy } from '@angular/router';
 import { provideHttpClient, withInterceptorsFromDi, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { NoPreloading } from '@angular/router';
@@ -27,6 +27,7 @@ import { JwtInterceptor } from './app/services/JwtInterceptor';
 import { AuthorizationInterceptor } from './app/services/Authorization/authorization.interceptor';
 import { PaceInterceptor } from './app/services/pace-interceptor';
 import { CacheInterceptor } from './app/services/cache-interceptor';
+import { EstrategiaReutilizacionRutas } from './app/services/estrategia-reutilizacion-rutas';
 import { AuthGuard } from './app/guards/auth.guard';
 import { AdminGuard } from './app/guards/admin.guard';
 import { CitasGuard } from './app/guards/citas.guard';
@@ -80,6 +81,7 @@ bootstrapApplication(AppComponent, {
       })
     ),
     provideRouter(routes, withPreloading(NoPreloading)),
+    { provide: RouteReuseStrategy, useClass: EstrategiaReutilizacionRutas },
     provideHttpClient(withInterceptorsFromDi()),
     provideAnimations(),
     provideEnvironmentNgxMask(),

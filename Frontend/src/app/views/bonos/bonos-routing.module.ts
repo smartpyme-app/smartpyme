@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { LayoutComponent } from '../../layout/layout.component';
 import { FuncionalidadGuard } from '@guards/funcionalidad.guard';
 import { PermissionGuard } from '../../guards/permission.guard';
 import { ReglasComponent } from './reglas/reglas.component';
@@ -9,7 +8,6 @@ import { GeneradosComponent } from './generados/generados.component';
 const routes: Routes = [
   {
     path: '',
-    component: LayoutComponent,
     title: 'Bonos',
     canActivate: [FuncionalidadGuard, PermissionGuard],
     data: { funcionalidadSlug: 'bonos-vendedores', permission: 'planilla.bonos.ver' },
