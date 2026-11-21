@@ -104,19 +104,37 @@ class CotizacionService
                 $detalle = new CotizacionVentaDetalle();
             }
 
+            $cantidad = (float) ($det['cantidad'] ?? 0);
+            $precioConIva = $det['precio_con_iva'] ?? $det['precio_iva'] ?? null;
+            $precioSinIva = $det['precio_sin_iva'] ?? $det['precio'] ?? null;
+            $gravada = (float) ($det['gravada'] ?? 0);
+            $exenta = (float) ($det['exenta'] ?? 0);
+            $noSujeta = (float) ($det['no_sujeta'] ?? 0);
+            $ivaLinea = (float) ($det['iva'] ?? 0);
+            $totalConIvaLinea = round($gravada + $exenta + $noSujeta + $ivaLinea, 2);
+            if ($cantidad > 0 && $totalConIvaLinea > 0 && $precioConIva !== null && $precioConIva !== '') {
+                $precioUnitarioConIva = $totalConIvaLinea / $cantidad;
+                if (abs(((float) $precioConIva) * $cantidad - $totalConIvaLinea) >= 0.01) {
+                    $precioConIva = round($precioUnitarioConIva, 6);
+                }
+            }
+
             // Mapear campos del detalle
             $detalleData = [
                 'id_cotizacion_venta' => $cotizacion->id,
                 'id_producto' => $det['id_producto'],
                 'cantidad' => $det['cantidad'],
                 'precio' => $det['precio'],
+                'precio_sin_iva' => $precioSinIva,
+                'precio_con_iva' => $precioConIva,
+                'tipo_gravado' => $det['tipo_gravado'] ?? 'gravada',
                 'total' => $det['total'],
                 'total_costo' => $det['total_costo'] ?? 0,
                 'descuento' => $det['descuento'] ?? 0,
                 'no_sujeta' => $det['no_sujeta'] ?? 0,
                 'exenta' => $det['exenta'] ?? 0,
                 'cuenta_a_terceros' => $det['cuenta_a_terceros'] ?? 0,
-                'subtotal' => $det['subtotal'] ?? $det['total'],
+                'subtotal' => $det['sub_total'] ?? $det['subtotal'] ?? $det['total'],
                 'gravada' => $det['gravada'] ?? 0,
                 'iva' => $det['iva'] ?? 0,
                 'descripcion' => $det['descripcion'] ?? $det['nombre_producto'] ?? '',
