@@ -54,14 +54,13 @@ class ProcessEmailAccountJob implements ShouldQueue
 
         try {
             $reader = $account->provider === 'gmail' ? $gmailReader : $imapReader;
+            // Se recorre una sola vez y en flujo (LazyCollection): contar antes obligaría a leer
+            // todos los correos dos veces y a tener sus adjuntos en memoria.
             $emailsWithDtes = $reader->getEmailsWithDteAttachments($account, $this->dateFrom, $this->dateTo);
-
-            $syncLog->update([
-                'emails_scanned' => $emailsWithDtes->count(),
-                'dtes_found' => $emailsWithDtes->count(),
-            ]);
+            $encontrados = 0;
 
             foreach ($emailsWithDtes as $emailData) {
+                $encontrados++;
                 $sourceTempPath = null;
                 $pdfTempPath = null;
                 $acuseTempPath = null;
@@ -116,6 +115,8 @@ class ProcessEmailAccountJob implements ShouldQueue
             $account->update(['last_sync_at' => now()]);
 
             $syncLog->update([
+                'emails_scanned' => $encontrados,
+                'dtes_found' => $encontrados,
                 'finished_at' => now(),
                 'status' => 'completed',
                 'failure_details' => $failureDetails ?: null,
