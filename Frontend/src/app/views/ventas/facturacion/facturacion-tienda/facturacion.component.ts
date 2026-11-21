@@ -3153,6 +3153,11 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         nombre_producto: detalle.nombre_producto || detalle.producto?.nombre || detalle.descripcion || '',
         img: detalle.img || detalle.producto?.img,
         costo: detalle.costo ?? detalle.total_costo ?? detalle.producto?.costo ?? 0,
+        precio_iva:
+          detalle.precio_iva ??
+          (detalle.precio_con_iva != null && detalle.precio_con_iva !== ''
+            ? detalle.precio_con_iva
+            : undefined),
       }));
     }
     return venta;
