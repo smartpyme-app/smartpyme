@@ -103,8 +103,11 @@ class AuditQueryService
                 => $this->pluckColumn($type, $ids, 'correlativo'),
             Compra::class => $this->pluckFirstColumn($type, $ids, ['referencia', 'numero_control', 'tipo_documento']),
             Gasto::class => $this->pluckFirstColumn($type, $ids, ['referencia', 'concepto', 'num_identificacion']),
-            OrdenCompra::class, OrdenProduccion::class, Planilla::class
-                => $this->pluckFirstColumn($type, $ids, ['correlativo', 'codigo']),
+            // Solo columnas que existen: orden_compras no tiene correlativo ni codigo, y
+            // ordenes_produccion y planillas no tienen correlativo (la consulta fallaba con 1054).
+            OrdenCompra::class => $this->pluckFirstColumn($type, $ids, ['referencia']),
+            OrdenProduccion::class, Planilla::class
+                => $this->pluckFirstColumn($type, $ids, ['codigo']),
             Cliente::class => $this->loadPersonReferences($type, $ids, true),
             Proveedor::class => $this->loadPersonReferences($type, $ids, false),
             Paquete::class => $this->pluckFirstColumn($type, $ids, ['num_guia', 'wr', 'num_seguimiento']),
