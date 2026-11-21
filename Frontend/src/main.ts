@@ -2,14 +2,12 @@ import { bootstrapApplication } from '@angular/platform-browser';
 import { ErrorHandler, inject, provideAppInitializer } from '@angular/core';
 import { Router } from '@angular/router';
 import * as Sentry from '@sentry/angular';
-import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 
 import { initSentry } from './app/sentry.init';
 
 initSentry();
 
-// Register AG Grid Community modules
-ModuleRegistry.registerModules([ AllCommunityModule ]);
+// AG Grid se registra en views/dashboard/ag-grid-registro.ts para no cargarlo al iniciar la app.
 
 import { importProvidersFrom } from '@angular/core';
 import { provideRouter, withPreloading, RouteReuseStrategy } from '@angular/router';

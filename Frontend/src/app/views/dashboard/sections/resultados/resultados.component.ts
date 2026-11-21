@@ -1,3 +1,4 @@
+import '../../ag-grid-registro';
 import {
   Component,
   Input,

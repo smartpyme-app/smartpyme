@@ -11,6 +11,11 @@ function gitShortSha() {
 
 /** @type {import('@angular-builders/custom-webpack').CustomWebpackConfig} */
 module.exports = (config, options) => {
+  // moment incluía sus 138 idiomas en main.js; la app no cambia el idioma de moment. Se deja solo 'es'.
+  const webpack = require('webpack');
+  config.plugins = config.plugins || [];
+  config.plugins.push(new webpack.ContextReplacementPlugin(/moment[\/\\]locale$/, /^\.\/es$/));
+
   if (options.configuration !== 'production') {
     return config;
   }
