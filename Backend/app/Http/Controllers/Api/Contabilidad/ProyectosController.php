@@ -70,6 +70,10 @@ class ProyectosController extends Controller
     {
 
         $proyecto = Proyecto::where('id', $id)->with('compras', 'ventas.abonos', 'cotizaciones', 'gastos', 'presupuestos')->firstOrFail();
+        // La pantalla del proyecto no usa el DTE. Sin esto, cada venta/compra con el DTE en S3 lo
+        // descargaba al convertir a JSON (una petición a S3 por documento).
+        $proyecto->ventas->each->sinDescargarDteDeS3()->makeHidden(['dte', 'dte_invalidacion']);
+        $proyecto->compras->each->sinDescargarDteDeS3()->makeHidden(['dte', 'dte_invalidacion']);
         return Response()->json($proyecto, 200);
     }
 
