@@ -6,6 +6,7 @@ use App\Models\DteManagement\SyncLog;
 use App\Models\DteManagement\UserEmailAccount;
 use App\Services\Gmail\GmailReaderService;
 use App\Services\Imap\ImapReaderService;
+use App\Support\Dte\CorreosDteRevisados;
 use App\Support\Dte\DteEmailAttachmentHelper;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
@@ -58,6 +59,8 @@ class ProcessEmailAccountJob implements ShouldQueue
             // todos los correos dos veces y a tener sus adjuntos en memoria.
             $emailsWithDtes = $reader->getEmailsWithDteAttachments($account, $this->dateFrom, $this->dateTo);
             $encontrados = 0;
+            $correosOk = [];
+            $correosConFallo = [];
 
             foreach ($emailsWithDtes as $emailData) {
                 $encontrados++;
@@ -85,14 +88,17 @@ class ProcessEmailAccountJob implements ShouldQueue
                         File::put($acuseTempPath, $emailData['acuse_content']);
                     }
 
-                    $result = ProcessDteJob::dispatchSync(
+                    // Se llama a handle() directamente: con dispatchSync el job pasa por la cola "sync" y su
+                    // valor de retorno se pierde, así que los duplicados se contaban como procesados.
+                    $result = app()->call([new ProcessDteJob(
                         $account,
                         $sourceTempPath,
                         $emailData['email_message_id'],
                         $format,
                         $pdfTempPath,
                         $acuseTempPath
-                    );
+                    ), 'handle']);
+                    $correosOk[CorreosDteRevisados::idCorreo((string) $emailData['email_message_id'])] = true;
 
                     if ($result === 'duplicate') {
                         $syncLog->increment('dtes_duplicates');
@@ -104,12 +110,20 @@ class ProcessEmailAccountJob implements ShouldQueue
                     Log::warning('ProcessEmailAccountJob: Failed to process DTE', [
                         'error' => $e->getMessage(),
                     ]);
+                    if (!empty($emailData['email_message_id'])) {
+                        $correosConFallo[CorreosDteRevisados::idCorreo((string) $emailData['email_message_id'])] = true;
+                    }
                     $failureDetails[] = [
                         'email_message_id' => $emailData['email_message_id'] ?? null,
                         'error' => $e->getMessage(),
                     ];
                     $syncLog->increment('dtes_failed');
                 }
+            }
+
+            // Los correos revisados sin errores no se vuelven a descargar (los que fallaron se reintentan).
+            foreach (array_keys(array_diff_key($correosOk, $correosConFallo)) as $idCorreo) {
+                CorreosDteRevisados::marcar($account->id, $idCorreo);
             }
 
             $account->update(['last_sync_at' => now()]);
