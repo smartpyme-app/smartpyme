@@ -13,6 +13,7 @@ import { ChartConfig } from '@views/dashboard/models/chart-config.model';
 
 declare var bootstrap: any;
 
+import { BarChartComponent } from '@views/dashboard/components/bar-chart/bar-chart.component';
 @Component({
   selector: 'app-cliente-vista-360',
   standalone: true,
@@ -23,6 +24,8 @@ declare var bootstrap: any;
     RouterModule,
     ClienteNotaModalComponent,
     BuscadorClienteVista360Component,
+    // Sin este import, <app-bar-chart> quedaba como etiqueta vacía y el gráfico de ventas no se mostraba.
+    BarChartComponent,
   ],
   templateUrl: './cliente-vista-360.component.html',
   styleUrls: ['./cliente-vista-360.component.css']

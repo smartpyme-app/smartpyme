@@ -1,3 +1,4 @@
+import '../../ag-grid-registro';
 import { Component, Input, OnInit, OnChanges, Output, EventEmitter, ViewChild, inject } from '@angular/core';
 import { ColDef, GridOptions, GridApi, themeQuartz, AllCommunityModule } from 'ag-grid-community';
 import { AgGridAngular } from 'ag-grid-angular';
