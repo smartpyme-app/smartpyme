@@ -63,7 +63,7 @@ class MHAnulacion extends Model
 
 
         if (isset($DTE['receptor']) && $tipoDte == '01') {
-            $tipo_documento = $DTE['receptor']['tipoDocumento'];
+            $tipo_documento = isset($DTE['receptor']['numDocumento']) ? $DTE['receptor']['tipoDocumento'] : null;
             $num_documento = $DTE['receptor']['numDocumento'];
             $nombre = $DTE['receptor']['nombre'];
             $correo = $DTE['receptor']['correo'];
