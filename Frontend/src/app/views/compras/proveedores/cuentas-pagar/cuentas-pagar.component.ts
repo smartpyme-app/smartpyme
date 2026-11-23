@@ -18,6 +18,7 @@ import { FinanzasReportesNavComponent } from '@views/finanzas/reportes/finanzas-
 import {
   BadgeDocumentoAjuste,
   badgesDocumentoAjuste,
+  textoAjusteListado,
 } from '@shared/utils/documento-ajuste-badges.util';
 
 @Component({
@@ -92,7 +93,9 @@ export class CuentasPagarComponent implements OnInit {
         if (this.filtros.fin) params.fin = this.filtros.fin;
         if (this.filtros.id_proveedor) params.id_proveedor = this.filtros.id_proveedor;
         if (this.filtros.id_sucursal) params.id_sucursal = this.filtros.id_sucursal;
-        if (this.filtros.con_ajuste) params.con_ajuste = this.filtros.con_ajuste;
+        if (this.filtros.con_ajuste === '0' || this.filtros.con_ajuste === '1') {
+            params.con_ajuste = this.filtros.con_ajuste;
+        }
         if (this.filtros.buscador) params.buscador = this.filtros.buscador;
         return params;
     }
@@ -101,10 +104,8 @@ export class CuentasPagarComponent implements OnInit {
         return badgesDocumentoAjuste(compra?.devoluciones_nc_nd, compra?.devoluciones_sum_total);
     }
 
-    claseBadgeAjuste(badge: BadgeDocumentoAjuste): string {
-        if (badge === 'NC') return 'bg-light-danger text-danger border border-danger';
-        if (badge === 'ND') return 'bg-light-info text-info border border-info';
-        return 'bg-light-warning text-dark border border-warning';
+    textoAjusteCompra(compra: any): string {
+        return textoAjusteListado(this.badgesDeCompra(compra));
     }
 
     filtrarPagos() {

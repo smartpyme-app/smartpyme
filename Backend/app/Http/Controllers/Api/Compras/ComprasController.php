@@ -845,6 +845,11 @@ class ComprasController extends Controller
                     $q->where('enable', 1);
                 });
             })
+            ->when($request->con_ajuste === '0' || $request->con_ajuste === 0, function ($query) {
+                return $query->whereDoesntHave('devoluciones', function ($q) {
+                    $q->where('enable', 1);
+                });
+            })
             ->where('cotizacion', 0)
             ->with(['devolucionesNcNd' => function ($query) {
                 $query->select('id', 'id_compra', 'fecha', 'tipo_documento', 'total', 'enable');

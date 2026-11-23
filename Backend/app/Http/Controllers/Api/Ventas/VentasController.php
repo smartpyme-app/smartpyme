@@ -214,6 +214,11 @@ class VentasController extends Controller
                     $q->where('enable', 1);
                 });
             })
+            ->when($request->con_ajuste === '0' || $request->con_ajuste === 0, function ($query) {
+                return $query->whereDoesntHave('devoluciones', function ($q) {
+                    $q->where('enable', 1);
+                });
+            })
             ->when($request->metodo_pago, function ($query) use ($request) {
                 return $query->where('metodo_pago', $request->metodo_pago);
             })
@@ -1463,8 +1468,21 @@ class VentasController extends Controller
                         ->orWhere('observaciones', 'like', $buscador);
                 });
             })
+            ->when($request->con_ajuste == 1 || $request->con_ajuste === '1', function ($query) {
+                return $query->whereHas('devoluciones', function ($q) {
+                    $q->where('enable', 1);
+                });
+            })
+            ->when($request->con_ajuste === '0' || $request->con_ajuste === 0, function ($query) {
+                return $query->whereDoesntHave('devoluciones', function ($q) {
+                    $q->where('enable', 1);
+                });
+            })
             ->where('cotizacion', 0)
             ->with(['cliente'])
+            ->with(['devolucionesNcNd' => function ($query) {
+                $query->with('documento:id,nombre');
+            }])
             ->withSum(['abonos' => function ($query) {
                 $query->where('estado', 'Confirmado');
             }], 'total')

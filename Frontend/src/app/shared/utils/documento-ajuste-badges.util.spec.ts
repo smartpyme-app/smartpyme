@@ -1,4 +1,4 @@
-import { badgesDocumentoAjuste } from './documento-ajuste-badges.util';
+import { badgesDocumentoAjuste, etiquetaBadgeAjuste, textoAjusteListado } from './documento-ajuste-badges.util';
 
 describe('badgesDocumentoAjuste', () => {
   it('sin items ni suma → vacío', () => {
@@ -35,5 +35,15 @@ describe('badgesDocumentoAjuste', () => {
 
   it('marca solo DEV si hay devoluciones sin NC/ND', () => {
     expect(badgesDocumentoAjuste([], 8)).toEqual(['DEV']);
+  });
+
+  it('etiqueta legible corta', () => {
+    expect(etiquetaBadgeAjuste('NC')).toBe('Nota crédito');
+    expect(etiquetaBadgeAjuste('ND')).toBe('Nota débito');
+    expect(etiquetaBadgeAjuste('DEV')).toBe('Devolución');
+  });
+
+  it('une etiquetas para el listado', () => {
+    expect(textoAjusteListado(['NC', 'DEV'])).toBe('Nota crédito · Devolución');
   });
 });

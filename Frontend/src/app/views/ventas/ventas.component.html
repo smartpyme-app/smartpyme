@@ -140,73 +140,31 @@
                             }
                         </td>
                         <td>
-                            <div class="d-flex flex-column align-items-start gap-1">
-                                <span class="badge py-2 position-relative" style="font-size: 0.8rem;"
-                                    [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}"
-                                    [tooltip]="venta.estado == 'Anulada' ? venta.motivo_anulacion : ''"
-                                    [isDisabled]="venta.estado != 'Anulada' || !venta.motivo_anulacion"
-                                    container="body">
-                                    @if (venta.estado != 'Pendiente') {
-                                        <span>{{ venta.estado }}</span>
-                                    }
-                                    @if (venta.estado == 'Pendiente' && canEditVentas() && !puedeFacturarVentaCuota(venta)) {
-                                        <a tooltip="Pagar venta" (click)="openAbono(mabono, venta)" class="text-decoration-none text-dark click">
-                                            {{ venta.estado }}
-                                        </a>
-                                    }
-                                    @if (venta.estado == 'Pendiente' && puedeFacturarVentaCuota(venta)) {
-                                        <span>{{ venta.estado }}</span>
-                                    }
-                                    @if (apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh) {
-                                        <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;">
-                                            ✅
-                                        </span>
-                                    }
-                                </span>
-                                @let badgesAjuste = badgesDeVenta(venta);
-                                @if (badgesAjuste.length) {
-                                    <div class="d-flex flex-wrap gap-1"
-                                        [popover]="popBadgesAjuste"
-                                        triggers="mouseenter:mouseleave"
-                                        container="body"
-                                        placement="bottom">
-                                        @for (b of badgesAjuste; track b) {
-                                            <span class="badge py-1 px-2" style="font-size: 0.7rem;"
-                                                [ngClass]="claseBadgeAjuste(b)">{{ b }}</span>
-                                        }
-                                    </div>
-                                    <ng-template #popBadgesAjuste>
-                                        <div class="small p-1" style="max-width: 320px;">
-                                            <div class="fw-semibold mb-1">Documentos de ajuste</div>
-                                            @if (tieneDevolucionesNcNd(venta)) {
-                                                <table class="table table-sm table-borderless mb-0 w-100">
-                                                    <thead>
-                                                        <tr class="text-muted border-bottom">
-                                                            <th class="ps-0 py-1 small">Fecha</th>
-                                                            <th class="py-1 small">Documento</th>
-                                                            <th class="text-end pe-0 py-1 small">Total</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        @for (d of venta.devoluciones_nc_nd; track d.id) {
-                                                            <tr>
-                                                                <td class="ps-0 py-1">{{ d.fecha | date:'dd/MM/yyyy' }}</td>
-                                                                <td class="py-1">{{ d.nombre_documento }}</td>
-                                                                <td class="text-end pe-0 py-1">{{ d.total | currency }}</td>
-                                                            </tr>
-                                                        }
-                                                    </tbody>
-                                                </table>
-                                            }
-                                            @if (venta.devoluciones_sum_total > 0) {
-                                                <div class="mt-1 text-muted">Devoluciones: {{ venta.devoluciones_sum_total | currency }}</div>
-                                            }
-                                        </div>
-                                    </ng-template>
+                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;"
+                                [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}"
+                                [tooltip]="venta.estado == 'Anulada' ? venta.motivo_anulacion : ''"
+                                [isDisabled]="venta.estado != 'Anulada' || !venta.motivo_anulacion"
+                                container="body">
+                                @if (venta.estado != 'Pendiente') {
+                                    <span>{{ venta.estado }}</span>
                                 }
-                            </div>
+                                @if (venta.estado == 'Pendiente' && canEditVentas() && !puedeFacturarVentaCuota(venta)) {
+                                    <a tooltip="Pagar venta" (click)="openAbono(mabono, venta)" class="text-decoration-none text-dark click">
+                                        {{ venta.estado }}
+                                    </a>
+                                }
+                                @if (venta.estado == 'Pendiente' && puedeFacturarVentaCuota(venta)) {
+                                    <span>{{ venta.estado }}</span>
+                                }
+                                @if (apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh) {
+                                    <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;">
+                                        ✅
+                                    </span>
+                                }
+                            </span>
                         </td>
                         <td class="text-end">
+                            @let badgesAjuste = badgesDeVenta(venta);
                             <ng-container *ngIf="totalTienePopover(venta); else ventaTotalSinPopover">
                                 <span class="click d-inline-block text-end"
                                     placement="left"
@@ -219,6 +177,11 @@
                                     <span *ngIf="!(venta.propina > 0)">
                                         {{totalListado(venta) | currency}}
                                     </span>
+                                    @if (badgesAjuste.length) {
+                                        <div class="text-danger" style="font-size: 0.65rem; line-height: 1.2;">
+                                            {{ textoAjusteVenta(venta) }}
+                                        </div>
+                                    }
                                 </span>
                             </ng-container>
                             <ng-template #ventaTotalSinPopover>
@@ -229,6 +192,11 @@
                                     <span *ngIf="!(venta.propina > 0)">
                                         {{totalListado(venta) | currency}}
                                     </span>
+                                    @if (badgesAjuste.length) {
+                                        <div class="text-danger" style="font-size: 0.65rem; line-height: 1.2;">
+                                            {{ textoAjusteVenta(venta) }}
+                                        </div>
+                                    }
                                 </span>
                             </ng-template>
                             <ng-template #popTemplateTotal>
@@ -261,6 +229,27 @@
                                             </tr>
                                         </tbody>
                                     </table>
+                                    @if (tieneDevolucionesNcNd(venta)) {
+                                        <div class="fw-semibold mt-2 mb-1 border-top pt-2">Documentos de ajuste</div>
+                                        <table class="table table-sm table-borderless mb-0 w-100">
+                                            <thead>
+                                                <tr class="text-muted border-bottom">
+                                                    <th class="py-1 px-1 small">Fecha</th>
+                                                    <th class="py-1 px-1 small">Documento</th>
+                                                    <th class="py-1 px-1 small text-end">Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @for (d of venta.devoluciones_nc_nd; track d.id) {
+                                                    <tr>
+                                                        <td class="py-1 px-1 text-nowrap">{{ d.fecha | date:'dd/MM/yyyy' }}</td>
+                                                        <td class="py-1 px-1">{{ d.nombre_documento }}</td>
+                                                        <td class="py-1 px-1 text-end text-nowrap">{{ d.total | currency }}</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    }
                                 </div>
                             </ng-template>
 
@@ -854,6 +843,7 @@
                 <select [(ngModel)]="filtros.con_ajuste" class="form-control form-select" name="filtros.con_ajuste">
                     <option value="">Todos</option>
                     <option value="1">Con NC / ND / devolución</option>
+                    <option value="0">Sin ajustes</option>
                 </select>
             </div>
             <div class="form-group col-sm-6">

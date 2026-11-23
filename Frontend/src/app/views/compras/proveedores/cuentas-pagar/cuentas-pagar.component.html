@@ -93,82 +93,68 @@
                             <span *ngIf="compra.estado != 'Pendiente'" class="text-muted">-</span>
                         </td>
                         <td>
-                            <div class="d-flex flex-column align-items-start gap-1">
-                                <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-warning': compra?.estado == 'Pendiente', 'bg-success': compra?.estado == 'Pagada'}" [popover]="popTemplate" [outsideClick]="true">
-                                    {{ compra.estado }}
-                                </span>
-                                <ng-template #popTemplate>
-                                    <button class="btn btn-default btn-sm" (click)="setEstado(compra, 'Pagada')">Pagada</button>
-                                    <button class="btn btn-default btn-sm" (click)="setEstado(compra, 'Pendiente')">Pendiente</button>
-                                </ng-template>
-                                @let badgesAjuste = badgesDeCompra(compra);
-                                @if (badgesAjuste.length) {
-                                    <div class="d-flex flex-wrap gap-1"
-                                        [popover]="popBadgesAjuste"
-                                        triggers="mouseenter:mouseleave"
-                                        container="body"
-                                        placement="bottom">
-                                        @for (b of badgesAjuste; track b) {
-                                            <span class="badge py-1 px-2" style="font-size: 0.7rem;"
-                                                [ngClass]="claseBadgeAjuste(b)">{{ b }}</span>
-                                        }
-                                    </div>
-                                    <ng-template #popBadgesAjuste>
-                                        <div class="small p-1" style="max-width: 320px;">
-                                            <div class="fw-semibold mb-1">Documentos de ajuste</div>
-                                            @if (compra.devoluciones_nc_nd?.length) {
-                                                <table class="table table-sm table-borderless mb-0 w-100">
-                                                    <thead>
-                                                        <tr class="text-muted border-bottom">
-                                                            <th class="ps-0 py-1 small">Fecha</th>
-                                                            <th class="py-1 small">Documento</th>
-                                                            <th class="text-end pe-0 py-1 small">Total</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        @for (d of compra.devoluciones_nc_nd; track d.id) {
-                                                            <tr>
-                                                                <td class="ps-0 py-1">{{ d.fecha | date:'dd/MM/yyyy' }}</td>
-                                                                <td class="py-1">{{ d.tipo_documento }}</td>
-                                                                <td class="text-end pe-0 py-1">{{ d.total | currency }}</td>
-                                                            </tr>
-                                                        }
-                                                    </tbody>
-                                                </table>
-                                            }
-                                            @if (compra.devoluciones_sum_total > 0) {
-                                                <div class="mt-1 text-muted">Devoluciones: {{ compra.devoluciones_sum_total | currency }}</div>
-                                            }
-                                        </div>
-                                    </ng-template>
-                                }
-                            </div>
+                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-warning': compra?.estado == 'Pendiente', 'bg-success': compra?.estado == 'Pagada'}" [popover]="popTemplate" [outsideClick]="true">
+                                {{ compra.estado }}
+                            </span>
+                            <ng-template #popTemplate>
+                                <button class="btn btn-default btn-sm" (click)="setEstado(compra, 'Pagada')">Pagada</button>
+                                <button class="btn btn-default btn-sm" (click)="setEstado(compra, 'Pendiente')">Pendiente</button>
+                            </ng-template>
                         </td>
                         <td class="text-right">
-                            <span [popover]="popTotalTemplate" placement="left" triggers="mouseenter:mouseleave">
+                            @let badgesAjuste = badgesDeCompra(compra);
+                            <span class="d-inline-block text-end" [popover]="popTotalTemplate" placement="left" triggers="mouseenter:mouseleave" style="cursor: pointer;">
                                 {{ compra.total | currency }}
+                                @if (badgesAjuste.length) {
+                                    <div class="text-danger" style="font-size: 0.65rem; line-height: 1.2;">
+                                        {{ textoAjusteCompra(compra) }}
+                                    </div>
+                                }
                             </span>
                             <ng-template #popTotalTemplate>
-                                <table class="w-100 table table-sm mb-0">
-                                    <tbody>
-                                        <tr>
-                                            <td>Total</td>
-                                            <td class="text-end">{{ compra.total | currency }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Abonos</td>
-                                            <td class="text-end">{{ (compra.abonos_sum_total || 0) | currency }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Devoluciones</td>
-                                            <td class="text-end">{{ (compra.devoluciones_sum_total || 0) | currency }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>Saldo</strong></td>
-                                            <td class="text-end"><strong>{{ getSaldo(compra) | currency }}</strong></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                <div class="small p-1" style="max-width: 320px;">
+                                    <table class="w-100 table table-sm mb-0">
+                                        <tbody>
+                                            <tr>
+                                                <td>Total</td>
+                                                <td class="text-end">{{ compra.total | currency }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Abonos</td>
+                                                <td class="text-end">{{ (compra.abonos_sum_total || 0) | currency }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Devoluciones</td>
+                                                <td class="text-end">{{ (compra.devoluciones_sum_total || 0) | currency }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Saldo</strong></td>
+                                                <td class="text-end"><strong>{{ getSaldo(compra) | currency }}</strong></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    @if (compra.devoluciones_nc_nd?.length) {
+                                        <div class="fw-semibold mt-2 mb-1 border-top pt-2">Documentos de ajuste</div>
+                                        <table class="table table-sm table-borderless mb-0 w-100">
+                                            <thead>
+                                                <tr class="text-muted border-bottom">
+                                                    <th class="py-1 px-1 small">Fecha</th>
+                                                    <th class="py-1 px-1 small">Documento</th>
+                                                    <th class="py-1 px-1 small text-end">Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @for (d of compra.devoluciones_nc_nd; track d.id) {
+                                                    <tr>
+                                                        <td class="py-1 px-1 text-nowrap">{{ d.fecha | date:'dd/MM/yyyy' }}</td>
+                                                        <td class="py-1 px-1">{{ d.tipo_documento }}</td>
+                                                        <td class="py-1 px-1 text-end text-nowrap">{{ d.total | currency }}</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    }
+                                </div>
                             </ng-template>
                         </td>
                         <td class="text-center">
@@ -237,6 +223,7 @@
                     <select [(ngModel)]="filtros.con_ajuste" class="form-select" name="filtros.con_ajuste">
                         <option value="">Todos</option>
                         <option value="1">Con NC / ND / devolución</option>
+                        <option value="0">Sin ajustes</option>
                     </select>
                 </div>
             </div>

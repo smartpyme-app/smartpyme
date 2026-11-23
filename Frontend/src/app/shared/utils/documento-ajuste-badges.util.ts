@@ -50,3 +50,14 @@ export function badgesDocumentoAjuste(
   if (tieneDev) badges.push('DEV');
   return badges;
 }
+
+/** Etiqueta corta legible para listados (evita solo iniciales sin alargar la columna). */
+export function etiquetaBadgeAjuste(badge: BadgeDocumentoAjuste): string {
+  if (badge === 'NC') return 'Nota crédito';
+  if (badge === 'ND') return 'Nota débito';
+  return 'Devolución';
+}
+
+export function textoAjusteListado(badges: BadgeDocumentoAjuste[]): string {
+  return badges.map(etiquetaBadgeAjuste).join(' · ');
+}

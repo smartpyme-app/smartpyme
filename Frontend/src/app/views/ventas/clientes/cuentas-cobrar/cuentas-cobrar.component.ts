@@ -17,6 +17,11 @@ import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { SLUG_CREDITOS_CLIENTES } from '@views/ventas/creditos/creditos-acceso';
 import { FinanzasReportesNavComponent } from '@views/finanzas/reportes/finanzas-reportes-nav.component';
+import {
+  BadgeDocumentoAjuste,
+  badgesDocumentoAjuste,
+  textoAjusteListado,
+} from '@shared/utils/documento-ajuste-badges.util';
 
 @Component({
   selector: 'app-cuentas-cobrar',
@@ -93,9 +98,40 @@ export class CuentasCobrarComponent implements OnInit {
             id_cliente: '',
             id_vendedor: '',
             id_sucursal: '',
+            con_ajuste: '',
             buscador: ''
         };
         this.filtrarCobros(false);
+    }
+
+    private paramsFiltrosListado(incluirPaginate = true): any {
+        const params: any = {
+            orden: this.filtros.orden,
+            direccion: this.filtros.direccion
+        };
+        if (incluirPaginate) {
+            params.paginate = this.filtros.paginate;
+            const page = this.filtros.page != null && this.filtros.page !== '' ? this.filtros.page : 1;
+            params.page = page;
+        }
+        if (this.filtros.inicio) params.inicio = this.filtros.inicio;
+        if (this.filtros.fin) params.fin = this.filtros.fin;
+        if (this.filtros.id_cliente) params.id_cliente = this.filtros.id_cliente;
+        if (this.filtros.id_vendedor) params.id_vendedor = this.filtros.id_vendedor;
+        if (this.filtros.id_sucursal) params.id_sucursal = this.filtros.id_sucursal;
+        if (this.filtros.con_ajuste === '0' || this.filtros.con_ajuste === '1') {
+            params.con_ajuste = this.filtros.con_ajuste;
+        }
+        if (this.filtros.buscador) params.buscador = this.filtros.buscador;
+        return params;
+    }
+
+    badgesDeVenta(venta: any): BadgeDocumentoAjuste[] {
+        return badgesDocumentoAjuste(venta?.devoluciones_nc_nd, venta?.devoluciones_sum_total);
+    }
+
+    textoAjusteVenta(venta: any): string {
+        return textoAjusteListado(this.badgesDeVenta(venta));
     }
 
     /**
@@ -106,19 +142,7 @@ export class CuentasCobrarComponent implements OnInit {
             this.filtros.page = 1;
         }
         this.loading = true;
-        const page = this.filtros.page != null && this.filtros.page !== '' ? this.filtros.page : 1;
-        const params: any = {
-            paginate: this.filtros.paginate,
-            orden: this.filtros.orden,
-            direccion: this.filtros.direccion,
-            page
-        };
-        if (this.filtros.inicio) params.inicio = this.filtros.inicio;
-        if (this.filtros.fin) params.fin = this.filtros.fin;
-        if (this.filtros.id_cliente) params.id_cliente = this.filtros.id_cliente;
-        if (this.filtros.id_vendedor) params.id_vendedor = this.filtros.id_vendedor;
-        if (this.filtros.id_sucursal) params.id_sucursal = this.filtros.id_sucursal;
-        if (this.filtros.buscador) params.buscador = this.filtros.buscador;
+        const params = this.paramsFiltrosListado(true);
 
         this.apiService.getAll('cuentas-cobrar', params).subscribe(
             (cobros) => {
@@ -165,16 +189,7 @@ export class CuentasCobrarComponent implements OnInit {
 
     descargarReporte() {
         this.downloading = true;
-        const params: any = {
-            orden: this.filtros.orden,
-            direccion: this.filtros.direccion
-        };
-        if (this.filtros.inicio) params.inicio = this.filtros.inicio;
-        if (this.filtros.fin) params.fin = this.filtros.fin;
-        if (this.filtros.id_cliente) params.id_cliente = this.filtros.id_cliente;
-        if (this.filtros.id_vendedor) params.id_vendedor = this.filtros.id_vendedor;
-        if (this.filtros.id_sucursal) params.id_sucursal = this.filtros.id_sucursal;
-        if (this.filtros.buscador) params.buscador = this.filtros.buscador;
+        const params = this.paramsFiltrosListado(false);
 
         this.apiService.export('cuentas-cobrar/exportar', params).subscribe(
             (data: Blob) => {
@@ -199,15 +214,8 @@ export class CuentasCobrarComponent implements OnInit {
     descargarReportePorFechaCorte() {
         if (!this.fechaCorte) return;
         this.downloading = true;
-        const params: any = {
-            orden: this.filtros.orden,
-            direccion: this.filtros.direccion,
-            fecha_corte: this.fechaCorte
-        };
-        if (this.filtros.id_cliente) params.id_cliente = this.filtros.id_cliente;
-        if (this.filtros.id_vendedor) params.id_vendedor = this.filtros.id_vendedor;
-        if (this.filtros.id_sucursal) params.id_sucursal = this.filtros.id_sucursal;
-        if (this.filtros.buscador) params.buscador = this.filtros.buscador;
+        const params = this.paramsFiltrosListado(false);
+        params.fecha_corte = this.fechaCorte;
 
         this.apiService.export('cuentas-cobrar/exportar', params).subscribe({
             next: (data: Blob) => {
@@ -236,6 +244,7 @@ export class CuentasCobrarComponent implements OnInit {
         this.filtros.id_cliente = '';
         this.filtros.id_vendedor = '';
         this.filtros.id_sucursal = '';
+        this.filtros.con_ajuste = '';
         this.filtros.buscador = '';
         this.filtrarCobros();
         if (this.modalRef) {

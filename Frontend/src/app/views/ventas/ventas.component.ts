@@ -65,6 +65,7 @@ import {
 import {
   BadgeDocumentoAjuste,
   badgesDocumentoAjuste,
+  textoAjusteListado,
 } from '@shared/utils/documento-ajuste-badges.util';
 
 export type VentasExportPeriodoTipo = 'detalles' | 'ventas' | 'general';
@@ -2379,18 +2380,17 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     return badgesDocumentoAjuste(venta?.devoluciones_nc_nd, venta?.devoluciones_sum_total);
   }
 
-  public claseBadgeAjuste(badge: BadgeDocumentoAjuste): string {
-    if (badge === 'NC') return 'bg-light-danger text-danger border border-danger';
-    if (badge === 'ND') return 'bg-light-info text-info border border-info';
-    return 'bg-light-warning text-dark border border-warning';
+  public textoAjusteVenta(venta: any): string {
+    return textoAjusteListado(this.badgesDeVenta(venta));
   }
 
-  /** Mostrar popover en el total: saldo desglosado (abonos / devoluciones). */
+  /** Mostrar popover en el total: saldo desglosado y documentos de ajuste. */
   public totalTienePopover(venta: any): boolean {
     return (
       venta?.estado === 'Pendiente' ||
       Number(venta?.abonos_sum_total || 0) > 0 ||
-      Number(venta?.devoluciones_sum_total || 0) > 0
+      Number(venta?.devoluciones_sum_total || 0) > 0 ||
+      this.badgesDeVenta(venta).length > 0
     );
   }
 
