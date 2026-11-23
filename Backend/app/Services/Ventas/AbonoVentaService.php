@@ -88,9 +88,19 @@ class AbonoVentaService
         $direccion = $filters['direccion'] ?? 'desc';
         $paginate = $filters['paginate'] ?? 15;
 
-        return $query->orderBy($orden, $direccion)
+        $abonos = $query->orderBy($orden, $direccion)
             ->orderBy('id', 'desc')
             ->paginate($paginate);
+
+        // El listado no usa el DTE de la venta. Sin esto, al convertir a JSON cada venta con el DTE
+        // ya movido a S3 lo descargaba (una petición a S3 por fila: ~1.6 s por página).
+        $abonos->getCollection()->each(function ($abono) {
+            if ($abono->venta) {
+                $abono->venta->sinDescargarDteDeS3()->makeHidden(['dte', 'dte_invalidacion']);
+            }
+        });
+
+        return $abonos;
     }
 
     /**
