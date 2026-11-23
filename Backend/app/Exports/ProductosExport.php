@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Producto;
+use App\Support\NombreComercial;
 
 class ProductosExport implements FromCollection, WithHeadings, WithMapping
 {
@@ -18,6 +19,12 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
 
     private $request;
 
+    /** Se calculan una sola vez por exportación (antes se consultaban en cada fila). */
+    private ?bool $mostrarCosto = null;
+    private ?bool $incluirComponenteQuimico = null;
+    /** @var array<int, bool> id_empresa => lotes activos */
+    private array $lotesActivoPorEmpresa = [];
+
     public function filter(Request $request)
     {
         $this->request = $request;
@@ -25,17 +32,46 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
 
     private function mostrarCosto(): bool
     {
-        return !\App\Constants\CotizacionConstants::esVentasLimitado(Auth::user());
+        return $this->mostrarCosto ??= !\App\Constants\CotizacionConstants::esVentasLimitado(Auth::user());
     }
 
     private function incluirComponenteQuimico(): bool
     {
+        if ($this->incluirComponenteQuimico !== null) {
+            return $this->incluirComponenteQuimico;
+        }
         $user = Auth::user();
         if (!$user || !$user->id_empresa) {
-            return false;
+            return $this->incluirComponenteQuimico = false;
         }
         $empresa = Empresa::find($user->id_empresa);
-        return $empresa && $empresa->isComponenteQuimicoHabilitado();
+        return $this->incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
+    }
+
+    private function lotesActivo($empresa): bool
+    {
+        if (!$empresa) {
+            return false;
+        }
+        return $this->lotesActivoPorEmpresa[$empresa->id] ??= $empresa->isLotesActivo();
+    }
+
+    /** Mismo texto que Proveedor::nombre_proveedor, pero con la relación ya cargada (sin consultas). */
+    private function nombrePrimerProveedor($row): string
+    {
+        $productoProveedor = $row->proveedores->first();
+        if (!$productoProveedor) {
+            return '';
+        }
+        $proveedor = $productoProveedor->proveedor;
+        if (!$proveedor) {
+            return 'Consumidor Final';
+        }
+        $legal = $proveedor->tipo == 'Persona'
+            ? $proveedor->nombre . ' ' . $proveedor->apellido
+            : $proveedor->nombre_empresa;
+
+        return NombreComercial::anexar($legal, $proveedor->nombre_comercial);
     }
 
     /**
@@ -94,15 +130,15 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
 
     public function map($row): array
     {
-        $etiquetas = $row->etiquetas;
-        $lotesActivo = $row->empresa && $row->empresa->isLotesActivo();
+        $empresa = $row->empresa;
+        $lotesActivo = $this->lotesActivo($empresa);
         $stockSum = self::stockParaExport($row, $lotesActivo);
 
         // Obtener la empresa y verificar si tiene shopify_store_url configurado
         $nombreProducto = $row->nombre;
 
         // Si la empresa tiene shopify_store_url y el producto tiene nombre_variante, concatenar
-        if ($row->empresa && $row->empresa->shopify_store_url && $row->nombre_variante) {
+        if ($empresa && $empresa->shopify_store_url && $row->nombre_variante) {
             $nombreProducto = $row->nombre . ' ' . $row->nombre_variante;
         }
 
@@ -118,16 +154,16 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
         }
         $precios = [number_format($row->precio, 2)];
         if ($this->mostrarCosto()) {
-            $costo = $row->empresa()->pluck('valor_inventario')->first() == 'promedio'
+            $costo = ($empresa ? $empresa->valor_inventario : null) == 'promedio'
                 ? number_format($row->costo_promedio, 2)
                 : number_format($row->costo, 2);
             array_unshift($precios, $costo);
             $precios[] = number_format($row->precio - $row->costo, 2);
         }
         $fields = array_merge($fields, $precios, [
-            number_format($row->precio + ($row->precio * ($row->empresa()->pluck('iva')->first() ? $row->empresa()->pluck('iva')->first() / 100 : 0)), 2),
+            number_format($row->precio + ($row->precio * ($empresa && $empresa->iva ? $empresa->iva / 100 : 0)), 2),
             $stockSum,
-            $row->proveedores()->count() ? $row->proveedores()->first()->nombre_proveedor : '',
+            $this->nombrePrimerProveedor($row),
             $row->enable ? 'Activo' : 'Inactivo',
             // $etiquetas,
             $row->descripcion,
@@ -148,17 +184,25 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
             if ($request->id_bodega) {
                 $q->where('id_bodega', $request->id_bodega);
             }
-        }, 'precios', 'empresa'])
+        },
+            'empresa',
+            'categoria:id,nombre',
+            'proveedores',
+            'proveedores.proveedor',
+        ])
             ->when($request->id_categoria, function ($query) use ($request) {
                 return $query->where('id_categoria', $request->id_categoria);
             })
             ->when($request->buscador, function ($query) use ($request) {
-                return $query->where('nombre', 'like', '%' . $request->buscador . '%')
-                    ->orwhere('codigo', 'like', "%" . $request->buscador . "%")
-                    ->orwhere('barcode', 'like', "%" . $request->buscador . "%")
-                    ->orwhere('etiquetas', 'like', "%" . $request->buscador . "%")
-                    ->orwhere('marca', 'like', "%" . $request->buscador . "%")
-                    ->orwhere('descripcion', 'like', "%" . $request->buscador . "%");
+                // Agrupado: sin el paréntesis, los OR anulaban los demás filtros (categoría, tipo, estado...).
+                return $query->where(function ($q) use ($request) {
+                    $q->where('nombre', 'like', '%' . $request->buscador . '%')
+                        ->orwhere('codigo', 'like', "%" . $request->buscador . "%")
+                        ->orwhere('barcode', 'like', "%" . $request->buscador . "%")
+                        ->orwhere('etiquetas', 'like', "%" . $request->buscador . "%")
+                        ->orwhere('marca', 'like', "%" . $request->buscador . "%")
+                        ->orwhere('descripcion', 'like', "%" . $request->buscador . "%");
+                });
             })
             ->when($request->id_proveedor, function ($q) use ($request) {
                 $q->whereHas('proveedores', function ($q) use ($request) {
