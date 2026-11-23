@@ -25,9 +25,9 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
 import { firstValueFrom, forkJoin } from 'rxjs';
 import { DocumentoImportService } from '@services/compras/documento-import.service';
 import {
-  descuentoImplicitoLinea,
   lineaGastoTieneDesglose,
   montosLineaGastoDesdeDte,
+  repararLineaGastoSubtotalCero,
 } from '@services/compras/compra-detalle-desde-dte.util';
 import {
   esErrorCodigoGeneracionDuplicado,
@@ -142,6 +142,21 @@ export class GastoComponent implements OnInit {
 
   esFeCostaRicaGasto(): boolean {
     return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
+  }
+
+  /** DTE del gasto como objeto (puede venir stringificado). */
+  private parseGastoDte(dte: any): any | null {
+    if (!dte) {
+      return null;
+    }
+    if (typeof dte === 'string') {
+      try {
+        return JSON.parse(dte);
+      } catch {
+        return null;
+      }
+    }
+    return typeof dte === 'object' ? dte : null;
   }
 
   get monedaFuncional(): string {
@@ -559,15 +574,33 @@ export class GastoComponent implements OnInit {
             (lineas.length === 1 && lineaGastoTieneDesglose(lineas[0]));
           if (abrirVarios) {
             this.varios_items = true;
-            this.detalles = lineas.map((d: any) => ({
-              ...d,
-              tipo_gravado: d.tipo_gravado || (d.aplica_iva ? 'gravada' : 'no_sujeta'),
-              descuento: descuentoImplicitoLinea(d.cantidad, d.precio_unitario, d.sub_total),
-              id_categoria:
-                d.id_categoria != null && d.id_categoria !== ''
-                  ? Number(d.id_categoria)
-                  : null,
-            }));
+            const ivaRate = (this.apiService.auth_user()?.empresa?.iva || 13) / 100;
+            const dteObj = this.parseGastoDte(this.gasto?.dte);
+            const cuerpoDte = Array.isArray(dteObj?.cuerpoDocumento)
+              ? dteObj.cuerpoDocumento
+              : [];
+            const tipoDte = String(
+              this.gasto?.tipo_dte || dteObj?.identificacion?.tipoDte || '01'
+            );
+            this.detalles = lineas.map((d: any, idx: number) => {
+              const montos = repararLineaGastoSubtotalCero(d, {
+                ivaRate,
+                precioSinImpuesto: this.esFeCostaRicaGasto(),
+                tipoDte,
+                itemDte: cuerpoDte[idx] || null,
+              });
+              return {
+                ...d,
+                ...montos,
+                tipo_gravado: montos.tipo_gravado,
+                aplica_iva: montos.tipo_gravado === 'gravada',
+                id_categoria:
+                  d.id_categoria != null && d.id_categoria !== ''
+                    ? Number(d.id_categoria)
+                    : null,
+              };
+            });
+            this.recalcularTotalesDetalles();
           } else {
             this.varios_items = false;
             this.detalles = [];

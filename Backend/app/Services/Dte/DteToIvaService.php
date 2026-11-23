@@ -637,21 +637,24 @@ class DteToIvaService
                 'dte' => json_encode($jsonData),
             ]);
 
+            $ivaRate = $this->ivaRateEmpresa((int) $document->id_empresa);
+
             foreach ($cuerpoDocumento as $numeroItem => $item) {
-                $ventaTotal = (float) ($item['ventaTotal'] ?? 0);
-                $ivaItem = $this->extractIvaFromItem($item);
+                $montos = self::montosDetalleEgresoDesdeItem($item, $ivaRate);
 
                 DetalleEgreso::create([
                     'id_egreso' => $gasto->id,
                     'numero_item' => $numeroItem + 1,
                     'concepto' => $item['descripcion'] ?? '',
                     'tipo' => $tipo,
+                    'tipo_gravado' => $montos['tipo_gravado'],
                     'id_categoria' => $idCategoria,
-                    'cantidad' => (float) ($item['cantidad'] ?? 0),
-                    'precio_unitario' => (float) ($item['precioUni'] ?? 0),
-                    'sub_total' => $ventaTotal - $ivaItem,
-                    'iva' => $ivaItem,
-                    'total' => $ventaTotal,
+                    'cantidad' => $montos['cantidad'],
+                    'precio_unitario' => $montos['precio_unitario'],
+                    'sub_total' => $montos['sub_total'],
+                    'iva' => $montos['iva'],
+                    'total' => $montos['total'],
+                    'aplica_iva' => $montos['aplica_iva'],
                 ]);
             }
 
@@ -729,6 +732,99 @@ class DteToIvaService
     protected function extractIvaFromItem(array $item): float
     {
         return (float) ($item['iva'] ?? 0);
+    }
+
+    /**
+     * Montos de una línea de egreso desde cuerpoDocumento (MH / CR ATV).
+     * CR no envía ventaTotal en el JSON compat; la base es ventaGravada+exenta+nosuj.
+     *
+     * @param  array<string, mixed>  $item
+     * @return array{
+     *     cantidad: float,
+     *     precio_unitario: float,
+     *     sub_total: float,
+     *     iva: float,
+     *     total: float,
+     *     tipo_gravado: string,
+     *     aplica_iva: bool
+     * }
+     */
+    public static function montosDetalleEgresoDesdeItem(array $item, float $ivaRate = 0.13): array
+    {
+        $cantidad = (float) ($item['cantidad'] ?? 0);
+        if ($cantidad <= 0) {
+            $cantidad = 1.0;
+        }
+        $precioUni = (float) ($item['precioUni'] ?? 0);
+        $descuento = (float) ($item['montoDescu'] ?? 0);
+        $ventaGravada = (float) ($item['ventaGravada'] ?? 0);
+        $ventaExenta = (float) ($item['ventaExenta'] ?? 0);
+        $ventaNoSuj = (float) ($item['ventaNoSuj'] ?? 0);
+        $neto = $ventaGravada + $ventaExenta + $ventaNoSuj;
+        $ventaTotal = (float) ($item['ventaTotal'] ?? 0);
+        $ivaItem = (float) ($item['iva'] ?? 0);
+        $rate = $ivaRate > 0 ? $ivaRate : 0.0;
+
+        if ($neto > 0) {
+            $sub = round($neto, 2);
+            $esExenta = $ventaExenta > 0 && $ventaGravada <= 0 && $ventaNoSuj <= 0;
+            $esNoSuj = ! $esExenta && $ventaNoSuj > 0 && $ventaGravada <= 0;
+            $esGravada = ! $esExenta && ! $esNoSuj;
+            if ($ivaItem <= 0 && $esGravada && $rate > 0) {
+                $ivaItem = round($sub * $rate, 2);
+            }
+            $tipoGravado = $esGravada ? 'gravada' : ($esExenta ? 'exenta' : 'no_sujeta');
+
+            return [
+                'cantidad' => $cantidad,
+                'precio_unitario' => $precioUni,
+                'sub_total' => $sub,
+                'iva' => max(0.0, $ivaItem),
+                'total' => round($sub + max(0.0, $ivaItem), 2),
+                'tipo_gravado' => $tipoGravado,
+                'aplica_iva' => $esGravada,
+            ];
+        }
+
+        if ($ventaTotal > 0) {
+            $sub = round($ventaTotal - max(0.0, $ivaItem), 2);
+            if ($sub < 0) {
+                $sub = 0.0;
+            }
+
+            return [
+                'cantidad' => $cantidad,
+                'precio_unitario' => $precioUni,
+                'sub_total' => $sub,
+                'iva' => max(0.0, $ivaItem),
+                'total' => round($ventaTotal, 2),
+                'tipo_gravado' => $ivaItem > 0 ? 'gravada' : 'no_sujeta',
+                'aplica_iva' => $ivaItem > 0,
+            ];
+        }
+
+        $sub = round(max(0.0, $cantidad * $precioUni - $descuento), 2);
+        if ($ivaItem <= 0 && $sub > 0 && $rate > 0) {
+            $ivaItem = round($sub * $rate, 2);
+        }
+
+        return [
+            'cantidad' => $cantidad,
+            'precio_unitario' => $precioUni,
+            'sub_total' => $sub,
+            'iva' => max(0.0, $ivaItem),
+            'total' => round($sub + max(0.0, $ivaItem), 2),
+            'tipo_gravado' => $ivaItem > 0 ? 'gravada' : 'no_sujeta',
+            'aplica_iva' => $ivaItem > 0,
+        ];
+    }
+
+    protected function ivaRateEmpresa(int $idEmpresa): float
+    {
+        $empresa = \App\Models\Admin\Empresa::withoutGlobalScopes()->find($idEmpresa);
+        $pct = (float) ($empresa->iva ?? 13);
+
+        return $pct > 0 ? $pct / 100 : 0.13;
     }
 
     protected function determinarCategoriaGasto(array $items): string
