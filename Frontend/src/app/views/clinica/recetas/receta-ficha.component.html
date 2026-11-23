@@ -1,0 +1,62 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <div>
+        <h2 class="page-heading mb-0">Receta clínica</h2>
+        @if (receta) {
+            <span class="badge py-2 mt-2" [ngClass]="receta.estado === 'emitida' ? 'bg-success' : receta.estado === 'anulada' ? 'bg-danger' : 'bg-secondary'">
+                {{ receta.estado }}
+            </span>
+        }
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        @if (receta?.editable && apiService.hasPermission('clinica.recetas.editar')) {
+            <button type="button" class="btn btn-default" (click)="editar()">Editar</button>
+            <button type="button" class="btn btn-primary" (click)="emitir()">Emitir</button>
+        }
+        @if (receta?.estado === 'emitida' && apiService.hasPermission('clinica.recetas.anular')) {
+            <button type="button" class="btn btn-outline-danger" (click)="anular()">Anular</button>
+        }
+        @if (receta?.estado === 'emitida' && apiService.hasPermission('clinica.recetas.ver')) {
+            <button type="button" class="btn btn-default" (click)="pdf()">PDF</button>
+        }
+        <button type="button" class="btn btn-default" [routerLink]="['/clinica/pacientes', idPaciente, 'recetas']">Listado</button>
+    </div>
+</section>
+
+@if (cargando) {
+    <section class="bg-white p-4 rounded"><span class="badge bg-primary">Cargando...</span></section>
+}
+
+@if (!cargando && receta) {
+    <section class="bg-white p-4 rounded mb-3">
+        <div class="row">
+            <div class="col-md-3"><label class="fw-medium">Fecha</label><p>{{ receta.fecha }}</p></div>
+            <div class="col-md-3"><label class="fw-medium">Profesional</label><p>{{ receta.profesional?.nombre || '—' }}</p></div>
+            <div class="col-md-6"><label class="fw-medium">Observaciones</label><p>{{ receta.observaciones || '—' }}</p></div>
+        </div>
+        @if (receta.lineas?.length) {
+            <h6 class="mt-3">Prescripción</h6>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead><tr><th>Medicamento</th><th>Dosis</th><th>Frecuencia</th><th>Duración</th><th>Vía</th></tr></thead>
+                    <tbody>
+                        @for (l of receta.lineas; track l.id) {
+                            <tr>
+                                <td>{{ l.nombre_medicamento }}</td>
+                                <td>{{ l.dosis }}</td>
+                                <td>{{ l.frecuencia || '—' }}</td>
+                                <td>{{ l.duracion || '—' }}</td>
+                                <td>{{ l.via || '—' }}</td>
+                            </tr>
+                            @if (l.indicaciones) {
+                                <tr><td colspan="5" class="text-muted small">{{ l.indicaciones }}</td></tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        @if (receta.motivo_anulacion) {
+            <p class="text-danger mt-2"><strong>Motivo anulación:</strong> {{ receta.motivo_anulacion }}</p>
+        }
+    </section>
+}

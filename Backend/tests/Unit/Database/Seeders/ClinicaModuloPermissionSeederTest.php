@@ -39,7 +39,10 @@ class ClinicaModuloPermissionSeederTest extends TestCase
         $this->assertSame('Clínica', $modulo->display_name);
 
         $submodulos = Submodule::where('module_id', $modulo->id)->pluck('name')->sort()->values()->all();
-        $this->assertSame(['consultas', 'diagnosticos', 'expediente', 'pacientes', 'profesionales', 'tratamientos'], $submodulos);
+        $this->assertSame(
+            ['consultas', 'diagnosticos', 'expediente', 'medicamentos', 'pacientes', 'profesionales', 'recetas', 'tratamientos', 'vacunas'],
+            $submodulos,
+        );
 
         $this->assertNotNull(Permission::findByName('clinica.expediente.ver', 'web'));
         $admin = Role::findByName('admin', 'web');

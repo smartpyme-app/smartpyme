@@ -96,6 +96,26 @@
                                     </a>
                                 </div>
                             }
+                            @if (seccion.disponible && seccion.slug === 'recetas') {
+                                <div class="mt-auto pt-3 d-grid gap-2">
+                                    <a [routerLink]="['/clinica/pacientes', idPaciente, 'recetas']" class="btn btn-default w-100">Ver recetas</a>
+                                    @if (expediente.operativo && apiService.hasPermission('clinica.recetas.crear')) {
+                                        <a [routerLink]="['/clinica/pacientes', idPaciente, 'recetas', 'nuevo']" class="btn btn-primary w-100">
+                                            <i class="fa fa-plus me-1"></i> Nueva receta
+                                        </a>
+                                    }
+                                </div>
+                            }
+                            @if (seccion.disponible && seccion.slug === 'vacunas') {
+                                <div class="mt-auto pt-3 d-grid gap-2">
+                                    <a [routerLink]="['/clinica/pacientes', idPaciente, 'vacunas']" class="btn btn-default w-100">Ver vacunas</a>
+                                    @if (expediente.operativo && apiService.hasPermission('clinica.vacunas.crear')) {
+                                        <a [routerLink]="['/clinica/pacientes', idPaciente, 'vacunas', 'nuevo']" class="btn btn-primary w-100">
+                                            <i class="fa fa-plus me-1"></i> Registrar
+                                        </a>
+                                    }
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>
