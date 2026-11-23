@@ -4,6 +4,7 @@ namespace App\Services\Gmail;
 
 use App\Contracts\EmailReaderInterface;
 use App\Models\DteManagement\DteDocument;
+use App\Support\Dte\CorreosDteRevisados;
 use App\Models\DteManagement\UserEmailAccount;
 use App\Support\Dte\DteEmailAttachmentHelper;
 use Carbon\Carbon;
@@ -38,7 +39,9 @@ class GmailReaderService implements EmailReaderInterface
 
             do {
                 $listParams = [
-                    'q' => "after:{$from->format('Y/m/d')} before:{$to->format('Y/m/d')} has:attachment",
+                    // before: es exclusivo en Gmail; con la fecha de hoy quedaban fuera los correos del día
+                    // y sus DTE recién entraban después de la medianoche.
+                    'q' => "after:{$from->format('Y/m/d')} before:{$to->copy()->addDay()->format('Y/m/d')} has:attachment",
                     'maxResults' => 50,
                 ];
                 if ($pageToken) {
@@ -65,6 +68,10 @@ class GmailReaderService implements EmailReaderInterface
                         continue;
                     }
                     unset($message);
+                    if ($items === []) {
+                        // Correo con adjuntos pero sin DTE: no cambia, no hace falta volver a descargarlo.
+                        CorreosDteRevisados::marcar($account->id, $messageRef->getId());
+                    }
                     foreach ($items as $item) {
                         yield $item;
                     }
@@ -90,12 +97,15 @@ class GmailReaderService implements EmailReaderInterface
             return [];
         }
 
-        return DteDocument::withoutGlobalScopes()
+        $conDocumento = DteDocument::withoutGlobalScopes()
             ->where('id_empresa', $account->id_empresa)
             ->whereIn('email_message_id', $ids)
             ->pluck('email_message_id')
             ->mapWithKeys(fn ($id) => [$id => true])
             ->all();
+
+        // También los que ya se revisaron sin crear documento (DTE repetido en otro correo).
+        return $conDocumento + CorreosDteRevisados::revisados($account->id, $ids);
     }
 
     /**
