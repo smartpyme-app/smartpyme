@@ -103,7 +103,7 @@ export interface ModeladoParametrosPronostico {
   };
 }
 
-export type ModeladoPresupuestoVista = 'empresa' | 'sucursales' | 'areas';
+export type ModeladoPresupuestoVista = 'empresa' | 'sucursales' | 'departamentos' | 'areas';
 export type ModeladoPresupuestoReparto = 'estacionalidad' | 'igual';
 
 export interface ModeladoPresupuestoBloque {
@@ -124,27 +124,28 @@ export interface ModeladoPresupuestoBloque {
     montoAnual: number;
   };
   sucursales: ModeladoPresupuestoSucursales | null;
-  areas: ModeladoPresupuestoAreas | null;
+  departamentos: ModeladoPresupuestoEntidad | null;
+  areas: ModeladoPresupuestoEntidad | null;
 }
 
-export interface ModeladoPresupuestoAreaCol {
+export interface ModeladoPresupuestoEntidadCol {
   id: number;
   nombre: string;
 }
 
-export interface ModeladoPresupuestoAreaFila {
+export interface ModeladoPresupuestoEntidadFila {
   id: string;
   categoria: string;
-  porArea: Record<string, number>;
+  porCol: Record<string, number>;
   suma: number;
   empresa: number;
 }
 
-export interface ModeladoPresupuestoAreas {
-  areas: ModeladoPresupuestoAreaCol[];
-  filas: ModeladoPresupuestoAreaFila[];
+export interface ModeladoPresupuestoEntidad {
+  cols: ModeladoPresupuestoEntidadCol[];
+  filas: ModeladoPresupuestoEntidadFila[];
   contribucion: {
-    porArea: Record<string, number>;
+    porCol: Record<string, number>;
     suma: number;
     empresa: number;
   };

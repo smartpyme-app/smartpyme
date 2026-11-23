@@ -9,7 +9,7 @@ import {
   ModeladoCalendarioPendiente,
   ModeladoGastoFila,
   ModeladoGastoTipo,
-  ModeladoPresupuestoAreas,
+  ModeladoPresupuestoEntidad,
   ModeladoPresupuestoReparto,
   ModeladoPresupuestoSucursales,
   ModeladoVista,
@@ -71,6 +71,7 @@ export const MODELADO_VACIA: ModeladoVista = {
       montoAnual: 0,
     },
     sucursales: null,
+    departamentos: null,
     areas: null,
   },
   paso4Titulo: 'Paso 4 · Parámetros del pronóstico',
@@ -215,6 +216,21 @@ interface ModeladoApi {
         }[];
       };
     } | null;
+    departamentos?: {
+      departamentos?: { id?: number; nombre?: string }[];
+      filas?: {
+        id?: string;
+        categoria?: string;
+        porDepartamento?: Record<string, number>;
+        suma?: number;
+        empresa?: number;
+      }[];
+      contribucion?: {
+        porDepartamento?: Record<string, number>;
+        suma?: number;
+        empresa?: number;
+      };
+    } | null;
     areas?: {
       areas?: { id?: number; nombre?: string }[];
       filas?: {
@@ -327,6 +343,10 @@ export class FinanzasModeladoDataService {
       idArea: number;
       filas: { rubro: string; anual: number }[];
     }[],
+    departamentos?: {
+      idDepartamento: number;
+      filas: { rubro: string; anual: number }[];
+    }[],
   ): Observable<unknown> {
     const estacionalidad =
       reparto === 'estacionalidad'
@@ -341,6 +361,7 @@ export class FinanzasModeladoDataService {
       estacionalidad,
       sucursales,
       areas,
+      departamentos,
     });
   }
 
@@ -419,7 +440,18 @@ function mapModelado(raw: ModeladoApi, anio: number): ModeladoVista {
         montoAnual: raw.presupuesto?.metaVentas?.montoAnual ?? 0,
       },
       sucursales: mapPresupuestoSucursales(raw.presupuesto?.sucursales),
-      areas: mapPresupuestoAreas(raw.presupuesto?.areas),
+      departamentos: mapPresupuestoEntidad(
+        raw.presupuesto?.departamentos?.departamentos,
+        raw.presupuesto?.departamentos?.filas,
+        raw.presupuesto?.departamentos?.contribucion,
+        (x) => x?.porDepartamento,
+      ),
+      areas: mapPresupuestoEntidad(
+        raw.presupuesto?.areas?.areas,
+        raw.presupuesto?.areas?.filas,
+        raw.presupuesto?.areas?.contribucion,
+        (x) => x?.porArea,
+      ),
     },
     paso4Titulo: 'Paso 4 · Parámetros del pronóstico',
     parametrosPronostico: {
@@ -508,28 +540,31 @@ function mapPresupuestoSucursales(
   };
 }
 
-function mapPresupuestoAreas(
-  raw: NonNullable<ModeladoApi['presupuesto']>['areas'],
-): ModeladoPresupuestoAreas | null {
-  if (!raw?.areas?.length) {
+function mapPresupuestoEntidad<TF extends { id?: string; categoria?: string; suma?: number; empresa?: number }, TC extends { suma?: number; empresa?: number }>(
+  rawCols: { id?: number; nombre?: string }[] | undefined,
+  rawFilas: TF[] | undefined,
+  rawContrib: TC | undefined,
+  leerMapa: (item: TF | TC | undefined) => Record<string, number> | undefined,
+): ModeladoPresupuestoEntidad | null {
+  if (!rawCols?.length) {
     return null;
   }
   return {
-    areas: (raw.areas ?? []).map((a) => ({
-      id: Number(a.id) || 0,
-      nombre: a.nombre ?? '',
+    cols: rawCols.map((c) => ({
+      id: Number(c.id) || 0,
+      nombre: c.nombre ?? '',
     })),
-    filas: (raw.filas ?? []).map((f) => ({
+    filas: (rawFilas ?? []).map((f) => ({
       id: f.id ?? '',
       categoria: f.categoria ?? '',
-      porArea: { ...(f.porArea ?? {}) },
+      porCol: { ...(leerMapa(f) ?? {}) },
       suma: f.suma ?? 0,
       empresa: f.empresa ?? 0,
     })),
     contribucion: {
-      porArea: { ...(raw.contribucion?.porArea ?? {}) },
-      suma: raw.contribucion?.suma ?? 0,
-      empresa: raw.contribucion?.empresa ?? 0,
+      porCol: { ...(leerMapa(rawContrib) ?? {}) },
+      suma: rawContrib?.suma ?? 0,
+      empresa: rawContrib?.empresa ?? 0,
     },
   };
 }

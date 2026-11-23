@@ -26,4 +26,11 @@ class FuncionalidadesSeederSlugTest extends TestCase
         $src = file_get_contents($file);
         $this->assertStringContainsString("'slug' => 'prestamos-empresa'", $src);
     }
+
+    public function test_seeder_incluye_suite_financiera(): void
+    {
+        $file = __DIR__ . '/../../../../database/seeders/FuncionalidadesSeeder.php';
+        $src = file_get_contents($file);
+        $this->assertStringContainsString("'slug' => 'suite-financiera'", $src);
+    }
 }

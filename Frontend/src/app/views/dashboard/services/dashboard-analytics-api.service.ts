@@ -38,9 +38,9 @@ export class DashboardAnalyticsApiService {
   /**
    * GET con log de error y emisión de `null` (no propaga error).
    */
-  post<T = any>(url: string): Observable<T | null> {
+  post<T = any>(url: string, body: unknown = {}): Observable<T | null> {
     return this.http
-      .post<T>(url, {}, {
+      .post<T>(url, body, {
         headers: this.headers,
         params: { saltarJWT: 'true' },
       })

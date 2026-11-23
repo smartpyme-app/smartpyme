@@ -834,26 +834,9 @@
   color: #64748b;
 }
 
-.modelado-p3-areas-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  margin-bottom: 0.85rem;
-  padding: 0.65rem 0.85rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  background: #f8fafc;
-}
-
-.modelado-p3-areas-info {
-  font-size: 13px;
-  color: #475569;
-}
-
-.modelado-p3-areas-info strong {
-  color: #0f172a;
+.modelado-p3-dept-select {
+  width: auto;
+  min-width: 11.5rem;
 }
 
 .modelado-p3-areas-acciones {
@@ -1138,8 +1121,40 @@
   font-weight: 700;
 }
 
+.modelado-paso3 .table-responsive {
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modelado-pres-suc-table {
+  width: max-content;
+  min-width: 100%;
+}
+
+.modelado-pres-suc-table thead th {
+  white-space: nowrap;
+}
+
+.modelado-pres-suc-table thead th:not(:first-child),
+.modelado-pres-suc-table tbody td:not(:first-child) {
+  min-width: 7.75rem;
+}
+
+.modelado-pres-suc-table th:first-child,
+.modelado-pres-suc-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #fff;
+}
+
+.modelado-pres-suc-table thead th:first-child {
+  z-index: 3;
+}
+
 .modelado-pres-suc-anual-col {
-  min-width: 9rem;
+  min-width: 11rem;
 }
 
 .modelado-pres-suc-table tbody td,
@@ -1153,7 +1168,8 @@
 }
 
 .modelado-pres-suc-input {
-  max-width: 6.75rem;
+  min-width: 6.25rem;
+  max-width: 7.25rem;
   margin-left: auto;
   text-align: right;
   font-weight: 600;
@@ -1165,9 +1181,11 @@
 .modelado-pres-suc-readonly {
   font-weight: 700;
   color: #334155;
+  white-space: nowrap;
 }
 
-.modelado-pres-suc-contrib-row {
+.modelado-pres-suc-contrib-row,
+.modelado-pres-suc-contrib-row td {
   background: var(--sf-bg, #f2f0f4) !important;
 }
 

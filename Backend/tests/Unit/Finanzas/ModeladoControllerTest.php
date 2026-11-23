@@ -81,6 +81,15 @@ class ModeladoControllerTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('modelado_presupuesto_departamento_lineas', function ($table) {
+            $table->unsignedInteger('id_empresa');
+            $table->unsignedSmallInteger('anio');
+            $table->unsignedInteger('id_departamento');
+            $table->string('rubro', 40);
+            $table->decimal('monto_anual', 15, 2)->default(0);
+            $table->timestamps();
+        });
+
         Schema::create('presupuestos', function ($table) {
             $table->id();
             $table->unsignedInteger('id_empresa');
@@ -102,14 +111,24 @@ class ModeladoControllerTest extends TestCase
             'reparto' => 'igual',
             'filas' => [
                 ['rubro' => 'ventas', 'anual' => 120000],
-                ['rubro' => 'personal', 'anual' => 24000],
+                ['rubro' => 'alquiler', 'anual' => 18000],
+                ['rubro' => 'planilla', 'anual' => 24000],
+            ],
+            'departamentos' => [
+                [
+                    'idDepartamento' => 5,
+                    'filas' => [
+                        ['rubro' => 'ventas', 'anual' => 90000],
+                        ['rubro' => 'alquiler', 'anual' => 6000],
+                    ],
+                ],
             ],
             'areas' => [
                 [
                     'idArea' => 11,
                     'filas' => [
                         ['rubro' => 'ventas', 'anual' => 80000],
-                        ['rubro' => 'personal', 'anual' => 15000],
+                        ['rubro' => 'planilla', 'anual' => 15000],
                     ],
                 ],
             ],
@@ -119,6 +138,11 @@ class ModeladoControllerTest extends TestCase
             ->where('id_empresa', 7)
             ->where('id_area_empresa', 11)
             ->where('rubro', 'ventas')
+            ->value('monto_anual'));
+        $this->assertEquals(6000, DB::table('modelado_presupuesto_departamento_lineas')
+            ->where('id_empresa', 7)
+            ->where('id_departamento', 5)
+            ->where('rubro', 'alquiler')
             ->value('monto_anual'));
     }
 

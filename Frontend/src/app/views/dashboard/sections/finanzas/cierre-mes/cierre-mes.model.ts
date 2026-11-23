@@ -18,6 +18,30 @@ export interface CierreChecklistItem {
   accion?: string;
 }
 
+export interface CierreChecklistGrupoItem {
+  titulo: string;
+  detalle?: string;
+  estado: CierreChecklistEstado;
+  monto?: number | null;
+  accion?: string;
+  tipoGasto?: string;
+  concepto?: string;
+  montoSugerido?: number | null;
+}
+
+export interface CierreChecklistGrupo {
+  registrados: number;
+  total: number;
+  montoTotal: number;
+  items: CierreChecklistGrupoItem[];
+}
+
+export interface CierreChecklistGrupos {
+  fijos: CierreChecklistGrupo;
+  variables: CierreChecklistGrupo;
+  otros: CierreChecklistGrupoItem[];
+}
+
 export interface CierrePresupuestoFila {
   categoria: string;
   presupuesto: number;
@@ -34,6 +58,42 @@ export interface CierreImpuestoItem {
   monto: number;
 }
 
+export interface CierreResumenVar {
+  label: string;
+  valor: number | null;
+}
+
+export interface CierreMesResumen {
+  ventas: {
+    monto: number;
+    vsMesAnt: CierreResumenVar;
+    vsAnioAnt: CierreResumenVar;
+    vsPresupuesto: CierreResumenVar;
+  };
+  gastos: {
+    monto: number;
+    vsMesAnt: CierreResumenVar;
+    vsAnioAnt: CierreResumenVar;
+    vsPresupuesto: CierreResumenVar;
+  };
+  rentabilidad: {
+    margenPct: number;
+    utilidad: number;
+    vsMesAnt: CierreResumenVar;
+    vsAnioAnt: CierreResumenVar;
+    vsPresupuesto: CierreResumenVar;
+  };
+  flujo: {
+    neto: number;
+    saldo: number | null;
+    saldoFecha: string;
+    entro: number;
+    salio: number;
+    flujoAntLabel: string;
+    flujoAnt: number;
+  };
+}
+
 export interface CierreGastoFueraRangoFila {
   categoria: string;
   mes: number;
@@ -46,19 +106,48 @@ export interface CierreGastosFueraRango {
   filas: CierreGastoFueraRangoFila[];
 }
 
+export interface CierreTopVendedorItem {
+  nombre: string;
+  sucursal: string;
+  monto: number;
+  deltaPct: number | null;
+  pctDelMes: number;
+  pctBarra: number;
+}
+
+export interface CierreTopProductoItem {
+  nombre: string;
+  categoria: string;
+  monto: number;
+  margenPct: number;
+  pctDelMes: number;
+  pctBarra: number;
+}
+
+export interface CierreTopVentas {
+  mesLabel: string;
+  mesAnteriorLabel: string;
+  vendedores: CierreTopVendedorItem[];
+  productos: CierreTopProductoItem[];
+}
+
 export interface CierreMesDetalle {
   mesTitulo: string;
   mesCertificar: string;
   mesEtiquetaCorto: string;
   checklist: CierreChecklistItem[];
+  checklistGrupos: CierreChecklistGrupos | null;
   bloqueado: boolean;
   puedeCertificar: boolean;
+  resumen: CierreMesResumen | null;
   presupuesto: CierrePresupuestoFila[];
   impuestos: {
+    total: number;
     vencimiento: string;
     items: CierreImpuestoItem[];
   };
   gastosFueraRango: CierreGastosFueraRango;
+  topVentas: CierreTopVentas;
 }
 
 export interface CierreMesVista {

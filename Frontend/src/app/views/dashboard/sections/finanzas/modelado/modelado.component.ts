@@ -19,7 +19,7 @@ import {
   ModeladoCalendarioCostoFila,
   ModeladoGastoFila,
   ModeladoGastoTipo,
-  ModeladoPresupuestoAreas,
+  ModeladoPresupuestoEntidad,
   ModeladoPresupuestoFila,
   ModeladoPresupuestoReparto,
   ModeladoPresupuestoSucursales,
@@ -27,7 +27,26 @@ import {
   ModeladoVista,
 } from './modelado.model';
 
-const PRESUPUESTO_RUBROS = ['ventas', 'costo', 'personal', 'local', 'marketing', 'admin', 'financieros'];
+const PRESUPUESTO_DETALLE: { id: string; categoria: string }[] = [
+  { id: 'ventas', categoria: 'Ventas netas' },
+  { id: 'costo_de_venta', categoria: 'Costo de venta' },
+  { id: 'materia_prima', categoria: 'Materia prima' },
+  { id: 'insumos', categoria: 'Insumos' },
+  { id: 'alquiler', categoria: 'Alquiler' },
+  { id: 'servicios', categoria: 'Servicios' },
+  { id: 'mantenimiento', categoria: 'Mantenimiento' },
+  { id: 'combustible', categoria: 'Combustible' },
+  { id: 'planilla', categoria: 'Planilla' },
+  { id: 'marketing', categoria: 'Marketing' },
+  { id: 'publicidad', categoria: 'Publicidad' },
+  { id: 'comisiones', categoria: 'Comisiones' },
+  { id: 'gastos_administrativos', categoria: 'Gastos Administrativos' },
+  { id: 'varios', categoria: 'Gastos varios' },
+  { id: 'impuestos', categoria: 'Impuestos' },
+  { id: 'prestamos', categoria: 'Préstamos' },
+];
+
+const PRESUPUESTO_RUBROS = PRESUPUESTO_DETALLE.map((r) => r.id);
 
 const FRECUENCIA: Record<string, string> = {
   mensual: 'Mensual',
@@ -85,7 +104,8 @@ export class ModeladoComponent implements OnInit {
   calendarioPendiente = MODELADO_VACIA.calendarioPendiente;
   presupuestoFilas: ModeladoPresupuestoFila[] = [];
   presupuestoSucursales: ModeladoPresupuestoSucursales | null = null;
-  presupuestoAreas: ModeladoPresupuestoAreas | null = null;
+  presupuestoDepartamentos: ModeladoPresupuestoEntidad | null = null;
+  presupuestoAreas: ModeladoPresupuestoEntidad | null = null;
   presupuestoReparto: ModeladoPresupuestoReparto = 'igual';
   metaVentasAnual = 0;
   pronostico = { ...MODELADO_VACIA.parametrosPronostico };
@@ -95,7 +115,7 @@ export class ModeladoComponent implements OnInit {
   proveedores: { id: number; etiqueta: string }[] = [];
   sucursales: { id: number; nombre: string }[] = [];
   departamentosEmpresa: { id: number; nombre: string }[] = [];
-  areasEmpresa: { id: number; nombre: string; id_departamento?: number }[] = [];
+  areasEmpresa: { id: number; nombre: string; id_departamento?: number; departamento?: { id?: number; nombre?: string } }[] = [];
   readonly rubrosGasto = RUBROS_GASTO;
   readonly rubrosCosto = RUBROS_COSTO;
   cargando = false;
@@ -105,9 +125,11 @@ export class ModeladoComponent implements OnInit {
   readonly presupuestoVistas: { id: ModeladoPresupuestoVista; label: string; activo: boolean }[] = [
     { id: 'empresa', label: 'Empresa', activo: true },
     { id: 'sucursales', label: 'Sucursales', activo: true },
+    { id: 'departamentos', label: 'Departamentos', activo: true },
     { id: 'areas', label: 'Áreas', activo: true },
   ];
   presupuestoVista: ModeladoPresupuestoVista = 'empresa';
+  filtroDepartamentoId: number | null = null;
 
   private loadSeq = 0;
 
@@ -146,22 +168,155 @@ export class ModeladoComponent implements OnInit {
         next: ({ deps, areas }) => {
           this.departamentosEmpresa = deps ?? [];
           this.areasEmpresa = areas ?? [];
+          this.sincronizarPresupuestoEntidades();
           this.cdr.markForCheck();
         },
         error: () => {
-          this.departamentosEmpresa = [];
-          this.areasEmpresa = [];
+          this.cdr.markForCheck();
         },
       });
   }
 
-  onDepartamentoCreado(): void {
+  onDepartamentoCreado(dept?: { id?: number; nombre?: string }): void {
+    if (dept?.id != null && dept?.nombre) {
+      const id = Number(dept.id);
+      if (!this.departamentosEmpresa.some((d) => Number(d.id) === id)) {
+        this.departamentosEmpresa = [...this.departamentosEmpresa, { id, nombre: dept.nombre }];
+      }
+      this.sincronizarPresupuestoEntidades();
+      this.cdr.markForCheck();
+    }
     this.cargarDepartamentosYAreas();
   }
 
-  onAreaCreada(): void {
+  onAreaCreada(area?: {
+    id?: number;
+    nombre?: string;
+    id_departamento?: number;
+    departamento?: { id?: number; nombre?: string };
+  }): void {
+    if (area?.id != null && area?.nombre) {
+      const id = Number(area.id);
+      if (!this.areasEmpresa.some((a) => Number(a.id) === id)) {
+        this.areasEmpresa = [
+          ...this.areasEmpresa,
+          {
+            id,
+            nombre: area.nombre,
+            id_departamento: area.id_departamento,
+            departamento: area.departamento,
+          },
+        ];
+      }
+      this.sincronizarPresupuestoEntidades();
+      this.cdr.markForCheck();
+    }
     this.cargarDepartamentosYAreas();
-    this.cargar();
+  }
+
+  private nombreAreaConDepartamento(area: {
+    nombre: string;
+    id_departamento?: number;
+    departamento?: { id?: number; nombre?: string };
+  }): string {
+    const deptNombre =
+      area.departamento?.nombre ??
+      this.departamentosEmpresa.find((d) => Number(d.id) === Number(area.id_departamento))?.nombre;
+    return deptNombre ? `${area.nombre} · ${deptNombre}` : area.nombre;
+  }
+
+  private sincronizarPresupuestoEntidades(): void {
+    this.presupuestoDepartamentos = this.sincronizarMatrizEntidad(
+      this.presupuestoDepartamentos,
+      this.data.presupuesto.departamentos,
+      this.departamentosEmpresa.map((d) => ({ id: Number(d.id), nombre: d.nombre })),
+    );
+    this.presupuestoAreas = this.sincronizarMatrizEntidad(
+      this.presupuestoAreas,
+      this.data.presupuesto.areas,
+      this.areasEmpresa.map((a) => ({ id: Number(a.id), nombre: this.nombreAreaConDepartamento(a) })),
+    );
+  }
+
+  private sincronizarMatrizEntidad(
+    actualMatriz: ModeladoPresupuestoEntidad | null,
+    backendMatriz: ModeladoPresupuestoEntidad | null,
+    catalogoCols: { id: number; nombre: string }[],
+  ): ModeladoPresupuestoEntidad | null {
+    const colsMap = new Map<number, { id: number; nombre: string }>();
+    for (const col of backendMatriz?.cols ?? []) {
+      colsMap.set(Number(col.id), { id: Number(col.id), nombre: col.nombre });
+    }
+    for (const item of catalogoCols) {
+      if (item.id > 0 && item.nombre && !colsMap.has(item.id)) {
+        colsMap.set(item.id, { id: item.id, nombre: item.nombre });
+      }
+    }
+    const cols = Array.from(colsMap.values());
+    if (!cols.length) {
+      return null;
+    }
+
+    const actualFilas = new Map((actualMatriz?.filas ?? []).map((f) => [f.id, f]));
+    const backendFilas = new Map((backendMatriz?.filas ?? []).map((f) => [f.id, f]));
+    const empresaById = new Map(this.presupuestoFilas.map((f) => [f.id, f]));
+    const baseIds = this.presupuestoFilas.length
+      ? this.presupuestoFilas.map((f) => ({ id: f.id, categoria: f.categoria }))
+      : backendMatriz?.filas?.length
+        ? backendMatriz.filas.map((f) => ({ id: f.id, categoria: f.categoria }))
+        : PRESUPUESTO_DETALLE;
+
+    const filas = baseIds.map(({ id, categoria }) => {
+      const actual = actualFilas.get(id);
+      const back = backendFilas.get(id);
+      const porCol: Record<string, number> = {};
+      let suma = 0;
+      for (const col of cols) {
+        const key = String(col.id);
+        const val = Number(actual?.porCol?.[key] ?? back?.porCol?.[key] ?? 0);
+        porCol[key] = val;
+        suma += val;
+      }
+      const empresa = Number(empresaById.get(id)?.anual ?? back?.empresa ?? actual?.empresa ?? 0);
+      return { id, categoria, porCol, suma, empresa };
+    });
+
+    const contribPorCol: Record<string, number> = {};
+    let contribSuma = 0;
+    for (const col of cols) {
+      const key = String(col.id);
+      const ventas = filas.find((f) => f.id === 'ventas')?.porCol[key] ?? 0;
+      const gastos = filas.filter((f) => f.id !== 'ventas').reduce((s, f) => s + (f.porCol[key] ?? 0), 0);
+      contribPorCol[key] = ventas - gastos;
+      contribSuma += contribPorCol[key];
+    }
+    const ventasEmp = filas.find((f) => f.id === 'ventas')?.empresa ?? 0;
+    const gastosEmp = filas.filter((f) => f.id !== 'ventas').reduce((s, f) => s + f.empresa, 0);
+
+    return {
+      cols,
+      filas,
+      contribucion: {
+        porCol: contribPorCol,
+        suma: contribSuma,
+        empresa: backendMatriz?.contribucion.empresa ?? ventasEmp - gastosEmp,
+      },
+    };
+  }
+
+  private clonarEntidad(ent: ModeladoPresupuestoEntidad | null): ModeladoPresupuestoEntidad | null {
+    if (!ent) {
+      return null;
+    }
+    return {
+      cols: ent.cols.map((c) => ({ ...c })),
+      filas: ent.filas.map((f) => ({ ...f, porCol: { ...f.porCol } })),
+      contribucion: {
+        porCol: { ...ent.contribucion.porCol },
+        suma: ent.contribucion.suma,
+        empresa: ent.contribucion.empresa,
+      },
+    };
   }
 
   resumenDepartamentos(): string {
@@ -503,15 +658,39 @@ export class ModeladoComponent implements OnInit {
     );
   }
 
-  presupuestoContribArea(idArea: number): number {
-    return this.contribEntidad(this.presupuestoAreas?.filas, (f) => f.porArea, idArea);
+  presupuestoMatrizActiva(): ModeladoPresupuestoEntidad | null {
+    if (this.presupuestoVista === 'departamentos') {
+      return this.presupuestoDepartamentos;
+    }
+    if (this.presupuestoVista === 'areas') {
+      return this.presupuestoAreas;
+    }
+    return null;
   }
 
-  presupuestoContribAreasSuma(): number {
-    return (this.presupuestoAreas?.areas ?? []).reduce(
-      (sum, a) => sum + this.presupuestoContribArea(a.id),
-      0,
+  presupuestoColsVisibles(matriz: ModeladoPresupuestoEntidad): { id: number; nombre: string }[] {
+    if (this.filtroDepartamentoId == null) {
+      return matriz.cols;
+    }
+    const deptId = Number(this.filtroDepartamentoId);
+    if (this.presupuestoVista === 'departamentos') {
+      return matriz.cols.filter((c) => Number(c.id) === deptId);
+    }
+    const deptPorArea = new Map(
+      this.areasEmpresa.map((a) => [Number(a.id), Number(a.id_departamento ?? a.departamento?.id ?? 0)]),
     );
+    return matriz.cols.filter((c) => deptPorArea.get(Number(c.id)) === deptId);
+  }
+
+  presupuestoContribMatriz(matriz: ModeladoPresupuestoEntidad, idCol: number): number {
+    return this.contribEntidad(matriz.filas, (f) => f.porCol, idCol);
+  }
+
+  presupuestoContribMatrizSuma(
+    matriz: ModeladoPresupuestoEntidad,
+    cols: { id: number }[] = matriz.cols,
+  ): number {
+    return cols.reduce((sum, c) => sum + this.presupuestoContribMatriz(matriz, c.id), 0);
   }
 
   presupuestoContribClase(valor: number): string {
@@ -642,6 +821,7 @@ export class ModeladoComponent implements OnInit {
         this.data.presupuesto.estacionalidadPesos,
         this.payloadPresupuestoSucursales(),
         this.payloadPresupuestoAreas(),
+        this.payloadPresupuestoDepartamentos(),
       )
       .pipe(take(1))
       .subscribe({
@@ -688,10 +868,20 @@ export class ModeladoComponent implements OnInit {
     | { idArea: number; filas: { rubro: string; anual: number }[] }[]
     | undefined {
     return this.payloadPresupuestoPorEntidad(
-      this.presupuestoAreas?.areas,
+      this.presupuestoAreas?.cols,
       this.presupuestoAreas?.filas,
-      (f) => f.porArea,
+      (f) => f.porCol,
     )?.map(({ id, filas }) => ({ idArea: id, filas }));
+  }
+
+  private payloadPresupuestoDepartamentos():
+    | { idDepartamento: number; filas: { rubro: string; anual: number }[] }[]
+    | undefined {
+    return this.payloadPresupuestoPorEntidad(
+      this.presupuestoDepartamentos?.cols,
+      this.presupuestoDepartamentos?.filas,
+      (f) => f.porCol,
+    )?.map(({ id, filas }) => ({ idDepartamento: id, filas }));
   }
 
   guardarPronostico(): void {
@@ -832,7 +1022,7 @@ export class ModeladoComponent implements OnInit {
     this.calendarioPendiente = payload.calendarioPendiente
       ? { ...payload.calendarioPendiente }
       : null;
-    this.presupuestoFilas = payload.presupuesto.filas.map((f) => ({ ...f }));
+    this.presupuestoFilas = normalizarFilasPresupuesto(payload.presupuesto.filas);
     this.presupuestoSucursales = payload.presupuesto.sucursales
       ? {
           sucursales: payload.presupuesto.sucursales.sucursales.map((s) => ({ ...s })),
@@ -855,20 +1045,9 @@ export class ModeladoComponent implements OnInit {
     if (this.presupuestoVista === 'sucursales' && !this.presupuestoSucursalesActivo()) {
       this.presupuestoVista = 'empresa';
     }
-    this.presupuestoAreas = payload.presupuesto.areas
-      ? {
-          areas: payload.presupuesto.areas.areas.map((a) => ({ ...a })),
-          filas: payload.presupuesto.areas.filas.map((f) => ({
-            ...f,
-            porArea: { ...f.porArea },
-          })),
-          contribucion: {
-            porArea: { ...payload.presupuesto.areas.contribucion.porArea },
-            suma: payload.presupuesto.areas.contribucion.suma,
-            empresa: payload.presupuesto.areas.contribucion.empresa,
-          },
-        }
-      : null;
+    this.presupuestoDepartamentos = this.clonarEntidad(payload.presupuesto.departamentos);
+    this.presupuestoAreas = this.clonarEntidad(payload.presupuesto.areas);
+    this.sincronizarPresupuestoEntidades();
     this.presupuestoReparto = 'igual';
     this.metaVentasAnual = payload.presupuesto.metaVentas.montoAnual;
     this.pronostico = {
@@ -876,6 +1055,26 @@ export class ModeladoComponent implements OnInit {
       historial: { ...payload.parametrosPronostico.historial },
     };
   }
+}
+
+function normalizarFilasPresupuesto(filas: ModeladoPresupuestoFila[]): ModeladoPresupuestoFila[] {
+  if (!filas.length || filas.some((f) => f.id === 'costo_de_venta')) {
+    return filas.map((f) => ({ ...f }));
+  }
+  const alias: Record<string, string> = {
+    costo_de_venta: 'costo',
+    alquiler: 'local',
+    planilla: 'personal',
+    gastos_administrativos: 'admin',
+    prestamos: 'financieros',
+  };
+  const porId = new Map(filas.map((f) => [f.id, f]));
+  return PRESUPUESTO_DETALLE.map(({ id, categoria }) => {
+    const src = porId.get(id) ?? porId.get(alias[id] ?? '');
+    return src
+      ? { ...src, id, categoria }
+      : { id, categoria, anual: 0, mesProyectado: 0, ejecutadoMonto: 0, ejecutadoPresupuesto: 0, vsPresupuestoPct: null };
+  });
 }
 
 function claveManual(nombre: string): string {

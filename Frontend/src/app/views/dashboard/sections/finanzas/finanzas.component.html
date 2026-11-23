@@ -179,7 +179,7 @@
       <app-flujo-caja [sucursalId]="plQuery.sucursalId"></app-flujo-caja>
     }
     @if (tabActiva === 'cierre') {
-      <app-cierre-mes></app-cierre-mes>
+      <app-cierre-mes (irATab)="seleccionarTab($event)"></app-cierre-mes>
     }
     @if (tabActiva === 'modelado') {
       <app-modelado></app-modelado>

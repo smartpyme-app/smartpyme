@@ -12,8 +12,7 @@
     }
   <div class="row mb-2">
     <div class="col-12">
-      <div class="card card-performance">
-        <div class="card-body p-4">
+      <div class="sf-card cierre-bar-card">
           <nav class="cierre-mes-bar" [attr.aria-label]="'Estado de cierre por mes ' + data.anio">
             <div class="cierre-mes-meses" role="list">
               @for (mes of data.meses; track mes.id) {
@@ -24,16 +23,25 @@
                   [class.cierre-mes-pill--cerrado]="mes.estado === 'cerrado'"
                   [class.cierre-mes-pill--activo]="mes.estado === 'activo'"
                   [class.cierre-mes-pill--pendiente]="mes.estado === 'pendiente'"
+                  [class.cierre-mes-pill--seleccionado]="mesSeleccionadoId === mes.id"
                   [disabled]="mes.estado === 'pendiente'"
                   [attr.aria-current]="mesSeleccionadoId === mes.id ? 'true' : null"
                   [attr.aria-label]="mes.etiqueta + ' ' + data.anio"
                   (click)="seleccionarMes(mes)">
-                  @if (mes.estado !== 'pendiente') {
+                  @if (mes.estado === 'cerrado') {
                     <span class="cierre-mes-lock" aria-hidden="true">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6z" />
                         <path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0" />
                         <path d="M8 11v-4a4 4 0 1 1 8 0v4" />
+                      </svg>
+                    </span>
+                  } @else if (mes.estado === 'activo') {
+                    <span class="cierre-mes-lock" aria-hidden="true">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 11m0 2a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z" />
+                        <path d="M12 16m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+                        <path d="M8 11v-5a4 4 0 0 1 7.25 -2.3" />
                       </svg>
                     </span>
                   }
@@ -54,7 +62,6 @@
               </span>
             </div>
           </nav>
-        </div>
       </div>
     </div>
   </div>
@@ -66,28 +73,174 @@
   }
 
   @if (detalleActivo(); as detalle) {
-    <div class="row g-2 mb-2">
-      <div class="col-lg-5 d-flex flex-column gap-2">
-        <div class="card card-performance flex-grow-1">
-          <div class="card-body p-4">
-            <div class="card h-100">
-              <div class="card-body p-3">
-                <header class="cierre-panel-header mb-3">
-                  <div class="cierre-panel-titulo-wrap">
-                    <span class="cierre-panel-icon cierre-panel-icon--check" aria-hidden="true">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M5 12l5 5l10 -10" />
-                      </svg>
-                    </span>
-                    <div>
-                      <h2 class="ventas-card-title mb-0">Checklist — {{ detalle.mesTitulo }}</h2>
-                      <p class="cierre-pendientes mb-0">{{ pendientesChecklist(detalle) }} pendientes</p>
-                    </div>
-                  </div>
-                </header>
+    @if (detalle.resumen; as res) {
+      <section class="cierre-kpi-grid mb-2" aria-label="Resumen financiero del mes">
+        <article class="cierre-kpi-card">
+          <div class="cierre-kpi-label">Ventas</div>
+          <div class="cierre-kpi-value">{{ formatMontoCard(res.ventas.monto) }}</div>
+          <div class="cierre-kpi-sub">netas, sin IVA</div>
+          <div class="cierre-kpi-rows">
+            @for (row of resumenComparaciones(res.ventas); track row.label) {
+              <div class="cierre-kpi-row">
+                <span class="cierre-kpi-row-label">{{ row.label }}</span>
+                <span class="cierre-kpi-delta" [ngClass]="'cierre-kpi-delta--' + deltaTono(row.valor)">
+                  @if (row.valor != null && row.valor !== 0) {
+                    <svg class="cierre-kpi-arrow" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      @if (row.valor > 0) {
+                        <path d="M3 17l6 -6l4 4l8 -8" /><path d="M14 7h7v7" />
+                      } @else {
+                        <path d="M3 7l6 6l4 -4l8 8" /><path d="M21 10v7h-7" />
+                      }
+                    </svg>
+                  }
+                  {{ formatDelta(row.valor, '%') }}
+                </span>
+              </div>
+            }
+          </div>
+        </article>
 
-                <ul class="cierre-checklist list-unstyled mb-3">
-                  @for (item of detalle.checklist; track item.texto) {
+        <article class="cierre-kpi-card">
+          <div class="cierre-kpi-label">Gastos</div>
+          <div class="cierre-kpi-value">{{ formatMontoCard(res.gastos.monto) }}</div>
+          <div class="cierre-kpi-sub">sin costo de ventas</div>
+          <div class="cierre-kpi-rows">
+            @for (row of resumenComparaciones(res.gastos); track row.label) {
+              <div class="cierre-kpi-row">
+                <span class="cierre-kpi-row-label">{{ row.label }}</span>
+                <span class="cierre-kpi-delta" [ngClass]="'cierre-kpi-delta--' + deltaTono(row.valor, true)">
+                  @if (row.valor != null && row.valor !== 0) {
+                    <svg class="cierre-kpi-arrow" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      @if (row.valor > 0) {
+                        <path d="M3 17l6 -6l4 4l8 -8" /><path d="M14 7h7v7" />
+                      } @else {
+                        <path d="M3 7l6 6l4 -4l8 8" /><path d="M21 10v7h-7" />
+                      }
+                    </svg>
+                  }
+                  {{ formatDelta(row.valor, '%') }}
+                </span>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="cierre-kpi-card">
+          <div class="cierre-kpi-label">Rentabilidad</div>
+          <div class="cierre-kpi-value">{{ res.rentabilidad.margenPct.toFixed(1) }}%</div>
+          <div class="cierre-kpi-sub">utilidad {{ formatMontoCard(res.rentabilidad.utilidad) }}</div>
+          <div class="cierre-kpi-rows">
+            @for (row of resumenComparaciones(res.rentabilidad); track row.label) {
+              <div class="cierre-kpi-row">
+                <span class="cierre-kpi-row-label">{{ row.label }}</span>
+                <span class="cierre-kpi-delta" [ngClass]="'cierre-kpi-delta--' + deltaTono(row.valor)">
+                  @if (row.valor != null && row.valor !== 0) {
+                    <svg class="cierre-kpi-arrow" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      @if (row.valor > 0) {
+                        <path d="M3 17l6 -6l4 4l8 -8" /><path d="M14 7h7v7" />
+                      } @else {
+                        <path d="M3 7l6 6l4 -4l8 8" /><path d="M21 10v7h-7" />
+                      }
+                    </svg>
+                  }
+                  {{ formatDelta(row.valor, ' pts') }}
+                </span>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="cierre-kpi-card">
+          <div class="cierre-kpi-label">Impuestos a pagar</div>
+          <div class="cierre-kpi-value">{{ formatMontoCard(detalle.impuestos.total) }}</div>
+          @if (detalle.impuestos.vencimiento) {
+            <div class="cierre-kpi-sub cierre-kpi-sub--vence">{{ venceImpuestosTexto(detalle.impuestos.vencimiento) }}</div>
+          } @else {
+            <div class="cierre-kpi-sub">IVA y pago a cuenta</div>
+          }
+          <div class="cierre-kpi-rows">
+            @for (imp of detalle.impuestos.items; track imp.concepto) {
+              <div class="cierre-kpi-row">
+                <span class="cierre-kpi-row-label">{{ imp.concepto }}</span>
+                <span class="cierre-kpi-row-val">{{ formatMontoCard(imp.monto) }}</span>
+              </div>
+            } @empty {
+              <div class="cierre-text-muted">Sin cálculo de IVA para este mes.</div>
+            }
+          </div>
+        </article>
+
+        <article class="cierre-kpi-card">
+          <div class="cierre-kpi-label">Flujo de caja del mes</div>
+          <div
+            class="cierre-kpi-value"
+            [class.cierre-kpi-value--pos]="res.flujo.neto > 0"
+            [class.cierre-kpi-value--neg]="res.flujo.neto < 0">
+            {{ formatMontoCard(res.flujo.neto, true) }}
+          </div>
+          @if (res.flujo.saldo != null) {
+            <div class="cierre-kpi-sub">saldo al {{ res.flujo.saldoFecha }} {{ formatMontoCard(res.flujo.saldo) }}</div>
+          } @else {
+            <div class="cierre-kpi-sub">entradas menos salidas</div>
+          }
+          <div class="cierre-kpi-rows">
+            <div class="cierre-kpi-row">
+              <span class="cierre-kpi-row-label">Entró</span>
+              <span class="cierre-kpi-row-val">{{ formatMontoCard(res.flujo.entro) }}</span>
+            </div>
+            <div class="cierre-kpi-row">
+              <span class="cierre-kpi-row-label">Salió</span>
+              <span class="cierre-kpi-row-val">{{ formatMontoCard(res.flujo.salio) }}</span>
+            </div>
+            <div class="cierre-kpi-row">
+              <span class="cierre-kpi-row-label">{{ res.flujo.flujoAntLabel }}</span>
+              <span
+                class="cierre-kpi-row-val"
+                [class.cierre-kpi-delta--pos]="res.flujo.flujoAnt > 0"
+                [class.cierre-kpi-delta--neg]="res.flujo.flujoAnt < 0">
+                {{ formatMontoCard(res.flujo.flujoAnt) }}
+              </span>
+            </div>
+          </div>
+        </article>
+      </section>
+    }
+
+    <div class="row mb-2">
+      <div class="col-12">
+        <div class="sf-card cierre-section-card">
+          <header class="cierre-panel-header mb-3">
+            <div class="cierre-panel-titulo-wrap">
+              <span class="cierre-panel-icon cierre-panel-icon--check" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 12l5 5l10 -10" />
+                </svg>
+              </span>
+              <h2 class="ventas-card-title mb-0">Checklist — {{ detalle.mesTitulo }}</h2>
+            </div>
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+              @if (!detalle.bloqueado) {
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="abrirRegistrarGasto()">
+                  + Registrar gasto
+                </button>
+              }
+              <p class="cierre-pendientes mb-0" [class.cierre-pendientes--ok]="pendientesChecklist(detalle) === 0">
+                {{ pendientesChecklist(detalle) }} pendientes
+              </p>
+            </div>
+          </header>
+
+          @if (detalle.checklistGrupos; as cg) {
+            <div class="cierre-checklist-cols mb-3">
+              <section class="cierre-checklist-col" aria-label="Gastos fijos">
+                <div class="cierre-checklist-col-head">
+                  <span class="cierre-checklist-col-title">Gastos fijos</span>
+                  <span class="cierre-checklist-col-meta">
+                    {{ cg.fijos.registrados }} de {{ cg.fijos.total }} registrados · {{ formatMontoCard(cg.fijos.montoTotal) }}
+                  </span>
+                </div>
+                <ul class="cierre-checklist list-unstyled mb-0">
+                  @for (item of cg.fijos.items; track trackChecklistGrupoItem($index, item)) {
                     <li class="cierre-checklist-item cierre-checklist-item--{{ item.estado }}">
                       <span class="cierre-checklist-icon" aria-hidden="true">
                         @switch (item.estado) {
@@ -96,115 +249,220 @@
                           @default { ! }
                         }
                       </span>
-                      <span class="cierre-checklist-texto">{{ item.texto }}</span>
-                      @if (item.accion) {
-                        <button type="button" class="btn btn-sm btn-outline-primary cierre-checklist-accion">
+                      <div class="cierre-checklist-body">
+                        <div class="cierre-checklist-texto">{{ item.titulo }}</div>
+                        @if (item.detalle) {
+                          <div
+                            class="cierre-checklist-sub"
+                            [class.cierre-checklist-sub--error]="item.estado === 'error'">
+                            {{ item.detalle }}
+                          </div>
+                        }
+                      </div>
+                      @if (item.accion && !detalle.bloqueado) {
+                        <button
+                          type="button"
+                          class="btn btn-sm cierre-checklist-accion-btn"
+                          (click)="ejecutarAccionChecklist(item)">
+                          {{ etiquetaAccion(item.accion) }}
+                        </button>
+                      } @else if (item.monto != null) {
+                        <span class="cierre-checklist-monto">{{ formatMontoCard(item.monto) }}</span>
+                      }
+                    </li>
+                  } @empty {
+                    <li class="cierre-text-muted py-2">Sin gastos fijos clasificados aún.</li>
+                  }
+                </ul>
+              </section>
+
+              <section class="cierre-checklist-col" aria-label="Gastos variables">
+                <div class="cierre-checklist-col-head">
+                  <span class="cierre-checklist-col-title">Gastos variables</span>
+                  <span class="cierre-checklist-col-meta">
+                    {{ cg.variables.registrados }} de {{ cg.variables.total }} registrados · {{ formatMontoCard(cg.variables.montoTotal) }}
+                  </span>
+                </div>
+                <ul class="cierre-checklist list-unstyled mb-0">
+                  @for (item of cg.variables.items; track trackChecklistGrupoItem($index, item)) {
+                    <li class="cierre-checklist-item cierre-checklist-item--{{ item.estado }}">
+                      <span class="cierre-checklist-icon" aria-hidden="true">
+                        @switch (item.estado) {
+                          @case ('ok') { ✓ }
+                          @case ('error') { ✕ }
+                          @default { ! }
+                        }
+                      </span>
+                      <div class="cierre-checklist-body">
+                        <div class="cierre-checklist-texto">{{ item.titulo }}</div>
+                        @if (item.detalle) {
+                          <div
+                            class="cierre-checklist-sub"
+                            [class.cierre-checklist-sub--error]="item.estado === 'error'">
+                            {{ item.detalle }}
+                          </div>
+                        }
+                      </div>
+                      @if (item.accion && !detalle.bloqueado) {
+                        <button
+                          type="button"
+                          class="btn btn-sm cierre-checklist-accion-btn"
+                          (click)="ejecutarAccionChecklist(item)">
+                          {{ etiquetaAccion(item.accion) }}
+                        </button>
+                      } @else if (item.monto != null) {
+                        <span class="cierre-checklist-monto">{{ formatMontoCard(item.monto) }}</span>
+                      }
+                    </li>
+                  } @empty {
+                    <li class="cierre-text-muted py-2">Sin gastos variables clasificados aún.</li>
+                  }
+                </ul>
+              </section>
+            </div>
+
+            @if (cg.otros.length) {
+              <div class="cierre-checklist-otros mb-3">
+                <div class="cierre-checklist-col-title mb-2">Otros puntos a revisar</div>
+                <div class="cierre-checklist-otros-grid">
+                  @for (item of cg.otros; track trackChecklistGrupoItem($index, item)) {
+                    <div class="cierre-checklist-item cierre-checklist-item--{{ item.estado }}">
+                      <span class="cierre-checklist-icon" aria-hidden="true">
+                        @switch (item.estado) {
+                          @case ('ok') { ✓ }
+                          @case ('error') { ✕ }
+                          @default { ! }
+                        }
+                      </span>
+                      <div class="cierre-checklist-body">
+                        <div class="cierre-checklist-texto">{{ item.titulo }}</div>
+                        @if (item.detalle) {
+                          <div class="cierre-checklist-sub" [class.cierre-checklist-sub--alerta]="item.estado === 'alerta'">
+                            {{ item.detalle }}
+                          </div>
+                        }
+                      </div>
+                      @if (item.accion && !detalle.bloqueado) {
+                        <button
+                          type="button"
+                          class="btn btn-sm cierre-checklist-accion-btn"
+                          (click)="ejecutarAccionChecklist(item)">
                           {{ etiquetaAccion(item.accion) }}
                         </button>
                       }
-                    </li>
-                  } @empty {
-                    <li class="cierre-text-muted">Todavía no hay una lista de lo que hay que registrar en este mes.</li>
+                    </div>
                   }
-                </ul>
-
-                <button
-                  type="button"
-                  class="btn w-100 cierre-certificar-btn"
-                  [disabled]="detalle.bloqueado || !puedeCertificar(detalle)"
-                  (click)="certificar(detalle)">
-                  <span class="cierre-certificar-lock" aria-hidden="true">🔒</span>
-                  @if (detalle.bloqueado) {
-                    Mes bloqueado
-                  } @else {
-                    Certificar {{ detalle.mesCertificar }} ({{ pendientesChecklist(detalle) }} pendientes)
-                  }
-                </button>
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
+            }
+          } @else {
+            <ul class="cierre-checklist list-unstyled mb-3">
+              @for (item of detalle.checklist; track item.texto) {
+                <li class="cierre-checklist-item cierre-checklist-item--{{ item.estado }}">
+                  <span class="cierre-checklist-icon" aria-hidden="true">
+                    @switch (item.estado) {
+                      @case ('ok') { ✓ }
+                      @case ('error') { ✕ }
+                      @default { ! }
+                    }
+                  </span>
+                  <span class="cierre-checklist-texto">{{ item.texto }}</span>
+                  @if (item.accion && !detalle.bloqueado) {
+                    <button type="button" class="btn btn-sm cierre-checklist-accion-btn" (click)="ejecutarAccionChecklist(item)">
+                      {{ etiquetaAccion(item.accion) }}
+                    </button>
+                  }
+                </li>
+              } @empty {
+                <li class="cierre-text-muted">Todavía no hay una lista de lo que hay que registrar en este mes.</li>
+              }
+            </ul>
+          }
 
-        <div class="card card-performance">
-          <div class="card-body p-4">
-            <div class="card">
-              <div class="card-body p-3">
-                <header class="cierre-panel-header cierre-panel-header--impuestos mb-3">
-                  <div class="cierre-panel-titulo-wrap">
-                    <span class="cierre-panel-icon" aria-hidden="true">$</span>
-                    <h2 class="ventas-card-title mb-0">Impuestos del mes que cierra</h2>
-                  </div>
-                  @if (detalle.impuestos.vencimiento) {
-                    <span class="cierre-impuestos-vence">{{ detalle.impuestos.vencimiento }}</span>
-                  }
-                </header>
-                <ul class="cierre-impuestos-list list-unstyled mb-0">
-                  @for (imp of detalle.impuestos.items; track imp.concepto) {
-                    <li class="cierre-impuestos-row">
-                      <span>{{ imp.concepto }}</span>
-                      <strong>{{ formatMonto(imp.monto) }}</strong>
-                    </li>
-                  } @empty {
-                    <li class="cierre-text-muted">Sin cálculo de IVA para este mes.</li>
-                  }
-                </ul>
-              </div>
-            </div>
-          </div>
+          <button
+            type="button"
+            class="btn w-100 cierre-certificar-btn"
+            [disabled]="detalle.bloqueado || !puedeCertificar(detalle)"
+            (click)="certificar(detalle)">
+            <span class="cierre-certificar-lock" aria-hidden="true">🔒</span>
+            @if (detalle.bloqueado) {
+              Mes bloqueado
+            } @else {
+              Certificar {{ detalle.mesCertificar }} ({{ pendientesChecklist(detalle) }} pendientes)
+            }
+          </button>
         </div>
       </div>
+    </div>
 
-      <div class="col-lg-7">
-        <div class="card card-performance h-100">
-          <div class="card-body p-4">
-            <div class="card h-100">
-              <div class="card-header bg-white border-0 py-3">
-                <div class="ventas-card-title mb-0 d-inline-flex align-items-center gap-2">
-                  <span aria-hidden="true">◎</span>
-                  Presupuesto vs. real — {{ detalle.mesTitulo.split(' ')[0] }}
-                </div>
-              </div>
-              <div class="card-body pt-0 px-3 pb-3">
-                <div class="table-responsive">
-                  <table class="table table-sm cierre-presupuesto-table mb-0">
-                    <thead>
-                      <tr>
-                        <th scope="col">Categoría</th>
-                        <th scope="col" class="text-end">Presup. {{ etiquetaMes() }}</th>
-                        <th scope="col" class="text-end">Real {{ etiquetaMes() }}</th>
-                        <th scope="col" class="text-end">Var. mes</th>
-                        <th scope="col" class="text-end">Var. acumulada</th>
-                        <th scope="col" class="text-center">Estado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (fila of detalle.presupuesto; track fila.categoria) {
-                        <tr>
-                          <td>{{ fila.categoria }}</td>
-                          <td class="text-end">{{ formatMonto(fila.presupuesto) }}</td>
-                          <td class="text-end fw-semibold">{{ formatMonto(fila.real) }}</td>
-                          <td class="text-end" [ngClass]="claseVarTono(fila.varMesTono)">
-                            {{ formatVarMes(fila.varMesPct) }}
-                          </td>
-                          <td class="text-end" [ngClass]="claseVarTono(tonoAcum(fila))">
-                            {{ formatVarAcum(fila) }}
-                          </td>
-                          <td class="text-center">
-                            @if (fila.estado === 'ok') {
-                              <span class="cierre-estado-dot cierre-estado-dot--ok" aria-label="En rango">●</span>
-                            } @else if (fila.estado === 'warn') {
-                              <span class="cierre-estado-dot cierre-estado-dot--warn" aria-label="Fuera de rango">●</span>
-                            } @else {
-                              <span class="cierre-text-muted">—</span>
-                            }
-                          </td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+    <div class="row mb-2">
+      <div class="col-12">
+        <div class="sf-card cierre-section-card">
+          <div class="mb-3">
+            <div class="ventas-card-title mb-0 d-inline-flex align-items-center gap-2">
+              <span aria-hidden="true">◎</span>
+              Presupuesto vs. real — {{ detalle.mesTitulo.split(' ')[0] }}
             </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm cierre-presupuesto-table mb-0">
+              <thead>
+                <tr>
+                  <th scope="col">Categoría</th>
+                  <th scope="col" class="text-end">Presup. {{ etiquetaMes() }}</th>
+                  <th scope="col" class="text-end">Real {{ etiquetaMes() }}</th>
+                  <th scope="col" class="text-end">Var. mes</th>
+                  <th scope="col" class="text-end cierre-pres-col-sep">Var. acumulada</th>
+                  <th scope="col" class="text-center">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (fila of detalle.presupuesto; track fila.categoria) {
+                  <tr>
+                    <td class="cierre-pres-cat">{{ fila.categoria }}</td>
+                    <td class="text-end cierre-pres-num">{{ formatMontoCard(fila.presupuesto) }}</td>
+                    <td class="text-end cierre-pres-real">{{ formatMontoCard(fila.real) }}</td>
+                    <td class="text-end" [ngClass]="claseVarTono(fila.varMesTono, fila.varMesPct === null)">
+                      <span class="cierre-kpi-delta">
+                        @if (fila.categoria === 'Ventas netas' && fila.varMesPct !== null && fila.varMesPct !== 0) {
+                          <svg class="cierre-kpi-arrow" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            @if (fila.varMesPct > 0) {
+                              <path d="M3 17l6 -6l4 4l8 -8" /><path d="M14 7h7v7" />
+                            } @else {
+                              <path d="M3 7l6 6l4 -4l8 8" /><path d="M21 10v7h-7" />
+                            }
+                          </svg>
+                        }
+                        {{ formatVarMes(fila.varMesPct) }}
+                      </span>
+                    </td>
+                    <td class="text-end cierre-pres-col-sep" [ngClass]="claseVarTono(tonoAcum(fila), fila.varAcumMonto === null && fila.varAcumPct === null)">
+                      <span class="cierre-kpi-delta">
+                        @if (fila.categoria === 'Ventas netas' && fila.varAcumPct !== null) {
+                          <svg class="cierre-kpi-arrow" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            @if (fila.varAcumPct >= 0) {
+                              <path d="M3 17l6 -6l4 4l8 -8" /><path d="M14 7h7v7" />
+                            } @else {
+                              <path d="M3 7l6 6l4 -4l8 8" /><path d="M21 10v7h-7" />
+                            }
+                          </svg>
+                        }
+                        {{ formatVarAcum(fila) }}
+                      </span>
+                    </td>
+                    <td class="text-center">
+                      @if (fila.estado === 'ok') {
+                        <span class="cierre-estado-dot cierre-estado-dot--ok" aria-label="En rango">●</span>
+                      } @else if (fila.estado === 'warn') {
+                        <span class="cierre-estado-dot cierre-estado-dot--warn" aria-label="Fuera de rango">●</span>
+                      } @else {
+                        <span class="cierre-text-muted">—</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -212,58 +470,259 @@
 
     <div class="row mb-2">
       <div class="col-12">
-        <div class="card card-performance">
-          <div class="card-body p-4">
-            <div class="card">
-              <div class="card-header bg-white border-0 py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
-                <div class="ventas-card-title mb-0 d-inline-flex align-items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M3 12h4l3 9 4 -16 3 7h4" />
-                  </svg>
-                  Gastos fuera de rango — {{ detalle.mesEtiquetaCorto }}
-                </div>
-                <span class="cierre-umbral-badge">umbral +{{ detalle.gastosFueraRango.umbralPct }}%</span>
-              </div>
-              <div class="card-body pt-0 px-3 pb-3">
-                <div class="table-responsive">
-                  <table class="table table-sm cierre-presupuesto-table cierre-fuera-rango-table mb-0">
-                    <thead>
-                      <tr>
-                        <th scope="col">Categoría</th>
-                        <th scope="col" class="text-end">{{ detalle.mesEtiquetaCorto | titlecase }}</th>
-                        <th scope="col" class="text-end">Promedio 6 meses</th>
-                        <th scope="col" class="text-end">Variación</th>
-                        <th scope="col" class="text-end">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (fila of detalle.gastosFueraRango.filas; track fila.categoria) {
-                        <tr>
-                          <td class="fw-semibold">{{ fila.categoria }}</td>
-                          <td class="text-end fw-bold">{{ formatMonto(fila.mes) }}</td>
-                          <td class="text-end cierre-text-muted">{{ formatMonto(fila.promedio6m) }}</td>
-                          <td class="text-end cierre-text-neg">{{ formatVarMes(fila.variacionPct) }}</td>
-                          <td class="text-end">
-                            <div class="cierre-fuera-rango-acciones">
-                              <button type="button" class="btn btn-sm cierre-btn-revisar">Revisar</button>
-                              <button type="button" class="btn btn-sm btn-outline-secondary cierre-btn-normal">Es normal</button>
-                            </div>
-                          </td>
-                        </tr>
-                      } @empty {
-                        <tr>
-                          <td colspan="5" class="cierre-text-muted">Ningún rubro supera el umbral.</td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+        <div class="sf-card cierre-section-card">
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+            <div class="ventas-card-title mb-0 d-inline-flex align-items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 12h4l3 9 4 -16 3 7h4" />
+              </svg>
+              Gastos fuera de rango — {{ detalle.mesEtiquetaCorto }}
             </div>
+            <span class="cierre-umbral-badge">umbral +{{ detalle.gastosFueraRango.umbralPct }}%</span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm cierre-presupuesto-table cierre-fuera-rango-table mb-0">
+              <thead>
+                <tr>
+                  <th scope="col">Categoría</th>
+                  <th scope="col" class="text-end">{{ detalle.mesEtiquetaCorto | titlecase }}</th>
+                  <th scope="col" class="text-end">Promedio 6 meses</th>
+                  <th scope="col" class="text-end">Variación</th>
+                  <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (fila of detalle.gastosFueraRango.filas; track fila.categoria) {
+                  <tr>
+                    <td class="cierre-pres-cat">{{ fila.categoria }}</td>
+                    <td class="text-end cierre-pres-real">{{ formatMontoCard(fila.mes) }}</td>
+                    <td class="text-end cierre-pres-num">{{ formatMontoCard(fila.promedio6m) }}</td>
+                    <td class="text-end cierre-text-neg">{{ formatVarMes(fila.variacionPct) }}</td>
+                    <td class="text-end">
+                      <div class="cierre-fuera-rango-acciones">
+                        <button type="button" class="btn btn-sm cierre-btn-revisar" (click)="revisarFueraRango(fila)">Revisar</button>
+                        <button
+                          type="button"
+                          class="btn btn-sm cierre-btn-normal"
+                          [disabled]="descartandoCategoria === fila.categoria"
+                          (click)="esNormal(fila)">
+                          Es normal
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5" class="cierre-text-muted">Ningún rubro supera el umbral.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
     </div>
+
+    <div class="cierre-top-grid">
+      @for (card of topVentasCards(detalle); track card.titulo) {
+        <div class="sf-card cierre-section-card">
+          <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+            <div class="ventas-card-title mb-0 d-inline-flex align-items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 17l6 -6l4 4l8 -8" /><path d="M14 7h7v7" />
+              </svg>
+              {{ card.titulo }}
+            </div>
+            <span class="cierre-top-mes">{{ card.mesLabel }}</span>
+          </div>
+
+          <div class="cierre-top-list">
+            @for (item of card.items; track item.nombre + '-' + $index) {
+              <div class="cierre-top-row">
+                <span class="cierre-top-rank">{{ $index + 1 }}</span>
+                <div class="cierre-top-info">
+                  <div class="cierre-top-name" [title]="item.nombre">{{ item.nombre }}</div>
+                  <div class="cierre-top-sub" [title]="item.subtitulo">{{ item.subtitulo }}</div>
+                </div>
+                <div class="cierre-top-bar-track" aria-hidden="true">
+                  <div class="cierre-top-bar-fill" [style.width.%]="item.pctBarra"></div>
+                </div>
+                <div class="cierre-top-val">
+                  <div class="cierre-top-monto">{{ formatMontoCard(item.monto) }}</div>
+                  <div class="cierre-top-pct">{{ formatPctEntero(item.pctDelMes) }} del mes</div>
+                </div>
+              </div>
+            } @empty {
+              <div class="cierre-text-muted py-2">{{ card.emptyText }}</div>
+            }
+          </div>
+        </div>
+      }
+    </div>
   }
   }
 </div>
+
+<ng-template #mRegistrarGasto>
+  <div class="modal-header justify-content-between">
+    <h3 class="modal-title mb-0 fs-5">Registrar gasto</h3>
+    <button type="button" class="btn btn-light text-danger" (click)="modalGastoRef?.hide()">
+      Cancelar
+    </button>
+  </div>
+  <form (ngSubmit)="guardarGastoModal()">
+    <div class="modal-body p-3">
+      <div class="row g-2">
+        <div class="col-md-5">
+          <label class="form-label small fw-semibold" for="cierre-gasto-fecha">Fecha</label>
+          <input
+            id="cierre-gasto-fecha"
+            type="date"
+            class="form-control form-control-sm"
+            name="fecha"
+            [(ngModel)]="gastoForm.fecha"
+            required />
+        </div>
+        <div class="col-md-7">
+          <label class="form-label small fw-semibold" for="cierre-gasto-tipo">Tipo de gasto</label>
+          <select
+            id="cierre-gasto-tipo"
+            class="form-select form-select-sm"
+            name="tipo"
+            [(ngModel)]="gastoForm.tipo"
+            required>
+            @for (t of tiposGasto; track t) {
+              <option [value]="t">{{ t }}</option>
+            }
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label small fw-semibold" for="cierre-gasto-concepto">Concepto</label>
+          <input
+            id="cierre-gasto-concepto"
+            type="text"
+            class="form-control form-control-sm"
+            name="concepto"
+            [(ngModel)]="gastoForm.concepto"
+            placeholder="Ej. Mantenimiento equipo / Energía Sucursal Centro"
+            required />
+        </div>
+        <div class="col-12">
+          <label class="form-label small fw-semibold">Proveedor</label>
+          <div class="input-group flex-nowrap">
+            <ng-select
+              name="id_proveedor"
+              class="form-select p-0 flex-grow-1"
+              placeholder="Seleccione proveedor"
+              [items]="proveedores"
+              bindLabel="etiqueta"
+              bindValue="id"
+              [(ngModel)]="gastoForm.id_proveedor"
+              required>
+            </ng-select>
+            <app-crear-proveedor (update)="setProveedorGasto($event)"></app-crear-proveedor>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold" for="cierre-gasto-sucursal">Sucursal</label>
+          <select
+            id="cierre-gasto-sucursal"
+            class="form-select form-select-sm"
+            name="id_sucursal"
+            [(ngModel)]="gastoForm.id_sucursal"
+            required>
+            @for (s of sucursales; track s.id) {
+              <option [ngValue]="s.id">{{ s.nombre }}</option>
+            }
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold" for="cierre-gasto-pago">Forma de pago</label>
+          <select
+            id="cierre-gasto-pago"
+            class="form-select form-select-sm"
+            name="forma_pago"
+            [(ngModel)]="gastoForm.forma_pago"
+            required>
+            @for (fp of formasPago; track fp.id) {
+              <option [value]="fp.nombre">{{ fp.nombre }}</option>
+            } @empty {
+              <option value="Efectivo">Efectivo</option>
+              <option value="Transferencia">Transferencia</option>
+            }
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold" for="cierre-gasto-doc">Documento</label>
+          <select
+            id="cierre-gasto-doc"
+            class="form-select form-select-sm"
+            name="tipo_documento"
+            [(ngModel)]="gastoForm.tipo_documento">
+            <option value="Factura">Factura</option>
+            <option value="Crédito fiscal">Crédito fiscal</option>
+            <option value="Recibo">Recibo</option>
+            <option value="Otros">Otros</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold" for="cierre-gasto-estado">Estado</label>
+          <select
+            id="cierre-gasto-estado"
+            class="form-select form-select-sm"
+            name="estado"
+            [(ngModel)]="gastoForm.estado">
+            <option value="Pagado">Pagado</option>
+            <option value="Confirmado">Confirmado</option>
+            <option value="Pendiente">Pendiente</option>
+          </select>
+        </div>
+        <div class="col-md-5">
+          <label class="form-label small fw-semibold" for="cierre-gasto-sub">Subtotal</label>
+          <input
+            id="cierre-gasto-sub"
+            type="number"
+            step="0.01"
+            min="0"
+            class="form-control form-control-sm text-end"
+            name="sub_total"
+            [(ngModel)]="gastoForm.sub_total"
+            (ngModelChange)="recalcularTotalesGasto()"
+            required />
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+          <div class="form-check mb-1">
+            <input
+              id="cierre-gasto-iva"
+              class="form-check-input"
+              type="checkbox"
+              name="aplica_iva"
+              [(ngModel)]="gastoForm.aplica_iva"
+              (ngModelChange)="recalcularTotalesGasto()" />
+            <label class="form-check-label small" for="cierre-gasto-iva">+ IVA 13%</label>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small fw-semibold">Total</label>
+          <input
+            type="text"
+            class="form-control form-control-sm text-end fw-bold bg-light"
+            [value]="formatMonto(gastoForm.total)"
+            readonly />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer justify-content-between">
+      <button type="button" class="btn btn-sm btn-link text-decoration-none px-0" (click)="irAFormularioCompleto()">
+        Formulario completo →
+      </button>
+      <button type="submit" class="btn btn-sm btn-primary" [disabled]="guardandoGasto">
+        @if (guardandoGasto) {
+          Guardando…
+        } @else {
+          Guardar gasto
+        }
+      </button>
+    </div>
+  </form>
+</ng-template>

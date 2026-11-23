@@ -436,6 +436,35 @@
                 Igual cada mes
               </button>
             </div>
+            @if (presupuestoVista === 'departamentos' || presupuestoVista === 'areas') {
+              @if (departamentosEmpresa.length) {
+                <label class="modelado-p3-reparto-label ms-sm-2 mb-0" for="modelado-filtro-dept">Departamento:</label>
+                <select
+                  id="modelado-filtro-dept"
+                  class="form-select form-select-sm modelado-p3-dept-select"
+                  [(ngModel)]="filtroDepartamentoId">
+                  <option [ngValue]="null">Todos los departamentos</option>
+                  @for (d of departamentosEmpresa; track d.id) {
+                    <option [ngValue]="+d.id">{{ d.nombre }}</option>
+                  }
+                </select>
+              }
+              <div class="modelado-p3-areas-acciones ms-auto">
+                <app-crear-departamento
+                  label="+ Crear departamento"
+                  btnClass="btn btn-sm btn-outline-primary"
+                  (update)="onDepartamentoCreado($event)">
+                </app-crear-departamento>
+                @if (presupuestoVista === 'areas') {
+                  <app-crear-area-empresa
+                    label="+ Crear área"
+                    btnClass="btn btn-sm btn-primary"
+                    [id_departamento_preselected]="filtroDepartamentoId ?? departamentosEmpresa[0]?.id ?? null"
+                    (update)="onAreaCreada($event)">
+                  </app-crear-area-empresa>
+                }
+              </div>
+            }
           </div>
 
           @if (presupuestoVista === 'empresa') {
@@ -452,11 +481,11 @@
               </thead>
               <tbody>
                 @for (fila of presupuestoFilas; track fila.id) {
-                  @if (fila.id === 'costo') {
+                  @if (fila.id === 'costo_de_venta' || fila.id === 'costo') {
                     <tr class="modelado-pres-grupo-row">
                       <td colspan="5">Costo de ventas</td>
                     </tr>
-                  } @else if (fila.id === 'personal') {
+                  } @else if (fila.id === 'alquiler' || fila.id === 'personal') {
                     <tr class="modelado-pres-grupo-row">
                       <td colspan="5">Gastos de operación</td>
                     </tr>
@@ -610,111 +639,123 @@
               </table>
             </div>
           }
-          } @else if (presupuestoVista === 'areas') {
-            <div class="modelado-p3-areas-bar">
-              <div class="modelado-p3-areas-info">
-                <strong>Departamentos y áreas</strong>
-                @if (departamentosEmpresa.length) {
-                  <span> · {{ cuenta(departamentosEmpresa.length, 'departamento', 'departamentos') }} ({{ resumenDepartamentos() }})</span>
-                }
-              </div>
-              <div class="modelado-p3-areas-acciones">
-                <app-crear-departamento
-                  label="Crear departamento"
-                  btnClass="btn btn-sm btn-outline-primary"
-                  (update)="onDepartamentoCreado()">
-                </app-crear-departamento>
-                <app-crear-area-empresa
-                  label="Crear área"
-                  btnClass="btn btn-sm btn-primary"
-                  [id_departamento_preselected]="departamentosEmpresa[0]?.id ?? null"
-                  (update)="onAreaCreada()">
-                </app-crear-area-empresa>
-              </div>
-            </div>
-            @if (presupuestoAreas; as pa) {
-              <div class="table-responsive">
-                <table class="table modelado-pres-suc-table mb-0">
-                  <thead>
-                    <tr>
-                      <th scope="col" class="modelado-pres-suc-anual-col">Anual {{ data.anio }}</th>
-                      @for (col of pa.areas; track col.id) {
-                        <th scope="col" class="text-end">{{ col.nombre }}</th>
-                      }
-                      <th scope="col" class="text-end">Suma</th>
-                      <th scope="col" class="text-end">Empresa</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (fila of pa.filas; track fila.id) {
-                      <tr>
-                        <td class="modelado-pres-categoria">{{ fila.categoria }}</td>
-                        @for (col of pa.areas; track col.id) {
-                          <td class="text-end">
-                            <input
-                              type="number"
-                              class="form-control form-control-sm modelado-pres-suc-input"
-                              [ngModel]="presupuestoEntidadCelda(fila.porArea, col.id)"
-                              (ngModelChange)="presupuestoEntidadSetCelda(fila.porArea, col.id, $event)"
-                              (blur)="guardarPresupuestoSucursales()"
-                              [attr.aria-label]="fila.categoria + ' ' + col.nombre" />
-                          </td>
+          } @else if (presupuestoVista === 'departamentos' || presupuestoVista === 'areas') {
+            @if (presupuestoMatrizActiva(); as ent) {
+              @if (presupuestoColsVisibles(ent); as colsVisibles) {
+                @if (colsVisibles.length) {
+                  <div class="table-responsive">
+                    <table class="table modelado-pres-suc-table mb-0">
+                      <thead>
+                        <tr>
+                          <th scope="col" class="modelado-pres-suc-anual-col">Anual {{ data.anio }}</th>
+                          @for (col of colsVisibles; track col.id) {
+                            <th scope="col" class="text-end">{{ col.nombre }}</th>
+                          }
+                          <th scope="col" class="text-end">Suma</th>
+                          <th scope="col" class="text-end">Empresa</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (fila of ent.filas; track fila.id) {
+                          <tr>
+                            <td class="modelado-pres-categoria">{{ fila.categoria }}</td>
+                            @for (col of colsVisibles; track col.id) {
+                              <td class="text-end">
+                                <input
+                                  type="number"
+                                  class="form-control form-control-sm modelado-pres-suc-input"
+                                  [ngModel]="presupuestoEntidadCelda(fila.porCol, col.id)"
+                                  (ngModelChange)="presupuestoEntidadSetCelda(fila.porCol, col.id, $event)"
+                                  (blur)="guardarPresupuestoSucursales()"
+                                  [attr.aria-label]="fila.categoria + ' ' + col.nombre" />
+                              </td>
+                            }
+                            <td class="text-end modelado-pres-suc-readonly">{{ formatMonto(presupuestoSumaEntidadFila(fila.porCol, colsVisibles)) }}</td>
+                            <td class="text-end modelado-pres-suc-readonly">{{ formatMonto(fila.empresa) }}</td>
+                          </tr>
                         }
-                        <td class="text-end modelado-pres-suc-readonly">{{ formatMonto(presupuestoSumaEntidadFila(fila.porArea, pa.areas)) }}</td>
-                        <td class="text-end modelado-pres-suc-readonly">{{ formatMonto(fila.empresa) }}</td>
-                      </tr>
-                    }
-                    <tr class="modelado-pres-suc-contrib-row">
-                      <td class="modelado-pres-categoria fw-semibold">Contribución presupuestada</td>
-                      @for (col of pa.areas; track col.id) {
-                        <td
-                          class="text-end fw-semibold"
-                          [class]="presupuestoContribClase(presupuestoContribArea(col.id))">
-                          {{ formatMonto(presupuestoContribArea(col.id)) }}
-                        </td>
+                        <tr class="modelado-pres-suc-contrib-row">
+                          <td class="modelado-pres-categoria fw-semibold">Contribución presupuestada</td>
+                          @for (col of colsVisibles; track col.id) {
+                            <td
+                              class="text-end fw-semibold"
+                              [class]="presupuestoContribClase(presupuestoContribMatriz(ent, col.id))">
+                              {{ formatMonto(presupuestoContribMatriz(ent, col.id)) }}
+                            </td>
+                          }
+                          <td
+                            class="text-end fw-semibold"
+                            [class]="presupuestoContribClase(presupuestoContribMatrizSuma(ent, colsVisibles))">
+                            {{ formatMonto(presupuestoContribMatrizSuma(ent, colsVisibles)) }}
+                          </td>
+                          <td
+                            class="text-end fw-semibold"
+                            [class]="presupuestoContribClase(ent.contribucion.empresa)">
+                            {{ formatMonto(ent.contribucion.empresa) }}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                } @else {
+                  <div class="modelado-p3-areas-empty">
+                    <p class="modelado-p3-areas-empty-titulo">Este departamento aún no tiene áreas creadas</p>
+                    <p class="modelado-p3-areas-empty-sub">
+                      Crea un área para este departamento o cambia el filtro a "Todos los departamentos".
+                    </p>
+                    <div class="modelado-p3-areas-acciones justify-content-center">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        (click)="filtroDepartamentoId = null">
+                        Ver todos los departamentos
+                      </button>
+                      @if (presupuestoVista === 'areas') {
+                        <app-crear-area-empresa
+                          label="Crear área"
+                          btnClass="btn btn-sm btn-primary"
+                          [id_departamento_preselected]="filtroDepartamentoId"
+                          (update)="onAreaCreada($event)">
+                        </app-crear-area-empresa>
                       }
-                      <td
-                        class="text-end fw-semibold"
-                        [class]="presupuestoContribClase(presupuestoContribAreasSuma())">
-                        {{ formatMonto(presupuestoContribAreasSuma()) }}
-                      </td>
-                      <td
-                        class="text-end fw-semibold"
-                        [class]="presupuestoContribClase(pa.contribucion.empresa)">
-                        {{ formatMonto(pa.contribucion.empresa) }}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+                    </div>
+                  </div>
+                }
+              }
             } @else {
               <div class="modelado-p3-areas-empty">
                 <p class="modelado-p3-areas-empty-titulo">
-                  @if (!departamentosEmpresa.length) {
+                  @if (presupuestoVista === 'departamentos') {
+                    Aún no hay departamentos creados
+                  } @else if (!departamentosEmpresa.length) {
                     Aún no hay departamentos ni áreas creadas
                   } @else {
-                    Falta crear áreas dentro de tus departamentos
+                    Aún no hay áreas creadas
                   }
                 </p>
                 <p class="modelado-p3-areas-empty-sub">
-                  @if (!departamentosEmpresa.length) {
+                  @if (presupuestoVista === 'departamentos') {
+                    Crea los departamentos de tu empresa para asignarles presupuesto igual que en Sucursales.
+                  } @else if (!departamentosEmpresa.length) {
                     Crea los departamentos y áreas de tu empresa usando los mismos catálogos del sistema para asignar presupuesto por área.
                   } @else {
-                    Ya tienes {{ cuenta(departamentosEmpresa.length, 'departamento', 'departamentos') }} ({{ resumenDepartamentos() }}). Crea al menos un área para empezar a presupuestar por áreas.
+                    Ya tienes {{ cuenta(departamentosEmpresa.length, 'departamento', 'departamentos') }} ({{ resumenDepartamentos() }}). Crea al menos un área para presupuestar por áreas, o cambia a Departamentos.
                   }
                 </p>
                 <div class="modelado-p3-areas-acciones justify-content-center">
                   <app-crear-departamento
                     label="Crear departamento"
                     btnClass="btn btn-sm btn-outline-primary"
-                    (update)="onDepartamentoCreado()">
+                    (update)="onDepartamentoCreado($event)">
                   </app-crear-departamento>
-                  <app-crear-area-empresa
-                    label="Crear área"
-                    btnClass="btn btn-sm btn-primary"
-                    [id_departamento_preselected]="departamentosEmpresa[0]?.id ?? null"
-                    (update)="onAreaCreada()">
-                  </app-crear-area-empresa>
+                  @if (presupuestoVista === 'areas') {
+                    <app-crear-area-empresa
+                      label="Crear área"
+                      btnClass="btn btn-sm btn-primary"
+                      [id_departamento_preselected]="departamentosEmpresa[0]?.id ?? null"
+                      (update)="onAreaCreada($event)">
+                    </app-crear-area-empresa>
+                  }
                 </div>
               </div>
             }

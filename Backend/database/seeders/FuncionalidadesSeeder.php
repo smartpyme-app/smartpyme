@@ -123,6 +123,12 @@ class FuncionalidadesSeeder extends Seeder
                 'descripcion' => 'Préstamos que la empresa recibe (pasivo) con tabla de amortización y asientos',
                 'orden' => 24
             ],
+            [
+                'nombre' => 'Suite Financiera',
+                'slug' => 'suite-financiera',
+                'descripcion' => 'Acceso a la pestaña de Finanzas (Suite Financiera) en el dashboard y modelado financiero',
+                'orden' => 26
+            ],
             //Se pueden agregar mas funcionalidades con el mismo formato
         ];
 

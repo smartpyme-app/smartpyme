@@ -11,7 +11,7 @@ class ModeladoController extends Controller
 {
     private const RUBROS_GASTO = 'personal,local,ventas_marketing,admin,financieros,costo,otros';
 
-    private const RUBROS_PRESUPUESTO = 'ventas,costo,personal,local,marketing,admin,financieros';
+    private const RUBROS_PRESUPUESTO = 'ventas,costo,personal,local,marketing,admin,financieros,costo_de_venta,materia_prima,insumos,planilla,alquiler,servicios,mantenimiento,combustible,publicidad,comisiones,gastos_administrativos,varios,impuestos,prestamos';
 
     public function show(Request $request)
     {
@@ -216,6 +216,11 @@ class ModeladoController extends Controller
             'areas.*.filas' => 'required|array|min:1',
             'areas.*.filas.*.rubro' => 'required|in:'.self::RUBROS_PRESUPUESTO,
             'areas.*.filas.*.anual' => 'required|numeric|min:0',
+            'departamentos' => 'nullable|array',
+            'departamentos.*.idDepartamento' => 'required|integer|min:1',
+            'departamentos.*.filas' => 'required|array|min:1',
+            'departamentos.*.filas.*.rubro' => 'required|in:'.self::RUBROS_PRESUPUESTO,
+            'departamentos.*.filas.*.anual' => 'required|numeric|min:0',
         ]);
         if ($data['reparto'] === 'estacionalidad' && empty($data['estacionalidad'])) {
             return response()->json(['message' => 'estacionalidad requiere 12 pesos'], 422);
@@ -285,6 +290,17 @@ class ModeladoController extends Controller
                     $now
                 );
             }
+            if (! empty($data['departamentos'])) {
+                $this->guardarLineasPresupuestoPorEntidad(
+                    'modelado_presupuesto_departamento_lineas',
+                    'id_departamento',
+                    'idDepartamento',
+                    $empresa,
+                    $anio,
+                    $data['departamentos'],
+                    $now
+                );
+            }
             $this->crearPresupuestoFinanzasSiFalta($empresa, $anio, $data['filas'], $now);
         });
 
@@ -342,11 +358,27 @@ class ModeladoController extends Controller
         foreach ($filas as $fila) {
             $anual[$fila['rubro']] = (float) $fila['anual'];
         }
-        $egresos = ($anual['costo'] ?? 0) + ($anual['personal'] ?? 0) + ($anual['local'] ?? 0)
-            + ($anual['marketing'] ?? 0) + ($anual['admin'] ?? 0) + ($anual['financieros'] ?? 0);
+        $detalle = [
+            'costo_de_venta' => $anual['costo_de_venta'] ?? ($anual['costo'] ?? 0),
+            'materia_prima' => $anual['materia_prima'] ?? 0,
+            'insumos' => $anual['insumos'] ?? 0,
+            'alquiler' => $anual['alquiler'] ?? ($anual['local'] ?? 0),
+            'servicios' => $anual['servicios'] ?? 0,
+            'mantenimiento' => $anual['mantenimiento'] ?? 0,
+            'combustible' => $anual['combustible'] ?? 0,
+            'planilla' => $anual['planilla'] ?? ($anual['personal'] ?? 0),
+            'marketing' => $anual['marketing'] ?? 0,
+            'publicidad' => $anual['publicidad'] ?? 0,
+            'comisiones' => $anual['comisiones'] ?? 0,
+            'gastos_administrativos' => $anual['gastos_administrativos'] ?? ($anual['admin'] ?? 0),
+            'varios' => $anual['varios'] ?? 0,
+            'impuestos' => $anual['impuestos'] ?? 0,
+            'prestamos' => $anual['prestamos'] ?? ($anual['financieros'] ?? 0),
+        ];
+        $egresos = array_sum($detalle);
         $ingresos = $anual['ventas'] ?? 0;
         try {
-            DB::table('presupuestos')->insert([
+            DB::table('presupuestos')->insert($detalle + [
                 'id_empresa' => $empresa,
                 'titulo' => 'Presupuesto '.$anio,
                 'fecha_inicio' => $desde,
@@ -356,12 +388,6 @@ class ModeladoController extends Controller
                 'compras' => 0,
                 'utilidad' => $ingresos - $egresos,
                 'margen' => $ingresos > 0 ? round(($ingresos - $egresos) / $ingresos * 100, 2) : 0,
-                'costo_de_venta' => $anual['costo'] ?? 0,
-                'planilla' => $anual['personal'] ?? 0,
-                'alquiler' => $anual['local'] ?? 0,
-                'marketing' => $anual['marketing'] ?? 0,
-                'gastos_administrativos' => $anual['admin'] ?? 0,
-                'prestamos' => $anual['financieros'] ?? 0,
                 'enable' => 1,
                 'created_at' => $now,
                 'updated_at' => $now,

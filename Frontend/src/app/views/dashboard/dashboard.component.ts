@@ -3,6 +3,7 @@ import { Subject, Subscription } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { DashboardDataService } from './services/dashboard-data.service';
 import { FiltrosConsultaVentasDashboard } from './models/filtros-consulta-ventas-dashboard.model';
+import { FuncionalidadesService } from '@services/functionalities.service';
 
 import { CommonModule } from '@angular/common';
 import { themeQuartz, AllCommunityModule } from 'ag-grid-community';
@@ -30,6 +31,7 @@ import { FinanzasComponent } from './sections/finanzas/finanzas.component';
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   private static readonly SECCION_GUARDADA_KEY = 'smartpyme.dashboard.seccionActiva';
+  private static readonly SLUG_SUITE_FINANCIERA = 'suite-financiera';
 
   public miTema = themeQuartz;
   public modules: any[] = [AllCommunityModule];
@@ -46,6 +48,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
   private datosSubscription?: Subscription;
+  private usuarioCambioSeccion = false;
+  tieneSuiteFinanciera = false;
 
   private cancelarSuscripcionActiva(): void {
     if (this.datosSubscription) {
@@ -90,16 +94,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
     { nombre: 'Gastos', activo: false, componente: 'Gastos' },
     { nombre: 'Control de cuentas', activo: false, componente: 'Control de cuentas' },
     { nombre: 'Inventario', activo: false, componente: 'Inventario' },
-    { nombre: 'Finanzas', activo: false, componente: 'Finanzas' },
   ];
 
 
   constructor(
     private dashboardDataService: DashboardDataService,
+    private funcionalidadesService: FuncionalidadesService,
     private cdr: ChangeDetectorRef
   ) { }
 
   ngOnInit(): void {
+    this.verificarAccesoSuiteFinanciera();
+    this.funcionalidadesService
+      .onCambios()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.verificarAccesoSuiteFinanciera());
+
     this.restaurarSeccionDesdeAlmacenamiento();
     // ponytail: only load initial data if we have saved filters for the active section.
     // Otherwise, wait for the child component to mount and emit its default filters.
@@ -111,6 +121,38 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  private verificarAccesoSuiteFinanciera(): void {
+    this.funcionalidadesService
+      .verificarAcceso(DashboardComponent.SLUG_SUITE_FINANCIERA)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((acceso) => {
+        this.actualizarSeccionesFinanzas(acceso);
+      });
+  }
+
+  private actualizarSeccionesFinanzas(acceso: boolean): void {
+    this.tieneSuiteFinanciera = acceso;
+    const activaAntes = this.secciones.find((s) => s.activo)?.nombre ?? 'Resultados';
+    const base = [
+      { nombre: 'Resultados', activo: false, componente: 'Resultados' },
+      { nombre: 'Ventas', activo: false, componente: 'Ventas' },
+      { nombre: 'Gastos', activo: false, componente: 'Gastos' },
+      { nombre: 'Control de cuentas', activo: false, componente: 'Control de cuentas' },
+      { nombre: 'Inventario', activo: false, componente: 'Inventario' },
+    ];
+    if (acceso) {
+      base.push({ nombre: 'Finanzas', activo: false, componente: 'Finanzas' });
+    }
+    const destino = base.find((s) => s.nombre === activaAntes) ?? base[0];
+    destino.activo = true;
+    this.secciones = base;
+
+    if (acceso && !this.usuarioCambioSeccion) {
+      this.restaurarSeccionDesdeAlmacenamiento();
+    }
+    this.cdr.markForCheck();
+  }
+
   ngOnDestroy(): void {
     this.cancelarSuscripcionActiva();
     this.destroy$.next();
@@ -118,6 +160,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   cambiarSeccion(seccion: any): void {
+    this.usuarioCambioSeccion = true;
     this.secciones.forEach(s => s.activo = false);
     seccion.activo = true;
     this.persistirSeccionActivaSiAplica();
