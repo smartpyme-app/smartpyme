@@ -1,0 +1,77 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading mb-0">Registrar vacuna / preventivo</h2>
+    <button type="button" class="btn btn-default" [routerLink]="['/clinica/pacientes', idPaciente, 'vacunas']">Cancelar</button>
+</section>
+
+@if (cargando) {
+    <section class="bg-white p-4 rounded"><span class="badge bg-primary">Cargando...</span></section>
+}
+
+@if (!cargando) {
+    <section class="bg-white p-4 rounded mb-3">
+        <div class="row">
+            <div class="form-group col-md-4">
+                <label>Catálogo (opcional)</label>
+                <select class="form-control" [(ngModel)]="registro.id_catalogo" name="id_catalogo" (change)="onCatalogoChange()">
+                    <option value="">Manual</option>
+                    @for (c of catalogo; track c.id) {
+                        <option [ngValue]="c.id">{{ c.nombre }}</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group col-md-4">
+                <label>Nombre</label>
+                <input class="form-control" [(ngModel)]="registro.nombre_vacuna" name="nombre_vacuna" required>
+            </div>
+            <div class="form-group col-md-4">
+                <label>Fecha aplicación</label>
+                <input type="date" class="form-control" [(ngModel)]="registro.fecha_aplicacion" name="fecha_aplicacion" required>
+            </div>
+            <div class="form-group col-md-3">
+                <label>Dosis</label>
+                <input class="form-control" [(ngModel)]="registro.dosis" name="dosis">
+            </div>
+            <div class="form-group col-md-3">
+                <label>Próxima fecha</label>
+                <input type="date" class="form-control" [(ngModel)]="registro.proxima_fecha" name="proxima_fecha">
+            </div>
+            <div class="form-group col-md-3">
+                <label>Sucursal</label>
+                <select class="form-control" [(ngModel)]="registro.id_sucursal" name="id_sucursal" required>
+                    <option value="">Seleccionar</option>
+                    @for (s of sucursales; track s.id) {
+                        <option [ngValue]="s.id">{{ s.nombre }}</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group col-md-3">
+                <label>Profesional</label>
+                <select class="form-control" [(ngModel)]="registro.id_usuario_profesional" name="id_usuario_profesional" required>
+                    <option value="">Seleccionar</option>
+                    @for (p of profesionales; track p.id_usuario) {
+                        <option [ngValue]="p.id_usuario">{{ p.nombre }}</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group col-md-4">
+                <label>Lote (texto)</label>
+                <input class="form-control" [(ngModel)]="registro.lote_numero" name="lote_numero">
+            </div>
+            <div class="form-group col-md-4">
+                <label>Vencimiento lote</label>
+                <input type="date" class="form-control" [(ngModel)]="registro.lote_vencimiento" name="lote_vencimiento">
+            </div>
+            <div class="form-group col-md-4">
+                <label>Fabricante</label>
+                <input class="form-control" [(ngModel)]="registro.fabricante" name="fabricante">
+            </div>
+            <div class="form-group col-12">
+                <label>Observaciones</label>
+                <textarea class="form-control" rows="2" [(ngModel)]="registro.observaciones" name="observaciones"></textarea>
+            </div>
+        </div>
+        <button type="button" class="btn btn-primary mt-2" [disabled]="guardando" (click)="guardar()">
+            {{ guardando ? 'Guardando…' : 'Registrar' }}
+        </button>
+    </section>
+}
