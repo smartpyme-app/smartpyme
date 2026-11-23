@@ -677,6 +677,7 @@ class EmpresasController extends Controller
         if ($request->m_inventario) {
             DB::table('productos')->where('id_empresa', $empresa->id)->update(['deleted_at' => Carbon::now()]);
             DB::table('inventario')->whereIn('id_bodega', $bodegas)->update(['deleted_at' => Carbon::now()]);
+            DB::table('lotes')->where('id_empresa', $empresa->id)->update(['deleted_at' => Carbon::now()]);
             DB::table('ajustes')->where('id_empresa', $empresa->id)->delete();
             DB::table('traslados')->where('id_empresa', $empresa->id)->delete();
         }
