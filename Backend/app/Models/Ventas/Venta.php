@@ -437,7 +437,7 @@ class Venta extends AuditableModel {
         return $this->hasMany('App\Models\Ventas\Devoluciones\Devolucion', 'id_venta')
             ->where('enable', 1)
             ->whereHas('documento', function ($q) {
-                $q->whereIn('nombre', ['Nota de crédito', 'Nota de débito']);
+                $q->whereIn('nombre', \App\Constants\DocumentoConstants::NOMBRES_NOTA_CREDITO_DEBITO);
             })
             ->orderBy('fecha')
             ->orderBy('id');

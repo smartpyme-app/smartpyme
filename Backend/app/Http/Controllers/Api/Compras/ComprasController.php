@@ -840,7 +840,15 @@ class ComprasController extends Controller
                         ->orWhere('observaciones', 'like', $buscador);
                 });
             })
+            ->when($request->con_ajuste == 1 || $request->con_ajuste === '1', function ($query) {
+                return $query->whereHas('devoluciones', function ($q) {
+                    $q->where('enable', 1);
+                });
+            })
             ->where('cotizacion', 0)
+            ->with(['devolucionesNcNd' => function ($query) {
+                $query->select('id', 'id_compra', 'fecha', 'tipo_documento', 'total', 'enable');
+            }])
             ->withSum(['abonos' => function ($query) {
                 $query->where('estado', 'Confirmado');
             }], 'total')

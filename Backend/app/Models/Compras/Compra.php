@@ -216,6 +216,19 @@ class Compra extends AuditableModel {
     }
 
     /**
+     * Devoluciones con documento Nota de crédito o Nota de débito (activas).
+     * Usado en listados (p. ej. CXP) para badges sin cargar todas las devoluciones.
+     */
+    public function devolucionesNcNd()
+    {
+        return $this->hasMany('App\Models\Compras\Devoluciones\Devolucion', 'id_compra')
+            ->where('enable', 1)
+            ->whereIn('tipo_documento', \App\Constants\DocumentoConstants::NOMBRES_NOTA_CREDITO_DEBITO)
+            ->orderBy('fecha')
+            ->orderBy('id');
+    }
+
+    /**
      * Retaceo vinculado (una compra solo puede estar en un retaceo).
      */
     public function retaceo()

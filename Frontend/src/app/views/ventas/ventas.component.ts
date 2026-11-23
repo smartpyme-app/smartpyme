@@ -62,6 +62,10 @@ import {
   puedeVerDetalleVenta,
   puedeVerDteVenta,
 } from '@views/ventas/ventas-acciones-menu.util';
+import {
+  BadgeDocumentoAjuste,
+  badgesDocumentoAjuste,
+} from '@shared/utils/documento-ajuste-badges.util';
 
 export type VentasExportPeriodoTipo = 'detalles' | 'ventas' | 'general';
 
@@ -394,6 +398,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
           forma_pago: params['forma_pago'] || '',
           dte: params['dte'] || '',
           estado: params['estado'] || '',
+          con_ajuste: params['con_ajuste'] || '',
           num_identificacion: params['num_identificacion'] || '',
           inicio: params['inicio'] || '',
           fin: params['fin'] || '',
@@ -590,6 +595,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       forma_pago: '',
       dte: '',
       estado: '',
+      con_ajuste: '',
       num_identificacion: '',
       inicio: '',
       fin: '',
@@ -2369,12 +2375,22 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     return Array.isArray(items) && items.length > 0;
   }
 
-  /** Mostrar popover en el total: saldo desglosado y/o detalle de NC/ND. */
+  public badgesDeVenta(venta: any): BadgeDocumentoAjuste[] {
+    return badgesDocumentoAjuste(venta?.devoluciones_nc_nd, venta?.devoluciones_sum_total);
+  }
+
+  public claseBadgeAjuste(badge: BadgeDocumentoAjuste): string {
+    if (badge === 'NC') return 'bg-light-danger text-danger border border-danger';
+    if (badge === 'ND') return 'bg-light-info text-info border border-info';
+    return 'bg-light-warning text-dark border border-warning';
+  }
+
+  /** Mostrar popover en el total: saldo desglosado (abonos / devoluciones). */
   public totalTienePopover(venta: any): boolean {
     return (
-      this.tieneDevolucionesNcNd(venta) ||
       venta?.estado === 'Pendiente' ||
-      Number(venta?.abonos_sum_total || 0) > 0
+      Number(venta?.abonos_sum_total || 0) > 0 ||
+      Number(venta?.devoluciones_sum_total || 0) > 0
     );
   }
 

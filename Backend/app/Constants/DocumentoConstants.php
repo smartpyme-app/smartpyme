@@ -9,6 +9,14 @@ class DocumentoConstants
     /** Devoluciones de mercancía en consigna (ledger v2); no es nota de crédito fiscal. */
     public const DEVOLUCION_CONSIGNA = 'Devolución de consigna';
 
+    /** Nombres de NC/ND (SV + CR) para indicadores de listado. */
+    public const NOMBRES_NOTA_CREDITO_DEBITO = [
+        'Nota de crédito',
+        'Nota de débito',
+        'Nota de Crédito Electrónica',
+        'Nota de Débito Electrónica',
+    ];
+
     public static function esDevolucionConsigna(?string $nombre): bool
     {
         return $nombre !== null && strcasecmp($nombre, self::DEVOLUCION_CONSIGNA) === 0;

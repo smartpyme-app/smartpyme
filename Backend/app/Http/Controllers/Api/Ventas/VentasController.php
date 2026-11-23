@@ -209,6 +209,11 @@ class VentasController extends Controller
             ->when($request->estado, function ($query) use ($request) {
                 return $query->where('estado', $request->estado);
             })
+            ->when($request->con_ajuste == 1 || $request->con_ajuste === '1', function ($query) {
+                return $query->whereHas('devoluciones', function ($q) {
+                    $q->where('enable', 1);
+                });
+            })
             ->when($request->metodo_pago, function ($query) use ($request) {
                 return $query->where('metodo_pago', $request->metodo_pago);
             })
