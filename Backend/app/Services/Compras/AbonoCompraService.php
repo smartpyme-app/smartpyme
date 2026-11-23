@@ -74,9 +74,18 @@ class AbonoCompraService
         $direccion = $filters['direccion'] ?? 'desc';
         $paginate = $filters['paginate'] ?? 15;
 
-        return $query->orderBy($orden, $direccion)
+        $abonos = $query->orderBy($orden, $direccion)
             ->orderBy('id', 'desc')
             ->paginate($paginate);
+
+        // El listado no usa el DTE de la compra; evita descargarlo de S3 por cada fila.
+        $abonos->getCollection()->each(function ($abono) {
+            if ($abono->compra) {
+                $abono->compra->sinDescargarDteDeS3()->makeHidden(['dte', 'dte_invalidacion']);
+            }
+        });
+
+        return $abonos;
     }
 
     /**

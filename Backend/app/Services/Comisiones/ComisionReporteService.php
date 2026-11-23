@@ -65,7 +65,16 @@ class ComisionReporteService
 
         $perPage = min(max((int) $request->input('paginate', 25), 1), 100);
 
-        return $query->paginate($perPage);
+        $movimientos = $query->paginate($perPage);
+
+        // El listado no usa el DTE de la venta; evita descargarlo de S3 por cada fila.
+        $movimientos->getCollection()->each(function ($movimiento) {
+            if ($movimiento->venta) {
+                $movimiento->venta->sinDescargarDteDeS3()->makeHidden(['dte', 'dte_invalidacion']);
+            }
+        });
+
+        return $movimientos;
     }
 
     /**
