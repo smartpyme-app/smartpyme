@@ -139,9 +139,9 @@ class Notificaciones extends Command
         ];
 
         Mail::send('mails.notificacion', ['data' => $data ], function ($m) use ($data) {
-            $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
+            $m->from(config('mail.from.address'), 'SmartPyme')
             ->to('alvarado.websis@gmail.com', 'Jesus Alvarado')
-            ->to(env('MAIL_TO_ADDRESS'), 'SmartPyme')
+            ->to(config('mail.to_address'), 'SmartPyme')
             // ->cc('alvarado.websis@gmail.com')
             // ->replyTo($request->correo)
             ->subject('Notificaciones generados');

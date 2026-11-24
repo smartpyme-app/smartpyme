@@ -183,7 +183,7 @@ class AuthJWTController extends Controller
     {
         $empresa = Empresa::where('id', $id_empresa)->firstOrFail();
 
-        $fromAddress = config('mail.from.address') ?: (env('MAIL_FROM_ADDRESS') ?: 'no-reply@smartpyme.app');
+        $fromAddress = config('mail.from.address') ?: 'no-reply@smartpyme.app';
 
         if ($empresa->pagos()->count() == 0) {
             Mail::send('mails.bienvenida', ['empresa' => $empresa], function ($m) use ($empresa, $fromAddress) {
@@ -214,7 +214,7 @@ class AuthJWTController extends Controller
         ];
 
         // Notificar
-        $toAddress = env('MAIL_TO_ADDRESS', 'contact@smartpyme.app');
+        $toAddress = config('mail.to_address') ?: 'contact@smartpyme.app';
         Mail::send('mails.notificacion', ['data' => $data], function ($m) use ($data, $fromAddress, $toAddress) {
             $m->from($fromAddress, 'SmartPyme')
                 ->to($toAddress)

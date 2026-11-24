@@ -159,7 +159,7 @@ class Kernel extends ConsoleKernel
 
         // ETL de sp-analytics (script fuera del repo). Antes en crontab: 0 7 * * * UTC.
         // Solo se programa si el script existe en este servidor.
-        $etlAnalitica = env('SP_ANALYTICS_ETL_SCRIPT', '/home/smartpyme/services/sp-analytics/run-etl.sh');
+        $etlAnalitica = config('services.sp_analytics.etl_script');
         if ($etlAnalitica && is_file($etlAnalitica)) {
             $schedule->exec($etlAnalitica)
                 ->dailyAt('01:00')

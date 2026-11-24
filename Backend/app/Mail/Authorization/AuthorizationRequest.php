@@ -32,7 +32,7 @@ class AuthorizationRequest extends Mailable
                         'requester' => $this->authorization->requester->name,
                         'expires_at' => $this->authorization->expires_at->format('d/m/Y H:i'),
                         'authorizer' => $this->authorizer->name,
-                        'approve_url' => env('APP_URL') . '/authorization/' . $this->authorization->code,
+                        'approve_url' => config('app.url') . '/authorization/' . $this->authorization->code,
                     ]);
     }
 }

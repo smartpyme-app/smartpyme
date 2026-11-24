@@ -22,7 +22,7 @@
                         <p>Iniciemos a gestionar tu negocio</p>
                         <div class="row mb-5 justify-content-around">
                             <div class="col">
-                                <a class="btn btn-primary btn-lg btn-block" href="{{ env('APP_URL') }}">Ir a mi cuenta</a>      
+                                <a class="btn btn-primary btn-lg btn-block" href="{{ config('app.url') }}">Ir a mi cuenta</a>      
                             </div>
                         </div>
                     </div>

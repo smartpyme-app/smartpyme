@@ -107,8 +107,8 @@ class CancelacionSuscripcionService
         ];
 
         Mail::send('mails.notificacion_cancelacion_admin', ['data' => $dataAdmin], function ($m) {
-            $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
-                ->to(env('MAIL_TO_ADDRESS'))
+            $m->from(config('mail.from.address'), 'SmartPyme')
+                ->to(config('mail.to_address'))
                 ->cc(config('constants.MAIL_CC_ADDRESS_1'))
                 ->cc(config('constants.MAIL_CC_ADDRESS_2'))
                 ->subject('Cancelación de suscripción SmartPyme');
@@ -122,7 +122,7 @@ class CancelacionSuscripcionService
         ];
 
         Mail::send('mails.notificacion_cancelacion_usuario', ['data' => $dataUsuario], function ($m) use ($usuario) {
-            $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
+            $m->from(config('mail.from.address'), 'SmartPyme')
                 ->to($usuario->email)
                 ->subject('Confirmación de cancelación de suscripción');
         });
