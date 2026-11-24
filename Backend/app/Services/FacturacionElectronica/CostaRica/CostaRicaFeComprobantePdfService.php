@@ -29,7 +29,7 @@ final class CostaRicaFeComprobantePdfService
     public function generarTicketImpresion(int $ventaId, Empresa $empresa)
     {
         $venta = Venta::query()
-            ->with(['detalles', 'cliente', 'empresa', 'sucursal', 'giftCardsEmitidas'])
+            ->with(['detalles.producto', 'cliente', 'empresa', 'sucursal', 'giftCardsEmitidas'])
             ->findOrFail($ventaId);
 
         $documento = Documento::findOrFail($venta->id_documento);
@@ -108,7 +108,7 @@ final class CostaRicaFeComprobantePdfService
         $tipoDteRuta = (string) $tipo;
 
         if (in_array($tipo, ['01', '04', '09', '11'], true)) {
-            $registro = Venta::query()->with(['empresa', 'cliente'])->findOrFail($id);
+            $registro = Venta::query()->with(['empresa', 'cliente', 'detalles.producto'])->findOrFail($id);
             $this->assertMismoEmpresa($registro->id_empresa, $idEmpresaUsuario);
             $dte = $registro->dte;
             if (! CostaRicaFeDteDocumento::tieneComprobanteCr($dte)) {
