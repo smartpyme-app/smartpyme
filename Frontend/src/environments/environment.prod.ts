@@ -4,7 +4,26 @@ export const environment = {
   appVersion: '23.11.26',
   API_URL: 'https://apiunificado.smartpyme.site',
   //API_URL: 'https://api.smartpyme.site',
-  APP_URL: 'https://app-unificado.smartpyme.site',
+  /**
+   * Enlaces internos que abren otra pestaña (p. ej. "Ver producto" en avisos de duplicados).
+   * Se usa el dominio actual para no mandar al usuario a otro dominio donde no tiene sesión
+   * (app, app-unificado, abaco, onvo, etc. sirven la misma app).
+   */
+  APP_URL: typeof window !== 'undefined' ? window.location.origin : 'https://app.smartpyme.site',
+  /**
+   * Dominios del frontend donde nginx reenvía /api/ a apiunificado: ahí las peticiones van a /api/...
+   * en el mismo dominio y no hay preflight CORS. Para desactivarlo, dejar la lista vacía.
+   */
+  apiMismoOrigen: {
+    hosts: [
+      'app.smartpyme.site',
+      'app-unificado.smartpyme.site',
+      'abaco.smartpyme.site',
+      'onvo.smartpyme.site',
+      'sivareconomics.smartpyme.site',
+      'contadores.smartpyme.site',
+    ],
+  },
   productImagesUrl: 'https://sp-imagenes-productos.s3.us-east-2.amazonaws.com',
   goApiUrl:    'https://go-api.smartpyme.site',
   goApiSecret: 'f93a080d7ca3dc5842f6112f7053ef3ada44ce213f04a6cc62c3c31d15beee63',
@@ -29,6 +48,8 @@ export const environment = {
     release: '23.11.26',
     tracesSampleRate: 0.1,
     tracePropagationTargets: [
+      /^\/api\//,
+      /^https:\/\/(app|app-unificado|abaco|onvo|sivareconomics|contadores)\.smartpyme\.site\/api\//,
       /^https:\/\/apiunificado\.smartpyme\.site/,
       /^https:\/\/api.*\.smartpyme\.site/,
     ],

@@ -25,6 +25,7 @@ import { JwtInterceptor } from './app/services/JwtInterceptor';
 import { AuthorizationInterceptor } from './app/services/Authorization/authorization.interceptor';
 import { PaceInterceptor } from './app/services/pace-interceptor';
 import { CacheInterceptor } from './app/services/cache-interceptor';
+import { ApiMismoOrigenInterceptor } from './app/services/api-mismo-origen.interceptor';
 import { EstrategiaReutilizacionRutas } from './app/services/estrategia-reutilizacion-rutas';
 import { AuthGuard } from './app/guards/auth.guard';
 import { AdminGuard } from './app/guards/admin.guard';
@@ -87,6 +88,8 @@ bootstrapApplication(AppComponent, {
     { provide: HTTP_INTERCEPTORS, useClass: CacheInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: AuthorizationInterceptor, multi: true },
+    // Último: cambia apiunificado.../api/ por /api/ (mismo dominio, sin preflight CORS).
+    { provide: HTTP_INTERCEPTORS, useClass: ApiMismoOrigenInterceptor, multi: true },
     AuthGuard,
     AdminGuard,
     CitasGuard,
