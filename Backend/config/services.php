@@ -70,6 +70,17 @@ return [
         'sandbox_mode' => env('APP_ENV') !== 'production',
     ],
 
+    // Token de la API de N1co usado por App\Services\Payment\N1coService (mismos nombres de variables que antes).
+    'n1co_token' => [
+        'url' => env('N1CO_SANDBOX_URL', 'https://api-sandbox.n1co.shop/api/v2'),
+        'client_id' => env('CLIENT_ID'),
+        'client_secret' => env('CLIENT_SECRET'),
+    ],
+
+    'sp_analytics' => [
+        'etl_script' => env('SP_ANALYTICS_ETL_SCRIPT', '/home/smartpyme/services/sp-analytics/run-etl.sh'),
+    ],
+
     'bedrock' => [
         'key' => config('bedrock.key'),
         'secret' => config('bedrock.secret'),

@@ -16,11 +16,11 @@ class N1coService
     public function obtenerTokenApi(): string
     {
         try {
-            $baseUrl = env('N1CO_SANDBOX_URL', 'https://api-sandbox.n1co.shop/api/v2');
+            $baseUrl = config('services.n1co_token.url');
 
             $response = Http::post($baseUrl . '/Token', [
-                'clientId' => env('CLIENT_ID'),
-                'clientSecret' => env('CLIENT_SECRET')
+                'clientId' => config('services.n1co_token.client_id'),
+                'clientSecret' => config('services.n1co_token.client_secret')
             ]);
 
             if ($response->successful()) {

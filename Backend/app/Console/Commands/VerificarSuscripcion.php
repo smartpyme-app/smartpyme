@@ -212,7 +212,7 @@ class VerificarSuscripcion extends Command
                 'empresa' => $usuario->empresa->nombre ?? 'su empresa'
      
             ], function ($m) use ($usuario) {
-                $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
+                $m->from(config('mail.from.address'), 'SmartPyme')
                     ->to($usuario->email)
                     ->subject('Tu cuenta ha sido desactivada');
             });
