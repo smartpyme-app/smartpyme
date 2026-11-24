@@ -57,7 +57,9 @@ class HistorialService
             ->whereHas('documento', function ($q) {
                 $q->whereIn('nombre', ['Factura', 'Crédito fiscal']);
             })
-            ->whereDoesntHave('devoluciones')
+            ->whereDoesntHave('devoluciones', function ($q) {
+                $q->where('enable', 1);
+            })
             ->orderBy('fecha', 'DESC')
             ->get();
     }

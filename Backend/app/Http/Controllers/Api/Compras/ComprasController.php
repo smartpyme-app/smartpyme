@@ -1055,7 +1055,9 @@ class ComprasController extends Controller
 
                             $query->whereBetween('fecha', [$fechaInicio, $fechaFin]);
                         })
-                        ->whereDoesntHave('devoluciones')
+                        ->whereDoesntHave('devoluciones', function ($q) {
+                            $q->where('enable', 1);
+                        })
                         ->orderBy('fecha', 'DESC')
                         ->get();
 
