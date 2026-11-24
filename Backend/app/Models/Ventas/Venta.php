@@ -360,6 +360,12 @@ class Venta extends AuditableModel {
     }
 
     public function getSaldoAttribute(){
+        // Si la consulta ya trae las sumas (scopeConSumasDeSaldo) no se hacen 2 consultas por venta.
+        if (array_key_exists('saldo_abonos_confirmados', $this->attributes)) {
+            $abonos = (float) ($this->attributes['saldo_abonos_confirmados'] ?? 0);
+            $devoluciones = (float) ($this->attributes['saldo_devoluciones_activas'] ?? 0);
+            return round($this->total - $abonos - $devoluciones,2);
+        }
         $abonos = $this->abonos()->where('estado', 'Confirmado')->sum('total');
         $devoluciones = $this->devoluciones()->where('enable', 1)->sum('total');
         return round($this->total - $abonos - $devoluciones,2);
@@ -585,6 +591,14 @@ class Venta extends AuditableModel {
      * Evita N+1 queries cuando se listan múltiples ventas
      * Uso: Venta::withAccessorRelations()->get()
      */
+    /** Suma abonos confirmados y devoluciones activas en la misma consulta, para el accessor saldo. */
+    public function scopeConSumasDeSaldo($query)
+    {
+        return $query
+            ->withSum(['abonos as saldo_abonos_confirmados' => fn ($q) => $q->where('estado', 'Confirmado')], 'total')
+            ->withSum(['devoluciones as saldo_devoluciones_activas' => fn ($q) => $q->where('enable', 1)], 'total');
+    }
+
     public function scopeWithAccessorRelations($query)
     {
         return $query->with([
