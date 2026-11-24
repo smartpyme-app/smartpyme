@@ -139,12 +139,50 @@ export function formatoConsecutivoCr(numeroControl: string | null | undefined): 
   return raw;
 }
 
-/** CR: consecutivo FE (`numero_control`) si existe; si no, correlativo interno con #. */
+/**
+ * Misma lógica que `ClaveComprobanteCr::consecutivoDesdeClave` (admite letra en cédula).
+ */
+export function consecutivoCrDesdeClave(clave: string | null | undefined): string {
+  const raw = String(clave ?? '')
+    .trim()
+    .replace(/[^0-9A-Za-z]/g, '');
+  if (raw.length === 50) {
+    return raw.slice(21, 41);
+  }
+  return '';
+}
+
+/**
+ * Preferir numero_control; si falta (emisiones con sello pero sin backfill),
+ * derivar de codigo_generacion / sello_mh.
+ */
+export function resolverConsecutivoCr(doc: {
+  numero_control?: string | null;
+  codigo_generacion?: string | null;
+  sello_mh?: string | null;
+} | null | undefined): string {
+  const nc = String(doc?.numero_control ?? '').trim();
+  if (nc !== '') {
+    return nc;
+  }
+  return (
+    consecutivoCrDesdeClave(doc?.codigo_generacion) ||
+    consecutivoCrDesdeClave(doc?.sello_mh) ||
+    ''
+  );
+}
+
+/** CR: consecutivo FE si existe; si no, correlativo interno con #. */
 export function identificadorDocumentoCr(
   numeroControl: string | null | undefined,
-  correlativo: string | number | null | undefined
+  correlativo: string | number | null | undefined,
+  doc?: {
+    numero_control?: string | null;
+    codigo_generacion?: string | null;
+    sello_mh?: string | null;
+  } | null
 ): { texto: string; esConsecutivo: boolean } {
-  const nc = String(numeroControl ?? '').trim();
+  const nc = resolverConsecutivoCr(doc ?? { numero_control: numeroControl });
   if (nc !== '') {
     return { texto: formatoConsecutivoCr(nc), esConsecutivo: true };
   }

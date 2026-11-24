@@ -129,8 +129,11 @@
                         <td>
                             <a class="text-decoration-none text-dark" [tooltip]="venta.numero_control ? 'Ver información de la venta · ' + ('country.tax.fe.detailControlNumberLabel' | translate) + ': ' + venta.numero_control : 'Ver información de la venta'" [routerLink]="['/venta', venta.id]">
                                 {{venta.nombre_documento}}
-                                @if (esConsecutivoCr(venta)) {
-                                    <span class="fe-cr-consecutivo"> {{ formatoConsecutivoCr(venta.numero_control) }}</span>
+                                @if (esFeCostaRica()) {
+                                    @let docId = identificadorDocumentoCr(venta.numero_control, venta.correlativo, venta);
+                                    @if (docId.texto) {
+                                        <span [class.fe-cr-consecutivo]="docId.esConsecutivo"> {{ docId.texto }}</span>
+                                    }
                                 } @else if (venta.correlativo) {
                                     {{ ' #' + venta.correlativo }}
                                 }

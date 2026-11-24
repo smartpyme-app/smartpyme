@@ -8,7 +8,7 @@ import { MHService } from '@services/MH.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 import { CountryI18nService } from '@services/country-i18n.service';
 import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
-import { formatoConsecutivoCr } from '@views/ventas/documentos/documento-nombre-options';
+import { identificadorDocumentoCr } from '@views/ventas/documentos/documento-nombre-options';
 import {
   mensajeErrorHttpFeCr,
   type FeCrErrorEmisionPayload,
@@ -483,11 +483,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
         return this.facturacionElectronica.isCostaRicaFe();
     }
 
-    readonly formatoConsecutivoCr = formatoConsecutivoCr;
-
-    esConsecutivoCr(venta: { numero_control?: string | null } | null | undefined): boolean {
-        return this.esFeCostaRica() && !!String(venta?.numero_control ?? '').trim();
-    }
+    readonly identificadorDocumentoCr = identificadorDocumentoCr;
 
     private esPayloadErrorEmisionFeCr(e: unknown): e is FeCrErrorEmisionPayload {
         return (
