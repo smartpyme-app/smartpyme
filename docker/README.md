@@ -37,6 +37,24 @@ Réplica local del servidor de producción: mismas versiones, mismas extensiones
 - Docker Desktop con **al menos 8 GB de memoria** (Settings → Resources). La compilación de Angular usa unos 8 GB; con 4 GB el build del frontend se cae.
 - Unos 15 GB libres en disco si se carga una copia de la base.
 
+## Mac y Windows
+
+Funciona en los dos con Docker Desktop. Las imágenes son multiplataforma: Apple Silicon (arm64) e Intel/AMD (amd64).
+
+**Windows:**
+- Docker Desktop con el motor **WSL 2**.
+- **Clonar el repositorio dentro de WSL** (`\\wsl$\Ubuntu\home\<usuario>\smartpyme`), no en `C:\`. Desde `C:\` Laravel es entre 5 y 10 veces más lento y `ng serve` no detecta los cambios.
+- Correr los comandos de esta guía desde la terminal de Ubuntu (WSL), no desde PowerShell.
+- Darle a WSL al menos 8 GB de memoria en `%UserProfile%\.wslconfig`:
+  ```ini
+  [wsl2]
+  memory=10GB
+  ```
+  Luego correr `wsl --shutdown` y reiniciar Docker Desktop.
+- Los saltos de línea de los scripts los fija `.gitattributes`, así que no hace falta configurar `core.autocrlf`.
+
+**Mac:** Docker Desktop → Settings → Resources → Memory, al menos 8 GB.
+
 ## Primera vez
 
 ```bash
