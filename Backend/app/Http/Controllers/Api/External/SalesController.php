@@ -153,7 +153,10 @@ class SalesController extends Controller
             $query = Venta::withoutGlobalScopes()
                           ->where('id_empresa', $empresa->id)
                           ->withAccessorRelations()
-                          ->with(['detalles']);
+                          // Producto y sumas del saldo en la misma carga: antes eran 2 consultas por venta
+                          // (saldo) y 2 por línea (código y marca), unas 1,000 por página de 200 ventas.
+                          ->with(['detalles', 'detalles.producto:id,codigo,marca'])
+                          ->conSumasDeSaldo();
 
             // Aplicar filtros
             if ($request->filled('fecha_inicio')) {

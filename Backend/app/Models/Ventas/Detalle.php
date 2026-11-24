@@ -55,10 +55,16 @@ class Detalle extends Model
     }
 
     public function getCodigoAttribute(){
+        if ($this->relationLoaded('producto')) {
+            return $this->producto?->codigo;
+        }
         return $this->producto()->pluck('codigo')->first();
     }
 
     public function getMarcaAttribute(){
+        if ($this->relationLoaded('producto')) {
+            return $this->producto?->marca;
+        }
         return $this->producto()->pluck('marca')->first();
     }
 
