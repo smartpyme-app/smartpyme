@@ -127,6 +127,23 @@ export class PermissionService {
     return [];
   }
 
+  applyPermissionsFromApiData(data: unknown): void {
+    if (!data || typeof data !== 'object') {
+      return;
+    }
+    const record = data as Record<string, unknown>;
+    const permissions: UserPermissions = {
+      rolePermissions: this.toPermissionNameArray(record['rolePermissions']),
+      directPermissions: this.toPermissionNameArray(record['directPermissions']),
+      revokedPermissions: this.toPermissionNameArray(record['revokedPermissions']),
+      effectivePermissions: this.toPermissionNameArray(record['effectivePermissions']),
+      role: typeof record['role'] === 'string' ? record['role'] : '',
+    };
+    localStorage.setItem('SP_user_permissions', JSON.stringify(permissions));
+    this.currentUserPermissions = permissions;
+    this.permissionsUpdated.next();
+  }
+
   loadUserPermissions(userId: number): void {
     this.httpService.getAll(`roles-permissions/user/${userId}`).subscribe({
       next: (response: any) => {
@@ -134,21 +151,7 @@ export class PermissionService {
           return;
         }
         const data = response?.data ?? response;
-        if (!data || typeof data !== 'object') {
-          return;
-        }
-
-        const permissions: UserPermissions = {
-          rolePermissions: this.toPermissionNameArray(data.rolePermissions),
-          directPermissions: this.toPermissionNameArray(data.directPermissions),
-          revokedPermissions: this.toPermissionNameArray(data.revokedPermissions),
-          effectivePermissions: this.toPermissionNameArray(data.effectivePermissions),
-          role: typeof data.role === 'string' ? data.role : '',
-        };
-
-        localStorage.setItem('SP_user_permissions', JSON.stringify(permissions));
-        this.currentUserPermissions = permissions;
-        this.permissionsUpdated.next();
+        this.applyPermissionsFromApiData(data);
       },
       error: () => {
         /* Mantiene SP_user_permissions previo si el request falla */
