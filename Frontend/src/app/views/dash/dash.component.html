@@ -11,7 +11,14 @@
 @if (apiService.isAdmin()) {
     <app-admin-dash></app-admin-dash>
 }
-@if (apiService.validateRole('usuario_ventas', true) || usuario?.tipo == 'Cajero') {
+@if (
+  apiService.validateRole('usuario_ventas', true) ||
+  apiService.validateRole('ventas_limitado', true) ||
+  apiService.isVentasLimitado() ||
+  usuario?.tipo == 'Cajero' ||
+  usuario?.tipo == 'Ventas Limitado' ||
+  usuario?.tipo == 'Ventas'
+) {
     <app-caja-dash></app-caja-dash>
 }
 @if (apiService.validateRole('usuario_vendedor', true)) {

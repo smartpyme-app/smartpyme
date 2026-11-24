@@ -25,7 +25,10 @@
   } @else if (
     apiService.isNotSuperAdmin() &&
     (!usuario.empresa.licencia || usuario.empresa.es_empresa_padre) &&
-    (usuario.tipo == 'Ventas' || usuario.tipo == 'Ventas Limitado')
+    (usuario.tipo == 'Ventas' ||
+      usuario.tipo == 'Ventas Limitado' ||
+      apiService.isVentasLimitado() ||
+      apiService.verifyVentasRole())
   ) {
     <app-sidebar-ventas></app-sidebar-ventas>
   } @else if (
@@ -37,13 +40,13 @@
   } @else if (
     apiService.isNotSuperAdmin() &&
     (!usuario.empresa.licencia || usuario.empresa.es_empresa_padre) &&
-    usuario.tipo == 'Citas'
+    (usuario.tipo == 'Citas' || apiService.verifyCitasRole())
   ) {
     <app-sidebar-servicios></app-sidebar-servicios>
   } @else if (
     apiService.isNotSuperAdmin() &&
     (!usuario.empresa.licencia || usuario.empresa.es_empresa_padre) &&
-    apiService.isAdmin()
+    (apiService.isAdmin() || apiService.isAdminRole())
   ) {
     <app-sidebar></app-sidebar>
   }

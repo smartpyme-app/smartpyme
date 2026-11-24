@@ -33,6 +33,7 @@ use App\Models\Suscripcion;
 use App\Services\Suscripcion\SuscripcionService;
 use App\Services\Auth\AuthService;
 use App\Services\Contadores\ContadorSesionEmpresa;
+use App\Services\Admin\RolePermissionService;
 use App\Models\PaisConfiguracion;
 use App\Services\Payment\N1coService;
 use App\Services\Suscripcion\CancelacionSuscripcionService;
@@ -49,19 +50,22 @@ class AuthJWTController extends Controller
     private $n1coService;
     private $cancelacionSuscripcionService;
     private $contadorSesionEmpresa;
+    private $rolePermissionService;
 
     public function __construct(
         SuscripcionService $suscripcionService,
         AuthService $authService,
         N1coService $n1coService,
         CancelacionSuscripcionService $cancelacionSuscripcionService,
-        ContadorSesionEmpresa $contadorSesionEmpresa
+        ContadorSesionEmpresa $contadorSesionEmpresa,
+        RolePermissionService $rolePermissionService
     ) {
         $this->suscripcionService = $suscripcionService;
         $this->authService = $authService;
         $this->n1coService = $n1coService;
         $this->cancelacionSuscripcionService = $cancelacionSuscripcionService;
         $this->contadorSesionEmpresa = $contadorSesionEmpresa;
+        $this->rolePermissionService = $rolePermissionService;
     }
 
     public function login(Request $request)
@@ -127,7 +131,15 @@ class AuthJWTController extends Controller
 
         $this->adjuntarAccesoTemporalUsuario($user, $suscripcion);
 
-        return response()->json(['token' => $token, 'user' => $user], 200);
+        $user->load('roles');
+
+        $permissions = $this->rolePermissionService->obtenerPermisosUsuario($user->id);
+
+        return response()->json([
+            'token' => $token,
+            'user' => $user,
+            'permissions' => $permissions,
+        ], 200);
     }
 
     public function logout(Request $request)

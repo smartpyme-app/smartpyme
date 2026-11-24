@@ -105,7 +105,7 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
                 this.contarActivos();
             },
             initNewItem: (item) => {
-                item.rol_id = 2;
+                item.rol_id = this.pickDefaultRolId();
                 item.id_sucursal = this.apiService.auth_user().id_sucursal;
                 item.id_empresa = this.apiService.auth_user().id_empresa;
                 return item;
@@ -202,15 +202,28 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
     this.apiService.getAll('roles')
       .pipe(this.untilDestroyed())
       .subscribe(roles => {
-      this.roles = roles;
-
-      this.roles.forEach((rol:any) => {
-        rol.name = rol.name.split('_')
-          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
+      this.roles = (roles ?? []).map((rol: any) => {
+        const slug = typeof rol.name === 'string' ? rol.name : '';
+        return {
+          ...rol,
+          slug,
+          name: slug
+            .split('_')
+            .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' '),
+        };
       });
       this.cdr.markForCheck();
     }, error => {this.alertService.error(error); });
+  }
+
+  /** ponytail: prefer admin por slug; si no hay roles cargados aún, null y el usuario elige en el select. */
+  private pickDefaultRolId(): number | null {
+    if (!this.roles?.length) {
+      return null;
+    }
+    const admin = this.roles.find((r: { slug?: string }) => r.slug === 'admin');
+    return admin?.id ?? this.roles[0]?.id ?? null;
   }
 
   public contarActivos() {

@@ -61,7 +61,11 @@ export class AuthService {
       }),
       tap((data: any) => {
         if (data?.token && data?.user) {
-          this.permissionService.loadUserPermissions(data.user.id);
+          if (data.permissions) {
+            this.permissionService.applyPermissionsFromApiData(data.permissions);
+          } else {
+            this.permissionService.loadUserPermissions(data.user.id);
+          }
           this.loadConstants();
         }
       })
