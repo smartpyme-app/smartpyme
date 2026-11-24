@@ -41,6 +41,8 @@ import {
     distritosParaSelector,
     filtrarPorCodDepartamento,
     trackUbicacionCod,
+    faltaDistritoFeSv,
+    MENSAJE_FALTA_DISTRITO_FE_SV,
 } from '@utils/ubicacion-catalogo.util';
 
 @Component({
@@ -585,6 +587,10 @@ export class ProveedorComponent extends BaseComponent implements OnInit {
     }
 
     public onSubmit():void{
+        if (faltaDistritoFeSv(this.proveedor, this.apiService.auth_user()?.empresa)) {
+          this.alertService.warning('Falta el distrito', MENSAJE_FALTA_DISTRITO_FE_SV);
+          return;
+        }
         this.saving = true;
 
         this.apiService.store('proveedor', this.proveedor)

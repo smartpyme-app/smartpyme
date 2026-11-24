@@ -23,6 +23,8 @@ import {
     distritosParaSelector,
     filtrarPorCodDepartamento,
     trackUbicacionCod,
+    faltaDistritoFeSv,
+    MENSAJE_FALTA_DISTRITO_FE_SV,
 } from '@utils/ubicacion-catalogo.util';
 import Swal from 'sweetalert2';
 import {
@@ -478,6 +480,10 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
     }
 
     public onSubmit() {
+        if (faltaDistritoFeSv(this.cliente, this.apiService.auth_user()?.empresa)) {
+          this.alertService.warning('Falta el distrito', MENSAJE_FALTA_DISTRITO_FE_SV);
+          return;
+        }
         this.normalizarIdentificacionClienteCr();
         this.saving = true;
         let routeUrl = this.esNuevo ? 'cliente' : 'cliente/update';
