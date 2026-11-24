@@ -352,3 +352,10 @@ a.fc-col-header-cell-cushion{
   overflow: visible;
 }
 
+/* CR: consecutivo FE (20 dígitos) más compacto en listados / encabezados */
+.fe-cr-consecutivo {
+  font-size: 0.78em;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+

@@ -51,6 +51,7 @@ import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electroni
 import { VentaRecurrenciaConfigComponent } from '@shared/modals/venta-recurrencia-config/venta-recurrencia-config.component';
 import { PartidaVentaFlowService } from '@services/contabilidad/partida-venta-flow.service';
 import { ventaEsTicketSinEmisionFe } from '@helpers/empresa.helper';
+import { formatoConsecutivoCr, resolverConsecutivoCr } from '@views/ventas/documentos/documento-nombre-options';
 import {
   puedeAnularVenta,
   puedeCrearVenta,
@@ -178,6 +179,25 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
 
   public esFeCostaRica(): boolean {
     return this.facturacionElectronica.isCostaRicaFe();
+  }
+
+  public readonly formatoConsecutivoCr = formatoConsecutivoCr;
+  public readonly resolverConsecutivoCr = resolverConsecutivoCr;
+
+  public esConsecutivoCr(venta: {
+    numero_control?: string | null;
+    codigo_generacion?: string | null;
+    sello_mh?: string | null;
+  } | null | undefined): boolean {
+    return this.esFeCostaRica() && !!resolverConsecutivoCr(venta);
+  }
+
+  public textoConsecutivoCr(venta: {
+    numero_control?: string | null;
+    codigo_generacion?: string | null;
+    sello_mh?: string | null;
+  } | null | undefined): string {
+    return formatoConsecutivoCr(resolverConsecutivoCr(venta));
   }
 
   public readonly ventaEsTicketSinEmisionFe = ventaEsTicketSinEmisionFe;

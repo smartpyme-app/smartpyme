@@ -23,6 +23,7 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 import { CountryI18nService } from '@services/country-i18n.service';
+import { formatoConsecutivoCr, resolverConsecutivoCr } from '@views/ventas/documentos/documento-nombre-options';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -273,6 +274,24 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
 
     esFeCostaRica(): boolean {
         return this.facturacionElectronica.isCostaRicaFe();
+    }
+
+    readonly formatoConsecutivoCr = formatoConsecutivoCr;
+
+    esConsecutivoCr(doc: {
+        numero_control?: string | null;
+        codigo_generacion?: string | null;
+        sello_mh?: string | null;
+    } | null | undefined): boolean {
+        return this.esFeCostaRica() && !!resolverConsecutivoCr(doc);
+    }
+
+    textoConsecutivoCr(doc: {
+        numero_control?: string | null;
+        codigo_generacion?: string | null;
+        sello_mh?: string | null;
+    } | null | undefined): string {
+        return formatoConsecutivoCr(resolverConsecutivoCr(doc));
     }
 
     /** SV suele usar 05/06 en pantalla; CR guarda tipo_dte 03 en la devolución. */

@@ -128,7 +128,12 @@
                         <td>{{venta.nombre_cliente | truncate:30 }}@if (venta.id_cliente && venta.id_cliente != 1) {<a class="float-end d-none"  tooltip="Ver información del cliente" [routerLink]="['/cliente/editar', venta.id_cliente]"><i class="fa fa-edit"></i></a>}</td>
                         <td>
                             <a class="text-decoration-none text-dark" [tooltip]="venta.numero_control ? 'Ver información de la venta · ' + ('country.tax.fe.detailControlNumberLabel' | translate) + ': ' + venta.numero_control : 'Ver información de la venta'" [routerLink]="['/venta', venta.id]">
-                                {{venta.nombre_documento}} {{venta.correlativo ? ' #' + venta.correlativo : ''}}
+                                {{venta.nombre_documento}}
+                                @if (esConsecutivoCr(venta)) {
+                                    <span class="fe-cr-consecutivo"> {{ textoConsecutivoCr(venta) }}</span>
+                                } @else if (venta.correlativo) {
+                                    {{ ' #' + venta.correlativo }}
+                                }
                             </a>
                         </td>
                         <td><span title="{{ venta.detalle_banco }}">{{venta.forma_pago}}</span></td>

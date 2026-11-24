@@ -17,6 +17,7 @@ import { AlertService } from '@services/alert.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { ApiService } from '@services/api.service';
 import { FE_PAIS_CR, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { formatoConsecutivoCr, resolverConsecutivoCr } from '@views/ventas/documentos/documento-nombre-options';
 import { detalleTieneExoneracionCr } from '@shared/modals/fe-cr-exoneracion-detalle/fe-cr-exoneracion-detalle.util';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
@@ -114,6 +115,24 @@ export class VentaComponent implements OnInit {
 
     esFeCostaRica(): boolean {
         return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
+    }
+
+    readonly formatoConsecutivoCr = formatoConsecutivoCr;
+
+    esConsecutivoCr(doc: {
+        numero_control?: string | null;
+        codigo_generacion?: string | null;
+        sello_mh?: string | null;
+    } | null | undefined): boolean {
+        return this.esFeCostaRica() && !!resolverConsecutivoCr(doc);
+    }
+
+    textoConsecutivoCr(doc: {
+        numero_control?: string | null;
+        codigo_generacion?: string | null;
+        sello_mh?: string | null;
+    } | null | undefined): string {
+        return formatoConsecutivoCr(resolverConsecutivoCr(doc));
     }
 
     /** Mostrar bloque de moneda si el documento quedó marcado en USD. */

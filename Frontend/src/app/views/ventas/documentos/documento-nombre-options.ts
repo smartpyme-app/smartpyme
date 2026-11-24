@@ -126,6 +126,69 @@ export function formatoCorrelativoHn(
   return `001-001-${nn}-${digits.padStart(8, '0')}`;
 }
 
+/**
+ * NumeroConsecutivo CR (20): establecimiento(3) + terminal(5) + tipo(2) + secuencial(10).
+ * Alineado con `CostaRicaXmlComprobantePdfMapper::formatoConsecutivoParaMostrar`.
+ */
+export function formatoConsecutivoCr(numeroControl: string | null | undefined): string {
+  const digits = String(numeroControl ?? '').replace(/\D/g, '');
+  if (digits.length >= 20) {
+    return `${digits.slice(0, 3)}-${digits.slice(3, 8)}-${digits.slice(8, 10)}-${digits.slice(10, 20)}`;
+  }
+  const raw = String(numeroControl ?? '').trim();
+  return raw;
+}
+
+/**
+ * Clave DGT (50): posiciones 21..40 = consecutivo (20).
+ * Misma lógica que `CostaRicaFeEmitService::consecutivoDesdeClave` (admite letra en cédula).
+ */
+export function consecutivoCrDesdeClave(clave: string | null | undefined): string {
+  const raw = String(clave ?? '').trim().replace(/[^0-9A-Za-z]/g, '');
+  if (raw.length === 50) {
+    return raw.slice(21, 41);
+  }
+  return '';
+}
+
+/**
+ * Preferir numero_control; si falta (emisiones antiguas con sello pero sin ese campo),
+ * derivar de codigo_generacion / sello_mh.
+ */
+export function resolverConsecutivoCr(doc: {
+  numero_control?: string | null;
+  codigo_generacion?: string | null;
+  sello_mh?: string | null;
+} | null | undefined): string {
+  const nc = String(doc?.numero_control ?? '').trim();
+  if (nc !== '') {
+    return nc;
+  }
+  return (
+    consecutivoCrDesdeClave(doc?.codigo_generacion) ||
+    consecutivoCrDesdeClave(doc?.sello_mh) ||
+    ''
+  );
+}
+
+/** CR: consecutivo FE si existe; si no, correlativo interno con #. */
+export function identificadorDocumentoCr(
+  numeroControl: string | null | undefined,
+  correlativo: string | number | null | undefined,
+  doc?: {
+    numero_control?: string | null;
+    codigo_generacion?: string | null;
+    sello_mh?: string | null;
+  } | null
+): { texto: string; esConsecutivo: boolean } {
+  const nc = resolverConsecutivoCr(doc ?? { numero_control: numeroControl });
+  if (nc !== '') {
+    return { texto: formatoConsecutivoCr(nc), esConsecutivo: true };
+  }
+  const corr = String(correlativo ?? '').trim();
+  return { texto: corr !== '' ? `#${corr}` : '', esConsecutivo: false };
+}
+
 /** El Salvador y resto: lista completa (incluye Crédito fiscal, DTE SV, etc.). */
 export const DOCUMENTO_NOMBRE_OPCIONES_DEFAULT: DocumentoNombreOption[] = [
   { value: 'Factura', label: 'Factura' },

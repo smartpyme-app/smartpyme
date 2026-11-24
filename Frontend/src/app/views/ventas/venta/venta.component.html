@@ -166,7 +166,14 @@
             </div>
             <div class="col-6 col-lg-3">
                 <small class="text-muted d-block">Documento</small>
-                <span>{{ venta.nombre_documento }} # {{ venta.correlativo }}</span>
+                <span>
+                    {{ venta.nombre_documento }}
+                    @if (esConsecutivoCr(venta)) {
+                        <span class="fe-cr-consecutivo"> {{ textoConsecutivoCr(venta) }}</span>
+                    } @else if (venta.correlativo) {
+                        # {{ venta.correlativo }}
+                    }
+                </span>
             </div>
             <div class="col-6 col-lg-3">
                 <small class="text-muted d-block">Estado</small>
@@ -303,7 +310,7 @@
                 @if (esFeCostaRica()) {
                     <div class="col-6 col-lg-3">
                         <small class="text-muted d-block">{{ 'country.tax.fe.detailControlNumberLabel' | translate }}</small>
-                        <span class="text-break">{{ venta.numero_control || '-' }}</span>
+                        <span class="text-break fe-cr-consecutivo">{{ esConsecutivoCr(venta) ? textoConsecutivoCr(venta) : '-' }}</span>
                     </div>
                     <div class="col-12 col-lg-6">
                         <small class="text-muted d-block">Clave</small>
@@ -713,7 +720,12 @@
                                 <td>{{ventaDev.nombre_cliente | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/{{ventaDev.id_cliente}}"><i class="fa fa-edit"></i></a></td>
                                 <td>
                                     <a class="text-decoration-none text-dark"  tooltip="Ver información de la devolución" routerLink="/devolucion/venta/{{ventaDev.id}}">
-                                        {{ventaDev.nombre_documento}} #{{ventaDev.correlativo}}
+                                        {{ventaDev.nombre_documento}}
+                                        @if (esConsecutivoCr(ventaDev)) {
+                                            <span class="fe-cr-consecutivo"> {{ textoConsecutivoCr(ventaDev) }}</span>
+                                        } @else if (ventaDev.correlativo) {
+                                            #{{ventaDev.correlativo}}
+                                        }
                                     </a>
                                 </td>
                                 <td>{{ventaDev.observaciones}}</td>

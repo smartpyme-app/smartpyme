@@ -39,10 +39,10 @@
         <option *ngFor="let documento of documentos" [ngValue]="documento.id">{{ documento.nombre }}</option>
       </select>
     </div>
-    <div class="form-group col" style="min-width: 7rem">
-      <label for="pos_correlativo">Correlativo</label>
-      <input *ngIf="mostrarCorrelativoHnFormato" type="text" class="form-control" id="pos_correlativo" [value]="correlativoDisplay" readonly>
-      <input *ngIf="!mostrarCorrelativoHnFormato" type="number" class="form-control" id="pos_correlativo" [(ngModel)]="venta.correlativo" name="pos_correlativo">
+    <div class="form-group col" [style.min-width]="mostrarConsecutivoCr ? '12rem' : '7rem'">
+      <label for="pos_correlativo">{{ mostrarConsecutivoCr ? ('country.tax.fe.detailControlNumberLabel' | translate) : 'Correlativo' }}</label>
+      <input *ngIf="mostrarCorrelativoHnFormato || mostrarConsecutivoCr" type="text" class="form-control" [class.form-control-sm]="mostrarConsecutivoCr" [class.fe-cr-consecutivo]="mostrarConsecutivoCr" id="pos_correlativo" [value]="correlativoDisplay" readonly>
+      <input *ngIf="!mostrarCorrelativoHnFormato && !mostrarConsecutivoCr" type="number" class="form-control" id="pos_correlativo" [(ngModel)]="venta.correlativo" name="pos_correlativo">
     </div>
   </div>
 </section>

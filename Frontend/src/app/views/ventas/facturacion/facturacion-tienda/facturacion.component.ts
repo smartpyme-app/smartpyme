@@ -21,8 +21,10 @@ import { ApiService } from '@services/api.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 import { FE_PAIS_CR, FE_PAIS_HN, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import {
+  formatoConsecutivoCr,
   formatoCorrelativoHn,
   nombresDocumentosVentaNormales as nombresVentaPorPais,
+  resolverConsecutivoCr,
 } from '@views/ventas/documentos/documento-nombre-options';
 import { migrarExoneracionCrLegacyADetalles as migrarExoneracionLegacyUtil } from '@shared/modals/fe-cr-exoneracion-detalle/fe-cr-exoneracion-detalle.util';
 import { xmlComprobanteDesdeRechazoFeCr } from '@services/facturacion-electronica/fe-cr-http-error.util';
@@ -2263,7 +2265,14 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         return this.esHondurasFacturacion && !!String(doc?.numero_emision ?? '').trim();
     }
 
+    get mostrarConsecutivoCr(): boolean {
+        return this.esFeCostaRicaFacturacion() && !!resolverConsecutivoCr(this.venta);
+    }
+
     get correlativoDisplay(): string {
+        if (this.mostrarConsecutivoCr) {
+            return formatoConsecutivoCr(resolverConsecutivoCr(this.venta));
+        }
         const doc = this.documentoVentaSeleccionado();
         if (this.mostrarCorrelativoHnFormato) {
             return formatoCorrelativoHn(doc.numero_emision, this.venta.correlativo);
