@@ -23,7 +23,7 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 import { CountryI18nService } from '@services/country-i18n.service';
-import { formatoConsecutivoCr } from '@views/ventas/documentos/documento-nombre-options';
+import { identificadorDocumentoCr } from '@views/ventas/documentos/documento-nombre-options';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -276,11 +276,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
         return this.facturacionElectronica.isCostaRicaFe();
     }
 
-    readonly formatoConsecutivoCr = formatoConsecutivoCr;
-
-    esConsecutivoCr(doc: { numero_control?: string | null } | null | undefined): boolean {
-        return this.esFeCostaRica() && !!String(doc?.numero_control ?? '').trim();
-    }
+    readonly identificadorDocumentoCr = identificadorDocumentoCr;
 
     /** SV suele usar 05/06 en pantalla; CR guarda tipo_dte 03 en la devolución. */
     private tipoDteDevolucion(venta: any): string {

@@ -86,8 +86,11 @@
                         <td>{{venta.nombre_cliente | truncate:30 }}@if (venta.id_cliente && venta.id_cliente != 1 && apiService.canEditTest('ventas.clientes.editar')) {<a class="float-end" tooltip="Editar cliente" [routerLink]="['/cliente/editar', venta.id_cliente]"><i class="fa fa-edit"></i></a>}</td>
                         <td>
                             {{venta.nombre_documento}}
-                            @if (esConsecutivoCr(venta)) {
-                                <span class="fe-cr-consecutivo"> {{ formatoConsecutivoCr(venta.numero_control) }}</span>
+                            @if (esFeCostaRica()) {
+                                @let docId = identificadorDocumentoCr(venta.numero_control, venta.correlativo, venta);
+                                @if (docId.texto) {
+                                    <span [class.fe-cr-consecutivo]="docId.esConsecutivo"> {{ docId.texto }}</span>
+                                }
                             } @else if (venta.correlativo) {
                                 #{{venta.correlativo}}
                             }
