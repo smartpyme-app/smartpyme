@@ -11,6 +11,7 @@ use App\Models\Inventario\Paquete;
 use App\Models\Ventas\Detalle;
 use App\Models\Ventas\Devoluciones\Detalle as DetalleDevolucion;
 use App\Models\Ventas\Venta;
+use App\Support\FacturacionElectronica\IdentificadorDocumentoVentaReporte;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -62,7 +63,7 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
             'Documento',
             'Proyecto',
             'Num Identificacion',
-            'Correlativo',
+            IdentificadorDocumentoVentaReporte::etiqueta($empresa),
             'Forma de pago',
             'Banco',
             'Estado',
@@ -150,6 +151,7 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
                     'id_usuario',
                     'num_identificacion',
                     'correlativo',
+                    'numero_control',
                     'forma_pago',
                     'detalle_banco',
                     'estado',
@@ -164,7 +166,7 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
             'venta.canal:id,nombre',
             'venta.detalles:id,id_venta,origen_stock',
             'venta.sucursal:id,nombre,id_empresa',
-            'venta.sucursal.empresa:id,nombre',
+            'venta.sucursal.empresa:id,nombre,pais,cod_pais',
             'venta.usuario:id,name',
             'venta.vendedor:id,name',
             'producto' => static function ($q) {
@@ -302,6 +304,7 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
                         'id_usuario',
                         'id_venta',
                         'correlativo',
+                        'numero_control',
                         'observaciones',
                         'iva',
                         'sub_total',
@@ -311,7 +314,7 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
                 'venta.cliente:id,tipo,nombre,apellido,nombre_empresa,telefono,dui,nit',
                 'venta.documento:id,nombre',
                 'venta.sucursal:id,nombre,id_empresa',
-                'venta.sucursal.empresa:id,nombre',
+                'venta.sucursal.empresa:id,nombre,pais,cod_pais',
                 'venta.usuario:id,name',
                 'venta.venta:id,id_canal,id_proyecto,id_vendedor,forma_pago,detalle_banco,num_identificacion',
                 'venta.venta.canal:id,nombre',
@@ -425,7 +428,13 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
             $documentoNombre,
             $row->nombre_proyecto,
             $venta ? $venta->num_identificacion : null,
-            $venta ? $venta->correlativo : null,
+            $venta
+                ? IdentificadorDocumentoVentaReporte::valor(
+                    ($venta->sucursal && $venta->sucursal->empresa) ? $venta->sucursal->empresa : null,
+                    $venta->numero_control ?? null,
+                    $venta->correlativo
+                )
+                : null,
             $venta ? $venta->forma_pago : null,
             $venta ? $venta->detalle_banco : null,
             $venta ? $venta->estado : null,
@@ -564,7 +573,13 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
                 ? $ventaOrigen->proyecto->nombre
                 : null,
             $ventaOrigen ? $ventaOrigen->num_identificacion : null,
-            $devolucion ? $devolucion->correlativo : null,
+            $devolucion
+                ? IdentificadorDocumentoVentaReporte::valor(
+                    ($devolucion->sucursal && $devolucion->sucursal->empresa) ? $devolucion->sucursal->empresa : null,
+                    $devolucion->numero_control ?? null,
+                    $devolucion->correlativo
+                )
+                : null,
             $ventaOrigen ? $ventaOrigen->forma_pago : null,
             $ventaOrigen ? $ventaOrigen->detalle_banco : null,
             DevolucionEnReporte::ESTADO,

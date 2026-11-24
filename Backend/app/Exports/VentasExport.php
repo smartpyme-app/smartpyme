@@ -8,6 +8,7 @@ use App\Helpers\CountryTermsHelper;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Venta;
+use App\Support\FacturacionElectronica\IdentificadorDocumentoVentaReporte;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -87,7 +88,7 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             'Documento',
             'Proyecto',
             'Num Identificacion',
-            'Correlativo',
+            IdentificadorDocumentoVentaReporte::etiqueta($empresa),
             'Forma de pago',
             'Banco',
             'Estado',
@@ -150,6 +151,7 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             'recurrente',
             'num_identificacion',
             'correlativo',
+            'numero_control',
             'forma_pago',
             'detalle_banco',
             'estado',
@@ -214,7 +216,7 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             'usuario:id,name',
             'vendedor:id,name',
             'sucursal:id,nombre,id_empresa',
-            'sucursal.empresa:id,nombre',
+            'sucursal.empresa:id,nombre,pais,cod_pais',
             'documento:id,nombre',
             'canal:id,nombre',
             'proyecto:id,nombre',
@@ -348,7 +350,7 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
                 'cliente:id,tipo,nombre,apellido,nombre_empresa,telefono,dui,nit,direccion',
                 'usuario:id,name',
                 'sucursal:id,nombre,id_empresa',
-                'sucursal.empresa:id,nombre',
+                'sucursal.empresa:id,nombre,pais,cod_pais',
                 'documento:id,nombre',
                 'detalles:id,id_devolucion_venta,cantidad,costo',
                 'venta:id,id_canal,id_proyecto,id_vendedor,forma_pago,detalle_banco,num_identificacion',
@@ -456,7 +458,7 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             $nombreDocumento,
             $nombreProyecto,
             $row->num_identificacion,
-            $row->correlativo,
+            IdentificadorDocumentoVentaReporte::valor($empresa, $row->numero_control ?? null, $row->correlativo),
             $row->forma_pago,
             $row->detalle_banco,
             $row->estado,
@@ -518,7 +520,11 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             ($documento && isset($documento->nombre)) ? $documento->nombre : 'Devolución',
             ($proyecto && isset($proyecto->nombre)) ? $proyecto->nombre : '',
             $venta ? $venta->num_identificacion : '',
-            $row->correlativo,
+            IdentificadorDocumentoVentaReporte::valor(
+                $empresa,
+                $row->numero_control ?? null,
+                $row->correlativo
+            ),
             $venta ? $venta->forma_pago : '',
             $venta ? $venta->detalle_banco : '',
             DevolucionEnReporte::ESTADO,

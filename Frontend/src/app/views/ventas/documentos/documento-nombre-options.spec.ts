@@ -10,12 +10,10 @@ import {
   esNombreNotaCredito,
   esNombreNotaCreditoODebito,
   esNombreNotaDebito,
-  consecutivoCrDesdeClave,
   formatoConsecutivoCr,
   formatoCorrelativoHn,
   identificadorDocumentoCr,
   nombresDocumentoExcluidosGastoHn,
-  resolverConsecutivoCr,
   nombresDocumentosCompraPermitidos,
   nombresDocumentosVentaNormales,
 } from './documento-nombre-options';
@@ -146,28 +144,6 @@ describe('identificadorDocumentoCr', () => {
 
   it('sin numero_control usa correlativo con #', () => {
     expect(identificadorDocumentoCr(null, 42)).toEqual({ texto: '#42', esConsecutivo: false });
-  });
-
-  it('sin numero_control pero con clave usa consecutivo de la clave', () => {
-    const clave = '506171126003101569075' + '00100001010000001451' + '112345678';
-    expect(clave.length).toBe(50);
-    expect(identificadorDocumentoCr(null, 145, { sello_mh: clave })).toEqual({
-      texto: '001-00001-01-0000000145',
-      esConsecutivo: true,
-    });
-  });
-});
-
-describe('consecutivoCrDesdeClave / resolverConsecutivoCr', () => {
-  it('extrae 20 dígitos de la clave de 50', () => {
-    const clave = '506171126003101569075' + '00100001040001372308' + '187654321';
-    expect(clave.length).toBe(50);
-    expect(consecutivoCrDesdeClave(clave)).toBe('00100001040001372308');
-  });
-
-  it('resuelve desde sello si numero_control vacío', () => {
-    const clave = '506171126003101569075' + '00100001010000001451' + '112345678';
-    expect(resolverConsecutivoCr({ sello_mh: clave })).toBe('00100001010000001451');
   });
 });
 

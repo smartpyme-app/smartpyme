@@ -2,7 +2,9 @@
 
 namespace App\Exports;
 
+use App\Models\Admin\Empresa;
 use App\Models\Ventas\Venta;
+use App\Support\FacturacionElectronica\IdentificadorDocumentoVentaReporte;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,11 +23,15 @@ class VentasPorClienteExport implements FromCollection, WithHeadings, WithMappin
 
     public function headings(): array
     {
+        $empresa = Auth::check()
+            ? Auth::user()->empresa
+            : ($this->request?->id_empresa ? Empresa::query()->find($this->request->id_empresa) : null);
+
         return [
             'Cliente',
             'Fecha venta',
             'Documento',
-            'Correlativo',
+            IdentificadorDocumentoVentaReporte::etiqueta($empresa),
             'Total',
             'Estado',
             'Fecha vencimiento',
@@ -76,7 +82,7 @@ class VentasPorClienteExport implements FromCollection, WithHeadings, WithMappin
             'cliente',
             'vendedor',
             'documento',
-            'sucursal',
+            'sucursal.empresa:id,nombre,pais,cod_pais',
             'abonos' => function ($q) {
                 $q->where('estado', 'Confirmado')->orderBy('fecha', 'desc')->orderBy('id', 'desc');
             },
@@ -160,7 +166,11 @@ class VentasPorClienteExport implements FromCollection, WithHeadings, WithMappin
             $nombreCliente,
             $fechaVenta ? $fechaVenta->format('Y-m-d') : '',
             $nombreDocumento,
-            $venta->correlativo,
+            IdentificadorDocumentoVentaReporte::valor(
+                $venta->sucursal?->empresa,
+                $venta->numero_control ?? null,
+                $venta->correlativo
+            ),
             round((float) $venta->total, 2),
             $venta->estado,
             $fechaVencimiento ? $fechaVencimiento->format('Y-m-d') : '',

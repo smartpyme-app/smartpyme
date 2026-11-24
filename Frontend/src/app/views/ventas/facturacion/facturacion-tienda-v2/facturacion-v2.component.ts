@@ -20,7 +20,6 @@ import {
   formatoConsecutivoCr,
   formatoCorrelativoHn,
   nombresDocumentosVentaNormales as nombresVentaPorPais,
-  resolverConsecutivoCr,
 } from '@views/ventas/documentos/documento-nombre-options';
 import { xmlComprobanteDesdeRechazoFeCr } from '@services/facturacion-electronica/fe-cr-http-error.util';
 import { abrirVentanaTextoFeCr } from '@services/facturacion-electronica/fe-cr-abrir-xml.util';
@@ -1362,12 +1361,12 @@ export class FacturacionV2Component implements OnInit {
   }
 
   get mostrarConsecutivoCr(): boolean {
-    return this.esFeCostaRicaFacturacion() && !!resolverConsecutivoCr(this.venta);
+    return this.esFeCostaRicaFacturacion() && !!String(this.venta?.numero_control ?? '').trim();
   }
 
   get correlativoDisplay(): string {
     if (this.mostrarConsecutivoCr) {
-      return formatoConsecutivoCr(resolverConsecutivoCr(this.venta));
+      return formatoConsecutivoCr(this.venta.numero_control);
     }
     const doc = this.documentoVentaSeleccionado();
     if (this.mostrarCorrelativoHnFormato) {

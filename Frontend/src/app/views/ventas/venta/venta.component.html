@@ -169,7 +169,7 @@
                 <span>
                     {{ venta.nombre_documento }}
                     @if (esConsecutivoCr(venta)) {
-                        <span class="fe-cr-consecutivo"> {{ textoConsecutivoCr(venta) }}</span>
+                        <span class="fe-cr-consecutivo"> {{ formatoConsecutivoCr(venta.numero_control) }}</span>
                     } @else if (venta.correlativo) {
                         # {{ venta.correlativo }}
                     }
@@ -310,7 +310,7 @@
                 @if (esFeCostaRica()) {
                     <div class="col-6 col-lg-3">
                         <small class="text-muted d-block">{{ 'country.tax.fe.detailControlNumberLabel' | translate }}</small>
-                        <span class="text-break fe-cr-consecutivo">{{ esConsecutivoCr(venta) ? textoConsecutivoCr(venta) : '-' }}</span>
+                        <span class="text-break fe-cr-consecutivo">{{ venta.numero_control ? formatoConsecutivoCr(venta.numero_control) : '-' }}</span>
                     </div>
                     <div class="col-12 col-lg-6">
                         <small class="text-muted d-block">Clave</small>
@@ -722,7 +722,7 @@
                                     <a class="text-decoration-none text-dark"  tooltip="Ver información de la devolución" routerLink="/devolucion/venta/{{ventaDev.id}}">
                                         {{ventaDev.nombre_documento}}
                                         @if (esConsecutivoCr(ventaDev)) {
-                                            <span class="fe-cr-consecutivo"> {{ textoConsecutivoCr(ventaDev) }}</span>
+                                            <span class="fe-cr-consecutivo"> {{ formatoConsecutivoCr(ventaDev.numero_control) }}</span>
                                         } @else if (ventaDev.correlativo) {
                                             #{{ventaDev.correlativo}}
                                         }

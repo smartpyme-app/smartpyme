@@ -2,9 +2,11 @@
 
 namespace App\Exports;
 
+use App\Models\Admin\Empresa;
 use App\Models\User;
 use App\Models\Ventas\Venta;
 use App\Services\Ventas\VentaMontosPorVendedorService;
+use App\Support\FacturacionElectronica\IdentificadorDocumentoVentaReporte;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,11 +29,15 @@ class CobrosPorVendedorExport implements FromCollection, WithHeadings, WithMappi
 
     public function headings(): array
     {
+        $empresa = Auth::check()
+            ? Auth::user()->empresa
+            : ($this->request?->id_empresa ? Empresa::query()->find($this->request->id_empresa) : null);
+
         return [
             'Vendedor',
             'Cliente',
             'Fecha Factura',
-            'Correlativo',
+            IdentificadorDocumentoVentaReporte::etiqueta($empresa),
             'Documento',
             'Total Factura',
             'Saldo Pendiente',
@@ -70,7 +76,7 @@ class CobrosPorVendedorExport implements FromCollection, WithHeadings, WithMappi
                 $q->where('estado', 'Confirmado')->orderBy('fecha', 'desc');
             },
             'documento',
-            'sucursal',
+            'sucursal.empresa:id,nombre,pais,cod_pais',
             'devoluciones' => function ($q) {
                 $q->where('enable', 1);
             },
@@ -279,7 +285,11 @@ class CobrosPorVendedorExport implements FromCollection, WithHeadings, WithMappi
             $row['vendedor_nombre'],
             $nombreCliente,
             $venta->fecha,
-            $venta->correlativo,
+            IdentificadorDocumentoVentaReporte::valor(
+                $venta->sucursal?->empresa,
+                $venta->numero_control ?? null,
+                $venta->correlativo
+            ),
             $nombreDocumento,
             round((float) $row['total_vendedor'], 2),
             round((float) $venta->saldo * $share, 2),

@@ -87,7 +87,7 @@
                         <td>
                             {{venta.nombre_documento}}
                             @if (esConsecutivoCr(venta)) {
-                                <span class="fe-cr-consecutivo"> {{ textoConsecutivoCr(venta) }}</span>
+                                <span class="fe-cr-consecutivo"> {{ formatoConsecutivoCr(venta.numero_control) }}</span>
                             } @else if (venta.correlativo) {
                                 #{{venta.correlativo}}
                             }

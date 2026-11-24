@@ -27,4 +27,14 @@ final class ClaveComprobanteCrConsecutivoTest extends TestCase
     {
         self::assertNull(ClaveComprobanteCr::consecutivoDesdeClave('12345'));
     }
+
+    public function test_identificador_para_reporte_prioriza_numero_control(): void
+    {
+        self::assertSame(
+            '001-00001-01-0000001451',
+            ClaveComprobanteCr::identificadorParaReporte('00100001010000001451', 99)
+        );
+        self::assertSame('99', ClaveComprobanteCr::identificadorParaReporte(null, 99));
+        self::assertSame('99', ClaveComprobanteCr::identificadorParaReporte('', 99));
+    }
 }
