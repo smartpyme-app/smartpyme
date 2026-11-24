@@ -181,10 +181,11 @@ class ElSalvadorDteService
     private function faltaDistrito($empresa, $receptor, bool $receptorObligatorio): ?string
     {
         if (empty($empresa?->cod_distrito)) {
-            return 'Falta el distrito en la dirección de la empresa; Hacienda lo exige desde la versión 2.0 del DTE.';
+            return 'Falta el distrito en la dirección de la empresa. Hacienda lo exige desde la versión 2.0 del DTE: complételo en Configuración → Empresa y vuelva a emitir.';
         }
         if ($receptorObligatorio && $receptor && empty($receptor->cod_distrito)) {
-            return 'Falta el distrito en la dirección de ' . ($receptor->nombre ?? $receptor->nombre_empresa ?? 'el cliente/proveedor') . '; Hacienda lo exige desde la versión 2.0 del DTE.';
+            return 'Falta el distrito en la dirección de ' . ($receptor->nombre ?? $receptor->nombre_empresa ?? 'el cliente/proveedor')
+                . '. Hacienda lo exige desde la versión 2.0 del DTE: abra su ficha, seleccione el distrito en "Dirección", guarde y vuelva a emitir.';
         }
 
         return null;

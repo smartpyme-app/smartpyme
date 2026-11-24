@@ -20,6 +20,8 @@ import {
     distritosParaSelector,
     filtrarPorCodDepartamento,
     trackUbicacionCod,
+    faltaDistritoFeSv,
+    MENSAJE_FALTA_DISTRITO_FE_SV,
 } from '@utils/ubicacion-catalogo.util';
 import {
     ContribuyenteActividadOption,
@@ -451,6 +453,10 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
     }
 
     public onSubmit() {
+        if (faltaDistritoFeSv(this.proveedor, this.apiService.auth_user()?.empresa)) {
+          this.alertService.warning('Falta el distrito', MENSAJE_FALTA_DISTRITO_FE_SV);
+          return;
+        }
         this.saving = true;
         this.apiService.store('proveedor', this.proveedor)
             .pipe(this.untilDestroyed())

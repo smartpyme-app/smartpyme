@@ -25,6 +25,8 @@ import {
   distritosParaSelector,
   filtrarPorCodDepartamento,
   trackUbicacionCod,
+  faltaDistritoFeSv,
+  MENSAJE_FALTA_DISTRITO_FE_SV,
 } from '@utils/ubicacion-catalogo.util';
 import Swal from 'sweetalert2';
 import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
@@ -602,6 +604,10 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
   }
 
   public async onSubmit(): Promise<void> {
+    if (faltaDistritoFeSv(this.cliente, this.apiService.auth_user()?.empresa)) {
+      this.alertService.warning('Falta el distrito', MENSAJE_FALTA_DISTRITO_FE_SV);
+      return;
+    }
     this.normalizarIdentificacionClienteCr();
     this.saving = true;
     try {
