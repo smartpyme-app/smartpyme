@@ -63,7 +63,8 @@ class ContabilidadReporteStorageService
             mkdir($dir, 0755, true);
         }
 
-        $absolute = $dir . '/' . $nombreArchivo;
+        $guardado = \Illuminate\Support\Str::random(10) . '-' . $nombreArchivo;
+        $absolute = $dir . '/' . $guardado;
         copy($file->getPathname(), $absolute);
 
         if (! file_exists($absolute)) {
@@ -71,7 +72,7 @@ class ContabilidadReporteStorageService
         }
 
         return [
-            'ruta' => 'temp/reportes/' . $nombreArchivo,
+            'ruta' => 'temp/reportes/' . $guardado,
             'nombre' => $nombreArchivo,
             'mime' => $response->headers->get('Content-Type') ?: $this->mimeFromNombre($nombreArchivo),
         ];
@@ -87,7 +88,8 @@ class ContabilidadReporteStorageService
             mkdir($dir, 0755, true);
         }
 
-        $absolute = $dir . '/' . $nombreArchivo;
+        $guardado = \Illuminate\Support\Str::random(10) . '-' . $nombreArchivo;
+        $absolute = $dir . '/' . $guardado;
         $pdf->save($absolute);
 
         if (! file_exists($absolute)) {
@@ -95,7 +97,7 @@ class ContabilidadReporteStorageService
         }
 
         return [
-            'ruta' => 'temp/reportes/' . $nombreArchivo,
+            'ruta' => 'temp/reportes/' . $guardado,
             'nombre' => $nombreArchivo,
             'mime' => 'application/pdf',
         ];

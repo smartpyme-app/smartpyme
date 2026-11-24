@@ -65,7 +65,7 @@ class ReporteAutomaticoGenerator
         string $dir
     ): array {
         $export = $this->buildExcelExport($configuracion, $fechaInicio, $fechaFin);
-        $nombre = $configuracion->tipo_reporte . '-' . $fechaInicio . '-' . $fechaFin . '-' . time() . '.xlsx';
+        $nombre = $configuracion->tipo_reporte . '-' . $fechaInicio . '-' . $fechaFin . '-' . time() . '-' . \Illuminate\Support\Str::random(10) . '.xlsx';
         $rutaRelativa = 'temp/reportes/' . $nombre;
         $absolute = $dir . '/' . $nombre;
 
@@ -142,7 +142,7 @@ class ReporteAutomaticoGenerator
 
         $ext = $isZip ? 'zip' : 'pdf';
         $mime = $isZip ? 'application/zip' : 'application/pdf';
-        $nombre = $configuracion->tipo_reporte . '-' . $fechaInicio . '-' . $fechaFin . '-' . time() . '.' . $ext;
+        $nombre = $configuracion->tipo_reporte . '-' . $fechaInicio . '-' . $fechaFin . '-' . time() . '-' . \Illuminate\Support\Str::random(10) . '.' . $ext;
         $rutaRelativa = 'temp/reportes/' . $nombre;
         $absolute = $dir . '/' . $nombre;
 
