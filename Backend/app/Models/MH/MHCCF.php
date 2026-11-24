@@ -171,10 +171,23 @@ class MHCCF extends Model
         $pagoCond = $this->condicionOperacionYPagoPlazo();
         $cuerpoDocumento = $this->detalles();
         $bases = $this->resumenVentasDesdeCuerpoDocumento($cuerpoDocumento);
-        $tributos = $this->buildTributosResumen($bases['totalGravada']);
-        $subTotal = $bases['subTotalVentas'];
-        $totalDescu = 0.0;
-        $montoTotalOperacion = $this->montoTotalOperacionConTributos($subTotal, $tributos, $totalDescu);
+
+        // Solo mapear descuento_puntos al DTE; total/IVA ya vienen de BD con el canje aplicado.
+        // CCF: bases sin IVA → descuGravada = puntos / 1.13
+        $descuentoPuntos = floatval(number_format($this->venta->descuento_puntos ?? 0, 2, '.', ''));
+        $descuGravada = ($descuentoPuntos > 0 && $bases['totalGravada'] > 0)
+            ? floatval(number_format($descuentoPuntos / 1.13, 2, '.', ''))
+            : 0.0;
+        $totalDescu = $descuGravada;
+        $subTotal = floatval(number_format($bases['subTotalVentas'] - $totalDescu, 2, '.', ''));
+        $porcentajeDescuento = ($bases['subTotalVentas'] > 0 && $totalDescu > 0)
+            ? floatval(number_format(($totalDescu / $bases['subTotalVentas']) * 100, 2, '.', ''))
+            : 0;
+        // Con puntos: IVA residual de BD (null = no recalcular base×0.13)
+        $tributos = $descuGravada > 0
+            ? $this->buildTributosResumen(null)
+            : $this->buildTributosResumen($bases['totalGravada']);
+        $montoTotalOperacion = $this->montoTotalOperacionConTributos($subTotal, $tributos, 0);
 
         return 
             [
@@ -189,14 +202,12 @@ class MHCCF extends Model
                   "totalNoSuj" => $bases['totalNoSuj'],
                   "totalExenta" => $bases['totalExenta'],
                   "totalGravada" => $bases['totalGravada'],
-                  "subTotalVentas" => $subTotal,
+                  "subTotalVentas" => $bases['subTotalVentas'],
                   "descuNoSuj" => 0,
                   "descuExenta" => 0,
-                  // "descuGravada" => floatval(number_format($this->venta->descuento, 2, '.', '')),
-                  "descuGravada" => floatval(number_format(0, 2, '.', '')),
-                  "porcentajeDescuento" => 0,
-                  // "totalDescu" => floatval(number_format($this->venta->descuento, 2, '.', '')),
-                  "totalDescu" => floatval(number_format($totalDescu, 2, '.', '')),
+                  "descuGravada" => $descuGravada,
+                  "porcentajeDescuento" => $porcentajeDescuento,
+                  "totalDescu" => $totalDescu,
                   "tributos" => $tributos,
                   "subTotal" => $subTotal,
                   "ivaPerci" => floatval(number_format($this->venta->iva_percibido, 2, '.', '')),
