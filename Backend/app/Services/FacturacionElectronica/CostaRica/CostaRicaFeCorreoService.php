@@ -12,6 +12,7 @@ use App\Models\Ventas\Venta;
 use App\Support\FacturacionElectronica\ClaveComprobanteCr;
 use App\Support\FacturacionElectronica\CorreoDestinoDte;
 use App\Support\FacturacionElectronica\CostaRicaFeDteDocumento;
+use App\Support\FacturacionElectronica\CostaRicaXmlComprobantePdfMapper;
 use App\Support\FacturacionElectronica\XmlRespuestaHaciendaCr;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -96,7 +97,7 @@ final class CostaRicaFeCorreoService
         }
 
         $tipoNombre = $this->etiquetaTipoDocumento((string) $datosPdf['tipoDteCodigo'], (string) ($datosPdf['titulo'] ?? ''));
-        $consecutivo = $this->formatoConsecutivo($documento);
+        $consecutivo = $this->formatoConsecutivo($documento, (string) ($datosPdf['tipoDteCodigo'] ?? ''));
 
         $emisorNombre = (string) (($documento['issuer']['name'] ?? null) ?: $empresa->nombre);
         $emisorId = (string) (($documento['issuer']['identification_number'] ?? null) ?: ($empresa->nit ?? ''));
@@ -266,13 +267,11 @@ final class CostaRicaFeCorreoService
     /**
      * @param  array<string, mixed>  $documento
      */
-    private function formatoConsecutivo(array $documento): string
+    /**
+     * @param  array<string, mixed>  $documento
+     */
+    private function formatoConsecutivo(array $documento, ?string $tipoFallback = null): string
     {
-        $est = (string) ($documento['establishment'] ?? '');
-        $punto = (string) ($documento['emission_point'] ?? '');
-        $seq = (string) ($documento['sequential'] ?? '');
-        $parts = array_filter([$est, $punto, $seq], static fn ($x) => $x !== '' && $x !== null);
-
-        return implode('-', $parts);
+        return CostaRicaXmlComprobantePdfMapper::formatoConsecutivoParaMostrar($documento, $tipoFallback);
     }
 }

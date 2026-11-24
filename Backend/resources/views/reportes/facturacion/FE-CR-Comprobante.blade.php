@@ -54,11 +54,11 @@
         return $simbolo.number_format((float) $n, 2, '.', '');
     };
     $fecha = $documento['date'] ?? '';
-    $est = (string) ($documento['establishment'] ?? '');
-    $punto = (string) ($documento['emission_point'] ?? '');
-    $seq = (string) ($documento['sequential'] ?? '');
-    $consecutivoParts = array_filter([$est, $punto, $seq], static fn ($x) => $x !== '' && $x !== null);
-    $consecutivo = implode('-', $consecutivoParts);
+    $tipoDocCodigo = $tipoDteCodigo ?? '01';
+    $consecutivo = \App\Support\FacturacionElectronica\CostaRicaXmlComprobantePdfMapper::formatoConsecutivoParaMostrar(
+        $documento,
+        $tipoDocCodigo
+    );
     $saleCond = str_pad((string) ($documento['sale_condition'] ?? '01'), 2, '0', STR_PAD_LEFT);
     $saleCondOtro = trim((string) ($documento['sale_condition_other'] ?? $documento['other_sale_condition'] ?? ''));
     $condicionMap = [
@@ -76,7 +76,6 @@
     } else {
         $condicionTxt = $saleCond !== '' ? ('Código '.$saleCond.($saleCondOtro !== '' ? ' · '.$saleCondOtro : '')) : '—';
     }
-    $tipoDocCodigo = $tipoDteCodigo ?? '01';
     $tiposNombre = [
         '01' => 'Factura electrónica',
         '02' => 'Nota de débito electrónica',

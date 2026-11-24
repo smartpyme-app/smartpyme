@@ -45,7 +45,7 @@ final class CostaRicaXmlComprobantePdfMapper
         }
 
         $consecutivo = preg_replace('/\D/', '', (string) (XmlLocalNameHelper::firstText($xp, 'NumeroConsecutivo') ?? ''));
-        [$est, $punto, $seq] = self::partesConsecutivo($consecutivo);
+        [$est, $punto, $tipoComp, $seq] = self::partesConsecutivo($consecutivo);
 
         $moneda = strtoupper((string) (XmlLocalNameHelper::firstText($xp, 'CodigoMoneda') ?? 'CRC'));
         $tipoCambio = XmlLocalNameHelper::floatValue(XmlLocalNameHelper::firstText($xp, 'TipoCambio'));
@@ -58,6 +58,7 @@ final class CostaRicaXmlComprobantePdfMapper
             'date' => XmlLocalNameHelper::firstText($xp, 'FechaEmision') ?? '',
             'establishment' => $est,
             'emission_point' => $punto,
+            'document_type_code' => $tipoComp,
             'sequential' => $seq,
             'sale_condition' => XmlLocalNameHelper::firstText($xp, 'CondicionVenta', $resumenNode)
                 ?? XmlLocalNameHelper::firstText($xp, 'CondicionVenta')
@@ -77,14 +78,32 @@ final class CostaRicaXmlComprobantePdfMapper
     }
 
     /**
-     * @return array{0: string, 1: string, 2: string}
+     * Formato visual del consecutivo CR: est-terminal-tipo-secuencial (20 dígitos DGT).
+     *
+     * @param  array<string, mixed>  $documento
+     */
+    public static function formatoConsecutivoParaMostrar(array $documento, ?string $tipoFallback = null): string
+    {
+        $est = (string) ($documento['establishment'] ?? '');
+        $punto = (string) ($documento['emission_point'] ?? '');
+        $tipo = (string) ($documento['document_type_code'] ?? $tipoFallback ?? '');
+        $seq = (string) ($documento['sequential'] ?? '');
+        $parts = array_filter([$est, $punto, $tipo, $seq], static fn ($x) => $x !== '' && $x !== null);
+
+        return implode('-', $parts);
+    }
+
+    /**
+     * @return array{0: string, 1: string, 2: string, 3: string} establecimiento, terminal, tipo, secuencial
      */
     private static function partesConsecutivo(string $digits): array
     {
+        // NumeroConsecutivo (20): AAA + TTTTT + DD + NNNNNNNNNN (est + terminal + tipo + secuencial).
         if (strlen($digits) >= 20) {
             return [
                 substr($digits, 0, 3),
                 substr($digits, 3, 5),
+                substr($digits, 8, 2),
                 substr($digits, 10, 10),
             ];
         }
@@ -93,11 +112,12 @@ final class CostaRicaXmlComprobantePdfMapper
             return [
                 substr($digits, 0, 3),
                 substr($digits, 3, 5),
-                substr($digits, 8),
+                substr($digits, 8, 2),
+                substr($digits, 10),
             ];
         }
 
-        return ['', '', $digits];
+        return ['', '', '', $digits];
     }
 
     private static function firstResumenNode(DOMXPath $xp): ?DOMNode

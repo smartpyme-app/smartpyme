@@ -44,10 +44,10 @@
     $currency = $documentoFe['currency'] ?? [];
     $monedaCod = strtoupper((string) ($currency['currency_code'] ?? 'CRC'));
     $simbolo = $monedaCod === 'USD' ? 'USD' : '₡';
-    $est = (string) ($documentoFe['establishment'] ?? '');
-    $punto = (string) ($documentoFe['emission_point'] ?? '');
-    $seq = (string) ($documentoFe['sequential'] ?? '');
-    $consecutivo = implode('-', array_filter([$est, $punto, $seq], static fn ($x) => $x !== '' && $x !== null));
+    $consecutivo = \App\Support\FacturacionElectronica\CostaRicaXmlComprobantePdfMapper::formatoConsecutivoParaMostrar(
+        $documentoFe,
+        $tipoDteCodigo ?? null
+    );
     $claveFmt = $feCrPdf['clave_formateada'] ?? (string) $clave;
     $claveSoloDigitos = preg_replace('/\D/', '', (string) $clave);
     $qrPayload = strlen($claveSoloDigitos) >= 40 ? $claveSoloDigitos : 'https://atv.hacienda.go.cr/ATV/frmConsultaFactura.aspx';
