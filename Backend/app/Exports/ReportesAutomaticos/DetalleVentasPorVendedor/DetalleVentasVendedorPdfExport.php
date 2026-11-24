@@ -182,7 +182,7 @@ class DetalleVentasVendedorPdfExport
         $mpdf->WriteHTML($html);
         
         // Guardar el PDF en un archivo temporal
-        $outputPath = storage_path('app/public/temp/report_' . time() . '.pdf');
+        $outputPath = storage_path('app/public/temp/report_' . time() . '-' . \Illuminate\Support\Str::random(10) . '.pdf');
         $mpdf->Output($outputPath, \Mpdf\Output\Destination::FILE);
         
         // Verificar que el archivo existe y tiene contenido válido
@@ -203,7 +203,7 @@ class DetalleVentasVendedorPdfExport
         
         try {
             // Crear un zip para almacenar los PDFs
-            $zipPath = storage_path('app/public/detalle_ventas_' . time() . '.zip');
+            $zipPath = storage_path('app/public/detalle_ventas_' . time() . '-' . \Illuminate\Support\Str::random(10) . '.zip');
             $zip = new ZipArchive();
             
             if ($zip->open($zipPath, ZipArchive::CREATE) !== TRUE) {
