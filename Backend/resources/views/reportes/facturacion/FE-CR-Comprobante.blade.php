@@ -388,7 +388,18 @@
                 <tr>
                     <td>{{ $entry['idx'] ?? '' }}</td>
                     <td style="font-size:7px;">{{ $line['cabys_code'] ?? '' }}</td>
-                    <td>{{ $line['description'] ?? '' }}</td>
+                    <td>
+                        {{ $line['description'] ?? '' }}
+                        @php
+                            $empresaPdf = $registro->empresa ?? null;
+                            $textoServicio = ($registro instanceof \App\Models\Ventas\Venta)
+                                ? \App\Support\Ventas\VentaPdfLineaDescripcionServicio::textoParaPdf($registro, (int) ($entry['idx'] ?? 0), $empresaPdf)
+                                : '';
+                        @endphp
+                        @if ($textoServicio !== '')
+                            <br><span class="muted">{!! nl2br(e($textoServicio)) !!}</span>
+                        @endif
+                    </td>
                     <td class="text-right">{{ number_format((float) ($line['quantity'] ?? 0), 2, '.', '') }}</td>
                     <td style="font-size:7px;">{{ $fmtUm($line['unit_measure'] ?? '') }}</td>
                     <td class="text-right">{{ $fmtMonto($line['unit_price'] ?? 0) }}</td>

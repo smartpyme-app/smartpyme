@@ -10,9 +10,11 @@ import {
   esNombreNotaCredito,
   esNombreNotaCreditoODebito,
   esNombreNotaDebito,
+  consecutivoCrDesdeClave,
   formatoConsecutivoCr,
   formatoCorrelativoHn,
   identificadorDocumentoCr,
+  resolverConsecutivoCr,
   nombresDocumentoExcluidosGastoHn,
   nombresDocumentosCompraPermitidos,
   nombresDocumentosVentaNormales,
@@ -134,6 +136,22 @@ describe('formatoConsecutivoCr', () => {
   });
 });
 
+describe('consecutivoCrDesdeClave', () => {
+  it('extrae 20 dígitos de clave de 50', () => {
+    const clave = '50617112600310156907500100001010000001451112345678';
+    expect(consecutivoCrDesdeClave(clave)).toBe('00100001010000001451');
+  });
+});
+
+describe('resolverConsecutivoCr', () => {
+  it('usa codigo_generacion si falta numero_control', () => {
+    const clave = '50617112600310156907500100001010000001451112345678';
+    expect(
+      resolverConsecutivoCr({ numero_control: null, codigo_generacion: clave, sello_mh: null })
+    ).toBe('00100001010000001451');
+  });
+});
+
 describe('identificadorDocumentoCr', () => {
   it('prioriza consecutivo sobre correlativo', () => {
     expect(identificadorDocumentoCr('00100001010000000001', 99)).toEqual({
@@ -144,6 +162,14 @@ describe('identificadorDocumentoCr', () => {
 
   it('sin numero_control usa correlativo con #', () => {
     expect(identificadorDocumentoCr(null, 42)).toEqual({ texto: '#42', esConsecutivo: false });
+  });
+
+  it('deriva consecutivo desde clave en el documento', () => {
+    const clave = '50617112600310156907500100001010000001451112345678';
+    expect(identificadorDocumentoCr(null, 42, { codigo_generacion: clave })).toEqual({
+      texto: '001-00001-01-0000001451',
+      esConsecutivo: true,
+    });
   });
 });
 
