@@ -4,7 +4,12 @@ export const environment = {
   appVersion: '23.11.26',
   API_URL: 'https://apiunificado.smartpyme.site',
   //API_URL: 'https://api.smartpyme.site',
-  APP_URL: 'https://app-unificado.smartpyme.site',
+  /**
+   * Enlaces internos que abren otra pestaña (p. ej. "Ver producto" en avisos de duplicados).
+   * Se usa el dominio actual para no mandar al usuario a otro dominio donde no tiene sesión
+   * (app, app-unificado, abaco, onvo, etc. sirven la misma app).
+   */
+  APP_URL: typeof window !== 'undefined' ? window.location.origin : 'https://app.smartpyme.site',
   /**
    * Dominios del frontend donde nginx reenvía /api/ a apiunificado: ahí las peticiones van a /api/...
    * en el mismo dominio y no hay preflight CORS. Para desactivarlo, dejar la lista vacía.
