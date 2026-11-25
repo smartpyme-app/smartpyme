@@ -475,11 +475,8 @@ class CalcularMetricasSucursales extends Command
             ->where('id_sucursal', $idSucursal)
             ->where('estado', '!=', 'Anulado')
             ->whereBetween('fecha', [$fechaInicio, $fechaFin])
-            ->whereNotIn('id_categoria', function ($query) {
-                $query->select('id')
-                    ->from('gastos_categorias')
-                    ->where('es_costo_venta', 1); // Suponiendo que tienes un indicador
-            })
+            // El costo de venta sale de detalles_venta.total_costo; ninguna categoría de gasto
+            // es costo de venta (gastos_categorias no tiene columna es_costo_venta).
             ->select(
                 DB::raw('SUM(sub_total) as sin_iva'),
                 DB::raw('SUM(total) as con_iva')
