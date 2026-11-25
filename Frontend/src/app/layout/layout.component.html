@@ -49,6 +49,12 @@
     (apiService.isAdmin() || apiService.isAdminRole())
   ) {
     <app-sidebar></app-sidebar>
+  } @else if (
+    apiService.isNotSuperAdmin() &&
+    (!usuario.empresa?.licencia || usuario.empresa?.es_empresa_padre) &&
+    apiService.hasEffectivePermissions()
+  ) {
+    <app-sidebar></app-sidebar>
   }
 
   <div class="app-layout-main flex-grow-1 min-w-0 d-flex flex-column">

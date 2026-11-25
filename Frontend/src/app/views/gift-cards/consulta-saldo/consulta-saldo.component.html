@@ -20,11 +20,13 @@
   <div *ngIf="lookupError" class="alert alert-warning mt-3 mb-0">{{ lookupError }}</div>
 
   <div *ngIf="card" class="mt-3 p-3 border rounded">
-    <div class="row">
+    <div class="row g-2">
       <div class="col-md-3"><strong>Código:</strong> {{ card.codigo }}</div>
       <div class="col-md-3"><strong>Saldo:</strong> {{ card.saldo | number:'1.2-2' }}</div>
       <div class="col-md-3"><strong>Estado:</strong> {{ card.estado }}</div>
       <div class="col-md-3"><strong>Monto inicial:</strong> {{ card.monto_inicial | number:'1.2-2' }}</div>
+      <div class="col-md-3"><strong>Fecha de venta:</strong> {{ card.fecha_venta ? (card.fecha_venta | date:'dd/MM/yyyy') : '—' }}</div>
+      <div class="col-md-3"><strong>N.º factura:</strong> {{ card.numero_factura || '—' }}</div>
     </div>
   </div>
 </section>
@@ -40,21 +42,25 @@
           <th>Saldo</th>
           <th>Estado</th>
           <th>Monto inicial</th>
+          <th>Fecha venta</th>
+          <th>N.º factura</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
         <tr *ngIf="listLoading">
-          <td colspan="5" class="text-center"><span class="badge bg-primary">Cargando...</span></td>
+          <td colspan="7" class="text-center"><span class="badge bg-primary">Cargando...</span></td>
         </tr>
         <tr *ngIf="!listLoading && cards.length === 0">
-          <td colspan="5" class="text-center"><span class="badge bg-secondary">Sin gift cards</span></td>
+          <td colspan="7" class="text-center"><span class="badge bg-secondary">Sin gift cards</span></td>
         </tr>
         <tr *ngFor="let item of cards">
           <td>{{ item.codigo }}</td>
           <td>{{ item.saldo | number:'1.2-2' }}</td>
           <td>{{ item.estado }}</td>
           <td>{{ item.monto_inicial | number:'1.2-2' }}</td>
+          <td>{{ item.fecha_venta ? (item.fecha_venta | date:'dd/MM/yyyy') : '—' }}</td>
+          <td>{{ item.numero_factura || '—' }}</td>
           <td>
             <button class="btn btn-default btn-sm" (click)="codigo = item.codigo; consultar()">Consultar</button>
           </td>
