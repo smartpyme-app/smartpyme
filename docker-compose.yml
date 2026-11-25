@@ -4,7 +4,7 @@
 #   docker compose up -d --build
 #
 #   API (Laravel)    http://localhost:8080
-#   App (Angular)    http://localhost:8081   (compilado, como en producción)
+#   App (Angular)    http://localhost:8081   (compilado, --profile fe-build, ~8 GB)
 #   App en vivo      http://localhost:4200   (docker compose --profile dev-fe up -d)
 #   MariaDB          localhost:3307
 #   Redis            localhost:6380
@@ -97,8 +97,11 @@ services:
       retries: 10
     restart: unless-stopped
 
-  # Frontend compilado y servido como en producción
+  # Frontend compilado y servido como en producción. Opcional: necesita ~8 GB para compilar
+  # (en el día a día usar frontend-dev o "npm start" fuera de Docker).
+  #   docker compose --profile fe-build up -d --build frontend
   frontend:
+    profiles: ["fe-build"]
     build:
       context: ./Frontend
       dockerfile: ../docker/frontend/Dockerfile

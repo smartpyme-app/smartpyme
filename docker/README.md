@@ -12,7 +12,7 @@ Réplica local del servidor de producción: mismas versiones, mismas extensiones
 | `scheduler` | cron `schedule:run` cada minuto (**apagado por defecto**) | — |
 | `mariadb` | MariaDB 10.11 (`smartpyme_prod` y `smartpyme_analitica`) | localhost:3307 |
 | `redis` | Redis 6.2 (solo cola, vía predis) | localhost:6380 |
-| `frontend` | `app.smartpyme.site`, Angular compilado y servido estático | http://localhost:8081 |
+| `frontend` | `app.smartpyme.site`, Angular compilado (opcional, `--profile fe-build`) | http://localhost:8081 |
 | `frontend-dev` | `ng serve` con recarga en vivo (opcional) | http://localhost:4200 |
 
 ### Igual que producción
@@ -96,6 +96,32 @@ Laravel carga `Backend/database/schema/mysql-schema.sql`, que es la estructura e
 ### Mantener el schema al día
 
 Cada migración nueva se agrega normalmente en `database/migrations`. Después de un pase grande a producción se regenera el schema con `php artisan schema:dump` desde una copia de la estructura de producción, quitando las líneas `DEFINER=` y `sandbox mode`. Ningún cambio de estructura se hace a mano en producción.
+
+## Copia diaria de producción (Google Drive)
+
+Cada noche a las 3:30 am (El Salvador) el servidor genera una copia de `smartpyme_prod` y `smartpyme_analitica`, la verifica y la sube a la Unidad compartida de Drive, en `copias-bd/AAAA-MM-DD/`. Se conservan las últimas 3. Script: `docker/db-copia/servidor-copia-drive.sh`.
+
+Para usarla en tu máquina:
+
+1. Pide acceso a la Unidad compartida "SmartPyme · Copias BD".
+2. Instala rclone (Mac: `brew install rclone`; Ubuntu/WSL: `sudo apt install rclone`).
+3. Configura el remoto una sola vez con tu cuenta de Google:
+   ```bash
+   rclone config create smartpyme-drive drive scope=drive.readonly team_drive=<ID de la Unidad compartida>
+   ```
+   Se abre el navegador para que inicies sesión.
+4. Descarga y carga la copia:
+   ```bash
+   ./docker/db-copia/descargar-copia.sh
+   ```
+   El script verifica el archivo, pide confirmación, recrea tu base local y corre `migrate`.
+
+También se puede bajar a mano desde drive.google.com y dejar los `.sql.gz` en `docker/mariadb/dumps/`.
+
+## Memoria
+
+- **16 GB de RAM o más:** Docker con 8 GB. Funciona todo, incluido el build de producción del frontend (`--profile fe-build`).
+- **8 GB de RAM:** Docker con 4 a 5 GB para backend, base y cola. El frontend se corre fuera de Docker con `cd Frontend && npm start`, apuntando a `http://localhost:8080`.
 
 ## Uso diario
 
