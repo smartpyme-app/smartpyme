@@ -1,4 +1,5 @@
 /* Suite Financiera — capa de diseño (SmartPyme UI Kit / Figma). Solo bajo .finanzas-section */
+@import './rentabilidad/rentabilidad.styles.css';
 
 .finanzas-section {
   --sf-blue: var(--smart-blue-40, #005cb8);

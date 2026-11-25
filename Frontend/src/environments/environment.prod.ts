@@ -1,7 +1,7 @@
 /** Mantener alineado con src/manifest.webmanifest → version */
 export const environment = {
   production: true,
-  appVersion: '24.11.26a',
+  appVersion: '25.11.26',
   API_URL: 'https://apiunificado.smartpyme.site',
   //API_URL: 'https://api.smartpyme.site',
   /**
@@ -45,7 +45,7 @@ export const environment = {
     dsn: 'https://13e8c6e50613d342129d8bfae46171ab@o4512296240807936.ingest.us.sentry.io/4512296255881216',
     environment: 'production',
     /** Opcional: debe coincidir con SENTRY_RELEASE al subir maps (p. ej. frontend@abc1234). */
-    release: '24.11.26a',
+    release: '25.11.26',
     tracesSampleRate: 0.1,
     tracePropagationTargets: [
       /^\/api\//,
