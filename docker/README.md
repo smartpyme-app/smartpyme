@@ -75,14 +75,27 @@ docker compose up -d --build
 
 ## Datos
 
-Las migraciones **todavía no arman la base desde cero**: se detienen en `2025_01_10_170127_create_suscripciones_table` porque la tabla ya la creó una migración anterior. Se corrige en el plan de migraciones.
+Hay dos formas de tener la base, según lo que necesites.
 
-Mientras tanto, la base se carga desde un respaldo:
+**A. Base vacía con la estructura de producción** (rápida, sin datos):
+
+```bash
+docker compose exec app php artisan migrate
+```
+
+Laravel carga `Backend/database/schema/mysql-schema.sql`, que es la estructura exacta de producción, y después corre las migraciones nuevas. Tarda segundos y no trae datos ni usuarios.
+
+**B. Copia de producción** (para probar con datos reales):
 
 1. Copiar `smartpyme_prod.sql.gz` y, si aplica, `smartpyme_analitica.sql.gz` en `docker/mariadb/dumps/`. Esa carpeta nunca se sube a git.
 2. Borrar el volumen y volver a levantar: `docker compose down -v && docker compose up -d`. El script `docker/mariadb/init/00-databases.sh` carga los respaldos la primera vez.
+3. Correr `docker compose exec app php artisan migrate` para aplicar las migraciones que todavía no estén en esa copia.
 
-> Usar la **base de test liviana** (empresas de prueba, sin datos sensibles) cuando esté lista. No cargar copias de producción en laptops.
+> Son datos reales de clientes: disco cifrado, no compartir el archivo y no emitir DTE ni cobrar desde empresas reales.
+
+### Mantener el schema al día
+
+Cada migración nueva se agrega normalmente en `database/migrations`. Después de un pase grande a producción se regenera el schema con `php artisan schema:dump` desde una copia de la estructura de producción, quitando las líneas `DEFINER=` y `sandbox mode`. Ningún cambio de estructura se hace a mano en producción.
 
 ## Uso diario
 
