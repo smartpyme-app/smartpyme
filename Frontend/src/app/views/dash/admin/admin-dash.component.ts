@@ -11,6 +11,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ContadoresPortalService } from '@services/contadores-portal.service';
+import { HomeMarketingBannersComponent } from './home-marketing-banners/home-marketing-banners.component';
 
 import * as moment from 'moment';
 
@@ -19,7 +20,7 @@ import * as moment from 'moment';
     templateUrl: './admin-dash.component.html',
     styleUrls: ['./admin-dash.component.css'],
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, DatosComponent, TopsComponent, TranslatePipe],
+    imports: [CommonModule, RouterModule, FormsModule, DatosComponent, TopsComponent, TranslatePipe, HomeMarketingBannersComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminDashComponent extends BaseModalComponent implements OnInit {

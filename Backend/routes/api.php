@@ -188,6 +188,9 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/super-admin/clientes.php');
 	require base_path('routes/modulos/super-admin/activos-plantillas.php');
 	require base_path('routes/modulos/super-admin/contador-accesos.php');
+	require base_path('routes/modulos/super-admin/home-banners.php');
+
+	require base_path('routes/modulos/home-banners.php');
 
 	require base_path('routes/modulos/contadores/portal.php');
 

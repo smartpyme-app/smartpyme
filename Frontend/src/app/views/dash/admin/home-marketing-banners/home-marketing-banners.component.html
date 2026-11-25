@@ -1,0 +1,40 @@
+@if (banners.length) {
+  <div class="home-banner-carousel" aria-live="polite">
+    @let slide = banners[currentIndex];
+    @if (slide.url_destino) {
+      <a
+        class="home-launch-banner"
+        [href]="slide.url_destino"
+        [attr.target]="slide.abrir_nueva_pestana ? '_blank' : null"
+        [attr.rel]="slide.abrir_nueva_pestana ? 'noopener noreferrer' : null"
+      >
+        <picture>
+          <source media="(max-width: 767px)" [attr.srcset]="mobileSrc(slide)" />
+          <img [src]="imgUrl(slide.imagen_desktop)" [alt]="slide.nombre" />
+        </picture>
+      </a>
+    } @else {
+      <div class="home-launch-banner">
+        <picture>
+          <source media="(max-width: 767px)" [attr.srcset]="mobileSrc(slide)" />
+          <img [src]="imgUrl(slide.imagen_desktop)" [alt]="slide.nombre" />
+        </picture>
+      </div>
+    }
+
+    @if (banners.length > 1) {
+      <div class="home-banner-carousel__dots" role="tablist" aria-label="Banners">
+        @for (b of banners; track b.id; let i = $index) {
+          <button
+            type="button"
+            class="home-banner-carousel__dot"
+            [class.home-banner-carousel__dot--active]="i === currentIndex"
+            [attr.aria-selected]="i === currentIndex"
+            [attr.aria-label]="'Banner ' + (i + 1)"
+            (click)="goTo(i)"
+          ></button>
+        }
+      </div>
+    }
+  </div>
+}
