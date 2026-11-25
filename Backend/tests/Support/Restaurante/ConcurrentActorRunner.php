@@ -37,7 +37,8 @@ final class ConcurrentActorRunner
             file_put_contents($in, json_encode($payload, JSON_THROW_ON_ERROR));
             $outFiles[$i] = $out;
 
-            $processes[$i] = new Process([$php, $script, $in, $out]);
+            // El actor hereda la misma base de pruebas que el proceso padre (nunca la del .env).
+            $processes[$i] = new Process([$php, $script, $in, $out], null, self::entornoDePruebas());
             $processes[$i]->setWorkingDirectory($backend);
             $processes[$i]->setTimeout($timeoutSeconds);
         }
@@ -69,5 +70,23 @@ final class ConcurrentActorRunner
         @rmdir($workdir);
 
         return $results;
+    }
+
+    /** @return array<string, string> */
+    private static function entornoDePruebas(): array
+    {
+        $con = config('database.default');
+        $c = config("database.connections.{$con}");
+
+        return [
+            'APP_ENV' => 'testing',
+            'APP_CONFIG_CACHE' => \Tests\Support\GuardiaBaseDePruebas::CACHE_CONFIG_PRUEBAS,
+            'DB_CONNECTION' => (string) $con,
+            'DB_HOST' => (string) ($c['host'] ?? ''),
+            'DB_PORT' => (string) ($c['port'] ?? ''),
+            'DB_DATABASE' => (string) ($c['database'] ?? ''),
+            'DB_USERNAME' => (string) ($c['username'] ?? ''),
+            'DB_PASSWORD' => (string) ($c['password'] ?? ''),
+        ];
     }
 }
