@@ -5,10 +5,10 @@ namespace App\Services\FacturacionElectronica\CostaRica;
 use App\Exceptions\CostaRica\CostaRicaFeEmisionFallidaException;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Gastos\Gasto;
+use App\Models\Ventas\Abono;
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Venta;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
-use App\Services\Ventas\VentaService;
 use App\Support\FacturacionElectronica\ClaveComprobanteCr;
 use App\Support\FacturacionElectronica\CostaRica\ReferenciaComprobanteCr;
 use App\Support\FacturacionElectronica\CostaRicaFeDteDocumento;
@@ -27,7 +27,7 @@ use RuntimeException;
 use Throwable;
 
 /**
- * Emisión FE Costa Rica: factura 01, factura de exportación 09, tiquete 04, nota crédito 03, nota débito 02 (dazza-dev/dgt-cr).
+ * Emisión FE Costa Rica: factura 01, FEE 09, tiquete 04, NC 03, ND 02, REP 10 (dazza-dev/dgt-cr).
  */
 final class CostaRicaFeEmitService
 {
@@ -40,6 +40,7 @@ final class CostaRicaFeEmitService
         private readonly CostaRicaDgtClientFactory $factory,
         private readonly CostaRicaInvoiceFromVentaMapper $mapper,
         private readonly CostaRicaCreditNoteFromDevolucionMapper $creditNoteMapper,
+        private readonly CostaRicaReciboPagoMapper $reciboPagoMapper,
     ) {}
 
     /**
@@ -454,6 +455,106 @@ final class CostaRicaFeEmitService
     }
 
     /**
+     * Recibo electrónico de pago (tipo comprobante 10, código referencia 17) sobre un abono de venta a crédito.
+     *
+     * @return array{clave: string, aceptada: bool, detalle_estado: array, abono: Abono}
+     */
+    public function emitirReciboPagoDesdeAbono(int $abonoId): array
+    {
+        $abono = Abono::query()->with(['venta.empresa', 'venta.cliente', 'venta.sucursal', 'venta.detalles.producto'])->findOrFail($abonoId);
+        $venta = $abono->venta;
+        if (! $venta instanceof Venta) {
+            throw new RuntimeException('El abono no tiene una venta asociada.');
+        }
+
+        $empresa = $venta->empresa;
+        $this->assertEmpresaCr($empresa);
+
+        if (CostaRicaFeDteDocumento::tieneEmisionRegistrada($abono->codigo_generacion, $abono->sello_mh, $abono->dte)) {
+            throw new RuntimeException('El abono ya tiene un recibo electrónico de pago emitido.');
+        }
+
+        $condicion = mb_strtolower(trim((string) ($venta->condicion ?? '')), 'UTF-8');
+        $condicionSinTilde = strtr($condicion, [
+            'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u',
+            'Á' => 'a', 'É' => 'e', 'Í' => 'i', 'Ó' => 'o', 'Ú' => 'u',
+        ]);
+        if (! str_contains($condicionSinTilde, 'cred')) {
+            throw new RuntimeException('El recibo electrónico de pago solo aplica a ventas a crédito.');
+        }
+
+        if (! $this->ventaFeCrAceptada($venta)) {
+            throw new RuntimeException('La venta debe tener comprobante electrónico aceptado para emitir el REP.');
+        }
+
+        $this->reciboPagoMapper->tipoDocumentoReferenciaParaRep((string) ($venta->tipo_dte ?? ''));
+        $this->assertMonedaDocumentoValidaCr($venta->currency_code, $venta->exchange_rate, 'la venta del abono');
+
+        $sec = $this->secuencialDesdeCorrelativo($abono->correlativo ?: $abono->id);
+        $data = $this->reciboPagoMapper->build($abono, $venta, $empresa, $sec);
+        $this->mapper->assertReceptorFacturaElectronicaCr($data['receiver']);
+
+        $client = $this->factory->make($empresa);
+        $this->configurarClienteEmisorReceptor($client, $data);
+        $client->setDocumentType('payment-receipt');
+        $client->setDocumentData($data);
+
+        try {
+            $client->sendDocument();
+        } catch (Throwable $e) {
+            $recuperado = $this->intentarRecuperarEmisionSiConsecutivoDuplicado(
+                $e,
+                $client,
+                $data,
+                function (string $clave, array $estado) use ($client, $abono): array {
+                    $abono->codigo_generacion = $clave;
+                    $abono->tipo_dte = ReferenciaComprobanteCr::TIPO_COMPROBANTE_REP;
+                    $abono->sello_mh = $clave;
+                    $abono->dte = $this->persistirDteCrAceptado($client, $estado);
+                    $abono->save();
+
+                    return [
+                        'clave' => $clave,
+                        'aceptada' => true,
+                        'detalle_estado' => $estado,
+                        'abono' => $abono->fresh(['venta']),
+                    ];
+                }
+            );
+            if ($recuperado !== null) {
+                return $recuperado;
+            }
+            Log::error('FE CR sendDocument REP', ['abono' => $abonoId, 'error' => $e->getMessage()]);
+            [$xmlSin, $xmlFirm] = $this->xmlComprobanteDesdeClienteDgt($client);
+            throw new CostaRicaFeEmisionFallidaException(
+                'Error al enviar el recibo electrónico de pago a Hacienda: '.$e->getMessage(),
+                $data,
+                null,
+                null,
+                $xmlSin,
+                $xmlFirm,
+                $e
+            );
+        }
+
+        $clave = $client->getDocumentKey();
+        $estado = $this->assertEstadoHaciendaAceptadoOFallar($client, $clave, $data);
+
+        $abono->codigo_generacion = $clave;
+        $abono->tipo_dte = ReferenciaComprobanteCr::TIPO_COMPROBANTE_REP;
+        $abono->sello_mh = $clave;
+        $abono->dte = $this->persistirDteCrAceptado($client, $estado);
+        $abono->save();
+
+        return [
+            'clave' => $clave,
+            'aceptada' => true,
+            'detalle_estado' => $estado,
+            'abono' => $abono->fresh(['venta']),
+        ];
+    }
+
+    /**
      * Devolución de venta cuyo documento es nota de débito (SV «Nota de débito», CR «Nota de Débito Electrónica», etc.).
      */
     private function queryDevolucionNotaDebitoPorVenta(Venta $venta): ?Devolucion
@@ -857,9 +958,7 @@ final class CostaRicaFeEmitService
 
         $this->guardarClaveRechazada($venta, (string) ($e->getClave() ?? ''));
         if ($venta->isDirty('clave_rechazada')) {
-            if (is_array($estado) && $this->estadoContieneCodigoHacienda($estado, -99)) {
-                (new VentaService())->asignarCorrelativo($venta, (int) $venta->id_documento);
-            }
+            // No renumerar correlativo ante -99: el usuario decide el número manualmente.
             $venta->save();
         }
     }
@@ -1062,8 +1161,8 @@ final class CostaRicaFeEmitService
         $status = strtolower(trim((string) ($estado['status'] ?? '')));
         if ($status === 'rechazado') {
             return 'El comprobante fue rechazado por Hacienda. Corrija los datos indicados abajo antes de volver a emitir. '
-                .'Si al reintentar aparece consecutivo duplicado (-99), Hacienda ya registró ese número aunque haya sido rechazado: '
-                .'cree una venta nueva con el siguiente correlativo o consulte en ATV si puede reutilizar la numeración.';
+                .'Si al reintentar aparece consecutivo duplicado (-99), Hacienda ya registró ese número: '
+                .'ajuste el correlativo del documento de forma manual; el sistema no lo incrementa automáticamente.';
         }
 
         if ($status === 'recibido' || $status === 'procesando') {
@@ -1082,7 +1181,7 @@ final class CostaRicaFeEmitService
     {
         $hints = [];
         if ($this->estadoContieneCodigoHacienda($estado, -99)) {
-            $hints[] = 'Sugerencia (código -99): el consecutivo enviado ya existe en Hacienda para ese establecimiento / punto de venta / tipo de comprobante. El sistema usa correlativo (venta, devolución) o referencia (compra, gasto): revise que no duplique un comprobante ya aceptado.';
+            $hints[] = 'Sugerencia (código -99): el consecutivo enviado ya existe en Hacienda para ese establecimiento / punto de venta / tipo de comprobante. Ajuste el correlativo manualmente; no se renumera solo.';
         }
         if ($this->estadoContieneCodigoHacienda($estado, -37)) {
             $hints[] = 'Sugerencia (código -37): provincia, cantón y distrito del emisor deben coincidir con el domicilio fiscal registrado en la DGT. Revise facturacion_fe.emisor_distrito (código INEC de 5 dígitos) o emisor_provincia_manual, emisor_canton_manual y emisor_distrito_manual.';
@@ -1150,27 +1249,6 @@ final class CostaRicaFeEmitService
             $venta->sello_mh,
             $venta->dte
         );
-    }
-
-    /**
-     * Solo renumerar si Hacienda devolvió -99 (consecutivo ya registrado). Errores de validación (-488, etc.)
-     * deben reintentarse con el mismo correlativo de la venta.
-     */
-    public static function debeRenumerarCorrelativoTrasRechazo(
-        bool $columnaClaveRechazadaExiste,
-        ?string $claveRechazada,
-        bool $tieneClaveFeAceptada,
-        ?array $detalleEstadoRechazo = null
-    ): bool {
-        if (! $columnaClaveRechazadaExiste || $tieneClaveFeAceptada || trim((string) $claveRechazada) === '') {
-            return false;
-        }
-
-        if ($detalleEstadoRechazo === null) {
-            return false;
-        }
-
-        return self::detalleEstadoContieneCodigoHacienda($detalleEstadoRechazo, -99);
     }
 
     /**

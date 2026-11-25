@@ -766,8 +766,17 @@ final class CostaRicaInvoiceFromVentaMapper
         return [$factor, $converted];
     }
 
+    /**
+     * Código Nota 5 (CondicionVenta). Si hay condicion_venta_fe (01/02/08/10) se usa;
+     * si no, Contado→01 / Crédito→02 (comportamiento previo).
+     */
     private function condicionVenta(Venta $venta): string
     {
+        $fe = trim((string) ($venta->condicion_venta_fe ?? ''));
+        if (in_array($fe, ['01', '02', '08', '10'], true)) {
+            return $fe;
+        }
+
         $c = strtolower(trim((string) ($venta->condicion ?? 'contado')));
 
         return str_contains($c, 'cred') ? '02' : '01';

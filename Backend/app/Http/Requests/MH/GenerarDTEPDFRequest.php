@@ -22,7 +22,7 @@ class GenerarDTEPDFRequest extends FormRequest
         // El tipo de la ruta se valida en el controlador
         // Aquí solo validamos el tipo del request cuando es necesario
         return [
-            'tipo' => ['nullable', 'string', 'in:compra,gasto'],
+            'tipo' => ['nullable', 'string', 'in:compra,gasto,abono'],
         ];
     }
 
@@ -32,7 +32,7 @@ class GenerarDTEPDFRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'tipo.in' => 'El tipo debe ser compra o gasto.',
+            'tipo.in' => 'El tipo debe ser compra, gasto o abono.',
         ];
     }
 }

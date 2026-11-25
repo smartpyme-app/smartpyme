@@ -18,6 +18,9 @@ final class DocumentosDefaultPorPais
 
     public const CR_FACTURA = 'Factura Electrónica';
 
+    /** Documento interno del abono de venta / correlativo del REP (tipo 10). */
+    public const CR_RECIBO_ELECTRONICO = 'Recibo electrónico';
+
     /**
      * Plantillas embebidas (también las usa el seeder).
      *
@@ -38,7 +41,8 @@ final class DocumentosDefaultPorPais
                 'Factura Electrónica de Compra',
                 'Nota de Crédito Electrónica',
                 'Nota de Débito Electrónica',
-                'Abono de Venta',
+                self::CR_RECIBO_ELECTRONICO,
+                'Abono de Venta', // legacy
             ];
 
             return [

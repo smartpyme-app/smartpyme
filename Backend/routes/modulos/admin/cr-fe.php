@@ -18,6 +18,7 @@ Route::post('/emitirFeCrCompra', [CostaRicaFeController::class, 'emitirFacturaEl
 Route::post('/emitirFeCrGasto', [CostaRicaFeController::class, 'emitirFacturaElectronicaGasto']);
 Route::post('/emitirFeCrNotaCreditoDevolucion', [CostaRicaFeController::class, 'emitirNotaCreditoDevolucion']);
 Route::post('/emitirFeCrNotaDebitoVenta', [CostaRicaFeController::class, 'emitirNotaDebito']);
+Route::post('/emitirFeCrReciboPago', [CostaRicaFeController::class, 'emitirReciboPago']);
 Route::post('/consultarFeCrVenta', [CostaRicaFeController::class, 'consultarEstadoVenta']);
 Route::post('/consultarFeCrDevolucion', [CostaRicaFeController::class, 'consultarEstadoDevolucion']);
 Route::post('/consultarFeCrCompra', [CostaRicaFeController::class, 'consultarEstadoCompra']);

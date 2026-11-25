@@ -7,6 +7,8 @@ use App\Models\Ventas\Venta;
 use App\Models\Inventario\Paquete;
 use App\Services\Bancos\TransaccionesService;
 use App\Services\Bancos\ChequesService;
+use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
+use App\Support\Admin\DocumentosDefaultPorPais;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -29,7 +31,7 @@ class AbonoVentaService
      */
     public function listarAbonos(array $filters)
     {
-        $query = Abono::with('venta');
+        $query = Abono::with('venta.cliente');
 
         if (isset($filters['buscador']) && $filters['buscador']) {
             $query->where(function($q) use ($filters) {
@@ -133,11 +135,19 @@ class AbonoVentaService
                 $abono = new Abono();
             }
 
-            // Obtener el documento y asignar correlativo
-            $documento = \App\Models\Admin\Documento::where('nombre', 'Abono de Venta')
-                ->where('id_sucursal', $data['id_sucursal'] ?? null)
-                ->lockForUpdate()
-                ->first();
+            // Correlativo: CR usa «Recibo electrónico»; resto «Abono de Venta» (legacy CR también).
+            $idSucursal = $data['id_sucursal'] ?? null;
+            $nombresDocumento = $this->nombresDocumentoAbonoVenta($venta);
+            $documento = null;
+            foreach ($nombresDocumento as $nombreDoc) {
+                $documento = \App\Models\Admin\Documento::where('nombre', $nombreDoc)
+                    ->where('id_sucursal', $idSucursal)
+                    ->lockForUpdate()
+                    ->first();
+                if ($documento) {
+                    break;
+                }
+            }
 
             $abono->fill($data);
             if ($documento) {
@@ -260,6 +270,29 @@ class AbonoVentaService
                 $paquete->save();
             }
         }
+    }
+
+    /**
+     * Nombres de documento para correlativo del abono (prioridad CR: Recibo electrónico).
+     *
+     * @return list<string>
+     */
+    private function nombresDocumentoAbonoVenta(?Venta $venta): array
+    {
+        $empresa = $venta?->empresa;
+        if ($empresa === null && $venta !== null) {
+            $venta->loadMissing('empresa');
+            $empresa = $venta->empresa;
+        }
+        $pais = FacturacionElectronicaCountryResolver::resolveCodigoPaisFe($empresa);
+        if ($pais === FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
+            return [
+                DocumentosDefaultPorPais::CR_RECIBO_ELECTRONICO,
+                'Abono de Venta',
+            ];
+        }
+
+        return ['Abono de Venta'];
     }
 
     /**

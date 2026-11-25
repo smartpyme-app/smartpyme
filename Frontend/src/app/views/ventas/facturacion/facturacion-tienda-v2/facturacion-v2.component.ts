@@ -1969,6 +1969,9 @@ export class FacturacionV2Component implements OnInit {
         if (this.venta.credito) {
             this.venta.estado = 'Pendiente';
             this.venta.condicion = 'Crédito';
+            if (this.esFeCostaRicaFacturacion() && !this.venta.condicion_venta_fe) {
+                this.venta.condicion_venta_fe = '02';
+            }
             this.venta.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
         } else {
             if (this.creditoSnapshot) {
@@ -1978,6 +1981,7 @@ export class FacturacionV2Component implements OnInit {
             }
             this.venta.estado = 'Pagada';
             this.venta.condicion = 'Contado';
+            this.venta.condicion_venta_fe = null;
             this.venta.fecha_pago = moment().format('YYYY-MM-DD');
             // Limpiar mensaje de validación al cambiar a contado
             this.mensajeValidacionFecha = '';

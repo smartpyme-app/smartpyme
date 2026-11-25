@@ -16,8 +16,10 @@ use App\Http\Requests\MH\GenerarDTEPDFRequest;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Devoluciones\Devolucion as DevolucionCompra;
 use App\Models\Compras\Gastos\Gasto;
+use App\Models\Ventas\Abono;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Ventas\Venta;
+use App\Support\FacturacionElectronica\CostaRica\ReferenciaComprobanteCr;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeComprobantePdfService;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeCorreoService;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeEmitService;
@@ -262,7 +264,8 @@ class MHDTEController extends Controller
         }
 
         [$registro, $dte, $clave, $bloqueNd] = $contexto;
-        if (! CostaRicaFeDteDocumento::tieneComprobanteCr($dte) && ! is_array($bloqueNd)) {
+        // PDF exige XML archivado; Ver XML puede consultar Hacienda solo con la clave (codigo_generacion).
+        if (! CostaRicaFeDteDocumento::tieneComprobanteCr($dte) && ! is_array($bloqueNd) && trim($clave) === '') {
             return response()->json(['error' => 'No hay comprobante electrónico Costa Rica para este registro.'], 404);
         }
 
@@ -296,6 +299,14 @@ class MHDTEController extends Controller
     }
 
     private function assertMismoEmpresaUsuarioCompraGasto(Compra|Gasto $registro): void
+    {
+        $uid = Auth::user()?->id_empresa;
+        if ($uid === null || (int) $registro->id_empresa !== (int) $uid) {
+            abort(403);
+        }
+    }
+
+    private function assertMismoEmpresaUsuarioAbono(Abono $registro): void
     {
         $uid = Auth::user()?->id_empresa;
         if ($uid === null || (int) $registro->id_empresa !== (int) $uid) {
@@ -346,7 +357,7 @@ class MHDTEController extends Controller
     }
 
     /**
-     * @return array{0: Venta|DevolucionVenta|Compra|Gasto, 1: mixed, 2: string, 3: ?array}|null
+     * @return array{0: Venta|DevolucionVenta|Compra|Gasto|Abono, 1: mixed, 2: string, 3: ?array}|null
      */
     private function resolverContextoDteCostaRica(int $id, string $tipo, ?string $queryTipo): ?array
     {
@@ -401,6 +412,21 @@ class MHDTEController extends Controller
             }
 
             return [$registro, $registro->dte, (string) ($registro->codigo_generacion ?? ''), null];
+        }
+
+        if ($tipo === ReferenciaComprobanteCr::TIPO_COMPROBANTE_REP && $queryTipo === 'abono') {
+            $registro = Abono::findOrFail($id);
+            $this->assertMismoEmpresaUsuarioAbono($registro);
+            if ((string) ($registro->tipo_dte ?? '') !== ReferenciaComprobanteCr::TIPO_COMPROBANTE_REP) {
+                throw new RuntimeException('Este abono no tiene recibo electrónico de pago (tipo 10).');
+            }
+
+            $clave = CostaRicaFeDteDocumento::claveEmision(
+                $registro->codigo_generacion ?? null,
+                $registro->sello_mh ?? null
+            );
+
+            return [$registro, $registro->dte, $clave, null];
         }
 
         return null;

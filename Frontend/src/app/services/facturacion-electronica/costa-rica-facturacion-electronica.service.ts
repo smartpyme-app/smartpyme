@@ -113,6 +113,33 @@ export class CostaRicaFacturacionElectronicaService {
     });
   }
 
+  /**
+   * Recibo electrónico de pago (tipo 10) sobre un abono de venta a crédito.
+   */
+  emitirReciboPagoAbono(abono: any): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.api.store('emitirFeCrReciboPago', { id: abono.id }).subscribe({
+        next: (res: any) => {
+          if (res?.abono) {
+            Object.assign(abono, res.abono);
+          }
+          if (res?.aceptada) {
+            resolve(abono);
+            return;
+          }
+          const msg =
+            typeof res?.detalle_estado?.messages === 'string'
+              ? res.detalle_estado.messages
+              : 'El recibo electrónico de pago no fue aceptado por Hacienda.';
+          reject({ message: msg, abono });
+        },
+        error: (err) => {
+          reject(errorEmisionFeCr(err));
+        },
+      });
+    });
+  }
+
   /** FEC 08 — compra (documento «Compra electrónica»). */
   emitirFacturaElectronicaCompra(compra: any): Promise<any> {
     return this.postEmisionCompraGasto('emitirFeCrCompra', compra, 'compra');

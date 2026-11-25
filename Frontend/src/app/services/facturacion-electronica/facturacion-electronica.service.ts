@@ -61,6 +61,14 @@ export class FacturacionElectronicaService {
       : this.rejectNoSoportado();
   }
 
+  /** CR: REP (tipo 10) desde abono de venta a crédito. */
+  emitirDTEReciboPagoAbono(abono: any): Promise<any> {
+    if (this.esCostaRica()) {
+      return this.costaRica.emitirReciboPagoAbono(abono);
+    }
+    return this.rejectNoSoportado();
+  }
+
   /**
    * En listados de devoluciones el parámetro suele ser el objeto devolución (id = devolución).
    */

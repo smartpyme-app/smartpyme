@@ -16,6 +16,10 @@ class Abono extends Model {
         'concepto',
         'referencia',
         'estado',
+        'tipo_dte',
+        'codigo_generacion',
+        'sello_mh',
+        'dte',
         'nombre_de',
         'forma_pago',
         'detalle_banco',
@@ -46,6 +50,10 @@ class Abono extends Model {
         return $this->belongsTo('App\Models\Ventas\Venta','id_venta');
     }
 
+    public function empresa(){
+        return $this->belongsTo('App\Models\Admin\Empresa','id_empresa');
+    }
+
     public function usuario(){
         return $this->belongsTo('App\Models\User','id_usuario');
     }
@@ -62,6 +70,28 @@ class Abono extends Model {
 
     public function getNombreDocumentoAttribute(){
         return $this->documento()->pluck('nombre')->first();
+    }
+
+    /**
+     * FE CR guarda XML firmado (string), igual que ventas. Si quedó JSON-encodeado por un cast previo, se desenvuelve.
+     */
+    public function getDteAttribute(mixed $value): mixed
+    {
+        if (! is_string($value) || $value === '') {
+            return $value;
+        }
+        $trim = ltrim($value);
+        if (str_starts_with($trim, '<?xml') || str_starts_with($trim, '<')) {
+            return $value;
+        }
+        if (str_starts_with($trim, '"') || str_starts_with($trim, '{') || str_starts_with($trim, '[')) {
+            $decoded = json_decode($value, true);
+            if (is_string($decoded) || is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        return $value;
     }
 
 }

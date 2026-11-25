@@ -410,47 +410,23 @@ Una factura nacional no gana partida arancelaria ni tipo 19.
 
 ---
 
-### Task 6: Recibo electrónico de pago, código 17 y tipo 20
+### Task 6: Recibo electrónico de pago (tipo comprobante 10, código 17)
+
+> **Ajuste 2026-11-18:** emisión **manual** desde abonos de venta (como Emitir DTE en ventas), no al guardar el abono.
+> Spec: `Docs/superpowers/specs/2026-11-18-fe-cr-recibo-electronico-pago-design.md`
+> Plan: `Docs/superpowers/plans/2026-11-18-fe-cr-recibo-electronico-pago.md`
+>
+> Nota: el tipo de **comprobante emitido** es **10**; el **20** de Nota 10 solo se usa al referenciar otro REP.
 
 **Files:**
-- Create: `Backend/app/Services/FacturacionElectronica/CostaRica/CostaRicaReciboPagoMapper.php`
-- Modify: `Backend/app/Services/FacturacionElectronica/CostaRica/CostaRicaFeEmitService.php`
-- Modify: `Backend/app/Http/Controllers/Api/Ventas/AbonosController.php` (o `AbonoVentaService`) para disparar la emisión al guardar un abono de una venta CR a crédito que ya tiene clave
-- Modify: el XSD/generador si no existe el tipo `reciboElectronicoPago`
+- Create: `CostaRicaReciboPagoMapper`, `EmitirFeCrReciboPagoRequest`, migración FE en `abonos_ventas`
+- Modify: `CostaRicaFeEmitService::emitirReciboPagoDesdeAbono`, `CostaRicaFeController`, ruta `emitirFeCrReciboPago`
+- UI: botón en `abonos-ventas` (no auto en `AbonoVentaService`)
+- Parche: `dgt-xml-generator-recibo-electronico-pago.patch`
 
-**Interfaces:**
-- Consumes: `ReferenciaComprobanteCr::CODIGO_PAGO_REP`, `TIPO_RECIBO_PAGO`, `tiposPermitidosEnReciboPago()`
-- Produces: `CostaRicaReciboPagoMapper::build(Abono $abono, Venta $venta): array` con una referencia código `17`
-- Produces: `CostaRicaFeEmitService::emitirReciboPago(Abono $abono): array`
-
-- [ ] **Step 1: Test del mapper sin HTTP**
-
-Venta con `tipo_dte` `01` y clave de 50 caracteres, abono de 10000 → la referencia queda tipo `01`, código `17`, número = clave de la venta.
-
-Venta con `tipo_dte` `03` (nota de crédito) → el mapper lanza `InvalidArgumentException` porque el recibo no puede referenciar una nota.
-
-Venta sin clave → excepción, no se arma XML.
-
-- [ ] **Step 2: Correr el test y ver que falla.**
-
-- [ ] **Step 3: Emitir el recibo solo al abonar una venta a crédito ya aceptada**
-
-Condiciones para emitir, todas juntas:
-
-- Empresa con facturación electrónica de Costa Rica.
-- La venta está a crédito y tiene clave aceptada.
-- El `tipo_dte` de la venta está en `tiposPermitidosEnReciboPago()`.
-- El abono todavía no tiene clave.
-
-La referencia lleva código `17`, tipo = `tipo_dte` de la venta, número = clave, fecha = fecha de la venta. El monto del recibo es el del abono, no el total de la factura.
-
-Medio de pago del recibo = el del abono (efectivo `01`, tarjeta `02`, transferencia `04`). Dejar de heredar el `01` fijo de `pagosDesdeMonto` para este documento.
-
-Si el generador no conoce el comprobante, parche XSD `reciboElectronicoPago` antes de conectar el abono. Hasta que ese parche exista, el abono se guarda igual que hoy y no se intenta firmar un XML inválido.
-
-- [ ] **Step 4: Correr el test.** Expected: PASS.
-
-Un abono a una factura de contado no emite recibo.
+- [x] Mapper + tests (referencia 17; rechaza NC/sin clave)
+- [x] Emisión manual vía API + persistencia en abono (`tipo_dte` = 10)
+- [x] Frontend Emitir DTE en abonos de venta
 
 ---
 

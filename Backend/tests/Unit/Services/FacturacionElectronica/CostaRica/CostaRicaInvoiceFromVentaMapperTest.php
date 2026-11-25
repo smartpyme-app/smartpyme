@@ -111,25 +111,6 @@ final class CostaRicaInvoiceFromVentaMapperTest extends TestCase
         self::assertSame([], $refs);
     }
 
-    public function test_renumera_correlativo_solo_si_rechazado_y_sin_clave_aceptada(): void
-    {
-        $clave = '50631012600310123456700100001010000000001199999999';
-
-        self::assertFalse(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(true, $clave, false));
-        self::assertFalse(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(true, $clave, false, [
-            'status' => 'rechazado',
-            'messages' => 'Error -488 en desglose de impuesto',
-        ]));
-        self::assertTrue(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(true, $clave, false, [
-            'status' => 'rechazado',
-            'messages' => 'El consecutivo -99 ya existe',
-        ]));
-        self::assertFalse(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(true, '', false));
-        self::assertFalse(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(true, '   ', false));
-        self::assertFalse(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(true, $clave, true));
-        self::assertFalse(CostaRicaFeEmitService::debeRenumerarCorrelativoTrasRechazo(false, $clave, false));
-    }
-
     public function test_reemision_de_rechazado_referencia_tipo_10_codigo_16(): void
     {
         $clave = '50631012600310123456700100001010000000001199999999';
