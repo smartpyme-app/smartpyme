@@ -1,12 +1,12 @@
 {
-    "_hash": "47d3f4fa8bd8465b8b33f35bbf4c99ceb2a47c803cacc7249ddc6bf65a07d863",
+    "_hash": "e4c96f7a112611172c4d003a1f60bb8f4478799c4531b08bac7bd34058e7789c",
     "patches": {
         "dazza-dev/dgt-xml-generator": [
             {
                 "package": "dazza-dev/dgt-xml-generator",
                 "description": "Receptor: omitir ubicacion, telefono y correo cuando no vienen del cliente",
                 "url": "patches/dgt-xml-generator-receptor-contacto-opcional.patch",
-                "sha256": "5f42d56ffb389a81350955c07be405221944c66fcfe791c61fa2c08a8e734045",
+                "sha256": "b8617b9e53852d29a8f633865ce98b48cda7a4126c9e6d974e37c94670f94fbf",
                 "depth": 1,
                 "extra": {
                     "provenance": "root"
@@ -16,7 +16,7 @@
                 "package": "dazza-dev/dgt-xml-generator",
                 "description": "Codigos de referencia 13 a 16 de anexos 4.4",
                 "url": "patches/dgt-xml-generator-codigos-referencia-13-16.patch",
-                "sha256": "27d85c72d108b979e16597b4ad260d389b410332e4fa774be27503c21e29d8cd",
+                "sha256": "c4fa2c9d887f4e8c25791bd0930f16e83a06f761e4a3f612511332f0ec010009",
                 "depth": 1,
                 "extra": {
                     "provenance": "root"
@@ -26,7 +26,7 @@
                 "package": "dazza-dev/dgt-xml-generator",
                 "description": "Factura electronica de exportacion tipo 09",
                 "url": "patches/dgt-xml-generator-factura-electronica-exportacion.patch",
-                "sha256": "147a5eeafd16717106b3dfde30ed5bcdfe6b5380b0ea9e4b70ebf7062e251801",
+                "sha256": "9c296ec6b129d758f253416879354a2debab3df8b23878fc0e0b0f2a4ad1e9a2",
                 "depth": 1,
                 "extra": {
                     "provenance": "root"
@@ -36,7 +36,7 @@
                 "package": "dazza-dev/dgt-xml-generator",
                 "description": "Recibo electronico de pago tipo 10",
                 "url": "patches/dgt-xml-generator-recibo-electronico-pago.patch",
-                "sha256": "fb447aa2efe56bd8b542215c1766ba5705bea73b65c2368d7ac983b1a815670f",
+                "sha256": "ccb44f6cd4745dfa19c36da6a089d7a6c839a1d4296d0af613c5a4d3ce60971b",
                 "depth": 1,
                 "extra": {
                     "provenance": "root"

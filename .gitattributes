@@ -7,3 +7,7 @@ docker-compose.yml    text eol=lf
 **/.dockerignore      text eol=lf
 Backend/artisan       text eol=lf
 Backend/.env*.example text eol=lf
+
+# Parches de composer: patches.lock.json guarda su sha256, que debe ser el mismo en Windows,
+# Mac y Linux (CI/servidor). Con CRLF el hash cambia y "composer install" falla en Linux.
+Backend/patches/*.patch text eol=lf
