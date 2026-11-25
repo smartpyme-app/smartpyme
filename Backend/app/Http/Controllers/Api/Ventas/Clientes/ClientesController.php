@@ -194,8 +194,8 @@ class ClientesController extends Controller
 
     public function searchClientes(Request $request)
     {
-        $term = $request->get('q', ''); // Término de búsqueda
-        $limit = $request->get('limit', 50); // Límite de resultados (default 50)
+        $term = trim((string) $request->get('q', '')); // Término de búsqueda
+        $limit = max(1, min(100, (int) $request->get('limit', 50))); // Límite de resultados (default 50, máx. 100)
 
         if (strlen($term) < 2) {
             return response()->json([], 200);
@@ -211,14 +211,15 @@ class ClientesController extends Controller
                 ->orWhere('telefono', 'LIKE', "%{$term}%")
                 ->orWhereRaw("CONCAT(nombre, ' ', apellido) LIKE ?", ["%{$term}%"]);
             })
+            // El término va como parámetro: antes se interpolaba en el SQL (inyección SQL).
             ->orderByRaw("
                 CASE
-                    WHEN nombre LIKE '{$term}%' THEN 1
-                    WHEN nombre_empresa LIKE '{$term}%' THEN 2
-                    WHEN CONCAT(nombre, ' ', apellido) LIKE '{$term}%' THEN 3
+                    WHEN nombre LIKE ? THEN 1
+                    WHEN nombre_empresa LIKE ? THEN 2
+                    WHEN CONCAT(nombre, ' ', apellido) LIKE ? THEN 3
                     ELSE 4
                 END
-            ")
+            ", ["{$term}%", "{$term}%", "{$term}%"])
             ->orderBy('nombre', 'asc')
             ->limit($limit)
             ->get();
@@ -788,8 +789,35 @@ class ClientesController extends Controller
         return response()->json($import->getRowCount(), 200);
     }
 
+    /**
+     * PhpSpreadsheet arma el .xlsx completo en memoria: con ~16 mil clientes el pico es ~150 MB
+     * aun leyendo la consulta por partes (FromQuery). Se amplía el límite sólo para estas
+     * descargas, sin tocar el memory_limit global (128 MB) del resto de peticiones.
+     */
+    private function ampliarMemoriaParaExport(): void
+    {
+        $actual = ini_get('memory_limit');
+        $bytes = static function ($v) {
+            $v = trim((string) $v);
+            if ($v === '-1') {
+                return PHP_INT_MAX;
+            }
+            $n = (int) $v;
+            switch (strtolower(substr($v, -1))) {
+                case 'g': return $n * 1024 * 1024 * 1024;
+                case 'm': return $n * 1024 * 1024;
+                case 'k': return $n * 1024;
+            }
+            return $n;
+        };
+        if ($bytes($actual) < 512 * 1024 * 1024) {
+            ini_set('memory_limit', '512M');
+        }
+    }
+
     public function exportPersonas(Request $request)
     {
+        $this->ampliarMemoriaParaExport();
 
         $clientes = new ClientesPersonasExport();
         $clientes->filter($request);
@@ -799,6 +827,7 @@ class ClientesController extends Controller
 
     public function exportEmpresas(Request $request)
     {
+        $this->ampliarMemoriaParaExport();
 
         $clientes = new ClientesEmpresasExport();
         $clientes->filter($request);
@@ -808,6 +837,7 @@ class ClientesController extends Controller
 
     public function exportExtranjeros(Request $request)
     {
+        $this->ampliarMemoriaParaExport();
 
         $clientes = new ClientesExtranjerosExport();
         $clientes->filter($request);
@@ -817,6 +847,7 @@ class ClientesController extends Controller
 
     public function exportTodos(Request $request)
     {
+        $this->ampliarMemoriaParaExport();
         $clientes = new ClientesTodosExport();
         $clientes->filter($request);
 

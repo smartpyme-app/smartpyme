@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { LayoutComponent } from '../../layout/layout.component';
 import { AdminGuard } from '../../guards/admin.guard';
 import { FacturacionVersionGuard } from '../../guards/facturacion-version.guard';
 import { CotizacionesComponent } from '@views/ventas/cotizaciones/cotizaciones.component';
@@ -49,7 +48,6 @@ import { CrearOrdenProduccionComponent } from '@views/ventas/orden_produccion/cr
 const routes: Routes = [
   {
     path: '',
-    component: LayoutComponent,
     title: 'Ventas',
     children: [
 
@@ -100,6 +98,8 @@ const routes: Routes = [
         { path: 'cliente/vista-360/:id', component: ClienteVista360Component, title: 'Vista 360° Cliente'},
         { path: 'cliente/crear', component: ClienteComponent, title: 'Cliente'},
         { path: 'cliente/editar/:id', component: ClienteComponent, title: 'Cliente'},
+        // ponytail: enlaces legacy /cliente/:id → editar (p. ej. listado vendedor)
+        { path: 'cliente/:id', redirectTo: 'cliente/editar/:id', pathMatch: 'full' },
         { path: 'clientes/cuentas-cobrar', component: CuentasCobrarComponent, title: 'Cuentas por cobrar' },
         {
             path: 'clientes/creditos',

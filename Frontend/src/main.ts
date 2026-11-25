@@ -2,17 +2,15 @@ import { bootstrapApplication } from '@angular/platform-browser';
 import { ErrorHandler, inject, provideAppInitializer } from '@angular/core';
 import { Router } from '@angular/router';
 import * as Sentry from '@sentry/angular';
-import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 
 import { initSentry } from './app/sentry.init';
 
 initSentry();
 
-// Register AG Grid Community modules
-ModuleRegistry.registerModules([ AllCommunityModule ]);
+// AG Grid se registra en views/dashboard/ag-grid-registro.ts para no cargarlo al iniciar la app.
 
 import { importProvidersFrom } from '@angular/core';
-import { provideRouter, withPreloading } from '@angular/router';
+import { provideRouter, withPreloading, RouteReuseStrategy } from '@angular/router';
 import { provideHttpClient, withInterceptorsFromDi, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { NoPreloading } from '@angular/router';
@@ -27,6 +25,8 @@ import { JwtInterceptor } from './app/services/JwtInterceptor';
 import { AuthorizationInterceptor } from './app/services/Authorization/authorization.interceptor';
 import { PaceInterceptor } from './app/services/pace-interceptor';
 import { CacheInterceptor } from './app/services/cache-interceptor';
+import { ApiMismoOrigenInterceptor } from './app/services/api-mismo-origen.interceptor';
+import { EstrategiaReutilizacionRutas } from './app/services/estrategia-reutilizacion-rutas';
 import { AuthGuard } from './app/guards/auth.guard';
 import { AdminGuard } from './app/guards/admin.guard';
 import { CitasGuard } from './app/guards/citas.guard';
@@ -80,6 +80,7 @@ bootstrapApplication(AppComponent, {
       })
     ),
     provideRouter(routes, withPreloading(NoPreloading)),
+    { provide: RouteReuseStrategy, useClass: EstrategiaReutilizacionRutas },
     provideHttpClient(withInterceptorsFromDi()),
     provideAnimations(),
     provideEnvironmentNgxMask(),
@@ -87,6 +88,8 @@ bootstrapApplication(AppComponent, {
     { provide: HTTP_INTERCEPTORS, useClass: CacheInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: AuthorizationInterceptor, multi: true },
+    // Último: cambia apiunificado.../api/ por /api/ (mismo dominio, sin preflight CORS).
+    { provide: HTTP_INTERCEPTORS, useClass: ApiMismoOrigenInterceptor, multi: true },
     AuthGuard,
     AdminGuard,
     CitasGuard,

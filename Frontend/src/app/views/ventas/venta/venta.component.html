@@ -166,7 +166,17 @@
             </div>
             <div class="col-6 col-lg-3">
                 <small class="text-muted d-block">Documento</small>
-                <span>{{ venta.nombre_documento }} # {{ venta.correlativo }}</span>
+                <span>
+                    {{ venta.nombre_documento }}
+                    @if (esFeCostaRica()) {
+                        @let docId = identificadorDocumentoCr(venta.numero_control, venta.correlativo, venta);
+                        @if (docId.texto) {
+                            <span [class.fe-cr-consecutivo]="docId.esConsecutivo"> {{ docId.texto }}</span>
+                        }
+                    } @else if (venta.correlativo) {
+                        # {{ venta.correlativo }}
+                    }
+                </span>
             </div>
             <div class="col-6 col-lg-3">
                 <small class="text-muted d-block">Estado</small>
@@ -303,7 +313,7 @@
                 @if (esFeCostaRica()) {
                     <div class="col-6 col-lg-3">
                         <small class="text-muted d-block">{{ 'country.tax.fe.detailControlNumberLabel' | translate }}</small>
-                        <span class="text-break">{{ venta.numero_control || '-' }}</span>
+                        <span class="text-break fe-cr-consecutivo">{{ textoConsecutivoCrDisplay(venta) }}</span>
                     </div>
                     <div class="col-12 col-lg-6">
                         <small class="text-muted d-block">Clave</small>
@@ -393,6 +403,12 @@
                                     </span>
                                     <br>
                                     <small class="text-muted text-tiny">{{ detalle?.producto?.tipo }}</small>
+                                    @if (moduloConsignacionesActivo) {
+                                      <br><small class="text-muted">Inventario: <span class="badge bg-light text-dark border">{{ etiquetaOrigenStockDetalle(detalle) }}</span></small>
+                                    }
+                                    @if (textoLoteDetalle(detalle); as loteTxt) {
+                                      <br><small class="text-muted">{{ loteTxt }}</small>
+                                    }
                                     @if (esFeCostaRica() && detalleTieneExoneracionCr(detalle)) {
                                       <br><span class="badge bg-info mt-1">{{ 'country.tax.taxExemptionBadge' | translate }}</span>
                                       @if (detalle.fe_cr_exoneracion?.numero_documento) {
@@ -707,7 +723,15 @@
                                 <td>{{ventaDev.nombre_cliente | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/{{ventaDev.id_cliente}}"><i class="fa fa-edit"></i></a></td>
                                 <td>
                                     <a class="text-decoration-none text-dark"  tooltip="Ver información de la devolución" routerLink="/devolucion/venta/{{ventaDev.id}}">
-                                        {{ventaDev.nombre_documento}} #{{ventaDev.correlativo}}
+                                        {{ventaDev.nombre_documento}}
+                                        @if (esFeCostaRica()) {
+                                            @let docId = identificadorDocumentoCr(ventaDev.numero_control, ventaDev.correlativo, ventaDev);
+                                            @if (docId.texto) {
+                                                <span [class.fe-cr-consecutivo]="docId.esConsecutivo"> {{ docId.texto }}</span>
+                                            }
+                                        } @else if (ventaDev.correlativo) {
+                                            #{{ventaDev.correlativo}}
+                                        }
                                     </a>
                                 </td>
                                 <td>{{ventaDev.observaciones}}</td>

@@ -1,0 +1,227 @@
+<?php
+
+namespace App\Http\Controllers\Api\Inventario;
+
+use App\Constants\ConsignaMovimientoTipoConstants;
+use App\Http\Controllers\Controller;
+use App\Models\Inventario\ConsignaCustodia;
+use App\Exports\ConsignaCustodiaComprasDevolucionesExport;
+use App\Exports\ConsignaCustodiaDevolucionesExport;
+use App\Exports\ConsignaCustodiaVentasExport;
+use App\Services\Inventario\ConsignaCustodiaService;
+use App\Services\Inventario\ConsignaMovimientoService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Maatwebsite\Excel\Facades\Excel;
+
+class ConsignaCustodiaController extends Controller
+{
+    private function empresaLedgerActiva(): array
+    {
+        $user = auth()->user();
+        if (! $user?->id_empresa) {
+            return ['error' => response()->json(['error' => 'Usuario sin empresa asociada'], 400)];
+        }
+
+        $empresa = $user->empresa()->first();
+        if (! $empresa || ! $empresa->isModuloConsignacionesLedgerActivo()) {
+            return ['error' => response()->json(['error' => 'Módulo de consignaciones no activo para esta empresa'], 403)];
+        }
+
+        return ['empresa' => $empresa, 'id_empresa' => (int) $user->id_empresa];
+    }
+
+    private function validarClienteParaExport(Request $request): ?\Illuminate\Http\JsonResponse
+    {
+        if (! $request->filled('id_cliente')) {
+            return response()->json(['error' => 'Debe seleccionar un cliente para exportar.'], 422);
+        }
+
+        return null;
+    }
+
+    private function validarProveedorParaExport(Request $request): ?\Illuminate\Http\JsonResponse
+    {
+        if (! $request->filled('id_proveedor')) {
+            return response()->json(['error' => 'Debe seleccionar un proveedor para exportar.'], 422);
+        }
+
+        return null;
+    }
+
+    public function exportarVentas(Request $request)
+    {
+        $ctx = $this->empresaLedgerActiva();
+        if (isset($ctx['error'])) {
+            return $ctx['error'];
+        }
+        if ($rechazo = $this->validarClienteParaExport($request)) {
+            return $rechazo;
+        }
+
+        $export = new ConsignaCustodiaVentasExport();
+        $export->filter($request);
+
+        return Excel::download($export, 'reporte-ventas-consigna.xlsx');
+    }
+
+    public function exportarDevoluciones(Request $request)
+    {
+        $ctx = $this->empresaLedgerActiva();
+        if (isset($ctx['error'])) {
+            return $ctx['error'];
+        }
+        if ($rechazo = $this->validarClienteParaExport($request)) {
+            return $rechazo;
+        }
+
+        $export = new ConsignaCustodiaDevolucionesExport();
+        $export->filter($request);
+
+        return Excel::download($export, 'reporte-devoluciones-consigna.xlsx');
+    }
+
+    public function ventas(Request $request, ConsignaCustodiaService $custodiaService)
+    {
+        $ctx = $this->empresaLedgerActiva();
+        if (isset($ctx['error'])) {
+            return $ctx['error'];
+        }
+
+        return response()->json(
+            $custodiaService->listarVentasConsigna($request, $ctx['id_empresa']),
+            200
+        );
+    }
+
+    public function devoluciones(Request $request, ConsignaCustodiaService $custodiaService)
+    {
+        $ctx = $this->empresaLedgerActiva();
+        if (isset($ctx['error'])) {
+            return $ctx['error'];
+        }
+
+        return response()->json(
+            $custodiaService->listarDevolucionesConsigna($request, $ctx['id_empresa']),
+            200
+        );
+    }
+
+    public function devolucionesCompra(Request $request, ConsignaCustodiaService $custodiaService)
+    {
+        $ctx = $this->empresaLedgerActiva();
+        if (isset($ctx['error'])) {
+            return $ctx['error'];
+        }
+
+        return response()->json(
+            $custodiaService->listarDevolucionesCompraConsigna($request, $ctx['id_empresa']),
+            200
+        );
+    }
+
+    public function exportarDevolucionesCompra(Request $request)
+    {
+        $ctx = $this->empresaLedgerActiva();
+        if (isset($ctx['error'])) {
+            return $ctx['error'];
+        }
+        if ($rechazo = $this->validarProveedorParaExport($request)) {
+            return $rechazo;
+        }
+
+        $export = new ConsignaCustodiaComprasDevolucionesExport();
+        $export->filter($request);
+
+        return Excel::download($export, 'reporte-devoluciones-consigna-compra.xlsx');
+    }
+
+    public function index(Request $request, ConsignaCustodiaService $custodiaService)
+    {
+        $user = auth()->user();
+        if (! $user?->id_empresa) {
+            return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
+        }
+
+        $empresa = $user->empresa()->first();
+        if (! $empresa || ! $empresa->isModuloConsignacionesLedgerActivo()) {
+            return response()->json(['error' => 'Módulo de consignaciones no activo para esta empresa'], 403);
+        }
+
+        return response()->json(
+            $custodiaService->listar($request, (int) $user->id_empresa),
+            200
+        );
+    }
+
+    public function conteo(
+        Request $request,
+        ConsignaMovimientoService $movimientoService,
+        ConsignaCustodiaService $custodiaService
+    ) {
+        $user = auth()->user();
+        if (! $user?->id_empresa) {
+            return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
+        }
+
+        $empresa = $user->empresa()->first();
+        if (! $empresa || ! $empresa->isModuloConsignacionesLedgerActivo()) {
+            return response()->json(['error' => 'Módulo de consignaciones no activo para esta empresa'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'id_cliente' => 'required|integer',
+            'id_producto' => 'required|integer',
+            'id_bodega' => 'required|integer',
+            'cantidad_fisica' => 'required|numeric|min:0',
+            'nota' => 'nullable|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
+        $idEmpresa = (int) $user->id_empresa;
+        $idCliente = (int) $request->id_cliente;
+        $idProducto = (int) $request->id_producto;
+        $idBodega = (int) $request->id_bodega;
+        $fisica = (float) $request->cantidad_fisica;
+
+        $sistema = (float) ConsignaCustodia::query()
+            ->forEmpresa($idEmpresa)
+            ->where('id_cliente', $idCliente)
+            ->where('id_producto', $idProducto)
+            ->where('id_bodega', $idBodega)
+            ->value('cantidad');
+
+        $delta = $fisica - $sistema;
+        if (abs($delta) < 0.00001) {
+            return response()->json([
+                'ok' => true,
+                'mensaje' => 'El conteo coincide con el sistema; no hay ajuste.',
+                'cantidad_sistema' => $sistema,
+            ], 200);
+        }
+
+        $nota = $request->input('nota')
+            ?: sprintf('Conteo físico: sistema %.4f, contado %.4f', $sistema, $fisica);
+
+        $movimiento = $movimientoService->registrar($idEmpresa, [
+            'tipo' => ConsignaMovimientoTipoConstants::AJUSTE_CONSIGNA,
+            'cantidad' => $delta,
+            'id_producto' => $idProducto,
+            'id_bodega' => $idBodega,
+            'id_cliente' => $idCliente,
+            'nota' => $nota,
+            'idempotency_key' => 'conteo-' . $idCliente . '-' . $idProducto . '-' . $idBodega . '-' . now()->format('YmdHis'),
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'cantidad_sistema' => $sistema,
+            'cantidad_fisica' => $fisica,
+            'delta' => $delta,
+            'movimiento' => $movimiento,
+        ], 200);
+    }
+}

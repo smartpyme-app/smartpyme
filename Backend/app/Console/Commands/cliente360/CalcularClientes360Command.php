@@ -24,6 +24,13 @@ class CalcularClientes360Command extends Command
     {
         $tiempoInicio = microtime(true);
 
+        // Lectura sin bloqueos: con REPEATABLE READ, los INSERT ... SELECT FROM ventas ponen
+        // bloqueos compartidos sobre las ventas que leen y las ventas nuevas esperan (hasta 45 s
+        // en noviembre). Con READ COMMITTED la lectura es una foto consistente que no bloquea.
+        if (in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+            DB::statement('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED');
+        }
+
         $idCliente = $this->option('cliente');
         $tipo = $this->option('tipo') ?? 'all';
         $force = $this->option('force');

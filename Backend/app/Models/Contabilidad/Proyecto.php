@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use JWTAuth;
+use Illuminate\Support\Facades\Auth;
 
 class Proyecto extends Model {
     use SoftDeletes;
@@ -28,18 +29,19 @@ class Proyecto extends Model {
 
     protected static function booted()
     {
-        $usuario = JWTAuth::parseToken()->authenticate();
-
-        if ($usuario){
-            static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
-                $builder->where('id_empresa', $usuario->id_empresa);
-            });
-        }
-        
+        // El usuario se resuelve al consultar (no al cargar el modelo): sin token (reportes
+        // automáticos, consola) JWTAuth::parseToken() lanzaba "The token could not be parsed".
+        // Sin usuario no se agrega filtro; los reportes filtran por id_empresa explícitamente.
+        static::addGlobalScope('empresa', function (Builder $builder) {
+            $usuario = Auth::guard('api')->user() ?? Auth::user();
+            if ($usuario) {
+                $builder->where($builder->getModel()->getTable() . '.id_empresa', $usuario->id_empresa);
+            }
+        });
     }
 
     public function getNombreClienteAttribute()
-    {   $cliente = $this->cliente()->first();
+    {   $cliente = $this->relationLoaded('cliente') ? $this->cliente : $this->cliente()->first();
         if ($cliente) {
             return $cliente->nombreParaDocumento();
         }

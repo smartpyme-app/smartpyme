@@ -457,7 +457,20 @@ export class MHService {
     }
 
     tieneDteInvalidacion(registro: any): boolean {
-        return !!(registro?.tiene_dte_invalidacion || registro?.dte_invalidacion || registro?.dte_invalidacion_en_s3);
+        if (Number(registro?.tiene_dte_invalidacion) === 1) {
+            return true;
+        }
+        if (registro?.dte_invalidacion_en_s3) {
+            return true;
+        }
+        const inv = registro?.dte_invalidacion;
+        if (inv && typeof inv === 'object') {
+            return Object.keys(inv).length > 0;
+        }
+        if (typeof inv === 'string') {
+            return inv.trim().length > 2;
+        }
+        return false;
     }
 
 }

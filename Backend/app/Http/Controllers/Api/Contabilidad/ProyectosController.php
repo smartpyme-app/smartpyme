@@ -54,9 +54,14 @@ class ProyectosController extends Controller
     public function list()
     {
 
-        $proyectos = Proyecto::orderBy('nombre', 'asc')
+        // Listado para selectores: sólo nombre y cliente. Los totales (6 sumas por proyecto
+        // sobre ventas, compras, gastos y presupuestos) se calculan en el detalle, no aquí.
+        $proyectos = Proyecto::with('cliente')
+            ->orderBy('nombre', 'asc')
             ->where('enable', true)
             ->get();
+        $proyectos->each->setAppends(['nombre_cliente']);
+        $proyectos->each->makeHidden('cliente');
 
         return Response()->json($proyectos, 200);
     }
@@ -65,6 +70,10 @@ class ProyectosController extends Controller
     {
 
         $proyecto = Proyecto::where('id', $id)->with('compras', 'ventas.abonos', 'cotizaciones', 'gastos', 'presupuestos')->firstOrFail();
+        // La pantalla del proyecto no usa el DTE. Sin esto, cada venta/compra con el DTE en S3 lo
+        // descargaba al convertir a JSON (una petición a S3 por documento).
+        $proyecto->ventas->each->sinDescargarDteDeS3()->makeHidden(['dte', 'dte_invalidacion']);
+        $proyecto->compras->each->sinDescargarDteDeS3()->makeHidden(['dte', 'dte_invalidacion']);
         return Response()->json($proyecto, 200);
     }
 

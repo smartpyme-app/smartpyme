@@ -1,0 +1,3 @@
+# Los respaldos nunca se suben al repositorio (tienen datos de clientes)
+*
+!.gitignore

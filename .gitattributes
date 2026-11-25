@@ -1,0 +1,9 @@
+# Archivos que se ejecutan o leen dentro de contenedores Linux: siempre con saltos de línea LF,
+# aunque el repositorio se clone en Windows (si no, los scripts fallan con "\r: command not found").
+*.sh                  text eol=lf
+docker/**             text eol=lf
+docker-compose.yml    text eol=lf
+**/Dockerfile         text eol=lf
+**/.dockerignore      text eol=lf
+Backend/artisan       text eol=lf
+Backend/.env*.example text eol=lf

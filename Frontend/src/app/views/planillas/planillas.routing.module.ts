@@ -1,6 +1,5 @@
 import {NgModule} from '@angular/core';
 import {RouterModule, Routes} from '@angular/router';
-import {LayoutComponent} from '../../layout/layout.component';
 import {PermissionGuard} from '../../guards/permission.guard';
 import {PlanillasComponent} from './planillas.component';
 import {EmpleadosComponent} from './empleados/empleados.component';
@@ -16,7 +15,6 @@ import { PrestamosComponent } from './prestamos/prestamos.component';
 const routes: Routes = [
   {
     path: 'planilla',
-    component: LayoutComponent,
     title: 'Planillas',
     children: [
       {path: '', component: PlanillasComponent, title: 'Planillas', canActivate: [PermissionGuard], data: { permission: 'planilla.registros.ver' }},

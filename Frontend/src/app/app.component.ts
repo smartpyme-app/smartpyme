@@ -1,7 +1,9 @@
 import { Component, OnInit, ViewChild, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { NavigationEnd, NavigationError, Router, RouterModule } from '@angular/router';
+import { filter, take } from 'rxjs/operators';
+import Swal from 'sweetalert2';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { SwUpdate } from '@angular/service-worker';
@@ -37,6 +39,8 @@ export class AppComponent implements OnInit {
     modalRefEndTour!: BsModalRef;
 
     private destroyRef = inject(DestroyRef);
+    private router = inject(Router);
+    private actualizacionPendiente = false;
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
@@ -56,14 +60,88 @@ export class AppComponent implements OnInit {
                 .pipe(this.untilDestroyed())
                 .subscribe((event: any) => {
                     if (event.type === 'VERSION_READY') {
-                        // if (confirm('Hay una nueva versión disponible. ¿Quieres actualizar?')) {
-                          this.updates.activateUpdate().then(() => document.location.reload());
-                        // }
+                        this.avisarNuevaVersion();
                     }
                 });
+            // La versión en caché quedó inutilizable (archivos ya no disponibles): recargar.
+            this.updates.unrecoverable
+                .pipe(this.untilDestroyed())
+                .subscribe(() => document.location.reload());
         }
+
+        this.router.events
+            .pipe(filter((e): e is NavigationError => e instanceof NavigationError), this.untilDestroyed())
+            .subscribe((e) => this.recuperarSiFallaCargaDeModulo(e));
+    }
+
+    /**
+     * Los módulos se descargan bajo demanda (ngsw-config: installMode lazy). Si después de un
+     * deploy el usuario sigue en la versión anterior y entra a un módulo que no tenía descargado,
+     * ese archivo ya no existe en el servidor (ChunkLoadError). Se recarga directo en la pantalla
+     * destino, que carga la versión nueva. Como máximo una vez cada 30 s para no entrar en ciclo.
+     */
+    private recuperarSiFallaCargaDeModulo(e: NavigationError): void {
+        const err: any = e.error;
+        const mensaje = String(err?.message ?? err ?? '') + ' ' + String(err?.name ?? '');
+        if (!/ChunkLoadError|Loading chunk|dynamically imported module|Importing a module script failed|error loading dynamically imported/i.test(mensaje)) {
+            return;
+        }
+        const clave = 'SP_recarga_por_modulo';
+        let ultima = 0;
+        try {
+            ultima = Number(sessionStorage.getItem(clave) || 0);
+        } catch {
+            /* sin sessionStorage */
+        }
+        if (Date.now() - ultima < 30_000) {
+            return;
+        }
+        try {
+            sessionStorage.setItem(clave, String(Date.now()));
+        } catch {
+            /* sin sessionStorage */
+        }
+        window.location.assign(e.url);
     }
     
+
+    /**
+     * Hay una versión nueva descargada. No se recarga sola (el usuario podría estar a
+     * mitad de una venta): se le pregunta. "Más tarde" (o si otra alerta cierra este aviso)
+     * → se actualiza al cambiar de pantalla, cuando ya no hay nada a medias en la actual.
+     */
+    private avisarNuevaVersion(): void {
+        if (this.actualizacionPendiente) {
+            return;
+        }
+        this.actualizacionPendiente = true;
+        Swal.fire({
+            toast: true,
+            position: 'bottom-end',
+            icon: 'info',
+            title: 'Hay una nueva versión de SmartPyme',
+            text: 'Actualiza para obtener las mejoras. Si eliges "Más tarde", se actualizará al cambiar de pantalla.',
+            showConfirmButton: true,
+            showCancelButton: true,
+            confirmButtonText: 'Actualizar ahora',
+            cancelButtonText: 'Más tarde',
+            timer: undefined,
+        }).then(resultado => {
+            if (resultado.isConfirmed) {
+                this.aplicarActualizacion();
+                return;
+            }
+            this.router.events
+                .pipe(filter(e => e instanceof NavigationEnd), take(1), this.untilDestroyed())
+                .subscribe(() => this.aplicarActualizacion());
+        });
+    }
+
+    private aplicarActualizacion(): void {
+        this.updates.activateUpdate()
+            .catch(() => undefined)
+            .then(() => document.location.reload());
+    }
 
     ngOnInit() {
         this.configurePace();

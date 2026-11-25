@@ -12,6 +12,7 @@ use App\Models\Inventario\Kardex;
 use App\Models\Inventario\Inventario;
 use App\Models\Admin\Empresa;
 use App\Http\Requests\Inventario\Traslados\StoreTrasladoRequest;
+use App\Services\Inventario\ConsignaMovimientoService;
 
 class TrasladosController extends Controller
 {
@@ -100,6 +101,18 @@ class TrasladosController extends Controller
                     $destino->save();
                     $destino->kardex($traslado, $detalle['cantidad']);
 
+                    $cantidadConsigna = (float) ($detalle['cantidad_consigna'] ?? 0);
+                    if ($cantidadConsigna > 0) {
+                        app(ConsignaMovimientoService::class)->trasladoConsignaEntreBodegas(
+                            (int) $traslado->id_empresa,
+                            (int) $traslado->id,
+                            (int) $detalle['id_producto'],
+                            min($cantidadConsigna, (float) $detalle['cantidad']),
+                            (int) $traslado->id_bodega_de,
+                            (int) $traslado->id_bodega,
+                            $traslado->fecha
+                        );
+                    }
 
             }
         }

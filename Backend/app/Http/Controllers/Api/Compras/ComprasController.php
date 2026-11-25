@@ -41,6 +41,7 @@ use Illuminate\Support\Facades\Log;
 use App\Constants\DocumentoConstants;
 use App\Exceptions\Compras\DocumentoImportException;
 use App\Services\Compras\CodigoGeneracionDuplicadoFinder;
+use App\Services\Inventario\ConsignaMovimientoService;
 
 class ComprasController extends Controller
 {
@@ -54,8 +55,15 @@ class ComprasController extends Controller
             $columns[$dteIndex] = DB::raw("IF(COALESCE(compras.dte_s3_key,'') <> '', NULL, compras.dte) as dte");
         }
 
+        $relations = ['proveedor', 'usuario', 'sucursal', 'proyecto'];
+        if ($request->has('es_retaceo')) {
+            $relations[] = 'retaceo';
+        }
+
         $compras = ComprasListQuery::apply(Compra::select($columns), $request)
-                        ->with(['proveedor', 'usuario', 'sucursal', 'proyecto', 'empresa'])
+                        // Sin 'empresa': era la misma en todas las filas y nadie la usa en el listado
+                        // (los DTE recargan la compra con su empresa en el servidor).
+                        ->with($relations)
                         ->withSum(['abonos' => function ($query) {
                             $query->where('estado', 'Confirmado');
                         }], 'total')
@@ -63,6 +71,9 @@ class ComprasController extends Controller
                             $query->where('enable', 1);
                         }], 'total')
                         ->paginate($request->paginate);
+
+        // Igual que en ventas: no descargar de S3 los DTE migrados al serializar el listado.
+        $compras->getCollection()->each->sinDescargarDteDeS3();
 
         return Response()->json($compras, 200);
            
@@ -467,6 +478,15 @@ class ComprasController extends Controller
                         $inventario->kardex($compra, $cantidadBaseInv);
                     }
 
+                    // ponytail: solo en alta de compra consigna; ediciones no re-disparan entrada ledger
+                    if (! $request->id && $compra->estado === 'Consigna') {
+                        app(ConsignaMovimientoService::class)->entradaProveedorDesdeCompra(
+                            $compra,
+                            $detalle,
+                            (float) $cantidadBaseInv
+                        );
+                    }
+
                 }
 
 
@@ -625,7 +645,10 @@ class ComprasController extends Controller
             $tipoDocumentoConsignaOriginal = $compra->tipo_documento;
             $referenciaConsignaOriginal = $compra->referencia;
 
-            if ($compra->total != $request->total) {
+            $lotesDetalleAntes = $compra->detalles->pluck('lote_id', 'id');
+            $esPagoParcial = round((float) $compra->total, 2) > round((float) $request->total, 2);
+
+            if ($esPagoParcial) {
                 $consigna = $compra->replicate();
                 $consigna->tipo_documento = $tipoDocumentoConsignaOriginal;
                 $consigna->referencia = $referenciaConsignaOriginal;
@@ -648,6 +671,8 @@ class ComprasController extends Controller
                         $detalle_consigna->cantidad = $detalle_compra->cantidad - $detalle['cantidad'];
                         $detalle_consigna->total = $detalle_consigna->costo * $detalle_consigna->cantidad;
                         $detalle_consigna->id_compra = $consigna->id;
+                        $detalle_consigna->lote_id = $detalle_compra->lote_id
+                            ?? ($detalle['lote_id'] ?? null);
                         $detalle_consigna->save();
                     }
                 }
@@ -663,7 +688,14 @@ class ComprasController extends Controller
                         $det->total = $detalle['cantidad'] * $detalle['costo'];
                         $det->descuento = 0;
                         $det->id_compra = $compra->id;
+                        $det->lote_id = $detalle['lote_id']
+                            ?? ($lotesDetalleAntes[(int) ($detalle['id'] ?? 0)] ?? null);
                         $det->save();
+                        app(ConsignaMovimientoService::class)->liquidacionProveedorDesdeCompra(
+                            $compra,
+                            $det,
+                            (float) $detalle['cantidad']
+                        );
                     }
                 }
             }
@@ -678,6 +710,15 @@ class ComprasController extends Controller
             $compra->iva_retenido = $request->iva_retenido ?? 0;
             $compra->descuento = $request->descuento ?? $compra->descuento;
             $this->aplicarReglasCompraSinIvaFiscal($compra);
+            $etiquetaRemision = $tipoDocumentoConsignaOriginal . ' #' . $referenciaConsignaOriginal;
+            $prefijoObservacion = $esPagoParcial
+                ? 'Pago parcial de remisión en consigna'
+                : 'Pago de remisión en consigna';
+            $compra->observaciones = $this->anexarObservacionRemisionConsignaCompra(
+                $request->observaciones ?? $compra->observaciones,
+                $prefijoObservacion . ': ' . $etiquetaRemision
+            );
+
             $compra->fecha = $request->fecha;
             $compra->es_consigna = true;
             $compra->estado = 'Pagada';
@@ -799,7 +840,20 @@ class ComprasController extends Controller
                         ->orWhere('observaciones', 'like', $buscador);
                 });
             })
+            ->when($request->con_ajuste == 1 || $request->con_ajuste === '1', function ($query) {
+                return $query->whereHas('devoluciones', function ($q) {
+                    $q->where('enable', 1);
+                });
+            })
+            ->when($request->con_ajuste === '0' || $request->con_ajuste === 0, function ($query) {
+                return $query->whereDoesntHave('devoluciones', function ($q) {
+                    $q->where('enable', 1);
+                });
+            })
             ->where('cotizacion', 0)
+            ->with(['devolucionesNcNd' => function ($query) {
+                $query->select('id', 'id_compra', 'fecha', 'tipo_documento', 'total', 'enable');
+            }])
             ->withSum(['abonos' => function ($query) {
                 $query->where('estado', 'Confirmado');
             }], 'total')
@@ -1001,7 +1055,9 @@ class ComprasController extends Controller
 
                             $query->whereBetween('fecha', [$fechaInicio, $fechaFin]);
                         })
-                        ->whereDoesntHave('devoluciones')
+                        ->whereDoesntHave('devoluciones', function ($q) {
+                            $q->where('enable', 1);
+                        })
                         ->orderBy('fecha', 'DESC')
                         ->get();
 
@@ -1148,8 +1204,10 @@ class ComprasController extends Controller
 
     public function generarDoc($id){
         $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'empresa', 'impuestos.impuesto')->firstOrFail();
+        $empresa = $compra->empresa ?? Empresa::find(Auth::user()->id_empresa);
+        $mostrar_lotes_impresion = \App\Support\Inventario\ImpresionLoteEnDocumento::prepararCompra($compra, $empresa);
 
-        $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.compra', compact('compra'));
+        $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.compra', compact('compra', 'mostrar_lotes_impresion'));
         $pdf->setPaper('US Letter', 'portrait');
         return $pdf->stream('compra-' . $compra->id . '.pdf');
 
@@ -1320,6 +1378,18 @@ class ComprasController extends Controller
             $fecha,
             $allowManualRate
         ));
+    }
+
+    private function anexarObservacionRemisionConsignaCompra(?string $actual, string $sufijo, int $maxLen = 255): string
+    {
+        $actual = trim((string) $actual);
+        if ($actual !== '' && str_contains($actual, $sufijo)) {
+            return $actual;
+        }
+
+        $nuevo = $actual === '' ? $sufijo : $actual . ' — ' . $sufijo;
+
+        return mb_substr($nuevo, 0, $maxLen);
     }
 
     private function incrementarCorrelativoDocumentoCompraSiAplica(Compra $compra): void

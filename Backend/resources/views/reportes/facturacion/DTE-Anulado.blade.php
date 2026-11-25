@@ -67,7 +67,9 @@
                     </td>
                     <td style="width: 50%;">
                         <p><b>Fecha y Hora de Generación:</b>
-                            @php($fechaEvento = $DTE['identificacion']['fecEmi'] ?? $DTE['identificacion']['fecAnula'] ?? null)
+                            @php
+                                $fechaEvento = $DTE['identificacion']['fecEmi'] ?? $DTE['identificacion']['fecAnula'] ?? null;
+                            @endphp
                             @if (!empty($fechaEvento))
                                 {{ \Carbon\Carbon::parse($fechaEvento . ' ' . ($DTE['identificacion']['horEmi'] ?? $DTE['identificacion']['horAnula'] ?? '00:00:00'))->format('d/m/Y H:i:s') }}
                             @endif

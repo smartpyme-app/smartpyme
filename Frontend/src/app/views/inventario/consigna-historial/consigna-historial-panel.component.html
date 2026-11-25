@@ -1,0 +1,129 @@
+@if (!terceroListo()) {
+  <p class="text-muted text-center py-4 mb-0">
+    Seleccione {{ alcance === 'ventas' ? 'un cliente' : 'un proveedor' }} en el buscador superior para ver el historial.
+  </p>
+} @else {
+  @if (!fechasDesdePadre) {
+    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-end mb-3">
+      <div class="d-flex flex-wrap gap-2 align-items-end">
+        <div>
+          <label class="form-label small text-muted mb-1">Del</label>
+          <input type="date" class="form-control form-control-sm" [(ngModel)]="fechas.fecha_ini" name="fecha_ini_historial" title="Vacío = desde el inicio" />
+        </div>
+        <div>
+          <label class="form-label small text-muted mb-1">Al</label>
+          <input type="date" class="form-control form-control-sm" [(ngModel)]="fechas.fecha_fin" name="fecha_fin_historial" />
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" [disabled]="loading" (click)="cargar()">
+          @if (!loading) {
+            <i class="fa fa-search"></i>
+          } @else {
+            <i class="fa fa-ellipsis-h"></i>
+          }
+        </button>
+      </div>
+      @if (apiService.hasPermission(permisoExportar)) {
+        <div class="d-flex gap-1">
+          @if (rutaExportarExcel) {
+            <button type="button" class="btn btn-default btn-sm" [disabled]="downloading" (click)="exportarExcel()" title="Excel">
+              <img appLazyImage="/assets/icons/download.png" class="icon" alt="Excel">
+            </button>
+          }
+          <button type="button" class="btn btn-default btn-sm" [disabled]="downloading" (click)="exportar()" title="Descargar PDF">
+            <img appLazyImage="/assets/icons/download.png" class="icon" alt="PDF">
+          </button>
+        </div>
+      }
+    </div>
+  }
+
+  @if (terceroNombre) {
+    <p class="text-center text-uppercase fw-semibold mb-2 small">Productos en consigna — {{ terceroNombre }}</p>
+  }
+
+  <div class="table-responsive mb-4">
+    <table class="table table-sm table-bordered align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Código</th>
+          <th>Producto</th>
+          @if (incluirLote) {
+            <th>Lote</th>
+            <th>Vence</th>
+          }
+          <th>Bodega</th>
+          <th class="text-end">{{ etiquetaEnviadas() }}</th>
+          <th class="text-end">{{ etiquetaFacturadas() }}</th>
+          <th class="text-end">Devueltas</th>
+          <th class="text-end">Disp.</th>
+          <th class="text-end">Pr/un</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading) {
+          <tr>
+            <td [attr.colspan]="incluirLote ? 10 : 8" class="text-center text-muted py-3">Cargando…</td>
+          </tr>
+        } @else if (resumen.length === 0) {
+          <tr>
+            <td [attr.colspan]="incluirLote ? 10 : 8" class="text-center text-muted py-3">Sin productos en consigna con saldo disponible.</td>
+          </tr>
+        } @else {
+          @for (fila of resumen; track fila.id_producto + '-' + (fila.lote_id ?? 0)) {
+            <tr>
+              <td>{{ fila.codigo }}</td>
+              <td>{{ fila.producto }}</td>
+              @if (incluirLote) {
+                <td>{{ fila.lote }}</td>
+                <td>{{ fila.vence | date:'dd/MM/yyyy' }}</td>
+              }
+              <td>{{ fila.bodega }}</td>
+              <td class="text-end">{{ fila.enviadas }}</td>
+              <td class="text-end">{{ fila.facturadas }}</td>
+              <td class="text-end">{{ fila.devueltas }}</td>
+              <td class="text-end fw-semibold">{{ fila.disponible }}</td>
+              <td class="text-end">{{ fila.precio_unitario | currency }}</td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <p class="text-center fw-semibold mb-2 small">Historial de movimientos</p>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Fecha</th>
+          <th>Tipo</th>
+          <th>Producto</th>
+          <th class="text-end">Cant.</th>
+          @if (incluirLote) {
+            <th>Lote</th>
+          }
+          <th>Notas</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (!loading && movimientos.length === 0) {
+          <tr>
+            <td [attr.colspan]="incluirLote ? 6 : 5" class="text-center text-muted py-3">Sin movimientos.</td>
+          </tr>
+        }
+        @for (m of movimientos; track m.fecha + m.tipo + m.producto) {
+          <tr>
+            <td>{{ m.fecha | date:'dd/MM/yyyy' }}</td>
+            <td><span class="badge bg-secondary">{{ m.tipo }}</span></td>
+            <td>{{ m.producto }}</td>
+            <td class="text-end">{{ m.cantidad }}</td>
+            @if (incluirLote) {
+              <td>{{ m.lote }}</td>
+            }
+            <td class="small">{{ m.notas }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

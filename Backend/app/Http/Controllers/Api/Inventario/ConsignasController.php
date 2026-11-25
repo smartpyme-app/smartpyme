@@ -15,56 +15,40 @@ use App\Exports\ConsignasExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\Inventario\Consignas\StoreAjusteRequest;
 use App\Services\Inventario\ConsignaDisponibleService;
+use App\Services\Inventario\ConsignaProductosVentaListadoService;
+use App\Services\Inventario\ConsignaSeguimientoVentasService;
+use App\Models\Admin\Empresa;
+use Illuminate\Support\Facades\Auth;
 
 class ConsignasController extends Controller
 {
     
 
-    public function index() {
+    public function index(Request $request)
+    {
+        $todos = $this->coleccionProductosEnConsigna($request);
+        $perPage = min(max((int) ($request->input('paginate', 25)), 1), 100);
+        $page = max((int) ($request->input('page', 1)), 1);
+        $total = $todos->count();
+        $slice = $todos->forPage($page, $perPage)->values();
 
-        $detallesDeVenta = DetalleVenta::whereHas('venta', function($query){
-                                $query->where('estado', 'Consigna');
-                            })
-                            ->with('producto.categoria', 'venta')
-                            ->get()
-                            ->groupBy('id_producto');
+        return response()->json([
+            'data' => $slice,
+            'current_page' => $page,
+            'last_page' => max((int) ceil($total / $perPage), 1),
+            'per_page' => $perPage,
+            'total' => $total,
+            'from' => $total === 0 ? null : ($page - 1) * $perPage + 1,
+            'to' => $total === 0 ? null : min($page * $perPage, $total),
+        ], 200);
+    }
 
+    /** @return \Illuminate\Support\Collection<int, array<string, mixed>> */
+    private function coleccionProductosEnConsigna(Request $request)
+    {
+        $empresa = Empresa::query()->find(Auth::user()->id_empresa);
 
-        $detalles = collect();
-
-        foreach ($detallesDeVenta as $detallesGroup) {
-            $ventas = collect();
-            
-            foreach ($detallesGroup as $detalle) {
-                $ventas->push([
-                    'fecha'         => $detalle->venta->fecha,
-                    'cliente'       => $detalle->venta->nombre_cliente,
-                    'cantidad'      => $detalle->cantidad,
-                    'id'            => $detalle->venta->id,
-                    'nombre_documento'            => $detalle->venta->nombre_documento,
-                    'correlativo'            => $detalle->venta->correlativo,
-                    'fecha_pago'    => $detalle->venta->fecha_pago,
-                    'uuid'          => Crypt::encrypt($detalle->venta->id)
-                ]);
-            }
-            $producto = $detallesGroup[0]->producto()->first();
-
-            if ($producto) {
-                $detalles->push([
-                    'id'                 => $producto->id,
-                    'nombre'             => $producto->nombre,
-                    'img'                => $producto->img,
-                    'nombre_categoria'   => $producto->nombre_categoria,
-                    'precio'             => $detallesGroup[0]->precio,
-                    'codigo'             => $producto->codigo,
-                    'stock'              => $detallesGroup->sum('cantidad'),
-                    'ventas'             => $ventas,
-                ]); 
-            }
-        }
-
-        return Response()->json($detalles, 200);
-    
+        return app(ConsignaProductosVentaListadoService::class)->coleccion($request, $empresa);
     }
 
 
@@ -150,7 +134,64 @@ class ConsignasController extends Controller
         $consignas = new ConsignasExport();
         $consignas->filter($request);
 
-        return Excel::download($consignas, 'consignas.xlsx');
+        return Excel::download($consignas, 'productos-en-consigna.xlsx');
+    }
+
+    /** PDF toma de inventario en consigna (estilo Wellmeds, sin historial de movimientos). */
+    public function exportarTomaInventarioConsignaPdf(Request $request)
+    {
+        $empresa = Empresa::query()->findOrFail(Auth::user()->id_empresa);
+        $data = app(ConsignaSeguimientoVentasService::class)->seccionesTomaInventario(
+            $request,
+            (int) $empresa->id,
+            $empresa
+        );
+
+        if ($data['secciones'] === []) {
+            return response()->json(['error' => 'No hay clientes con consigna para generar el reporte.'], 404);
+        }
+
+        $nombre = $request->filled('id_cliente')
+            ? 'toma-inventario-consigna-cliente-' . (int) $request->id_cliente . '.pdf'
+            : 'toma-inventario-consigna-todos.pdf';
+
+        $pdf = app('dompdf.wrapper')->loadView('reportes.inventario.consigna-toma-inventario', [
+            'empresa' => $empresa,
+            'secciones' => $data['secciones'],
+        ]);
+
+        return $pdf->download($nombre);
+    }
+
+    public function ventasPorProducto(int $idProducto)
+    {
+        $request = request();
+        $loteId = $request->filled('lote_id') ? (int) $request->lote_id : null;
+
+        $rows = $this->coleccionProductosEnConsigna($request)->first(function (array $row) use ($idProducto, $loteId) {
+            if ((int) ($row['id'] ?? 0) !== $idProducto) {
+                return false;
+            }
+            if (! empty($row['agrupar_por_lote'])) {
+                return (int) ($row['lote_id'] ?? 0) === (int) ($loteId ?? 0);
+            }
+
+            return true;
+        });
+
+        if (! $rows) {
+            return response()->json(['ventas' => [], 'stock' => 0], 200);
+        }
+
+        return response()->json([
+            'id' => $rows['id'],
+            'nombre' => $rows['nombre'],
+            'stock' => $rows['stock'],
+            'lote_id' => $rows['lote_id'] ?? null,
+            'lote_numero' => $rows['lote_numero'] ?? null,
+            'lote_vencimiento' => $rows['lote_vencimiento'] ?? null,
+            'ventas' => $rows['ventas'] ?? [],
+        ], 200);
     }
 
     public function indexCompras()
@@ -163,6 +204,7 @@ class ConsignasController extends Controller
                 'bodega:id,nombre',
                 'sucursal:id,nombre',
                 'detalles.producto:id,nombre,codigo',
+                'detalles.lote:id,numero_lote,fecha_vencimiento',
             ])
             ->orderByDesc('fecha')
             ->orderByDesc('id')
@@ -191,6 +233,9 @@ class ConsignasController extends Controller
                         'cantidad' => $detalle->cantidad,
                         'costo' => $detalle->costo,
                         'total' => $detalle->total,
+                        'lote_id' => $detalle->lote_id,
+                        'lote_numero' => $detalle->lote?->numero_lote,
+                        'lote_vencimiento' => $detalle->lote?->fecha_vencimiento?->format('Y-m-d'),
                     ];
                 })->values(),
             ];

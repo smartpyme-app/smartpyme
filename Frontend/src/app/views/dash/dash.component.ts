@@ -42,7 +42,11 @@ export class DashComponent implements OnInit {
         //     this.router.navigate(['/citas']);
         // }
 
-        if(this.apiService.validateRole('usuario_ventas', true)){
+        if (
+          this.apiService.validateRole('usuario_ventas', true) ||
+          this.apiService.validateRole('ventas_limitado', true) ||
+          this.apiService.isVentasLimitado()
+        ) {
             this.router.navigate(['/vendedor/ventas']);
         }
 

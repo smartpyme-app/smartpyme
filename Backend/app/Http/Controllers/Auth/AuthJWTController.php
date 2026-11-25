@@ -33,6 +33,7 @@ use App\Models\Suscripcion;
 use App\Services\Suscripcion\SuscripcionService;
 use App\Services\Auth\AuthService;
 use App\Services\Contadores\ContadorSesionEmpresa;
+use App\Services\Admin\RolePermissionService;
 use App\Models\PaisConfiguracion;
 use App\Services\Payment\N1coService;
 use App\Services\Suscripcion\CancelacionSuscripcionService;
@@ -49,19 +50,22 @@ class AuthJWTController extends Controller
     private $n1coService;
     private $cancelacionSuscripcionService;
     private $contadorSesionEmpresa;
+    private $rolePermissionService;
 
     public function __construct(
         SuscripcionService $suscripcionService,
         AuthService $authService,
         N1coService $n1coService,
         CancelacionSuscripcionService $cancelacionSuscripcionService,
-        ContadorSesionEmpresa $contadorSesionEmpresa
+        ContadorSesionEmpresa $contadorSesionEmpresa,
+        RolePermissionService $rolePermissionService
     ) {
         $this->suscripcionService = $suscripcionService;
         $this->authService = $authService;
         $this->n1coService = $n1coService;
         $this->cancelacionSuscripcionService = $cancelacionSuscripcionService;
         $this->contadorSesionEmpresa = $contadorSesionEmpresa;
+        $this->rolePermissionService = $rolePermissionService;
     }
 
     public function login(Request $request)
@@ -127,7 +131,15 @@ class AuthJWTController extends Controller
 
         $this->adjuntarAccesoTemporalUsuario($user, $suscripcion);
 
-        return response()->json(['token' => $token, 'user' => $user], 200);
+        $user->load('roles');
+
+        $permissions = $this->rolePermissionService->obtenerPermisosUsuario($user->id);
+
+        return response()->json([
+            'token' => $token,
+            'user' => $user,
+            'permissions' => $permissions,
+        ], 200);
     }
 
     public function logout(Request $request)
@@ -183,7 +195,7 @@ class AuthJWTController extends Controller
     {
         $empresa = Empresa::where('id', $id_empresa)->firstOrFail();
 
-        $fromAddress = config('mail.from.address') ?: (env('MAIL_FROM_ADDRESS') ?: 'no-reply@smartpyme.app');
+        $fromAddress = config('mail.from.address') ?: 'no-reply@smartpyme.app';
 
         if ($empresa->pagos()->count() == 0) {
             Mail::send('mails.bienvenida', ['empresa' => $empresa], function ($m) use ($empresa, $fromAddress) {
@@ -214,7 +226,7 @@ class AuthJWTController extends Controller
         ];
 
         // Notificar
-        $toAddress = env('MAIL_TO_ADDRESS', 'contact@smartpyme.app');
+        $toAddress = config('mail.to_address') ?: 'contact@smartpyme.app';
         Mail::send('mails.notificacion', ['data' => $data], function ($m) use ($data, $fromAddress, $toAddress) {
             $m->from($fromAddress, 'SmartPyme')
                 ->to($toAddress)

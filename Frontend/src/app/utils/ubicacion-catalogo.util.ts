@@ -219,3 +219,21 @@ export function trackUbicacionCod(item: {
   const cod = item?.cod != null ? String(item.cod) : '';
   return mun ? `${dep}-${mun}-${cod}` : `${dep}-${cod}`;
 }
+
+/**
+ * DTE 2.0 (SV): Hacienda exige el distrito en la dirección del receptor.
+ * Si se eligió municipio, el distrito es obligatorio; así no se guarda un cliente/proveedor
+ * que después falla al emitir (generarDTE responde 400 "Falta el distrito…").
+ */
+export function faltaDistritoFeSv(
+  entity: UbicacionGeo | null | undefined,
+  empresa: { facturacion_electronica?: unknown; pais?: unknown } | null | undefined,
+): boolean {
+  if (!entity || !empresa?.facturacion_electronica || empresa?.pais !== 'El Salvador') {
+    return false;
+  }
+  return !codigoVacio(entity.cod_municipio) && codigoVacio(entity.cod_distrito);
+}
+
+export const MENSAJE_FALTA_DISTRITO_FE_SV =
+  'Seleccione el distrito en la dirección. Hacienda lo exige para emitir documentos electrónicos (DTE 2.0).';

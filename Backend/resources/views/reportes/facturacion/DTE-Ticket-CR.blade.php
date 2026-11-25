@@ -44,10 +44,10 @@
     $currency = $documentoFe['currency'] ?? [];
     $monedaCod = strtoupper((string) ($currency['currency_code'] ?? 'CRC'));
     $simbolo = $monedaCod === 'USD' ? 'USD' : '₡';
-    $est = (string) ($documentoFe['establishment'] ?? '');
-    $punto = (string) ($documentoFe['emission_point'] ?? '');
-    $seq = (string) ($documentoFe['sequential'] ?? '');
-    $consecutivo = implode('-', array_filter([$est, $punto, $seq], static fn ($x) => $x !== '' && $x !== null));
+    $consecutivo = \App\Support\FacturacionElectronica\CostaRicaXmlComprobantePdfMapper::formatoConsecutivoParaMostrar(
+        $documentoFe,
+        $tipoDteCodigo ?? null
+    );
     $claveFmt = $feCrPdf['clave_formateada'] ?? (string) $clave;
     $claveSoloDigitos = preg_replace('/\D/', '', (string) $clave);
     $qrPayload = strlen($claveSoloDigitos) >= 40 ? $claveSoloDigitos : 'https://atv.hacienda.go.cr/ATV/frmConsultaFactura.aspx';
@@ -154,10 +154,22 @@
                     <td class="text-right">{{ $simbolo }}{{ number_format((float) ($sum['total'] ?? $venta->total), 2) }}</td>
                 </tr>
             @else
-                @foreach($lines as $line)
+                @foreach($lines as $lineIdx => $line)
                     @if(is_array($line))
                     <tr>
-                        <td>{{ $line['description'] ?? '' }}</td>
+                        <td>
+                            {{ $line['description'] ?? '' }}
+                            @php
+                                $textoServicio = \App\Support\Ventas\VentaPdfLineaDescripcionServicio::textoParaPdf(
+                                    $venta,
+                                    (int) $lineIdx + 1,
+                                    $empresa
+                                );
+                            @endphp
+                            @if ($textoServicio !== '')
+                                <br><small>{!! nl2br(e($textoServicio)) !!}</small>
+                            @endif
+                        </td>
                         <td class="text-center">{{ number_format((float) ($line['quantity'] ?? 0), 2) }}</td>
                         <td class="text-center">{{ $simbolo }}{{ number_format((float) ($line['unit_price'] ?? 0), 2) }}</td>
                         <td class="text-right">{{ $simbolo }}{{ number_format((float) ($line['total'] ?? 0), 2) }}</td>

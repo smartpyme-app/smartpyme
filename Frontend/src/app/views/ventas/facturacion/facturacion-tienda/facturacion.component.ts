@@ -21,6 +21,7 @@ import { ApiService } from '@services/api.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 import { FE_PAIS_CR, FE_PAIS_HN, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import {
+  formatoConsecutivoCr,
   formatoCorrelativoHn,
   nombresDocumentosVentaNormales as nombresVentaPorPais,
 } from '@views/ventas/documentos/documento-nombre-options';
@@ -802,12 +803,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     this.venta.tipo = 'Interna';
     this.venta.estado = 'Pagada';
     this.venta.condicion = 'Contado';
-
-    // Asegurar que usuarios "Ventas Limitado" siempre tengan ventas al contado
-    if (this.apiService.auth_user().tipo === 'Ventas Limitado') {
-      this.venta.credito = false;
-      this.venta.consigna = false;
-    }
 
     this.venta.tipo_operacion = 'Gravada';
     this.venta.tipo_renta = null;
@@ -1720,12 +1715,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     }
 
     public setCredito() {
-        // Prevenir que usuarios "Ventas Limitado" activen ventas al crédito
-        if (this.apiService.auth_user().tipo === 'Ventas Limitado' && this.venta.credito) {
-            this.venta.credito = false;
-            this.alertService.error('Los usuarios de tipo "Ventas Limitado" no pueden crear ventas al crédito.');
-            return;
-        }
         if (this.venta.credito) {
             this.venta.estado = 'Pendiente';
             this.venta.condicion = 'Crédito';
@@ -1956,23 +1945,11 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
                 this.venta.consigna = false;
                 return;
             }
-            if (this.venta.detalles?.length) {
-                this.venta.detalles = [];
-                this.alertService.warning(
-                    'Consigna',
-                    'Se vació el detalle. Toda la factura quedará en consigna; no puede mezclar líneas de venta normal y consigna.'
-                );
-                this.sumTotal();
-            }
             this.venta.estado = 'Consigna';
             this.venta.credito = true;
             this.venta.condicion = 'Crédito';
             this.aplicarFiltroDocumentosVenta();
         } else {
-            if (this.venta.detalles?.length) {
-                this.venta.detalles = [];
-                this.sumTotal();
-            }
             this.setCredito();
             this.aplicarFiltroDocumentosVenta();
         }
@@ -2287,7 +2264,14 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         return this.esHondurasFacturacion && !!String(doc?.numero_emision ?? '').trim();
     }
 
+    get mostrarConsecutivoCr(): boolean {
+        return this.esFeCostaRicaFacturacion() && !!String(this.venta?.numero_control ?? '').trim();
+    }
+
     get correlativoDisplay(): string {
+        if (this.mostrarConsecutivoCr) {
+            return formatoConsecutivoCr(this.venta.numero_control);
+        }
         const doc = this.documentoVentaSeleccionado();
         if (this.mostrarCorrelativoHnFormato) {
             return formatoCorrelativoHn(doc.numero_emision, this.venta.correlativo);
@@ -2829,12 +2813,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
     aplicarEstadoConsignaEnVenta(this.venta);
 
-    // Asegurar que usuarios "Ventas Limitado" siempre tengan ventas al contado
-    if (this.apiService.auth_user().tipo === 'Ventas Limitado') {
-      this.venta.credito = false;
-      this.venta.consigna = false;
-    }
-
     if (!this.venta.detalles || !Array.isArray(this.venta.detalles) || this.venta.detalles.length === 0) {
       this.alertService.warning(
         'Faltan productos',
@@ -3183,6 +3161,11 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         nombre_producto: detalle.nombre_producto || detalle.producto?.nombre || detalle.descripcion || '',
         img: detalle.img || detalle.producto?.img,
         costo: detalle.costo ?? detalle.total_costo ?? detalle.producto?.costo ?? 0,
+        precio_iva:
+          detalle.precio_iva ??
+          (detalle.precio_con_iva != null && detalle.precio_con_iva !== ''
+            ? detalle.precio_con_iva
+            : undefined),
       }));
     }
     return venta;

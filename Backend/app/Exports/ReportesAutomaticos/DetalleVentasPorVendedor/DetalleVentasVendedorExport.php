@@ -125,7 +125,23 @@ class DetalleVentasVendedorExport implements WithMultipleSheets
             $ventasVendedor = $this->detalleVentas->where('nombre_vendedor', $vendedor);
             $sheets[] = new DetalleVentasVendedorSheet($vendedor, $ventasVendedor, $this->id_empresa);
         }
-        
+
+        // Sin ventas en el período no había hojas y PhpSpreadsheet fallaba con
+        // "You tried to set a sheet active by the out of bounds index: 0".
+        if (empty($sheets)) {
+            $sheets[] = new class implements \Maatwebsite\Excel\Concerns\FromArray, \Maatwebsite\Excel\Concerns\WithTitle {
+                public function array(): array
+                {
+                    return [['Sin ventas en el período seleccionado.']];
+                }
+
+                public function title(): string
+                {
+                    return 'Sin ventas';
+                }
+            };
+        }
+
         return $sheets;
     }
 }

@@ -6,6 +6,22 @@ class DocumentoConstants
 {
     public const FACTURA_REMISION = 'Factura de remisión';
 
+    /** Devoluciones de mercancía en consigna (ledger v2); no es nota de crédito fiscal. */
+    public const DEVOLUCION_CONSIGNA = 'Devolución de consigna';
+
+    /** Nombres de NC/ND (SV + CR) para indicadores de listado. */
+    public const NOMBRES_NOTA_CREDITO_DEBITO = [
+        'Nota de crédito',
+        'Nota de débito',
+        'Nota de Crédito Electrónica',
+        'Nota de Débito Electrónica',
+    ];
+
+    public static function esDevolucionConsigna(?string $nombre): bool
+    {
+        return $nombre !== null && strcasecmp($nombre, self::DEVOLUCION_CONSIGNA) === 0;
+    }
+
     /** Compras: no generan IVA ni deben incluirse en libros fiscales. */
     public const TIPOS_COMPRA_SIN_IVA_FISCAL = [
         self::FACTURA_REMISION,

@@ -49,7 +49,7 @@
                     <img appLazyImage="/assets/icons/pie-chart.png" class="icon me-2">Inteligencia de Negocios
                 </a>
             </li> -->
-            @if (apiService.validateRole('admin', true) || apiService.validateRole('super_admin', true) ||  apiService.validateRole('usuario_contador', true) && apiService.hasPermission('inteligencia_negocios.ver')) {
+            @if (apiService.puedeVerInteligenciaNegociosMenu()) {
                 <li tourAnchor="tour.reportes" id="tour.reportes" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                     <a [routerLink]="['/reportes']" tooltip="Inteligencia de negocios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 fw-bold">
                         <img appLazyImage="/assets/icons/pie-chart.png" class="icon me-2">Inteligencia de Negocios
@@ -151,7 +151,10 @@
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ordenes/produccion']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/share-2.png" class="icon me-2">Órdenes de producción</a></li>
                             }
                             @if (apiService.canAccederOperacionesInventario() && apiService.hasPermission('ventas.consignas.ver')) {
-                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/consignas/ventas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/package.png" class="icon me-2">Consignas</a></li>
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/consignas/ventas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/package.png" class="icon me-2">Productos en consigna</a></li>
+                            }
+                            @if (apiService.canAccederOperacionesInventario() && apiService.hasPermission('inventario.consigna_kardex.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/consignas/custodia']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/users.png" class="icon me-2">Consignas</a></li>
                             }
                             @if (tieneGiftCardsHabilitada) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gift-cards/consulta']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/money-transaction.png" class="icon me-2">Gift Cards</a></li>
@@ -184,6 +187,9 @@
                             }
                             @if (apiService.canAccederOperacionesInventario() && apiService.hasPermission('compras.consignas.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/consignas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/package.png" class="icon me-2">Consignas</a></li>
+                            }
+                            @if (apiService.canAccederOperacionesInventario() && apiService.hasPermission('inventario.consigna_kardex.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/consigna-kardex']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/book-open.png" class="icon me-2">Kardex consigna</a></li>
                             }
                         </ul>
                     </div>

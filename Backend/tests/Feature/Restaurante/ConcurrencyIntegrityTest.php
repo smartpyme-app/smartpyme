@@ -331,13 +331,137 @@ final class ConcurrencyIntegrityTest extends TestCase
         // Cleanup: anular para revertir stock (usa servicio idempotente)
         Auth::login($this->user);
         try {
+            $req = \Illuminate\Http\Request::create(
+                '/api/restaurante/pedidos/' . $pedido->id . '/anular',
+                'PUT',
+                []
+            );
+            $req->setUserResolver(fn () => $this->user);
             app(\App\Http\Controllers\Api\Restaurante\PedidoRestauranteController::class)
-                ->anular($pedido->id);
+                ->anular($req, $pedido->id);
         } catch (\Throwable $e) {
             // best-effort cleanup
         }
         PedidoRestauranteDetalle::where('pedido_id', $pedido->id)->delete();
         // no borrar kardex histórico; anular debería crear movimiento inverso
+        $pedido->delete();
+    }
+
+    public function test_two_concurrent_anular_pedido_single_inventory_reentry(): void
+    {
+        if (! Schema::hasTable('restaurante_pedidos') || ! Schema::hasTable('kardexs')) {
+            $this->markTestSkipped('Tablas restaurante_pedidos/kardexs no disponibles.');
+        }
+
+        $bodegaId = (int) ($this->user->id_bodega ?: 0);
+        if ($bodegaId <= 0) {
+            $this->markTestSkipped('Usuario sin id_bodega; fixture requerida para confirmar pedido.');
+        }
+
+        $inv = Inventario::query()
+            ->where('id_bodega', $bodegaId)
+            ->where('stock', '>=', 2)
+            ->whereHas('producto', function ($q) {
+                $q->withoutGlobalScope('empresa')
+                    ->where('id_empresa', $this->empresaId)
+                    ->where('enable', 1)
+                    ->where('tipo', '!=', 'Servicio');
+            })
+            ->with(['producto' => fn ($q) => $q->withoutGlobalScope('empresa')])
+            ->orderBy('id_producto')
+            ->first();
+
+        if (! $inv || ! $inv->producto) {
+            $this->markTestSkipped('No hay producto con stock>=2 en bodega del usuario (fixture inventario).');
+        }
+
+        $producto = $inv->producto;
+        $qty = 1.0;
+        $stockAntes = (float) $inv->stock;
+
+        $pedido = PedidoRestaurante::create([
+            'id_empresa' => $this->empresaId,
+            'id_sucursal' => $this->user->id_sucursal,
+            'id_bodega' => $bodegaId,
+            'usuario_id' => $this->user->id,
+            'fecha' => now()->toDateString(),
+            'canal' => 'ht-conc-anular',
+            'estado' => 'borrador',
+            'subtotal' => $producto->precio,
+            'descuento' => 0,
+            'total' => $producto->precio,
+        ]);
+
+        PedidoRestauranteDetalle::create([
+            'pedido_id' => $pedido->id,
+            'producto_id' => $producto->id,
+            'cantidad' => $qty,
+            'precio' => $producto->precio,
+            'descuento' => 0,
+            'subtotal' => $producto->precio,
+            'total' => $producto->precio,
+            'notas' => 'ht-conc-anular',
+        ]);
+
+        Auth::login($this->user);
+        $reqConfirm = \Illuminate\Http\Request::create(
+            '/api/restaurante/pedidos/' . $pedido->id . '/confirmar',
+            'PUT',
+            ['id_bodega' => $bodegaId]
+        );
+        $reqConfirm->setUserResolver(fn () => $this->user);
+        app(\App\Http\Controllers\Api\Restaurante\PedidoRestauranteController::class)
+            ->confirmar($reqConfirm, $pedido->id);
+
+        $stockTrasConfirmar = (float) Inventario::where('id_producto', $producto->id)
+            ->where('id_bodega', $bodegaId)
+            ->value('stock');
+        $this->assertEqualsWithDelta($stockAntes - $qty, $stockTrasConfirmar, 0.001);
+
+        $kardexAnulAntes = (int) DB::table('kardexs')
+            ->where('referencia', $pedido->id)
+            ->where('detalle', 'Anulación pedido pendiente')
+            ->count();
+
+        $results = ConcurrentActorRunner::run('tests/Support/Restaurante/concurrent_actor.php', [
+            [
+                'action' => 'anular_pedido',
+                'user_id' => $this->user->id,
+                'pedido_id' => $pedido->id,
+            ],
+            [
+                'action' => 'anular_pedido',
+                'user_id' => $this->user->id,
+                'pedido_id' => $pedido->id,
+            ],
+        ]);
+
+        $ok = collect($results)->filter(fn ($r) => ($r['json']['ok'] ?? false) === true)->count();
+        $pedido->refresh();
+        $kardexAnulDespues = (int) DB::table('kardexs')
+            ->where('referencia', $pedido->id)
+            ->where('detalle', 'Anulación pedido pendiente')
+            ->count();
+        $stockDespues = (float) Inventario::where('id_producto', $producto->id)
+            ->where('id_bodega', $bodegaId)
+            ->value('stock');
+
+        $this->assertGreaterThanOrEqual(1, $ok, 'Al menos un anular OK. ' . json_encode($results));
+        $this->assertSame('anulado', $pedido->estado);
+        $this->assertNull($pedido->inventario_descontado_at);
+        $this->assertSame(
+            $kardexAnulAntes + 1,
+            $kardexAnulDespues,
+            'Exactamente una entrada kardex "Anulación pedido pendiente". Results=' . json_encode($results)
+        );
+        $this->assertEqualsWithDelta(
+            $stockAntes,
+            $stockDespues,
+            0.001,
+            'Stock debe volver al valor inicial tras una sola anulación lógica.'
+        );
+
+        PedidoRestauranteDetalle::where('pedido_id', $pedido->id)->delete();
         $pedido->delete();
     }
 

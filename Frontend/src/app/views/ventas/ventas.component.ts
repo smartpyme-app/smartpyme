@@ -2,6 +2,7 @@
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
+import { OpcionSelect, opcionesSelect } from '@shared/utils/opciones-select.util';
 import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { PopoverModule } from 'ngx-bootstrap/popover';
@@ -50,6 +51,7 @@ import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electroni
 import { VentaRecurrenciaConfigComponent } from '@shared/modals/venta-recurrencia-config/venta-recurrencia-config.component';
 import { PartidaVentaFlowService } from '@services/contabilidad/partida-venta-flow.service';
 import { ventaEsTicketSinEmisionFe } from '@helpers/empresa.helper';
+import { identificadorDocumentoCr } from '@views/ventas/documentos/documento-nombre-options';
 import {
   puedeAnularVenta,
   puedeCrearVenta,
@@ -61,6 +63,11 @@ import {
   puedeVerDetalleVenta,
   puedeVerDteVenta,
 } from '@views/ventas/ventas-acciones-menu.util';
+import {
+  BadgeDocumentoAjuste,
+  badgesDocumentoAjuste,
+  textoAjusteListado,
+} from '@shared/utils/documento-ajuste-badges.util';
 
 export type VentasExportPeriodoTipo = 'detalles' | 'ventas' | 'general';
 
@@ -174,6 +181,8 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     return this.facturacionElectronica.isCostaRicaFe();
   }
 
+  public readonly identificadorDocumentoCr = identificadorDocumentoCr;
+
   public readonly ventaEsTicketSinEmisionFe = ventaEsTicketSinEmisionFe;
 
   /** Fecha, tipo y correlativo quedan fijos si el comprobante ya tiene sello. */
@@ -182,6 +191,9 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   }
 
   public clientes: any = [];
+  /** Opciones con virtualScroll (16k+ clientes congelaban el modal con un <ng-option> por cliente). */
+  public clientesOpcionesFiltro: OpcionSelect[] = opcionesSelect([], 'Todos');
+  public clientesOpcionesReporte: OpcionSelect[] = opcionesSelect([], 'Todos los clientes');
   public usuario: any = {};
   public usuarios: any = [];
   public sucursales: any = [];
@@ -390,6 +402,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
           forma_pago: params['forma_pago'] || '',
           dte: params['dte'] || '',
           estado: params['estado'] || '',
+          con_ajuste: params['con_ajuste'] || '',
           num_identificacion: params['num_identificacion'] || '',
           inicio: params['inicio'] || '',
           fin: params['fin'] || '',
@@ -518,7 +531,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
         .pipe(this.untilDestroyed())
         .subscribe({
           next: (clientes) => {
-            this.clientes = clientes;
+            this.setClientes(clientes);
             this.abrirModalVentasCliente(template);
           },
           error: (error) => {
@@ -586,6 +599,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       forma_pago: '',
       dte: '',
       estado: '',
+      con_ajuste: '',
       num_identificacion: '',
       inicio: '',
       fin: '',
@@ -855,13 +869,20 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     this.cdr.markForCheck();
   }
 
+  private setClientes(clientes: any[]): void {
+    this.clientes = clientes;
+    this.clientesOpcionesFiltro = opcionesSelect(clientes, 'Todos');
+    this.clientesOpcionesReporte = opcionesSelect(clientes, 'Todos los clientes');
+    this.cdr.markForCheck();
+  }
+
   public openFilter(template: TemplateRef<any>) {
     if (!this.clientes.length) {
       this.sharedDataService.getClientes()
         .pipe(this.untilDestroyed())
         .subscribe({
           next: (clientes) => {
-            this.clientes = clientes;
+            this.setClientes(clientes);
           },
           error: (error) => {
             this.alertService.error(error);
@@ -1521,6 +1542,17 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
         this.emitirDTE();
       }
     };
+
+    // Siempre recargar venta con sello MH (SV): el listado no trae dte_invalidacion (SPT-688).
+    if (!this.esFeCostaRica() && venta.sello_mh) {
+      this.apiService.read('venta/', venta.id)
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (v: any) => abrir(v),
+          error: (e) => this.alertService.error(e),
+        });
+      return;
+    }
 
     if ((venta.dte_en_s3 || venta.sello_mh) && !venta.dte) {
       this.apiService.read('venta/', venta.id)
@@ -2347,12 +2379,21 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     return Array.isArray(items) && items.length > 0;
   }
 
-  /** Mostrar popover en el total: saldo desglosado y/o detalle de NC/ND. */
+  public badgesDeVenta(venta: any): BadgeDocumentoAjuste[] {
+    return badgesDocumentoAjuste(venta?.devoluciones_nc_nd, venta?.devoluciones_sum_total);
+  }
+
+  public textoAjusteVenta(venta: any): string {
+    return textoAjusteListado(this.badgesDeVenta(venta));
+  }
+
+  /** Mostrar popover en el total: saldo desglosado y documentos de ajuste. */
   public totalTienePopover(venta: any): boolean {
     return (
-      this.tieneDevolucionesNcNd(venta) ||
       venta?.estado === 'Pendiente' ||
-      Number(venta?.abonos_sum_total || 0) > 0
+      Number(venta?.abonos_sum_total || 0) > 0 ||
+      Number(venta?.devoluciones_sum_total || 0) > 0 ||
+      this.badgesDeVenta(venta).length > 0
     );
   }
 

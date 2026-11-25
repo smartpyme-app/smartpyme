@@ -73,6 +73,19 @@ export class HttpCacheService {
   }
 
   /**
+   * Elimina las entradas cuya clave cumpla la condición.
+   */
+  deleteWhere(condicion: (key: string) => boolean): void {
+    const keysToDelete: string[] = [];
+    this.cache.forEach((_, key) => {
+      if (condicion(key)) {
+        keysToDelete.push(key);
+      }
+    });
+    keysToDelete.forEach(key => this.cache.delete(key));
+  }
+
+  /**
    * Limpia todo el cache
    */
   clear(): void {

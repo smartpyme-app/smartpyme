@@ -1,5 +1,6 @@
 ﻿import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { OpcionSelect, opcionesSelect } from '@shared/utils/opciones-select.util';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -89,6 +90,10 @@ export class GastosComponent implements OnInit {
     public proyectos:any = [];
     public sucursales:any = [];
     public proveedores:any = [];
+    /** Opciones con virtualScroll: un <ng-option> por proveedor se vuelve pesado con miles. */
+    public proveedoresOpcionesBarra: OpcionSelect[] = opcionesSelect([], 'Proveedor');
+    public proveedoresOpcionesModal: OpcionSelect[] = opcionesSelect([], 'Todos');
+    public proveedoresOpcionesBulk: OpcionSelect[] = [];
     public areas:any = [];
     public filtros:any = {};
 
@@ -158,6 +163,7 @@ export class GastosComponent implements OnInit {
 
         this.apiService.getAll('proveedores/list', { minimal: 1 }).subscribe(proveedores => { 
             this.proveedores = proveedores;
+            this.actualizarOpcionesProveedores();
         }, error => {this.alertService.error(error); });
 
         this.apiService.getAll('area-empresa/list').subscribe(areas => { 
@@ -786,9 +792,17 @@ export class GastosComponent implements OnInit {
         return m[estado] ?? estado;
     }
 
+    private actualizarOpcionesProveedores(): void {
+        // Los filtros recortaban el nombre a 30 caracteres (| truncate:30); la carga masiva no.
+        this.proveedoresOpcionesBarra = opcionesSelect(this.proveedores, 'Proveedor', 30);
+        this.proveedoresOpcionesModal = opcionesSelect(this.proveedores, 'Todos', 30);
+        this.proveedoresOpcionesBulk = opcionesSelect(this.proveedores);
+    }
+
     setProveedorBulk(item: BulkGastoItem, proveedor: any) {
         if (!item.gasto.id_proveedor) {
             this.proveedores.push(proveedor);
+            this.actualizarOpcionesProveedores();
         }
         item.gasto.id_proveedor = proveedor.id;
     }

@@ -110,6 +110,7 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, WithC
             'distrito', 'cod_distrito', 'telefono', 'correo', 'pais',
             'numero_registro', 'identificacion_fiscal', 'n. de registro', 'n_de_registro',
             'giro o rubro', 'rubro', 'actividad_economica', 'provincia', 'estado', 'ciudad',
+            'codigo_cliente_empresa', 'codigo_cliente', 'codigo_de_cliente',
         ];
 
         return $this->applyExcelRowNormalization($row, $stringKeys, $this->esElSalvador);
@@ -186,6 +187,7 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, WithC
         
         $cliente->tipo = 'Empresa';
         $cliente->tipo_contribuyente = $row['tipo_contribuyente'] ?? null;
+        $cliente->codigo_cliente = $this->codigoClienteEmpresaDesdeFila($row);
         $cliente->dui = $row['dui'] ?? null;
         $cliente->nit = $row['rtn'] ?? $row['nit'] ?? null;
         $cliente->empresa_direccion = $row['direccion'] ?? null;
@@ -278,6 +280,18 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, WithC
         })->exists();
     }
 
+    private function codigoClienteEmpresaDesdeFila(array $row): ?string
+    {
+        $raw = $row['codigo_cliente_empresa'] ?? $row['codigo_cliente'] ?? $row['codigo_de_cliente'] ?? null;
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+
+        $texto = trim((string) $raw);
+
+        return $texto === '' ? null : substr($texto, 0, 60);
+    }
+
     private function normalizarNcr($ncr)
     {
         $ncr = preg_replace('/[^0-9]/', '', (string) $ncr);
@@ -334,6 +348,9 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, WithC
                 'direccion' => 'nullable|string|max:500',
                 'telefono' => 'nullable|string|max:20',
                 'correo' => 'nullable|email:filter|max:255',
+                'codigo_cliente_empresa' => 'nullable|string|max:60',
+                'codigo_cliente' => 'nullable|string|max:60',
+                'codigo_de_cliente' => 'nullable|string|max:60',
             ];
         }
         
@@ -351,6 +368,9 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, WithC
             'correo' => 'nullable|email:filter|max:255',
             'telefono' => 'nullable|max:20',
             'direccion' => 'nullable|string|max:500',
+            'codigo_cliente_empresa' => 'nullable|string|max:60',
+            'codigo_cliente' => 'nullable|string|max:60',
+            'codigo_de_cliente' => 'nullable|string|max:60',
         ];
     }
 

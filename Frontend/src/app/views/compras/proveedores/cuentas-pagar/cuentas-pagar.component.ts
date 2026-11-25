@@ -15,6 +15,11 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
 import { FinanzasReportesNavComponent } from '@views/finanzas/reportes/finanzas-reportes-nav.component';
+import {
+  BadgeDocumentoAjuste,
+  badgesDocumentoAjuste,
+  textoAjusteListado,
+} from '@shared/utils/documento-ajuste-badges.util';
 
 @Component({
   selector: 'app-cuentas-pagar',
@@ -72,13 +77,13 @@ export class CuentasPagarComponent implements OnInit {
             fin: '',
             id_proveedor: '',
             id_sucursal: '',
+            con_ajuste: '',
             buscador: ''
         };
         this.filtrarPagos();
     }
 
-    filtrarPagos() {
-        this.loading = true;
+    private paramsFiltrosListado(): any {
         const params: any = {
             paginate: this.filtros.paginate,
             orden: this.filtros.orden,
@@ -88,7 +93,24 @@ export class CuentasPagarComponent implements OnInit {
         if (this.filtros.fin) params.fin = this.filtros.fin;
         if (this.filtros.id_proveedor) params.id_proveedor = this.filtros.id_proveedor;
         if (this.filtros.id_sucursal) params.id_sucursal = this.filtros.id_sucursal;
+        if (this.filtros.con_ajuste === '0' || this.filtros.con_ajuste === '1') {
+            params.con_ajuste = this.filtros.con_ajuste;
+        }
         if (this.filtros.buscador) params.buscador = this.filtros.buscador;
+        return params;
+    }
+
+    badgesDeCompra(compra: any): BadgeDocumentoAjuste[] {
+        return badgesDocumentoAjuste(compra?.devoluciones_nc_nd, compra?.devoluciones_sum_total);
+    }
+
+    textoAjusteCompra(compra: any): string {
+        return textoAjusteListado(this.badgesDeCompra(compra));
+    }
+
+    filtrarPagos() {
+        this.loading = true;
+        const params = this.paramsFiltrosListado();
 
         this.apiService.getAll('cuentas-pagar', params).subscribe(
             (pagos) => {
@@ -126,16 +148,7 @@ export class CuentasPagarComponent implements OnInit {
     setPagination(event: any) {
         this.loading = true;
         const url = this.pagos.path + '?page=' + event.page;
-        const params: any = {
-            paginate: this.filtros.paginate,
-            orden: this.filtros.orden,
-            direccion: this.filtros.direccion
-        };
-        if (this.filtros.inicio) params.inicio = this.filtros.inicio;
-        if (this.filtros.fin) params.fin = this.filtros.fin;
-        if (this.filtros.id_proveedor) params.id_proveedor = this.filtros.id_proveedor;
-        if (this.filtros.id_sucursal) params.id_sucursal = this.filtros.id_sucursal;
-        if (this.filtros.buscador) params.buscador = this.filtros.buscador;
+        const params = this.paramsFiltrosListado();
 
         this.apiService.paginate(url, params).subscribe(
             (pagos) => {
@@ -156,15 +169,8 @@ export class CuentasPagarComponent implements OnInit {
 
     descargarReporte() {
         this.downloading = true;
-        const params: any = {
-            orden: this.filtros.orden,
-            direccion: this.filtros.direccion
-        };
-        if (this.filtros.inicio) params.inicio = this.filtros.inicio;
-        if (this.filtros.fin) params.fin = this.filtros.fin;
-        if (this.filtros.id_proveedor) params.id_proveedor = this.filtros.id_proveedor;
-        if (this.filtros.id_sucursal) params.id_sucursal = this.filtros.id_sucursal;
-        if (this.filtros.buscador) params.buscador = this.filtros.buscador;
+        const params = this.paramsFiltrosListado();
+        delete params.paginate;
 
         this.apiService.export('cuentas-pagar/exportar', params).subscribe(
             (data: Blob) => {

@@ -137,6 +137,8 @@ class InventariosController extends Controller
            'fecha'      => 'required|date',
        ]);
 
+        \App\Support\MemoriaExport::ampliar();
+
         try {
             $inventario = new InventarioAFechaExport();
             $inventario->filter($request);

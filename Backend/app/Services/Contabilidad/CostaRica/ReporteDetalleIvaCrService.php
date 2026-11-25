@@ -7,6 +7,7 @@ use App\Models\Compras\Devoluciones\Devolucion as DevolucionCompra;
 use App\Models\Compras\Gastos\Gasto;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Ventas\Venta;
+use App\Support\FacturacionElectronica\ClaveComprobanteCr;
 use Carbon\Carbon;
 
 /**
@@ -191,7 +192,10 @@ final class ReporteDetalleIvaCrService
 
         return [
             'date' => $venta->fecha,
-            'sequential' => (string) ($venta->correlativo ?? ''),
+            'sequential' => ClaveComprobanteCr::identificadorParaReporte(
+                $venta->numero_control ?? null,
+                $venta->correlativo
+            ),
             'issuer' => [
                 'name' => (string) (optional($empresa)->nombre ?? ''),
                 'identification_number' => preg_replace('/\D/', '', (string) (optional($empresa)->nit ?? '')),
@@ -300,7 +304,10 @@ final class ReporteDetalleIvaCrService
 
         return [
             'date' => $devolucion->fecha,
-            'sequential' => (string) ($devolucion->correlativo ?? ''),
+            'sequential' => ClaveComprobanteCr::identificadorParaReporte(
+                $devolucion->numero_control ?? null,
+                $devolucion->correlativo
+            ),
             'tipo_doc' => 'Nota de crédito',
             'issuer' => [
                 'name' => (string) (optional($empresa)->nombre ?? ''),

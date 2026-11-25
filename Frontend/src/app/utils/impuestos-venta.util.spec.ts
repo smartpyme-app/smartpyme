@@ -13,6 +13,7 @@ import {
   resolverIvaObjetivoEncabezadoVenta,
   calcularDescuentoDesdePrecioConIva,
   sumarDescuentoConIvaEncabezadoVenta,
+  prepararDetallesParaFacturarDesdeCotizacion,
 } from './impuestos-venta.util';
 
 describe('impuestos-venta.util — IVA vs especiales', () => {
@@ -888,5 +889,107 @@ describe('impuestos-venta.util — IVA vs especiales', () => {
     expect(totalAPagarConSeguroFlete(3886.32, 50, 750, 'Factura de exportación')).toBe(4686.32);
     expect(totalAPagarConSeguroFlete(3886.32, 50, 750, 'Crédito fiscal')).toBe(3886.32);
     expect(totalAPagarConSeguroFlete(3886.32, 50, 750)).toBe(3886.32);
+  });
+});
+
+describe('impuestos-venta.util — cotización → facturación (SPT-692)', () => {
+  const ivaEmpresa = 13;
+  const ventaImpuestos = [
+    { id: 1, porcentaje: 13, codigo_mh: '20', nombre: 'IVA', monto: 0 },
+  ];
+
+  it('conserva $650.88 aunque precio_con_iva venga truncado (200 × 3.25) si gravada+iva cuadran', () => {
+    const detalles: any[] = [
+      {
+        cantidad: 200,
+        precio: 2.88,
+        precio_con_iva: '3.2500',
+        gravada: 576,
+        iva: 74.88,
+        descuento: 0,
+        tipo_gravado: 'gravada',
+        impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }],
+      },
+    ];
+
+    prepararDetallesParaFacturarDesdeCotizacion(detalles, true, ivaEmpresa, {
+      preservePrecioIva: true,
+    });
+
+    const total = sumarTotalEncabezadoVenta(detalles, ventaImpuestos, {
+      empresaIva: ivaEmpresa,
+      cobrarImpuestos: true,
+    });
+
+    expect(total).toBe(650.88);
+    expect(Number(detalles[0].precio_iva)).toBeCloseTo(3.2544, 4);
+  });
+
+  it('conserva $650.88 al facturar si el detalle trae precio_con_iva guardado', () => {
+    const totalCotizado = 650.88;
+    const detalles: any[] = [
+      {
+        id: 99,
+        cantidad: 1,
+        precio: 576,
+        precio_con_iva: '650.8800',
+        descuento: 0,
+        tipo_gravado: 'gravada',
+        impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }],
+      },
+    ];
+
+    prepararDetallesParaFacturarDesdeCotizacion(detalles, true, ivaEmpresa, {
+      preservePrecioIva: true,
+    });
+
+    const iva = acumularImpuestosVentaConCierreResidual(
+      ventaImpuestos,
+      detalles,
+      true,
+      ivaEmpresa
+    );
+    const total = sumarTotalEncabezadoVenta(detalles, ventaImpuestos, {
+      empresaIva: ivaEmpresa,
+      cobrarImpuestos: true,
+    });
+
+    expect(total).toBe(totalCotizado);
+    expect(iva).toBeCloseTo(74.88, 2);
+    expect(Number(detalles[0].total_iva)).toBe(totalCotizado);
+  });
+
+  it('pierde centavos si solo hay precio neto redondeado (cotización legacy)', () => {
+    const detalles: any[] = [
+      {
+        cantidad: 1,
+        precio: 11.5,
+        descuento: 0,
+        tipo_gravado: 'gravada',
+        impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }],
+      },
+    ];
+
+    prepararDetallesParaFacturarDesdeCotizacion(detalles, true, ivaEmpresa, {
+      preservePrecioIva: true,
+    });
+
+    const sinPrecioConIva = sumarTotalEncabezadoVenta(detalles, ventaImpuestos, {
+      empresaIva: ivaEmpresa,
+      cobrarImpuestos: true,
+    });
+
+    detalles[0].precio_con_iva = '12.9900';
+    prepararDetallesParaFacturarDesdeCotizacion(detalles, true, ivaEmpresa, {
+      preservePrecioIva: true,
+    });
+
+    const conPrecioConIva = sumarTotalEncabezadoVenta(detalles, ventaImpuestos, {
+      empresaIva: ivaEmpresa,
+      cobrarImpuestos: true,
+    });
+
+    expect(sinPrecioConIva).toBe(13);
+    expect(conPrecioConIva).toBe(12.99);
   });
 });

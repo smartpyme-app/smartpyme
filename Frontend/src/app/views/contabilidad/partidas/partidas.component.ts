@@ -113,7 +113,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
   }
 
   ngOnInit() {
-    this.apiService.getAll('catalogo/list')
+    this.apiService.getAll('catalogo/list', { basico: 1 })
       .pipe(this.untilDestroyed())
       .subscribe(
       (catalogo) => {

@@ -26,7 +26,8 @@ class PedidoCanalInventarioService
      */
     public function aplicarSalidasAlConfirmar(PedidoRestaurante $pedido, int $idBodega): void
     {
-        // Idempotencia: una confirmación lógica = un descuento (también cubre BoxFul).
+        // ponytail: re-bloqueo del pedido evita doble salida si dos hilos confirman a la vez (SPT-687).
+        $pedido = PedidoRestaurante::whereKey($pedido->id)->lockForUpdate()->firstOrFail();
         if ($pedido->inventario_descontado_at) {
             return;
         }
@@ -68,8 +69,11 @@ class PedidoCanalInventarioService
                 continue;
             }
 
+            // ponytail: lock por bodega+producto evita dos pedidos canal confirmando el mismo stock (726/SPT-687).
             $inventario = Inventario::where('id_producto', $detalleRow->producto_id)
-                ->where('id_bodega', $idBodega)->first();
+                ->where('id_bodega', $idBodega)
+                ->lockForUpdate()
+                ->first();
 
             if (!$puedeVenderSinStock) {
                 if ($inventario) {
@@ -159,6 +163,7 @@ class PedidoCanalInventarioService
      */
     public function revertirSalidasPedido(PedidoRestaurante $pedido, int $idBodega): void
     {
+        $pedido = PedidoRestaurante::whereKey($pedido->id)->lockForUpdate()->firstOrFail();
         if (! $pedido->inventario_descontado_at) {
             return;
         }
@@ -214,7 +219,9 @@ class PedidoCanalInventarioService
             }
 
             $inventario = Inventario::where('id_producto', $detalleRow->producto_id)
-                ->where('id_bodega', $idBodega)->first();
+                ->where('id_bodega', $idBodega)
+                ->lockForUpdate()
+                ->first();
 
             $registrosLotes = PedidoDetalleLote::where('pedido_detalle_id', $detalleRow->id)->get();
 
@@ -380,7 +387,9 @@ class PedidoCanalInventarioService
             }
 
             $inventario = Inventario::where('id_producto', $idComp)
-                ->where('id_bodega', $idBodega)->first();
+                ->where('id_bodega', $idBodega)
+                ->lockForUpdate()
+                ->first();
 
             if ($inventario) {
                 $inventario->stock -= $cantidadCompRequerida;

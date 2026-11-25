@@ -10,7 +10,11 @@ import {
   esNombreNotaCredito,
   esNombreNotaCreditoODebito,
   esNombreNotaDebito,
+  consecutivoCrDesdeClave,
+  formatoConsecutivoCr,
   formatoCorrelativoHn,
+  identificadorDocumentoCr,
+  resolverConsecutivoCr,
   nombresDocumentoExcluidosGastoHn,
   nombresDocumentosCompraPermitidos,
   nombresDocumentosVentaNormales,
@@ -119,6 +123,53 @@ describe('formatoCorrelativoHn', () => {
   it('sin numero_emision devuelve correlativo plano', () => {
     expect(formatoCorrelativoHn(null, 439)).toBe('439');
     expect(formatoCorrelativoHn('', '439')).toBe('439');
+  });
+});
+
+describe('formatoConsecutivoCr', () => {
+  it('formatea 20 dígitos con tipo de comprobante', () => {
+    expect(formatoConsecutivoCr('00100001040001372308')).toBe('001-00001-04-0001372308');
+  });
+
+  it('sin 20 dígitos devuelve el valor limpio', () => {
+    expect(formatoConsecutivoCr(' 123 ')).toBe('123');
+  });
+});
+
+describe('consecutivoCrDesdeClave', () => {
+  it('extrae 20 dígitos de clave de 50', () => {
+    const clave = '50617112600310156907500100001010000001451112345678';
+    expect(consecutivoCrDesdeClave(clave)).toBe('00100001010000001451');
+  });
+});
+
+describe('resolverConsecutivoCr', () => {
+  it('usa codigo_generacion si falta numero_control', () => {
+    const clave = '50617112600310156907500100001010000001451112345678';
+    expect(
+      resolverConsecutivoCr({ numero_control: null, codigo_generacion: clave, sello_mh: null })
+    ).toBe('00100001010000001451');
+  });
+});
+
+describe('identificadorDocumentoCr', () => {
+  it('prioriza consecutivo sobre correlativo', () => {
+    expect(identificadorDocumentoCr('00100001010000000001', 99)).toEqual({
+      texto: '001-00001-01-0000000001',
+      esConsecutivo: true,
+    });
+  });
+
+  it('sin numero_control usa correlativo con #', () => {
+    expect(identificadorDocumentoCr(null, 42)).toEqual({ texto: '#42', esConsecutivo: false });
+  });
+
+  it('deriva consecutivo desde clave en el documento', () => {
+    const clave = '50617112600310156907500100001010000001451112345678';
+    expect(identificadorDocumentoCr(null, 42, { codigo_generacion: clave })).toEqual({
+      texto: '001-00001-01-0000001451',
+      esConsecutivo: true,
+    });
   });
 });
 

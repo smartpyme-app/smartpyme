@@ -15,12 +15,6 @@ class CrearCreditoContratoService
 {
     public function crear(User $user, array $data): CreditoContrato
     {
-        if ($user->tipo === 'Ventas Limitado') {
-            throw new AccessDeniedHttpException(
-                'Los usuarios de tipo "Ventas Limitado" no pueden crear créditos.'
-            );
-        }
-
         $cliente = Cliente::findOrFail($data['id_cliente']);
         $monto = round((float) $data['monto'], 2);
         $saldoUsado = $this->saldoUsado(

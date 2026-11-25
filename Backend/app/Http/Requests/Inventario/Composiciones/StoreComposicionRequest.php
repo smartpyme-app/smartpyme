@@ -20,7 +20,7 @@ class StoreComposicionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'id' => ['nullable', 'integer', 'exists:composiciones,id'],
+            'id' => ['nullable', 'integer', 'exists:producto_composiciones,id'],
             'id_producto' => ['required', 'integer', 'exists:productos,id'],
             'id_compuesto' => ['required', 'integer', 'exists:productos,id'],
             'cantidad' => ['required', 'numeric', 'min:0.01'],

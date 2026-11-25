@@ -5,6 +5,7 @@ namespace App\Exports;
 use App\Exports\Support\DevolucionEnReporte;
 use App\Models\Ventas\Venta;
 use App\Services\Ventas\VentaMontosPorVendedorService;
+use App\Support\FacturacionElectronica\IdentificadorDocumentoVentaReporte;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -183,7 +184,11 @@ class VentasDesglosadasPorVendedorExport implements FromCollection, WithHeadings
             ($documento && isset($documento->nombre)) ? $documento->nombre : ($esDevolucion ? 'Devolución' : ''),
             ($proyecto && isset($proyecto->nombre)) ? $proyecto->nombre : '',
             $datosVenta->num_identificacion ?? '',
-            $venta->correlativo,
+            IdentificadorDocumentoVentaReporte::valor(
+                $venta->sucursal?->empresa ?? $datosVenta->sucursal?->empresa ?? null,
+                $venta->numero_control ?? null,
+                $venta->correlativo
+            ),
             $datosVenta->forma_pago ?? '',
             $datosVenta->detalle_banco ?? '',
             $esDevolucion ? DevolucionEnReporte::ESTADO : $venta->estado,

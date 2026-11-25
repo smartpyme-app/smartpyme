@@ -23,8 +23,8 @@ class ResetPasswordNotification extends Notification
     {
         // ponytail: auto-select frontend URL based on APP_ENV
         $frontendUrl = config('app.env') === 'local'
-            ? env('FRONTEND_URL_LOCAL', 'http://localhost:4200')
-            : env('FRONTEND_URL', 'https://app.smartpyme.site');
+            ? config('app.frontend_url_local')
+            : config('app.frontend_url');
 
         $resetUrl = $frontendUrl . '/reset-password?token=' . $this->token
             . '&email=' . urlencode($notifiable->getEmailForPasswordReset());

@@ -108,8 +108,9 @@
                             </span>
                         </td>
                         <td class="text-right">
+                            @let badgesAjuste = badgesDeVenta(venta);
                             <span
-                                class="text-dark d-inline-block border-bottom border-secondary border-opacity-50"
+                                class="text-dark d-inline-block text-end border-bottom border-secondary border-opacity-50"
                                 style="cursor: help; outline: none;"
                                 [popover]="tplSaldoVenta"
                                 [popoverContext]="{ venta: venta }"
@@ -117,6 +118,11 @@
                                 triggers="mouseenter:mouseleave"
                                 container="body">
                                 {{ montoTotalVenta(venta) | currency }}
+                                @if (badgesAjuste.length) {
+                                    <div class="text-primary" style="font-size: 0.65rem; line-height: 1.2;">
+                                        {{ textoAjusteVenta(venta) }}
+                                    </div>
+                                }
                             </span>
                         </td>
                         <td class="text-center">
@@ -151,26 +157,49 @@
 </ng-template>
 
 <ng-template #tplSaldoVenta let-venta="venta">
-    <table class="w-100 table table-sm mb-0">
-        <tbody>
-            <tr>
-                <td>Total</td>
-                <td class="text-end">{{ montoTotalVenta(venta) | currency }}</td>
-            </tr>
-            <tr>
-                <td>Abonos</td>
-                <td class="text-end">{{ (venta.abonos_sum_total || 0) | currency }}</td>
-            </tr>
-            <tr>
-                <td>Devoluciones</td>
-                <td class="text-end">{{ (venta.devoluciones_sum_total || 0) | currency }}</td>
-            </tr>
-            <tr>
-                <td><strong>Saldo</strong></td>
-                <td class="text-end"><strong>{{ getSaldo(venta) | currency }}</strong></td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="small p-1" style="max-width: 320px;">
+        <table class="w-100 table table-sm mb-0">
+            <tbody>
+                <tr>
+                    <td>Total</td>
+                    <td class="text-end">{{ montoTotalVenta(venta) | currency }}</td>
+                </tr>
+                <tr>
+                    <td>Abonos</td>
+                    <td class="text-end">{{ (venta.abonos_sum_total || 0) | currency }}</td>
+                </tr>
+                <tr>
+                    <td>Devoluciones</td>
+                    <td class="text-end">{{ (venta.devoluciones_sum_total || 0) | currency }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Saldo</strong></td>
+                    <td class="text-end"><strong>{{ getSaldo(venta) | currency }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+        @if (venta.devoluciones_nc_nd?.length) {
+            <div class="fw-semibold mt-2 mb-1 border-top pt-2">Documentos de ajuste</div>
+            <table class="table table-sm table-borderless mb-0 w-100">
+                <thead>
+                    <tr class="text-muted border-bottom">
+                        <th class="py-1 px-1 small">Fecha</th>
+                        <th class="py-1 px-1 small">Documento</th>
+                        <th class="py-1 px-1 small text-end">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (d of venta.devoluciones_nc_nd; track d.id) {
+                        <tr>
+                            <td class="py-1 px-1 text-nowrap">{{ d.fecha | date:'dd/MM/yyyy' }}</td>
+                            <td class="py-1 px-1">{{ d.nombre_documento }}</td>
+                            <td class="py-1 px-1 text-end text-nowrap">{{ d.total | currency }}</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
 </ng-template>
 
 <ng-template #tplAccionesVenta let-venta="venta">
@@ -224,6 +253,14 @@
                     <select [(ngModel)]="filtros.id_sucursal" class="form-select" name="filtros.id_sucursal">
                         <option value="">Todas</option>
                         <option *ngFor="let s of sucursales" [value]="s.id">{{ s.nombre }}</option>
+                    </select>
+                </div>
+                <div class="form-group col-sm-12 mb-3">
+                    <label for="filtros.con_ajuste">Ajustes:</label>
+                    <select [(ngModel)]="filtros.con_ajuste" class="form-select" name="filtros.con_ajuste">
+                        <option value="">Todos</option>
+                        <option value="1">Con NC / ND / devolución</option>
+                        <option value="0">Sin ajustes</option>
                     </select>
                 </div>
             </div>

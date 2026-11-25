@@ -174,10 +174,12 @@ export class RetaceoComponent implements OnInit {
     this.loading = true;
     this.filtros.id_bodega = this.retaceo.id_bodega;
     if (this.route.snapshot.paramMap.get('id')) {
-      this.filtros.es_retaceo =false;
+      this.filtros.es_retaceo = false;
     }
+    // Compras para retaceo: el listado paginado por defecto (10) ocultaba opciones en ng-select.
+    const filtrosCompras = { ...this.filtros, page: 1, paginate: 10000 };
     // Cargar compras filtradas por bodega
-    this.apiService.getAll('compras', this.filtros).subscribe(
+    this.apiService.getAll('compras', filtrosCompras).subscribe(
       (compras) => {
         this.compras = (compras.data || [])
           .filter((c: any) => c.estado === 'Pagada' || c.estado === 'Pendiente')

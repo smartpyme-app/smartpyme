@@ -77,6 +77,11 @@ final class ComprasListQuery
                         ->orWhere('forma_pago', 'like', $texto);
                 });
             })
+            // Solo cuando la pantalla de retaceo envía es_retaceo (no afecta el listado general de compras).
+            ->when(self::filtroRetaceoActivo($request), function (Builder $q) {
+                $q->where('es_retaceo', true)
+                    ->whereDoesntHave('retaceo');
+            })
             ->where('cotizacion', 0)
             ->orderBy($orden, $direccion)
             ->orderBy('id', 'desc');
@@ -85,5 +90,15 @@ final class ComprasListQuery
     public static function base(Request $request): Builder
     {
         return self::apply(Compra::query(), $request);
+    }
+
+    /** true solo cuando el cliente pide compras marcadas para retaceo (p. ej. crear retaceo). */
+    public static function filtroRetaceoActivo(Request $request): bool
+    {
+        if (! $request->has('es_retaceo')) {
+            return false;
+        }
+
+        return filter_var($request->es_retaceo, FILTER_VALIDATE_BOOLEAN);
     }
 }

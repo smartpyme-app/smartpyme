@@ -152,6 +152,21 @@ class MHPruebasMasivasController extends Controller
                 return response()->json($verificacion, 400);
             }
 
+            // Evento de retorno (18): síncrono. El resto sigue en cola (trabajos_pendientes).
+            if ($tipoDTE === '18') {
+                $resultado = $this->pruebasMasivasService->procesarPruebasMasivas(
+                    $tipoDTE,
+                    $request->cantidad,
+                    $request->id_documento_base,
+                    $user->id,
+                    $request->correlativo_inicial
+                );
+
+                return response()->json(array_merge($resultado, [
+                    'queued' => false,
+                ]), ($resultado['success'] ?? false) ? 200 : 400);
+            }
+
             // Guardar el trabajo pendiente en la base de datos
             $trabajo = TrabajosPendientes::create([
                 'tipo' => 'pruebas_masivas',

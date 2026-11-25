@@ -88,6 +88,9 @@ return [
         'name' => env('MAIL_FROM_NAME', 'SmartPyme'),
     ],
 
+    // Destinatario interno de avisos (registro, cancelaciones, notificaciones).
+    'to_address' => env('MAIL_TO_ADDRESS'),
+
     /*
     |--------------------------------------------------------------------------
     | Markdown Mail Settings

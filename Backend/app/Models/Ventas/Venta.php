@@ -360,6 +360,12 @@ class Venta extends AuditableModel {
     }
 
     public function getSaldoAttribute(){
+        // Si la consulta ya trae las sumas (scopeConSumasDeSaldo) no se hacen 2 consultas por venta.
+        if (array_key_exists('saldo_abonos_confirmados', $this->attributes)) {
+            $abonos = (float) ($this->attributes['saldo_abonos_confirmados'] ?? 0);
+            $devoluciones = (float) ($this->attributes['saldo_devoluciones_activas'] ?? 0);
+            return round($this->total - $abonos - $devoluciones,2);
+        }
         $abonos = $this->abonos()->where('estado', 'Confirmado')->sum('total');
         $devoluciones = $this->devoluciones()->where('enable', 1)->sum('total');
         return round($this->total - $abonos - $devoluciones,2);
@@ -437,7 +443,7 @@ class Venta extends AuditableModel {
         return $this->hasMany('App\Models\Ventas\Devoluciones\Devolucion', 'id_venta')
             ->where('enable', 1)
             ->whereHas('documento', function ($q) {
-                $q->whereIn('nombre', ['Nota de crédito', 'Nota de débito']);
+                $q->whereIn('nombre', \App\Constants\DocumentoConstants::NOMBRES_NOTA_CREDITO_DEBITO);
             })
             ->orderBy('fecha')
             ->orderBy('id');
@@ -459,12 +465,21 @@ class Venta extends AuditableModel {
     }
 
     /**
-     * Si en la venta se canjearon puntos (descuento por fidelización), no se acumulan puntos en la misma operación.
+     * Indica si en la venta se canjearon puntos (descuento por fidelización).
+     * El canje puede coexistir con la acumulación sobre el monto neto cobrado (venta.total).
      */
     public function tieneCanjeDePuntosEnVenta(): bool
     {
         return ((int) ($this->puntos_canjeados ?? 0)) > 0
             || ((float) ($this->descuento_puntos ?? 0)) > 0.00001;
+    }
+
+    /**
+     * Monto base para acumular puntos: total ya neto de descuento_puntos en facturación.
+     */
+    public function getMontoBaseAcumulacionPuntos(): float
+    {
+        return (float) ($this->total ?? 0);
     }
 
     public function getMontoFinalAttribute()
@@ -485,14 +500,10 @@ class Venta extends AuditableModel {
 
     public function calcularPuntosEsperados()
     {
-        if ($this->tieneCanjeDePuntosEnVenta()) {
-            return 0;
-        }
-
         $tipoCliente = $this->cliente->getTipoClienteEfectivo();
         if (!$tipoCliente) return 0;
 
-        return $tipoCliente->calcularPuntos($this->getMontoFinal());
+        return $tipoCliente->calcularPuntos($this->getMontoBaseAcumulacionPuntos());
     }
 
     public function tienePuntosGenerados()
@@ -505,10 +516,6 @@ class Venta extends AuditableModel {
     {
         if ($this->tienePuntosGenerados()) {
             return false; // Ya tiene puntos generados
-        }
-
-        if ($this->tieneCanjeDePuntosEnVenta()) {
-            return false;
         }
 
         $puntosCalculados = $this->calcularPuntosEsperados();
@@ -584,6 +591,14 @@ class Venta extends AuditableModel {
      * Evita N+1 queries cuando se listan múltiples ventas
      * Uso: Venta::withAccessorRelations()->get()
      */
+    /** Suma abonos confirmados y devoluciones activas en la misma consulta, para el accessor saldo. */
+    public function scopeConSumasDeSaldo($query)
+    {
+        return $query
+            ->withSum(['abonos as saldo_abonos_confirmados' => fn ($q) => $q->where('estado', 'Confirmado')], 'total')
+            ->withSum(['devoluciones as saldo_devoluciones_activas' => fn ($q) => $q->where('enable', 1)], 'total');
+    }
+
     public function scopeWithAccessorRelations($query)
     {
         return $query->with([

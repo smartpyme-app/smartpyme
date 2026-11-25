@@ -12,8 +12,10 @@ use Illuminate\Support\Facades\Auth;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeComprobantePdfService;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
+use App\Constants\DocumentoConstants;
 use App\Support\Admin\DocumentosDefaultPorPais;
 use App\Support\Honduras\DocumentoImpresionHn;
+use App\Support\Inventario\ImpresionLoteEnDocumento;
 use App\Support\Ventas\Ticket80mm;
 
 class DocumentoService
@@ -41,6 +43,7 @@ class DocumentoService
 
         $venta = Venta::where('id', $ventaId)->with('detalles', 'empresa', 'giftCardsEmitidas')->firstOrFail();
         $documento = Documento::findOrfail($venta->id_documento);
+        ImpresionLoteEnDocumento::prepararVenta($venta, $empresa);
 
         if (Ticket80mm::aplica($empresa, $documento)) {
             return Ticket80mm::imprimir($venta, $empresa, $documento);
@@ -57,6 +60,7 @@ class DocumentoService
         }
 
         switch ($documento->nombre) {
+            case DocumentoConstants::FACTURA_REMISION:
             case 'Ticket':
             case 'Recibo':
             case DocumentosDefaultPorPais::CR_TIQUETE:
@@ -173,18 +177,19 @@ class DocumentoService
         }
 
         $venta->loadMissing('giftCardsEmitidas');
+        $mostrar_lotes_impresion = ImpresionLoteEnDocumento::prepararVenta($venta, $empresa);
 
         $ticketEnPdf = isset($empresa->custom_empresa['configuraciones']['ticket_en_pdf']) &&
             $empresa->custom_empresa['configuraciones']['ticket_en_pdf'] == true;
 
         if ($ticketEnPdf) {
             $venta->pdf = true;
-            $pdf = PDF::loadView('reportes.facturacion.ticket', compact('venta', 'empresa', 'documento'));
+            $pdf = PDF::loadView('reportes.facturacion.ticket', compact('venta', 'empresa', 'documento', 'mostrar_lotes_impresion'));
             $pdf->setPaper($this->calcularDimensionesTicket($venta));
             return $pdf->stream('ticket.pdf');
         } else {
             $venta->pdf = false;
-            return view('reportes.facturacion.ticket', compact('venta', 'empresa', 'documento'));
+            return view('reportes.facturacion.ticket', compact('venta', 'empresa', 'documento', 'mostrar_lotes_impresion'));
         }
     }
 

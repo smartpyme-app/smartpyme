@@ -134,9 +134,7 @@ export class VentaDetallesV2Component implements OnInit, OnDestroy {
     }
 
     get mostrarCuentaTercerosEnLinea(): boolean {
-        return this.habilitarCuentaTerceros
-            && this.venta?.cotizacion != 1
-            && this.usuario?.tipo !== 'Ventas Limitado';
+        return this.habilitarCuentaTerceros && this.venta?.cotizacion != 1;
     }
 
     get cuentaTercerosLineaSoloLectura(): boolean {

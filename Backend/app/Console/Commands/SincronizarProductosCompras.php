@@ -279,7 +279,7 @@ class SincronizarProductosCompras extends Command
         $idsStr = implode('_', $idsCompras);
 
         // Script INSERT productos
-        $lines = ["-- Productos para compras " . implode(', ', $idsCompras), "USE " . env('DB_DATABASE', 'vps') . ";", ""];
+        $lines = ["-- Productos para compras " . implode(', ', $idsCompras), "USE " . (config('database.connections.mysql.database') ?: 'vps') . ";", ""];
         foreach ($datos['productos'] as $item) {
             $d = $item['data'];
             unset($d['id']);

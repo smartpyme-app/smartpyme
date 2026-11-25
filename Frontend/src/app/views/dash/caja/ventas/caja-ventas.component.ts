@@ -8,6 +8,7 @@ import { MHService } from '@services/MH.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 import { CountryI18nService } from '@services/country-i18n.service';
 import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { identificadorDocumentoCr } from '@views/ventas/documentos/documento-nombre-options';
 import {
   mensajeErrorHttpFeCr,
   type FeCrErrorEmisionPayload,
@@ -27,6 +28,11 @@ import {
 import { PipesModule } from '../../../../pipes/pipes.module';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { CrearAbonoVentaComponent } from '@shared/modals/crear-abono-venta/crear-abono-venta.component';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
+import { SharedModule } from '@shared/shared.module';
 import {
     puedeDevolucionVenta,
     puedeEditarVenta,
@@ -40,7 +46,22 @@ import {
     selector: 'app-caja-ventas',
     templateUrl: './caja-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, AlertsHaciendaComponent, FeEnviarCorreoComponent, PipesModule, PopoverModule, TooltipModule],
+    imports: [
+        CommonModule,
+        RouterModule,
+        FormsModule,
+        ImportarExcelComponent,
+        AlertsHaciendaComponent,
+        FeEnviarCorreoComponent,
+        PipesModule,
+        PopoverModule,
+        TooltipModule,
+        NgSelectModule,
+        PaginationComponent,
+        CrearAbonoVentaComponent,
+        NotificacionesContainerComponent,
+        SharedModule,
+    ],
 })
 
 export class CajaVentasComponent extends BaseCrudComponent<any> implements OnInit {
@@ -461,6 +482,8 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
     esFeCostaRica(): boolean {
         return this.facturacionElectronica.isCostaRicaFe();
     }
+
+    readonly identificadorDocumentoCr = identificadorDocumentoCr;
 
     private esPayloadErrorEmisionFeCr(e: unknown): e is FeCrErrorEmisionPayload {
         return (

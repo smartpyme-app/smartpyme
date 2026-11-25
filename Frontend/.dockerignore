@@ -1,0 +1,9 @@
+.git
+node_modules
+dist
+.angular
+cypress/videos
+cypress/screenshots
+cypress.env.json
+graphify-out
+*.xlsx

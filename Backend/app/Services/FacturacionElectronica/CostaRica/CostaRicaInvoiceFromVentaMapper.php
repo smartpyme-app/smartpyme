@@ -1029,7 +1029,7 @@ final class CostaRicaInvoiceFromVentaMapper
             $receiver['activity'] = $this->codigoActividadEconomicaParaDgt((string) $ractCode);
         }
 
-        return $this->conContactoTercero($receiver, $this->telefonoCliente($cliente), $cliente->correo ?? null);
+        return $this->conContactoTercero($receiver, $this->telefonoCliente($cliente), $cliente->getCorreoFeReceptor());
     }
 
     private function direccionCliente(Cliente $cliente): string

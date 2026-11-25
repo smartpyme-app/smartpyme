@@ -27,6 +27,7 @@ import {
     esNombreNotaDebito,
 } from '@views/ventas/documentos/documento-nombre-options';
 import { isImpresionEnFacturacionActiva } from '@helpers/empresa.helper';
+import { DEVOLUCION_CONSIGNA, esVentaConsignaRemision } from '../../../../constants/documento.constants';
 
 @Component({
     selector: 'app-devolucion-nueva',
@@ -66,6 +67,12 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
 
     esElSalvadorFe(): boolean {
         return empresaEsElSalvador(this.apiService.auth_user()?.empresa);
+    }
+
+    esDevolucionConsignaLedger(): boolean {
+        const empresa = this.apiService.auth_user()?.empresa;
+        const ledgerOn = !!empresa?.custom_empresa?.configuraciones?.consignaciones_ledger_activo;
+        return ledgerOn && esVentaConsignaRemision(this.venta);
     }
 
 	ngOnInit() {
@@ -114,6 +121,9 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
                     total: venta.total,
                     ...(this.esFeCostaRica() ? { motivo_fe_cr: 'devolucion' } : {}),
                 };
+                if (this.esDevolucionConsignaLedger()) {
+                    this.devolucion.tipo = 'devolucion';
+                }
                 this.cargarDocumentos();
                 this.loading = false;
                 this.cdr.markForCheck();
@@ -128,13 +138,30 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
         this.apiService.getAll('documentos/list')
             .pipe(this.untilDestroyed())
             .subscribe(documentos => {
-            // Evento de retorno solo sobre Factura (01) o Factura de exportación (11) ya selladas por Hacienda.
-            const permiteRetorno = ['01', '11'].includes(String(this.venta?.tipo_dte)) && !!this.venta?.sello_mh;
-            this.documentos = (documentos ?? []).filter(
-                (doc: any) =>
-                    doc.id_sucursal == idSucursal &&
-                    (esNombreNotaCreditoODebito(doc.nombre) || (permiteRetorno && esNombreEventoRetorno(doc.nombre)))
-            );
+            if (this.esDevolucionConsignaLedger()) {
+                this.documentos = (documentos ?? []).filter(
+                    (doc: any) =>
+                        doc.id_sucursal == idSucursal &&
+                        String(doc.nombre).toLowerCase() === DEVOLUCION_CONSIGNA.toLowerCase()
+                );
+                if (this.documentos.length === 1) {
+                    this.asignarDocumento(this.documentos[0]);
+                } else if (this.documentos.length === 0) {
+                    this.alertService.warning(
+                        'Consigna',
+                        'No hay documento «Devolución de consigna» en esta sucursal. Activa el kardex de consigna en Mi cuenta o ejecuta consigna:asegurar-documentos-devolucion.'
+                    );
+                }
+            } else {
+                // Evento de retorno solo sobre Factura (01) o Factura de exportación (11) ya selladas por Hacienda.
+                const permiteRetorno = ['01', '11'].includes(String(this.venta?.tipo_dte)) && !!this.venta?.sello_mh;
+                this.documentos = (documentos ?? []).filter(
+                    (doc: any) =>
+                        doc.id_sucursal == idSucursal &&
+                        (esNombreNotaCreditoODebito(doc.nombre) ||
+                            (permiteRetorno && esNombreEventoRetorno(doc.nombre)))
+                );
+            }
 
             const tipoDoc = this.route.snapshot.queryParamMap.get('tipo_documento');
             if (tipoDoc === 'nota_debito') {

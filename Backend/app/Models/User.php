@@ -135,7 +135,7 @@ class User extends Authenticatable implements JWTSubject
     {
         try {
             $usuario = User::where('id', $this->id)->with('empresa')->first();
-            $fromAddress = config('mail.from.address') ?: (env('MAIL_FROM_ADDRESS') ?: 'no-reply@smartpyme.app');
+            $fromAddress = config('mail.from.address') ?: 'no-reply@smartpyme.app';
             Mail::send('mails.bienvenida-usuario', ['usuario' => $usuario], function ($m) use ($fromAddress) {
                 $m->from($fromAddress, 'SmartPyme')
                     ->to($this->email)

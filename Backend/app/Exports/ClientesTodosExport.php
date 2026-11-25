@@ -2,14 +2,17 @@
 
 namespace App\Exports;
 
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\FromQuery;
+use App\Exports\Concerns\ConsultaClientesExport;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Illuminate\Http\Request;
 use App\Models\Ventas\Clientes\Cliente;
 
-class ClientesTodosExport implements FromCollection, WithHeadings, WithMapping
+class ClientesTodosExport implements FromQuery, WithHeadings, WithMapping
 {
+    use ConsultaClientesExport;
+
     private $request;
 
     public function filter(Request $request)
@@ -44,26 +47,9 @@ class ClientesTodosExport implements FromCollection, WithHeadings, WithMapping
         ];
     }
 
-    public function collection()
+    public function query()
     {
-        $request = $this->request;
-
-        return Cliente::where('id', '!=', 1)
-                    ->when($request->buscador, function ($query) use ($request) {
-                        return $query->where('nombre', 'like', '%' . $request->buscador . '%')
-                                    ->orwhere('nombre_empresa', 'like', '%' . $request->buscador . '%')
-                                    ->orwhere('nombre_comercial', 'like', '%' . $request->buscador . '%')
-                                    ->orwhere('nit', 'like', '%' . $request->buscador . '%')
-                                    ->orwhere('giro', 'like', '%' . $request->buscador . '%')
-                                    ->orwhere('telefono', 'like', '%' . $request->buscador . '%')
-                                    ->orwhere('ncr', 'like', '%' . $request->buscador . '%')
-                                    ->orwhere('dui', 'like', '%' . $request->buscador . '%');
-                    })
-                    ->when($request->estado !== null, function ($q) use ($request) {
-                        $q->where('enable', !!$request->estado);
-                    })
-                    ->orderBy($request->orden, $request->direccion)
-                    ->get();
+        return $this->consultaClientes(null);
     }
 
     public function map($row): array

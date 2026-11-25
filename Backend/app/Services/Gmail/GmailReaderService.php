@@ -3,12 +3,15 @@
 namespace App\Services\Gmail;
 
 use App\Contracts\EmailReaderInterface;
+use App\Models\DteManagement\DteDocument;
+use App\Support\Dte\CorreosDteRevisados;
 use App\Models\DteManagement\UserEmailAccount;
 use App\Support\Dte\DteEmailAttachmentHelper;
 use Carbon\Carbon;
 use Google\Client as GoogleClient;
 use Google\Service\Gmail;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Enumerable;
+use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Facades\Log;
 
 class GmailReaderService implements EmailReaderInterface
@@ -18,48 +21,91 @@ class GmailReaderService implements EmailReaderInterface
     ) {
     }
 
-    public function getEmailsWithDteAttachments(UserEmailAccount $account, Carbon $from, Carbon $to): Collection
+    /**
+     * Devuelve los DTE de los correos uno por uno (LazyCollection): antes se juntaban los adjuntos
+     * de todos los correos del rango en memoria y una cuenta con muchos correos agotaba los 128 MB.
+     * Los correos que ya generaron un DTE no se vuelven a descargar.
+     */
+    public function getEmailsWithDteAttachments(UserEmailAccount $account, Carbon $from, Carbon $to): Enumerable
     {
-        $this->gmailOAuthService->refreshAccessToken($account);
-        $account->refresh();
+        return LazyCollection::make(function () use ($account, $from, $to) {
+            $this->gmailOAuthService->refreshAccessToken($account);
+            $account->refresh();
 
-        $client = $this->createAuthenticatedClient($account);
-        $service = new Gmail($client);
+            $client = $this->createAuthenticatedClient($account);
+            $service = new Gmail($client);
 
-        $results = collect();
-        $pageToken = null;
+            $pageToken = null;
 
-        do {
-            $listParams = [
-                'q' => "after:{$from->format('Y/m/d')} before:{$to->format('Y/m/d')} has:attachment",
-                'maxResults' => 50,
-            ];
-            if ($pageToken) {
-                $listParams['pageToken'] = $pageToken;
-            }
-
-            $response = $service->users_messages->listUsersMessages('me', $listParams);
-            $messages = $response->getMessages() ?? [];
-
-            foreach ($messages as $messageRef) {
-                try {
-                    $message = $service->users_messages->get('me', $messageRef->getId(), ['format' => 'full']);
-                    $items = $this->extractDteAttachments($service, $message);
-                    foreach ($items as $item) {
-                        $results->push($item);
-                    }
-                } catch (\Throwable $e) {
-                    Log::warning('Gmail: Error reading message', [
-                        'message_id' => $messageRef->getId(),
-                        'error' => $e->getMessage(),
-                    ]);
+            do {
+                $listParams = [
+                    // before: es exclusivo en Gmail; con la fecha de hoy quedaban fuera los correos del día
+                    // y sus DTE recién entraban después de la medianoche.
+                    'q' => "after:{$from->format('Y/m/d')} before:{$to->copy()->addDay()->format('Y/m/d')} has:attachment",
+                    'maxResults' => 50,
+                ];
+                if ($pageToken) {
+                    $listParams['pageToken'] = $pageToken;
                 }
-            }
 
-            $pageToken = $response->getNextPageToken();
-        } while ($pageToken);
+                $response = $service->users_messages->listUsersMessages('me', $listParams);
+                $messages = $response->getMessages() ?? [];
+                $yaProcesados = $this->mensajesYaProcesados($account, $messages);
 
-        return $results;
+                foreach ($messages as $messageRef) {
+                    if (isset($yaProcesados[$messageRef->getId()])) {
+                        continue;
+                    }
+                    try {
+                        $message = $service->users_messages->get('me', $messageRef->getId(), ['format' => 'full']);
+                        $items = $this->extractDteAttachments($service, $message);
+                    } catch (\Throwable $e) {
+                        Log::warning('Gmail: Error reading message', [
+                            'message_id' => $messageRef->getId(),
+                            'error' => $e->getMessage(),
+                        ]);
+
+                        continue;
+                    }
+                    unset($message);
+                    if ($items === []) {
+                        // Correo con adjuntos pero sin DTE: no cambia, no hace falta volver a descargarlo.
+                        CorreosDteRevisados::marcar($account->id, $messageRef->getId());
+                    }
+                    foreach ($items as $item) {
+                        yield $item;
+                    }
+                    unset($items);
+                }
+
+                $pageToken = $response->getNextPageToken();
+            } while ($pageToken);
+        });
+    }
+
+    /**
+     * IDs de mensajes de la página que ya tienen un DTE guardado (mismo criterio que usa
+     * ProcessDteJob para marcarlos como duplicados), para no descargar otra vez sus adjuntos.
+     *
+     * @param  array<int, object>  $messages
+     * @return array<string, true>
+     */
+    protected function mensajesYaProcesados(UserEmailAccount $account, array $messages): array
+    {
+        $ids = array_map(fn ($m) => $m->getId(), $messages);
+        if ($ids === []) {
+            return [];
+        }
+
+        $conDocumento = DteDocument::withoutGlobalScopes()
+            ->where('id_empresa', $account->id_empresa)
+            ->whereIn('email_message_id', $ids)
+            ->pluck('email_message_id')
+            ->mapWithKeys(fn ($id) => [$id => true])
+            ->all();
+
+        // También los que ya se revisaron sin crear documento (DTE repetido en otro correo).
+        return $conDocumento + CorreosDteRevisados::revisados($account->id, $ids);
     }
 
     /**

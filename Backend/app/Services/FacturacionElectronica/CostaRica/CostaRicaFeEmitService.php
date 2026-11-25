@@ -9,6 +9,7 @@ use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Venta;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
 use App\Services\Ventas\VentaService;
+use App\Support\FacturacionElectronica\ClaveComprobanteCr;
 use App\Support\FacturacionElectronica\CostaRica\ReferenciaComprobanteCr;
 use App\Support\FacturacionElectronica\CostaRicaFeDteDocumento;
 use App\Support\FacturacionElectronica\TipoIdentificacionReceptor;
@@ -198,10 +199,9 @@ final class CostaRicaFeEmitService
                 $e,
                 $client,
                 $data,
-                function (string $clave, array $estado) use ($client, $devolucion, $data): array {
-                    $devolucion->codigo_generacion = $clave;
+                    function (string $clave, array $estado) use ($client, $devolucion, $data): array {
+                    $this->aplicarClaveComprobanteCr($devolucion, $clave);
                     $devolucion->tipo_dte = '03';
-                    $devolucion->sello_mh = $clave;
                     $devolucion->dte = $this->persistirDteCrAceptado($client, $estado);
                     $devolucion->save();
                     if ($devolucion->venta instanceof Venta) {
@@ -235,9 +235,8 @@ final class CostaRicaFeEmitService
         $clave = $client->getDocumentKey();
         $estado = $this->assertEstadoHaciendaAceptadoOFallar($client, $clave, $data);
 
-        $devolucion->codigo_generacion = $clave;
+        $this->aplicarClaveComprobanteCr($devolucion, $clave);
         $devolucion->tipo_dte = '03';
-        $devolucion->sello_mh = $clave;
         $devolucion->dte = $this->persistirDteCrAceptado($client, $estado);
         $devolucion->save();
         $this->guardarCodigoNotaAnulacion($ventaOrigen, $data);
@@ -405,9 +404,8 @@ final class CostaRicaFeEmitService
                 $data,
                 function (string $clave, array $estado) use ($client, $devolucionNd, $venta): array {
                     $dteNd = $this->persistirDteCrAceptado($client, $estado);
-                    $devolucionNd->codigo_generacion = $clave;
+                    $clave = $this->aplicarClaveComprobanteCr($devolucionNd, $clave);
                     $devolucionNd->tipo_dte = '02';
-                    $devolucionNd->sello_mh = $clave;
                     $devolucionNd->dte = $dteNd;
                     $devolucionNd->save();
 
@@ -441,9 +439,8 @@ final class CostaRicaFeEmitService
 
         $dteNd = $this->persistirDteCrAceptado($client, $estado);
 
-        $devolucionNd->codigo_generacion = $clave;
+        $clave = $this->aplicarClaveComprobanteCr($devolucionNd, $clave);
         $devolucionNd->tipo_dte = '02';
-        $devolucionNd->sello_mh = $clave;
         $devolucionNd->dte = $dteNd;
         $devolucionNd->save();
 
@@ -742,10 +739,8 @@ final class CostaRicaFeEmitService
                     $client,
                     $data,
                     function (string $clave, array $estado) use ($client, $venta, $tipoDte): array {
-                        $venta->codigo_generacion = $clave;
-                        $venta->numero_control = self::consecutivoDesdeClave($clave);
+                        $clave = $this->aplicarClaveComprobanteCr($venta, $clave);
                         $venta->tipo_dte = $tipoDte;
-                        $venta->sello_mh = $clave;
                         $venta->dte = $this->persistirDteCrAceptado($client, $estado);
                         $this->olvidarClaveRechazada($venta);
                         $venta->save();
@@ -787,11 +782,8 @@ final class CostaRicaFeEmitService
             throw $e;
         }
 
-        $venta->codigo_generacion = $clave;
-        $venta->numero_control = self::consecutivoDesdeClave($clave);
+        $clave = $this->aplicarClaveComprobanteCr($venta, $clave);
         $venta->tipo_dte = $tipoDte;
-        /** Igual criterio práctico que FE SV: sello_mh informado para listados/UI; valor = clave DGT (50 caracteres). */
-        $venta->sello_mh = $clave;
         $venta->dte = $this->persistirDteCrAceptado($client, $estado);
         $this->olvidarClaveRechazada($venta);
         $venta->save();
@@ -911,9 +903,8 @@ final class CostaRicaFeEmitService
                 $client,
                 $data,
                 function (string $clave, array $estado) use ($client, $compra, $tipoDte): array {
-                    $compra->codigo_generacion = $clave;
+                    $clave = $this->aplicarClaveComprobanteCr($compra, $clave);
                     $compra->tipo_dte = $tipoDte;
-                    $compra->sello_mh = $clave;
                     $compra->dte = $this->persistirDteCrAceptado($client, $estado);
                     $compra->save();
 
@@ -944,9 +935,8 @@ final class CostaRicaFeEmitService
         $clave = $client->getDocumentKey();
         $estado = $this->assertEstadoHaciendaAceptadoOFallar($client, $clave, $data);
 
-        $compra->codigo_generacion = $clave;
+        $clave = $this->aplicarClaveComprobanteCr($compra, $clave);
         $compra->tipo_dte = $tipoDte;
-        $compra->sello_mh = $clave;
         $compra->dte = $this->persistirDteCrAceptado($client, $estado);
         $compra->save();
 
@@ -978,9 +968,8 @@ final class CostaRicaFeEmitService
                 $client,
                 $data,
                 function (string $clave, array $estado) use ($client, $gasto, $tipoDte): array {
-                    $gasto->codigo_generacion = $clave;
+                    $clave = $this->aplicarClaveComprobanteCr($gasto, $clave);
                     $gasto->tipo_dte = $tipoDte;
-                    $gasto->sello_mh = $clave;
                     $gasto->dte = $this->persistirDteCrAceptado($client, $estado);
                     $gasto->save();
 
@@ -1011,9 +1000,8 @@ final class CostaRicaFeEmitService
         $clave = $client->getDocumentKey();
         $estado = $this->assertEstadoHaciendaAceptadoOFallar($client, $clave, $data);
 
-        $gasto->codigo_generacion = $clave;
+        $clave = $this->aplicarClaveComprobanteCr($gasto, $clave);
         $gasto->tipo_dte = $tipoDte;
-        $gasto->sello_mh = $clave;
         $gasto->dte = $this->persistirDteCrAceptado($client, $estado);
         $gasto->save();
 
@@ -1647,7 +1635,27 @@ final class CostaRicaFeEmitService
     /** Clave DGT (50): 506 + DDMMAA + cédula (12) + consecutivo (20) + situación (1) + seguridad (8). */
     public static function consecutivoDesdeClave(string $clave): ?string
     {
-        return strlen($clave) === 50 ? substr($clave, 21, 20) : null;
+        return ClaveComprobanteCr::consecutivoDesdeClave($clave);
+    }
+
+    /**
+     * Persiste clave normalizada + numero_control (20) cuando la clave es válida.
+     *
+     * @return string clave guardada
+     */
+    private function aplicarClaveComprobanteCr(Model $model, string $clave): string
+    {
+        $normalizada = ClaveComprobanteCr::normalizar($clave);
+        $claveFinal = strlen($normalizada) >= 40 ? $normalizada : trim($clave);
+        $model->codigo_generacion = $claveFinal;
+        $model->sello_mh = $claveFinal;
+
+        $consec = self::consecutivoDesdeClave($claveFinal);
+        if ($consec !== null && Schema::hasColumn($model->getTable(), 'numero_control')) {
+            $model->numero_control = $consec;
+        }
+
+        return $claveFinal;
     }
 
     /**
@@ -1685,10 +1693,7 @@ final class CostaRicaFeEmitService
             ];
         }
 
-        $model->sello_mh = $clave;
-        if ($model instanceof Venta) {
-            $model->numero_control = self::consecutivoDesdeClave($clave);
-        }
+        $this->aplicarClaveComprobanteCr($model, $clave);
         $model->save();
 
         return [

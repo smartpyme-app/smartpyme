@@ -82,6 +82,9 @@ export const routes: Routes = [
     {
       path: '',
       canActivate: [AuthGuard, SubscriptionGuard],
+      // Un solo LayoutComponent para todas las rutas protegidas: antes cada módulo lo declaraba
+      // y al cambiar de módulo se destruía y recreaba (encabezado, menú y sus peticiones).
+      component: LayoutComponent,
       children: [
         // Finanzas / reportes (ruta explícita; evita colisión con otros lazy modules en path '')
         {
@@ -90,7 +93,6 @@ export const routes: Routes = [
         },
         {
           path: 'despacho',
-          component: LayoutComponent,
           children: [
             {
               path: 'cartera',

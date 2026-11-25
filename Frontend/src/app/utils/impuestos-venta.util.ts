@@ -671,10 +671,6 @@ export function prepararDetallesParaFacturarDesdeCotizacion(
   (detalles || []).forEach((detalle: any) => {
     detalle.id = null;
 
-    const precioConIvaGuardado = parseFloat(
-      String(detalle?.precio_con_iva ?? detalle?.precio_iva ?? '')
-    );
-    const totalIvaGuardado = parseFloat(String(detalle?.total_iva ?? ''));
     const cantidad = parseFloat(String(detalle?.cantidad ?? 0)) || 0;
     const pct = porcentajeIvaDetalle(
       detalle,
@@ -683,21 +679,61 @@ export function prepararDetallesParaFacturarDesdeCotizacion(
       options?.paisEmpresa
     );
 
-    if (Number.isFinite(precioConIvaGuardado) && String(detalle?.precio_con_iva ?? detalle?.precio_iva ?? '') !== '') {
-      detalle.precio_iva = redondearMoneda(precioConIvaGuardado).toFixed(2);
+    const gravada = parseFloat(String(detalle?.gravada ?? 0)) || 0;
+    const exenta = parseFloat(String(detalle?.exenta ?? 0)) || 0;
+    const noSujeta = parseFloat(String(detalle?.no_sujeta ?? 0)) || 0;
+    const ivaLinea = parseFloat(String(detalle?.iva ?? 0)) || 0;
+    const totalDesdePersistido = redondearMoneda(
+      gravada + exenta + noSujeta + (cobrarImpuestos ? ivaLinea : 0)
+    );
+    const totalIvaRaw = detalle?.total_iva;
+    let totalIvaEfectivo = parseFloat(String(totalIvaRaw ?? ''));
+    if (
+      (!Number.isFinite(totalIvaEfectivo) || String(totalIvaRaw ?? '') === '') &&
+      cantidad > 0 &&
+      totalDesdePersistido > 0
+    ) {
+      totalIvaEfectivo = totalDesdePersistido;
+    }
+
+    const precioConIvaGuardado = parseFloat(
+      String(detalle?.precio_con_iva ?? detalle?.precio_iva ?? '')
+    );
+    const totalPorPrecioUnitario =
+      Number.isFinite(precioConIvaGuardado) && cantidad > 0
+        ? redondearMoneda(cantidad * precioConIvaGuardado)
+        : NaN;
+
+    // Cotización en BD suele traer gravada+iva exactos y precio_con_iva truncado a 2 decimales en pantalla.
+    if (
+      cantidad > 0 &&
+      Number.isFinite(totalIvaEfectivo) &&
+      totalIvaEfectivo > 0 &&
+      (!Number.isFinite(totalPorPrecioUnitario) ||
+        Math.abs(totalPorPrecioUnitario - totalIvaEfectivo) >= 0.01)
+    ) {
+      const descuentoConIva = parseFloat(String(detalle?.descuento_con_iva ?? 0)) || 0;
+      const precioConIva = (totalIvaEfectivo + descuentoConIva) / cantidad;
+      detalle.precio_iva = redondear4(precioConIva).toFixed(4);
+      if (pct > 0) {
+        detalle.precio = (precioConIva / (1 + pct / 100)).toFixed(6);
+      } else {
+        detalle.precio = redondearMoneda(precioConIva).toFixed(6);
+      }
+    } else if (
+      Number.isFinite(precioConIvaGuardado) &&
+      String(detalle?.precio_con_iva ?? detalle?.precio_iva ?? '') !== ''
+    ) {
+      detalle.precio_iva = redondear4(precioConIvaGuardado).toFixed(4);
       if (pct > 0) {
         detalle.precio = (precioConIvaGuardado / (1 + pct / 100)).toFixed(6);
       } else {
         detalle.precio = redondearMoneda(precioConIvaGuardado).toFixed(6);
       }
-    } else if (
-      Number.isFinite(totalIvaGuardado) &&
-      String(detalle?.total_iva ?? '') !== '' &&
-      cantidad > 0
-    ) {
+    } else if (Number.isFinite(totalIvaEfectivo) && cantidad > 0) {
       const descuentoConIva = parseFloat(String(detalle?.descuento_con_iva ?? 0)) || 0;
-      const precioConIva = (totalIvaGuardado + descuentoConIva) / cantidad;
-      detalle.precio_iva = redondearMoneda(precioConIva).toFixed(2);
+      const precioConIva = (totalIvaEfectivo + descuentoConIva) / cantidad;
+      detalle.precio_iva = redondear4(precioConIva).toFixed(4);
       if (pct > 0) {
         detalle.precio = (precioConIva / (1 + pct / 100)).toFixed(6);
       } else {

@@ -14,6 +14,20 @@ trait HasOffloadedDte
     /** @var array|null|false */
     protected $resolvedDteInvalidacionCache = false;
 
+    /**
+     * Si es true, los accessors no descargan de S3 (devuelven null cuando el JSON
+     * ya no está en la columna). Para listados: el front ya usa dte_en_s3 y pide
+     * el documento aparte; descargar aquí hacía 2 llamadas a S3 por fila.
+     */
+    protected $omitirDescargaDteS3 = false;
+
+    public function sinDescargarDteDeS3(): static
+    {
+        $this->omitirDescargaDteS3 = true;
+
+        return $this;
+    }
+
     public function getDteAttribute($value)
     {
         $raw = $this->attributes['dte'] ?? null;
@@ -22,7 +36,7 @@ trait HasOffloadedDte
         }
 
         $s3Key = $this->attributes['dte_s3_key'] ?? null;
-        if (!empty($s3Key)) {
+        if (!empty($s3Key) && !$this->omitirDescargaDteS3) {
             if ($this->resolvedDteMainCache === false) {
                 $this->resolvedDteMainCache = $this->fetchDteFromS3($s3Key);
             }
@@ -52,7 +66,7 @@ trait HasOffloadedDte
         }
 
         $s3Key = $this->attributes['dte_invalidacion_s3_key'] ?? null;
-        if (!empty($s3Key)) {
+        if (!empty($s3Key) && !$this->omitirDescargaDteS3) {
             if ($this->resolvedDteInvalidacionCache === false) {
                 $this->resolvedDteInvalidacionCache = $this->fetchDteFromS3($s3Key);
             }
@@ -127,6 +141,7 @@ trait HasOffloadedDte
     public function reloadDtePayload(): mixed
     {
         $this->resolvedDteMainCache = false;
+        $this->omitirDescargaDteS3 = false;
 
         return $this->dte;
     }

@@ -27,6 +27,6 @@ Route::middleware(['role:super_admin'])->prefix('authorization-types')->group(fu
 
 // Ruta pública para ver autorización (para email)
 Route::get('/authorization/{code}', function ($code) {
-    return redirect(env('APP_URL') . "/authorization/{$code}");
+    return redirect(config('app.url') . "/authorization/{$code}");
 });
 

@@ -11,7 +11,6 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
 import { TranslatePipe } from '@ngx-translate/core';
 import { NgxEchartsModule } from 'ngx-echarts';
-import * as echarts from 'echarts';
 import { SafeHtmlPipe } from '@pipes/safe-html.pipe';
 import { BusquedaClienteComponent } from './modals/busqueda-cliente/busqueda-cliente.component';
 import { BusquedaProductoComponent } from './modals/busqueda-producto/busqueda-producto.component';
@@ -72,7 +71,8 @@ import { VerHistorialButtonComponent } from '../views/planillas/empleados/shared
     NgxMaskDirective,
     NgxMaskPipe,
     TranslatePipe,
-    NgxEchartsModule.forRoot({ echarts }),
+    // echarts se descarga solo cuando una pantalla muestra un gráfico (antes iba completo en main.js).
+    NgxEchartsModule.forRoot({ echarts: () => import('echarts') }),
     TooltipModule.forRoot(),
     PopoverModule.forRoot(),
     BusquedaClienteComponent,

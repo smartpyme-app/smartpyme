@@ -20,9 +20,9 @@ class StoreOpcionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'id' => ['nullable', 'integer', 'exists:composicion_opciones,id'],
+            'id' => ['nullable', 'integer', 'exists:producto_composicion_opciones,id'],
             'id_producto' => ['required', 'integer', 'exists:productos,id'],
-            'id_composicion' => ['required', 'integer', 'exists:composiciones,id'],
+            'id_composicion' => ['required', 'integer', 'exists:producto_composiciones,id'],
         ];
     }
 

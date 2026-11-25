@@ -835,6 +835,11 @@ class MHPruebasMasivasService
     protected function generarEventoRetorno($venta, &$token)
     {
         try {
+            // MHFactura muta precio en memoria (×1.13 al armar el DTE). Si reusamos esa
+            // instancia, MHEventoRetorno vuelve a aplicar ×1.13 y Hacienda rechaza
+            // totalGravada > documento relacionado. Recargar precios netos desde BD.
+            $venta = Venta::with('detalles')->findOrFail($venta->id);
+
             $devolucion = new \App\Models\Ventas\Devoluciones\Devolucion();
             $devolucion->fill([
                 'tipo_dte' => '18',

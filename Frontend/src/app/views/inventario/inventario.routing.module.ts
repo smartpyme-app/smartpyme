@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { LayoutComponent } from '@layout/layout.component';
 import { CitasGuard } from '@guards/citas.guard';
 import { InventarioOperacionesAdminGuard } from '@guards/inventario-operaciones-admin.guard';
 import { TransformacionProductosGuard } from '@guards/transformacion-productos.guard';
@@ -13,6 +12,8 @@ import { PromocionesComponent } from '@views/inventario/promociones/promociones.
 
 import { ProductosConsignasComponent } from '@views/inventario/consignas/productos-consignas.component';
 import { ProductosConsignasComprasComponent } from '@views/inventario/consignas-compras/productos-consignas-compras.component';
+import { ConsignaKardexComponent } from '@views/inventario/consigna-kardex/consigna-kardex.component';
+import { ConsignaCustodiaComponent } from '@views/inventario/consigna-custodia/consigna-custodia.component';
 
 import { MateriasPrimaComponent } from '@views/inventario/materias-prima/materias-prima.component';
 import { MateriaPrimaComponent } from '@views/inventario/materias-prima/materia-prima/materia-prima.component';
@@ -45,7 +46,6 @@ import { ProductoPresentacionesComponent } from '@views/inventario/productos/pro
 const routes: Routes = [
   {
     path: '',
-    component: LayoutComponent,
     title: 'Inventario',
     children: [
         { path: 'productos', component: ProductosComponent, title: 'Productos' },
@@ -55,8 +55,12 @@ const routes: Routes = [
         { path: 'producto/editar/:id', component: ProductoComponent, title: 'Producto' },
 
 
-        { path: 'consignas', canActivate: [InventarioOperacionesAdminGuard, PermissionGuard], data: { permission: 'compras.consignas.ver' }, component: ProductosConsignasComprasComponent, title: 'Consignas' },
-        { path: 'consignas/ventas', canActivate: [InventarioOperacionesAdminGuard, PermissionGuard], data: { permission: 'ventas.consignas.ver' }, component: ProductosConsignasComponent, title: 'Consignas' },
+        { path: 'consignas', canActivate: [InventarioOperacionesAdminGuard, PermissionGuard], data: { permission: 'compras.consignas.ver' }, component: ProductosConsignasComprasComponent, title: 'Compras en consigna' },
+        { path: 'consigna-kardex', canActivate: [InventarioOperacionesAdminGuard, PermissionGuard], data: { permission: 'inventario.consigna_kardex.ver' }, component: ConsignaKardexComponent, title: 'Kardex consigna' },
+        { path: 'consigna-custodia', canActivate: [InventarioOperacionesAdminGuard, PermissionGuard], data: { permission: 'inventario.consigna_kardex.ver' }, component: ConsignaCustodiaComponent, title: 'Ventas en consigna' },
+        { path: 'consigna-historial', redirectTo: 'consigna-custodia', pathMatch: 'full' },
+        { path: 'consignas/custodia', redirectTo: 'consigna-custodia', pathMatch: 'full' },
+        { path: 'consignas/ventas', canActivate: [InventarioOperacionesAdminGuard, PermissionGuard], data: { permission: 'ventas.consignas.ver' }, component: ProductosConsignasComponent, title: 'Productos en consigna' },
         { path: 'consignas-compras', redirectTo: 'consignas', pathMatch: 'full' },
 
         { path: 'materias-primas', component: MateriasPrimaComponent, title: 'Materias primas' },

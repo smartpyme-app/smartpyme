@@ -120,6 +120,8 @@ class ProductosController extends Controller
             ->orderBy($request->orden ? $request->orden : 'nombre', $request->direccion ? $request->direccion : 'desc')
             ->paginate($request->paginate);
 
+        $this->asignarProductoLigeroALotes($productos->getCollection());
+
         $payload = $productos->toArray();
         if ($stockTotalFiltrado !== null) {
             $payload['stock_total_filtrado'] = round((float) $stockTotalFiltrado, 2);
@@ -131,6 +133,26 @@ class ProductosController extends Controller
     /**
      * Query base del listado de productos (inventario) con los mismos filtros que el index.
      */
+    /**
+     * El accessor Lote::nombre_producto cargaba el producto COMPLETO por cada lote
+     * (y ese producto, a su vez, consultaba imágenes, categoría y lotes: ~7 consultas por lote).
+     * Se le asigna un producto mínimo (id, nombre) con los datos que ya tenemos.
+     */
+    protected function asignarProductoLigeroALotes($productos): void
+    {
+        foreach ($productos as $producto) {
+            if (!$producto->relationLoaded('lotes') || $producto->lotes->isEmpty()) {
+                continue;
+            }
+            $ligero = (new Producto())
+                ->setRawAttributes(['id' => $producto->id, 'nombre' => $producto->nombre], true)
+                ->setAppends([]);
+            foreach ($producto->lotes as $lote) {
+                $lote->setRelation('producto', $ligero);
+            }
+        }
+    }
+
     protected function buildProductosListadoQuery(Request $request, ?Empresa $empresa, bool $withRelations): \Illuminate\Database\Eloquent\Builder
     {
         $tipos = $request->boolean('con_servicios') ? ['Producto', 'Compuesto', 'Servicio'] : ['Producto', 'Compuesto'];
@@ -155,6 +177,11 @@ class ProductosController extends Controller
                     if ($request->id_bodega) {
                         $q->where('id_bodega', $request->id_bodega);
                     }
+                    // nombre_bodega / bodega.nombre se usan en el listado: precargar (evita 2 consultas por lote).
+                    $q->with(['bodega' => function ($bq) {
+                        $bq->select('id', 'nombre', 'id_sucursal')
+                            ->with(['sucursal:id,nombre']);
+                    }]);
                 },
             ]);
         }

@@ -151,6 +151,21 @@ try {
             ];
             break;
 
+        case 'anular_pedido':
+            $req = Request::create(
+                '/api/restaurante/pedidos/' . (int) $input['pedido_id'] . '/anular',
+                'PUT',
+                []
+            );
+            $req->setUserResolver(fn () => $user);
+            $resp = app(PedidoRestauranteController::class)->anular($req, (int) $input['pedido_id']);
+            $result = [
+                'ok' => $resp->getStatusCode() < 400,
+                'status' => $resp->getStatusCode(),
+                'body' => json_decode($resp->getContent(), true),
+            ];
+            break;
+
         default:
             $result = ['ok' => false, 'error' => 'unknown action'];
     }

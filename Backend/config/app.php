@@ -54,6 +54,11 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    // URL del frontend (enlaces en correos, p. ej. restablecer contraseña). Antes se leía con env() en el
+    // código, que devuelve null cuando la configuración está cacheada (php artisan optimize).
+    'frontend_url' => env('FRONTEND_URL', 'https://app.smartpyme.site'),
+    'frontend_url_local' => env('FRONTEND_URL_LOCAL', 'http://localhost:4200'),
+
     'asset_url' => env('ASSET_URL', null),
 
     /*

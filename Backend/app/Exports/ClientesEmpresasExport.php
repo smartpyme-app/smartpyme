@@ -2,14 +2,17 @@
 
 namespace App\Exports;
 
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\FromQuery;
+use App\Exports\Concerns\ConsultaClientesExport;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Illuminate\Http\Request;
 use App\Models\Ventas\Clientes\Cliente;
 
-class ClientesEmpresasExport implements FromCollection, WithHeadings, WithMapping
+class ClientesEmpresasExport implements FromQuery, WithHeadings, WithMapping
 {
+    use ConsultaClientesExport;
+
     /**
     * @return \Illuminate\Support\Collection
     */
@@ -26,6 +29,7 @@ class ClientesEmpresasExport implements FromCollection, WithHeadings, WithMappin
             'NCR',
             'Giro',
             'Tipo_contribuyente',
+            'Codigo_cliente_empresa',
             'DUI',
             'NIT',
             'Direccion',
@@ -40,28 +44,9 @@ class ClientesEmpresasExport implements FromCollection, WithHeadings, WithMappin
         ];
     }
 
-    public function collection()
+    public function query()
     {
-        $request = $this->request;
-
-        return Cliente::where('id','!=', 1)//->withSum('ventas', 'total')
-                    ->when($request->buscador, function($query) use ($request){
-                        return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
-                                    ->orwhere('nombre_empresa', 'like',  '%'. $request->buscador .'%')
-                                    ->orwhere('nombre_comercial', 'like',  '%'. $request->buscador .'%')
-                                    ->orwhere('nit', 'like',  '%'. $request->buscador .'%')
-                                    ->orwhere('giro', 'like',  '%'. $request->buscador .'%')
-                                    ->orwhere('telefono', 'like',  '%'. $request->buscador .'%')
-                                    ->orwhere('ncr', 'like',  '%'. $request->buscador .'%')
-                                    ->orwhere('dui', 'like',  '%'. $request->buscador .'%');
-                    })
-                    ->when($request->estado !== null, function($q) use ($request){
-                        $q->where('enable', !!$request->estado);
-                    })
-                    ->where('tipo', 'Empresa')
-                    ->orderBy($request->orden, $request->direccion)
-                    ->get();
-        
+        return $this->consultaClientes('Empresa');
     }
 
     public function map($row): array{
@@ -70,6 +55,7 @@ class ClientesEmpresasExport implements FromCollection, WithHeadings, WithMappin
                 $row->ncr,
                 $row->giro,
                 $row->tipo_contribuyente,
+                $row->codigo_cliente,
                 $row->dui,
                 $row->nit,
                 $row->empresa_direccion ?? $row->direccion,

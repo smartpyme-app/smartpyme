@@ -93,6 +93,87 @@ export function descuentoImplicitoLinea(
 }
 
 /**
+ * Líneas de egreso creadas desde ATV CR a veces quedaron con sub_total/total = 0
+ * (ventaTotal ausente en el JSON compat). Al editar, descuentoImplicitoLinea
+ * inventaba un descuento = cantidad×precio y al guardar el total caía a cero.
+ * Reconstruye desde el ítem DTE o, si no hay, asume precio sin descuento.
+ */
+export function repararLineaGastoSubtotalCero(
+  d: {
+    cantidad?: number | string | null;
+    precio_unitario?: number | string | null;
+    sub_total?: number | string | null;
+    iva?: number | string | null;
+    total?: number | string | null;
+    tipo_gravado?: string | null;
+    aplica_iva?: boolean | null;
+  },
+  opts: {
+    ivaRate: number;
+    precioSinImpuesto: boolean;
+    tipoDte?: string;
+    itemDte?: Parameters<typeof montosLineaGastoDesdeDte>[0] | null;
+  }
+): {
+  cantidad: number;
+  precio_unitario: number;
+  descuento: number;
+  sub_total: number;
+  iva: number;
+  total: number;
+  tipo_gravado: 'gravada' | 'exenta' | 'no_sujeta';
+} {
+  const sub = parseFloat(String(d.sub_total ?? 0)) || 0;
+  if (sub > 0) {
+    const cant = parseFloat(String(d.cantidad ?? 0)) || 1;
+    const precio = parseFloat(String(d.precio_unitario ?? 0)) || 0;
+    const tg =
+      d.tipo_gravado === 'exenta' || d.tipo_gravado === 'no_sujeta' || d.tipo_gravado === 'gravada'
+        ? d.tipo_gravado
+        : d.aplica_iva
+          ? 'gravada'
+          : 'no_sujeta';
+    const iva = round2(parseFloat(String(d.iva ?? 0)) || 0);
+    const tot = round2(parseFloat(String(d.total ?? 0)) || 0);
+    return {
+      cantidad: cant,
+      precio_unitario: precio,
+      descuento: descuentoImplicitoLinea(cant, precio, sub),
+      sub_total: round2(sub),
+      iva,
+      total: tot > 0 ? tot : round2(sub + iva),
+      tipo_gravado: tg,
+    };
+  }
+
+  if (opts.itemDte) {
+    return montosLineaGastoDesdeDte(opts.itemDte, {
+      ivaRate: opts.ivaRate,
+      precioSinImpuesto: opts.precioSinImpuesto,
+      tipoDte: opts.tipoDte,
+    });
+  }
+
+  const cant = parseFloat(String(d.cantidad ?? 0)) || 1;
+  const precio = parseFloat(String(d.precio_unitario ?? 0)) || 0;
+  const base = round2(Math.max(0, cant * precio));
+  const tg =
+    d.tipo_gravado === 'exenta' || d.tipo_gravado === 'no_sujeta' || d.tipo_gravado === 'gravada'
+      ? d.tipo_gravado
+      : 'gravada';
+  const iva = tg === 'gravada' && opts.ivaRate > 0 ? round2(base * opts.ivaRate) : 0;
+  return {
+    cantidad: cant,
+    precio_unitario: precio,
+    descuento: 0,
+    sub_total: base,
+    iva,
+    total: round2(base + iva),
+    tipo_gravado: tg,
+  };
+}
+
+/**
  * Descuento de una línea de El Salvador que el formulario puede volver a calcular
  * (subtotal = cantidad × precio − descuento) sin mover la base ya importada.
  * Crédito fiscal: el precio viene sin IVA y la base es neta. Factura: el precio

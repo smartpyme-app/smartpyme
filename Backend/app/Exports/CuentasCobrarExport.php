@@ -84,6 +84,16 @@ class CuentasCobrarExport implements FromCollection, WithHeadings, WithMapping, 
                         ->orWhere('observaciones', 'like', $buscador);
                 });
             })
+            ->when($request->con_ajuste == 1 || $request->con_ajuste === '1', function ($query) {
+                return $query->whereHas('devoluciones', function ($q) {
+                    $q->where('enable', 1);
+                });
+            })
+            ->when($request->con_ajuste === '0' || $request->con_ajuste === 0, function ($query) {
+                return $query->whereDoesntHave('devoluciones', function ($q) {
+                    $q->where('enable', 1);
+                });
+            })
             ->where('cotizacion', 0)
             ->withSum(['abonos' => function ($query) {
                 $query->where('estado', 'Confirmado');

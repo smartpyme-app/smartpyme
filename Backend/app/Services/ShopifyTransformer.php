@@ -254,7 +254,8 @@ class ShopifyTransformer
             'id_empresa' => $shopifyData['id_empresa'],
             'id_usuario' => $shopifyData['id_usuario'],
             'id_sucursal' => $shopifyData['id_sucursal'],
-            'id_canal' => $shopifyData['id_canal'],
+            // Las actualizaciones de cotizaciones no traen id_canal (la cotización no lo usa).
+            'id_canal' => $shopifyData['id_canal'] ?? null,
             'num_orden' => $shopifyData['order_number'] ?? $shopifyData['name'] ?? null,
             'referencia_shopify' => 'SHOPIFY-' . $shopifyData['id'],
         ];

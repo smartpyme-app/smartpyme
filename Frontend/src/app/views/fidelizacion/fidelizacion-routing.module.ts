@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { LayoutComponent } from '../../layout/layout.component';
 import { ConfiguracionClienteComponent } from './configuracion-cliente/configuracion-cliente.component';
 import { ClientesFidelizacionComponent } from './clientes-fidelizacion/clientes-fidelizacion.component';
 import { ClienteDetallesFidelizacionComponent } from './cliente-detalles-fidelizacion/cliente-detalles-fidelizacion.component';
@@ -9,7 +8,6 @@ import { FuncionalidadGuard } from '@guards/funcionalidad.guard';
 const routes: Routes = [
   {
     path: '',
-    component: LayoutComponent,
     title: 'Lealtad',
     canActivate: [FuncionalidadGuard],
     data: { funcionalidadSlug: 'fidelizacion-clientes' },

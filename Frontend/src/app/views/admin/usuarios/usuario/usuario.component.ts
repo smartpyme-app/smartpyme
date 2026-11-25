@@ -200,11 +200,11 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
     if (id === 0 || isNaN(id)) {
       // Nuevo usuario
       this.usuario = {};
-      this.usuario.rol_id = 2;
-      this.usuario.tipo = 'Administrador';
-      this.usuario.id_sucursal = this.apiService.auth_user().id_sucursal;
+      this.usuario.id_sucursal = this.apiService.auth_user()?.id_sucursal;
       this.usuario.caja_id = 1;
       this.usuario.activo = true;
+      this.usuario.enable = true;
+      this.loadRolesForForm();
     } else {
       // Usuario existente
       this.loadAll(id);
@@ -289,27 +289,41 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
       }
     );
 
+    this.loadRolesForForm();
+  }
+
+  private loadRolesForForm(): void {
     this.apiService.getAll('roles')
       .pipe(this.untilDestroyed())
       .subscribe(
-      (roles) => {
-        this.roles = roles.map((role: any) => {
-          return {
-            ...role,
-            name: role.name
-              .split('_')
-              .map(
-                (word: string) => word.charAt(0).toUpperCase() + word.slice(1)
-              )
-              .join(' '),
-          };
-        });
-        this.cdr.markForCheck();
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+        (roles) => {
+          this.roles = (roles ?? []).map((role: any) => {
+            const slug = typeof role.name === 'string' ? role.name : '';
+            return {
+              ...role,
+              slug,
+              name: slug
+                .split('_')
+                .map(
+                  (word: string) => word.charAt(0).toUpperCase() + word.slice(1)
+                )
+                .join(' '),
+            };
+          });
+          if (
+            (this.usuario.rol_id == null || this.usuario.rol_id === '') &&
+            !this.usuario.id
+          ) {
+            const admin = this.roles.find((r: { slug?: string }) => r.slug === 'admin');
+            this.usuario.rol_id = admin?.id ?? this.roles[0]?.id ?? null;
+          }
+          this.cdr.markForCheck();
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.cdr.markForCheck();
+        }
+      );
   }
 
   public onSubmit() {

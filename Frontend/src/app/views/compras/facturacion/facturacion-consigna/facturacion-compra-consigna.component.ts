@@ -15,12 +15,15 @@ import { of } from 'rxjs';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { esDocumentoCompraSinIvaFiscal, FACTURA_REMISION } from '../../../../constants/documento.constants';
 import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
+import { TranslatePipe } from '@ngx-translate/core';
+import { esElSalvadorFe as empresaEsElSalvador } from '@services/facturacion-electronica/fe-pais.util';
+import * as moment from 'moment';
 
 @Component({
     selector: 'app-facturacion-compra-consigna',
     templateUrl: './facturacion-compra-consigna.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, LazyImageDirective],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, LazyImageDirective, TranslatePipe],
     providers: [SumPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -31,7 +34,7 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
     public documentos: any = [];
     public documentosTodos: any = [];
     public formaPagos: any = [];
-    public sucursales: any = [];
+    public bodegas: any = [];
     public bancos: any = [];
     public override loading = false;
 
@@ -99,9 +102,12 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
                         .pipe(this.untilDestroyed())
                         .subscribe(compra => {
                             this.compra = compra;
+                            this.compra.cotizacion = this.compra.cotizacion ?? 0;
+                            this.compra.otros_cargos = this.compra.otros_cargos ?? 0;
                             this.compra.cobrar_impuestos = Number(this.compra.iva) > 0;
                             this.compra.cobrar_percepcion = Number(this.compra.percepcion) > 0;
                             this.compra.retencion = Number(this.compra.iva_retenido) > 0 ? 1 : 0;
+                            this.syncCompraCreditoConsignaFlagsFromEstado();
                             this.loading = false;
                             this.cargarDatos();
                             this.sumTotal();
@@ -120,10 +126,14 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
     }
 
     public cargarDatos() {
-        this.apiService.getAll('sucursales/list')
+        this.apiService.getAll('bodegas/list')
             .pipe(this.untilDestroyed())
-            .subscribe(sucursales => {
-                this.sucursales = sucursales;
+            .subscribe(bodegas => {
+                this.bodegas = bodegas ?? [];
+                if (!this.compra.id_bodega) {
+                    this.compra.id_bodega = this.apiService.auth_user().id_bodega;
+                }
+                this.setBodega();
                 this.cdr.markForCheck();
             }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
 
@@ -150,8 +160,6 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
                 }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
         }
 
-        this.cargarDocumentos();
-
         this.apiService.getAll('formas-de-pago/list')
             .pipe(this.untilDestroyed())
             .subscribe(formaPagos => {
@@ -172,12 +180,22 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
             }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
+    public setBodega(): void {
+        const bodega = this.bodegas.find((b: any) => Number(b.id) === Number(this.compra.id_bodega));
+        if (bodega) {
+            this.compra.id_sucursal = bodega.id_sucursal;
+        }
+        if (this.compra.id_sucursal) {
+            this.cargarDocumentos();
+        }
+    }
+
     public cargarDocumentos() {
         this.apiService.getAll('documentos/list')
             .pipe(this.untilDestroyed())
             .subscribe(documentos => {
                 this.documentosTodos = documentos.filter(
-                    (x: any) => x.id_sucursal == this.compra.id_sucursal
+                    (x: any) => Number(x.id_sucursal) === Number(this.compra.id_sucursal)
                 );
                 this.documentos = this.documentosTodos.filter(
                     (x: any) => x.nombre !== FACTURA_REMISION
@@ -231,6 +249,43 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
         return esDocumentoCompraSinIvaFiscal(this.compra?.tipo_documento);
     }
 
+    public esElSalvadorFe(): boolean {
+        return empresaEsElSalvador(this.apiService.auth_user()?.empresa);
+    }
+
+    private syncCompraCreditoConsignaFlagsFromEstado(): void {
+        const e = this.compra?.estado;
+        this.compra.consigna = e === 'Consigna';
+        this.compra.credito = e === 'Pendiente' || e === 'Consigna';
+    }
+
+    public setCredito(): void {
+        if (this.compra.credito) {
+            this.compra.estado = 'Pendiente';
+            this.compra.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
+        } else {
+            this.compra.estado = 'Pagada';
+            this.compra.fecha_pago = moment().format('YYYY-MM-DD');
+            this.compra.consigna = false;
+        }
+        this.cdr.markForCheck();
+    }
+
+  /** ponytail: sin restaurar tipo documento al quitar consigna (liquidación consigna). */
+    public setConsigna(): void {
+        if (this.compra.consigna) {
+            this.compra.estado = 'Consigna';
+            const documento = (this.documentos || []).find((x: any) => x.nombre === FACTURA_REMISION);
+            if (documento) {
+                this.compra.tipo_documento = FACTURA_REMISION;
+                this.selectTipoDocumento();
+            }
+        } else {
+            this.setCredito();
+        }
+        this.cdr.markForCheck();
+    }
+
     public cambioMetodoDePago() {
         const fp = this.compra.forma_pago;
         if (fp === 'Efectivo' || fp === 'Wompi') {
@@ -281,7 +336,14 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
         }
 
         this.compra.descuento = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'descuento'))).toFixed(2);
-        this.compra.total = (parseFloat(this.compra.sub_total) + parseFloat(this.compra.iva) + parseFloat(this.compra.percepcion) - parseFloat(this.compra.iva_retenido)).toFixed(2);
+        const otrosCargos = parseFloat(this.compra.otros_cargos) || 0;
+        this.compra.total = (
+            parseFloat(this.compra.sub_total)
+            + parseFloat(this.compra.iva)
+            + parseFloat(this.compra.percepcion)
+            - parseFloat(this.compra.iva_retenido)
+            + otrosCargos
+        ).toFixed(2);
         this.cdr.markForCheck();
     }
 

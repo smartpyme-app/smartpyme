@@ -240,8 +240,17 @@ class WebhookN1coController extends Controller
 
     private function handleFailedPayment($payload)
     {
-        $metadata = $payload['metadata'];
-        $userEmail = $metadata['BuyerEmail'];
+        $metadata = $payload['metadata'] ?? [];
+        $userEmail = $metadata['BuyerEmail'] ?? null;
+
+        // Algunos eventos PaymentError llegan sin BuyerEmail: no hay a quién asociarlos.
+        if (!$userEmail) {
+            Log::channel('payments_error')->warning('N1co Webhook: PaymentError sin BuyerEmail', [
+                'orderId' => $payload['orderId'] ?? null,
+                'orderReference' => $payload['orderReference'] ?? null,
+            ]);
+            return response()->json(['status' => 'success']);
+        }
 
         $user = User::where('email', $userEmail)->first();
 
@@ -254,8 +263,7 @@ class WebhookN1coController extends Controller
                 ]);
             }
 
-            $empresa = Empresa::find($user->id_empresa);
-            $empresa->update([
+            Empresa::find($user->id_empresa)?->update([
                 'metodo_pago' => config('constants.METODO_PAGO_N1CO')
             ]);
 
@@ -306,12 +314,15 @@ class WebhookN1coController extends Controller
                 ->where('estado', config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE'))
                 ->first();
 
-            $ordenPago->update([
-                'id_orden_n1co' => $payload['orderId'],
-                'updated_at' => now()
-            ]);
-
             if (!$ordenPago) {
+                // n1co reenvía el evento: si la orden existe pero ya salió de "pendiente de autenticación",
+                // ya se procesó antes; se responde 200 para que deje de reintentar.
+                if (OrdenPago::where('id_orden', $payload['orderReference'])->exists()) {
+                    Log::channel('payments_success')->info('N1co Webhook: evento 3DS repetido, la orden ya fue procesada', [
+                        'orderReference' => $payload['orderReference']
+                    ]);
+                    return response()->json(['status' => 'success', 'message' => 'Orden ya procesada']);
+                }
                 Log::channel('payments_error')->warning('N1co Webhook: Orden de pago no encontrada o no está en estado pendiente de autenticación', [
                     'orderReference' => $payload['orderReference']
                 ]);
@@ -320,6 +331,12 @@ class WebhookN1coController extends Controller
                     'message' => 'Orden no encontrada o no está en estado pendiente de autenticación'
                 ], 404);
             }
+
+            $ordenPago->update([
+                'id_orden_n1co' => $payload['orderId'],
+                'updated_at' => now()
+            ]);
+
 
             // Actualizar el estado de autenticación
             $ordenPago->update([
@@ -364,19 +381,15 @@ class WebhookN1coController extends Controller
                 ->where('estado', config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE'))
                 ->first();
 
-            $ordenPago->update([
-                'id_orden_n1co' => $payload['orderId'],
-                'estado' => config('constants.ESTADO_ORDEN_AUTENTICACION_FALLIDA'),
-                'updated_at' => now()
-            ]);
-
-            $usuario = User::find($ordenPago->id_usuario);
-            $empresa = Empresa::find($usuario->id_empresa);
-            $empresa->update([
-                'metodo_pago' => config('constants.METODO_PAGO_N1CO')
-            ]);
-
             if (!$ordenPago) {
+                // n1co reenvía el evento: si la orden existe pero ya salió de "pendiente de autenticación",
+                // ya se procesó antes; se responde 200 para que deje de reintentar.
+                if (OrdenPago::where('id_orden', $payload['orderReference'])->exists()) {
+                    Log::channel('payments_success')->info('N1co Webhook: evento 3DS repetido, la orden ya fue procesada', [
+                        'orderReference' => $payload['orderReference']
+                    ]);
+                    return response()->json(['status' => 'success', 'message' => 'Orden ya procesada']);
+                }
                 Log::channel('payments_error')->warning('N1co Webhook: Orden de pago no encontrada o no está en estado pendiente de autenticación', [
                     'orderReference' => $payload['orderReference']
                 ]);
@@ -386,16 +399,28 @@ class WebhookN1coController extends Controller
                 ], 404);
             }
 
+            $ordenPago->update([
+                'id_orden_n1co' => $payload['orderId'],
+                'estado' => config('constants.ESTADO_ORDEN_AUTENTICACION_FALLIDA'),
+                'updated_at' => now()
+            ]);
+
+            $usuario = User::find($ordenPago->id_usuario);
+            $empresa = $usuario ? Empresa::find($usuario->id_empresa) : null;
+            $empresa?->update([
+                'metodo_pago' => config('constants.METODO_PAGO_N1CO')
+            ]);
+
+
             // Actualizar el estado de autenticación
             $ordenPago->update([
                 'estado' => config('constants.ESTADO_ORDEN_AUTENTICACION_FALLIDA'),
                 'id_autorizacion_3ds' => $payload['metadata']['authenticationId'],
             ]);
 
-            $empresa = Empresa::find($usuario->id_empresa);
-            $suscripcion = Suscripcion::where('empresa_id', $empresa->id)->first();
+            $suscripcion = $empresa ? Suscripcion::where('empresa_id', $empresa->id)->first() : null;
 
-            $suscripcion->update([
+            $suscripcion?->update([
                 'estado_ultimo_pago' => config('constants.ESTADO_ORDEN_PAGO_FALLIDO'),
                 'fecha_ultimo_pago' => now(),
                 'estado' => config('constants.ESTADO_SUSCRIPCION_PENDIENTE')

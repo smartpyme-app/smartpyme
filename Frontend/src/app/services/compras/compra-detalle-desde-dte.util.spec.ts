@@ -1,4 +1,8 @@
-import { lineaGastoTieneDesglose, montosLineaGastoDesdeDte } from './compra-detalle-desde-dte.util';
+import {
+  lineaGastoTieneDesglose,
+  montosLineaGastoDesdeDte,
+  repararLineaGastoSubtotalCero,
+} from './compra-detalle-desde-dte.util';
 
 describe('montosLineaGastoDesdeDte', () => {
   it('en Costa Rica usa la base después del descuento y suma el 13%', () => {
@@ -80,6 +84,59 @@ describe('montosLineaGastoDesdeDte', () => {
     expect(linea.descuento).toBe(0);
     expect(linea.sub_total).toBe(100);
     expect(linea.iva).toBe(13);
+    expect(linea.total).toBe(113);
+  });
+});
+
+describe('repararLineaGastoSubtotalCero', () => {
+  it('no inventa descuento del 100% cuando el subtotal importado quedó en cero', () => {
+    const linea = repararLineaGastoSubtotalCero(
+      { cantidad: 1, precio_unitario: 2400.46, sub_total: 0, total: 0 },
+      { ivaRate: 0.13, precioSinImpuesto: true, tipoDte: '01' }
+    );
+
+    expect(linea.descuento).toBe(0);
+    expect(linea.sub_total).toBe(2400.46);
+    expect(linea.iva).toBe(312.06);
+    expect(linea.total).toBe(2712.52);
+  });
+
+  it('reconstruye desde el ítem DTE si el subtotal guardado es cero', () => {
+    const linea = repararLineaGastoSubtotalCero(
+      { cantidad: 21, precio_unitario: 2632.75, sub_total: 0, total: 0 },
+      {
+        ivaRate: 0.13,
+        precioSinImpuesto: true,
+        tipoDte: '01',
+        itemDte: {
+          cantidad: 21,
+          precioUni: 2632.75,
+          ventaGravada: 27643.88,
+          montoDescu: 27643.87,
+        },
+      }
+    );
+
+    expect(linea.descuento).toBe(27643.87);
+    expect(linea.sub_total).toBe(27643.88);
+    expect(linea.total).toBe(31237.58);
+  });
+
+  it('conserva montos si el subtotal ya es válido', () => {
+    const linea = repararLineaGastoSubtotalCero(
+      {
+        cantidad: 1,
+        precio_unitario: 100,
+        sub_total: 100,
+        iva: 13,
+        total: 113,
+        tipo_gravado: 'gravada',
+      },
+      { ivaRate: 0.13, precioSinImpuesto: true }
+    );
+
+    expect(linea.descuento).toBe(0);
+    expect(linea.sub_total).toBe(100);
     expect(linea.total).toBe(113);
   });
 });

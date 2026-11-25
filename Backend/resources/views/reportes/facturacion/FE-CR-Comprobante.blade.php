@@ -54,11 +54,11 @@
         return $simbolo.number_format((float) $n, 2, '.', '');
     };
     $fecha = $documento['date'] ?? '';
-    $est = (string) ($documento['establishment'] ?? '');
-    $punto = (string) ($documento['emission_point'] ?? '');
-    $seq = (string) ($documento['sequential'] ?? '');
-    $consecutivoParts = array_filter([$est, $punto, $seq], static fn ($x) => $x !== '' && $x !== null);
-    $consecutivo = implode('-', $consecutivoParts);
+    $tipoDocCodigo = $tipoDteCodigo ?? '01';
+    $consecutivo = \App\Support\FacturacionElectronica\CostaRicaXmlComprobantePdfMapper::formatoConsecutivoParaMostrar(
+        $documento,
+        $tipoDocCodigo
+    );
     $saleCond = str_pad((string) ($documento['sale_condition'] ?? '01'), 2, '0', STR_PAD_LEFT);
     $saleCondOtro = trim((string) ($documento['sale_condition_other'] ?? $documento['other_sale_condition'] ?? ''));
     $condicionMap = [
@@ -76,7 +76,6 @@
     } else {
         $condicionTxt = $saleCond !== '' ? ('Código '.$saleCond.($saleCondOtro !== '' ? ' · '.$saleCondOtro : '')) : '—';
     }
-    $tipoDocCodigo = $tipoDteCodigo ?? '01';
     $tiposNombre = [
         '01' => 'Factura electrónica',
         '02' => 'Nota de débito electrónica',
@@ -389,7 +388,18 @@
                 <tr>
                     <td>{{ $entry['idx'] ?? '' }}</td>
                     <td style="font-size:7px;">{{ $line['cabys_code'] ?? '' }}</td>
-                    <td>{{ $line['description'] ?? '' }}</td>
+                    <td>
+                        {{ $line['description'] ?? '' }}
+                        @php
+                            $empresaPdf = $registro->empresa ?? null;
+                            $textoServicio = ($registro instanceof \App\Models\Ventas\Venta)
+                                ? \App\Support\Ventas\VentaPdfLineaDescripcionServicio::textoParaPdf($registro, (int) ($entry['idx'] ?? 0), $empresaPdf)
+                                : '';
+                        @endphp
+                        @if ($textoServicio !== '')
+                            <br><span class="muted">{!! nl2br(e($textoServicio)) !!}</span>
+                        @endif
+                    </td>
                     <td class="text-right">{{ number_format((float) ($line['quantity'] ?? 0), 2, '.', '') }}</td>
                     <td style="font-size:7px;">{{ $fmtUm($line['unit_measure'] ?? '') }}</td>
                     <td class="text-right">{{ $fmtMonto($line['unit_price'] ?? 0) }}</td>

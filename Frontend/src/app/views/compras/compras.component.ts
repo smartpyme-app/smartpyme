@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { OpcionSelect, opcionesSelect } from '@shared/utils/opciones-select.util';
 import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -100,6 +101,8 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
     public bancos: any[] = [];
     public documentos:any = [];
     public proveedores:any = [];
+    /** Opciones con virtualScroll: un <ng-option> por proveedor se vuelve pesado con miles. */
+    public proveedoresOpciones: OpcionSelect[] = [];
     public usuarios:any = [];
     public proyectos:any = [];
     public sucursales:any = [];
@@ -324,6 +327,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
 
         this.apiService.getAll('proveedores/list', { minimal: 1 }).subscribe(proveedores => {
             this.proveedores = proveedores;
+            this.proveedoresOpciones = opcionesSelect(proveedores);
         }, error => {this.alertService.error(error); });
 
         this.funcionalidadesService
@@ -1460,6 +1464,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
   setProveedorBulk(item: BulkCompraItem, proveedor: any) {
     if (!item.compra.id_proveedor) {
       this.proveedores.push(proveedor);
+      this.proveedoresOpciones = opcionesSelect(this.proveedores);
     }
     item.compra.id_proveedor = proveedor.id;
     if (proveedor.tipo_contribuyente === 'Grande') {

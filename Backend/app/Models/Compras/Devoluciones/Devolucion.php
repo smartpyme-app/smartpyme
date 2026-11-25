@@ -5,6 +5,7 @@ namespace App\Models\Compras\Devoluciones;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use JWTAuth;
+use Illuminate\Support\Facades\Auth;
 
 class Devolucion extends Model {
 
@@ -40,13 +41,15 @@ class Devolucion extends Model {
 
     protected static function booted()
     {
-        $usuario = JWTAuth::parseToken()->authenticate();
-
-        if ($usuario){
-            static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
-                $builder->where('id_empresa', $usuario->id_empresa);
-            });
-        }
+        // El usuario se resuelve al consultar (no al cargar el modelo): sin token (reportes
+        // automáticos, consola) JWTAuth::parseToken() lanzaba "The token could not be parsed".
+        // Sin usuario no se agrega filtro; los reportes filtran por id_empresa explícitamente.
+        static::addGlobalScope('empresa', function (Builder $builder) {
+            $usuario = Auth::guard('api')->user() ?? Auth::user();
+            if ($usuario) {
+                $builder->where($builder->getModel()->getTable() . '.id_empresa', $usuario->id_empresa);
+            }
+        });
     }
 
     public function getDteAttribute($value)

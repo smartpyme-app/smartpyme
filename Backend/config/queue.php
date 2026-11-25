@@ -63,8 +63,14 @@ return [
             'driver' => 'redis',
             'connection' => 'default',
             'queue' => env('REDIS_QUEUE', 'default'),
-            'retry_after' => 90,
+            // Debe ser mayor que el --timeout del worker (3600) y que el $timeout de los jobs largos
+            // (exportaciones a Shopify/WooCommerce, kardex masivo, reportes automáticos). Con 90 s, un
+            // job que tardara más se volvía a entregar y se ejecutaba dos veces.
+            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 3700),
             'block_for' => null,
+            // Con QUEUE_CONNECTION=sync los jobs corrían al instante; en cola, un job despachado dentro de
+            // una transacción podría ejecutarse antes del commit y no encontrar el registro.
+            'after_commit' => true,
         ],
 
         'pruebas-masivas' => [

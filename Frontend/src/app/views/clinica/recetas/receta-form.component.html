@@ -1,0 +1,96 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading mb-0">{{ esEdicion ? 'Editar receta' : 'Nueva receta' }}</h2>
+    <button type="button" class="btn btn-default" [routerLink]="['/clinica/pacientes', idPaciente, 'recetas']">Cancelar</button>
+</section>
+
+@if (cargando) {
+    <section class="bg-white p-4 rounded"><span class="badge bg-primary">Cargando...</span></section>
+}
+
+@if (!cargando) {
+    <section class="bg-white p-4 rounded mb-3">
+        <div class="row">
+            <div class="form-group col-md-3">
+                <label>Fecha</label>
+                <input type="date" class="form-control" [(ngModel)]="registro.fecha" name="fecha" required>
+            </div>
+            <div class="form-group col-md-3">
+                <label>Sucursal</label>
+                <select class="form-control" [(ngModel)]="registro.id_sucursal" name="id_sucursal" required>
+                    <option value="">Seleccionar</option>
+                    @for (s of sucursales; track s.id) {
+                        <option [ngValue]="s.id">{{ s.nombre }}</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group col-md-6">
+                <label>Profesional</label>
+                <select class="form-control" [(ngModel)]="registro.id_usuario_profesional" name="id_usuario_profesional" required>
+                    <option value="">Seleccionar</option>
+                    @for (p of profesionales; track p.id_usuario) {
+                        <option [ngValue]="p.id_usuario">{{ p.nombre }}</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group col-12">
+                <label>Observaciones</label>
+                <textarea class="form-control" rows="2" [(ngModel)]="registro.observaciones" name="observaciones"></textarea>
+            </div>
+        </div>
+
+        <h6 class="mt-3 mb-2">Medicamentos</h6>
+        <div class="mb-3">
+            <input type="text" class="form-control" placeholder="Buscar producto clínico (mín. 2 caracteres)" [(ngModel)]="busquedaMed" (input)="buscarMedicamentos()" name="busquedaMed">
+            @if (medicamentos.length > 0) {
+                <ul class="list-group mt-1">
+                    @for (m of medicamentos; track m.id_producto) {
+                        <li class="list-group-item list-group-item-action py-1" role="button" (click)="aplicarMedicamento(registro.lineas[registro.lineas.length - 1], m)">
+                            {{ m.nombre ?? m.nombre_producto }}
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+
+        @for (linea of registro.lineas; track $index; let i = $index) {
+            <div class="border rounded p-3 mb-2">
+                <div class="row">
+                    <div class="form-group col-md-4">
+                        <label>Medicamento</label>
+                        <input class="form-control" [(ngModel)]="linea.nombre_medicamento" [name]="'med'+i" required>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>Dosis</label>
+                        <input class="form-control" [(ngModel)]="linea.dosis" [name]="'dosis'+i" required>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>Frecuencia</label>
+                        <input class="form-control" [(ngModel)]="linea.frecuencia" [name]="'freq'+i">
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>Duración</label>
+                        <input class="form-control" [(ngModel)]="linea.duracion" [name]="'dur'+i">
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>Vía</label>
+                        <input class="form-control" [(ngModel)]="linea.via" [name]="'via'+i">
+                    </div>
+                    <div class="form-group col-12">
+                        <label>Indicaciones</label>
+                        <input class="form-control" [(ngModel)]="linea.indicaciones" [name]="'ind'+i">
+                    </div>
+                </div>
+                @if (registro.lineas.length > 1) {
+                    <button type="button" class="btn btn-sm btn-outline-danger" (click)="quitarLinea(i)">Quitar línea</button>
+                }
+            </div>
+        }
+        <button type="button" class="btn btn-default btn-sm" (click)="agregarLinea()">Agregar línea</button>
+
+        <div class="mt-4">
+            <button type="button" class="btn btn-primary" [disabled]="guardando" (click)="guardar()">
+                {{ guardando ? 'Guardando…' : 'Guardar borrador' }}
+            </button>
+        </div>
+    </section>
+}

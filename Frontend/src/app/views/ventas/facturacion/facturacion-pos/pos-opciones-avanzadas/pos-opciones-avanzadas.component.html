@@ -96,7 +96,7 @@
     </div>
     }
 
-    <div class="col-md-6 col-lg-4 without-label" *ngIf="host.venta.cotizacion != 1 && host.apiService.auth_user().tipo != 'Ventas Limitado'">
+    <div class="col-md-6 col-lg-4 without-label" *ngIf="host.venta.cotizacion != 1">
       <div class="form-switch bg-light-info rounded p-2">
         <label for="pos_cta_terceros">Cuenta a terceros</label>
         <input id="pos_cta_terceros" class="form-check-input float-end" type="checkbox"
@@ -120,7 +120,7 @@
       </select>
     </div>
 
-    <div class="col-md-6 col-lg-4" *ngIf="host.venta.cotizacion != 1 && host.apiService.auth_user().tipo != 'Ventas Limitado'">
+    <div class="col-md-6 col-lg-4" *ngIf="host.venta.cotizacion != 1">
       <label class="form-label">Fecha de pago</label>
       <input type="date" class="form-control" [(ngModel)]="host.venta.fecha_pago" (change)="host.validarFechaPago()" name="pos_fecha_pago">
     </div>

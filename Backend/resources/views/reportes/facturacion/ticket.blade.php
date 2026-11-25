@@ -137,6 +137,10 @@
                             <p style="font-size: 8px !important; margin: 0px;">{{ $det->nombre_producto }} x {{ $det->cantidad }}</p>
                           @endforeach
                         @endif
+                        @include('reportes.facturacion.partials.detalle-lote-impresion', [
+                            'detalle' => $detalle,
+                            'mostrar_lotes_impresion' => $mostrar_lotes_impresion ?? false,
+                        ])
                     </td>
                     <td class="text-center">{{ $detalle->cantidad }}</td>
                     <td class="text-right">{{ $venta->empresa->currency->currency_symbol }}{{ number_format($detalle->precio + (($venta->iva != 0) ? ($detalle->precio * $iva) : 0), 2) }}</td>
