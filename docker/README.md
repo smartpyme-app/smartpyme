@@ -118,6 +118,17 @@ Para usarla en tu máquina:
 
 También se puede bajar a mano desde drive.google.com y dejar los `.sql.gz` en `docker/mariadb/dumps/`.
 
+### Importar en MySQL (Workbench) en vez de MariaDB
+
+La copia es de MariaDB 10.11. MySQL 8/9 la rechaza con `ERROR 3105 ... generated column` (4 tablas con columnas generadas: `comision_movimientos`, `restaurante_sesiones_mesa`, `tipos_cliente_empresa`, `transacciones_puntos`) y las vistas traen `DEFINER` de usuarios de producción. Antes de importar:
+
+```bash
+gunzip -k docker/mariadb/dumps/smartpyme_prod.sql.gz
+python3 docker/db-copia/adaptar-a-mysql.py docker/mariadb/dumps/smartpyme_prod.sql
+```
+
+e importa `smartpyme_prod.mysql.sql`. Solo cambia el texto del dump (lista de columnas en esos INSERT y sin DEFINER); los datos son los mismos. Con el MariaDB de Docker no hace falta.
+
 ## Memoria
 
 - **16 GB de RAM o más:** Docker con 8 GB. Funciona todo, incluido el build de producción del frontend (`--profile fe-build`).

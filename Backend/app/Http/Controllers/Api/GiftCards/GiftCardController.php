@@ -19,7 +19,10 @@ class GiftCardController extends Controller
             ], 422);
         }
 
-        $card = GiftCard::query()->where('codigo', $codigo)->first();
+        $card = GiftCard::query()
+            ->with(['ventaEmision:id,fecha,correlativo'])
+            ->where('codigo', $codigo)
+            ->first();
         if ($card === null) {
             return response()->json([
                 'success' => false,
@@ -53,7 +56,9 @@ class GiftCardController extends Controller
                 'monto_inicial',
                 'fecha_emision',
                 'fecha_vencimiento',
+                'id_venta_emision',
             ])
+            ->with(['ventaEmision:id,fecha,correlativo'])
             ->orderByDesc('id');
 
         if ($request->filled('estado')) {
@@ -90,6 +95,7 @@ class GiftCardController extends Controller
             'monto_inicial' => (float) $card->monto_inicial,
             'fecha_emision' => $card->fecha_emision?->toIso8601String(),
             'fecha_vencimiento' => $card->fecha_vencimiento?->toIso8601String(),
+            ...$card->datosVentaEmision(),
         ];
     }
 }

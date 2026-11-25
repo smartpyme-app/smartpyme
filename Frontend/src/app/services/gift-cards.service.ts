@@ -10,6 +10,8 @@ export interface GiftCardLookup {
   monto_inicial: number;
   fecha_emision?: string | null;
   fecha_vencimiento?: string | null;
+  fecha_venta?: string | null;
+  numero_factura?: string | null;
 }
 
 export interface GiftCardApiResponse<T> {

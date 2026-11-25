@@ -169,21 +169,36 @@ export class PermissionService {
     };
   }
 
+  private hydrateFromStorageIfNeeded(): void {
+    if (this.currentUserPermissions.effectivePermissions.length > 0) {
+      return;
+    }
+    const storedPermissions = localStorage.getItem('SP_user_permissions');
+    if (!storedPermissions) {
+      return;
+    }
+    try {
+      this.currentUserPermissions = this.parseCacheado(storedPermissions);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /** Roles personalizados (p. ej. almacen): menú operativo según permisos Spatie, no solo slugs fijos. */
+  hasEffectivePermissions(): boolean {
+    this.hydrateFromStorageIfNeeded();
+    return (
+      this.toPermissionNameArray(this.currentUserPermissions.effectivePermissions)
+        .length > 0
+    );
+  }
+
   hasPermission(permission: string): boolean {
     if (this.verifyRoleAdmin()) {
       return true;
     }
 
-    if (this.currentUserPermissions.effectivePermissions.length === 0) {
-      const storedPermissions = localStorage.getItem('SP_user_permissions');
-      if (storedPermissions) {
-        try {
-          this.currentUserPermissions = JSON.parse(storedPermissions);
-        } catch {
-          /* ignore */
-        }
-      }
-    }
+    this.hydrateFromStorageIfNeeded();
 
     const effectivePermissions = this.toPermissionNameArray(
       this.currentUserPermissions.effectivePermissions

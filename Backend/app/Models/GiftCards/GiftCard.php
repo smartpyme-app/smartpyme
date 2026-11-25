@@ -81,4 +81,22 @@ class GiftCard extends Model
     {
         return $this->hasMany(GiftCardRedencion::class, 'id_gift_card');
     }
+
+    /** @return array{fecha_venta: ?string, numero_factura: ?string} */
+    public function datosVentaEmision(): array
+    {
+        $venta = $this->ventaEmision;
+        if ($venta === null) {
+            return ['fecha_venta' => null, 'numero_factura' => null];
+        }
+
+        $correlativo = $venta->correlativo;
+
+        return [
+            'fecha_venta' => $venta->fecha,
+            'numero_factura' => ($correlativo !== null && $correlativo !== '')
+                ? (string) $correlativo
+                : null,
+        ];
+    }
 }

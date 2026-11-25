@@ -303,6 +303,10 @@ export class ApiService {
     return this.permissionService.hasAnyPermission(permissions);
   }
 
+  hasEffectivePermissions(): boolean {
+    return this.permissionService.hasEffectivePermissions();
+  }
+
   canAccessModule(moduleName: string): boolean {
     return this.permissionService.canAccessModule(moduleName);
   }
