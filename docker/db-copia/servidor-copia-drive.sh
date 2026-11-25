@@ -10,7 +10,7 @@
 #
 # Cron (3:30 am El Salvador = 09:30 UTC):
 #   30 9 * * * /root/bin/servidor-copia-drive.sh >> /root/backups/drive/copia.log 2>&1
-set -euo pipefail
+set -eEuo pipefail
 
 REMOTO="${REMOTO:-smartpyme-drive:copias-bd}"   # remoto:carpeta dentro de la Unidad compartida
 LOCAL=/root/backups/drive
@@ -18,6 +18,24 @@ BASES="${BASES:-smartpyme_prod smartpyme_analitica}"
 CONSERVAR="${CONSERVAR:-3}"                     # copias diarias que quedan en Drive
 FECHA=$(TZ=America/El_Salvador date +%F)
 DIR="$LOCAL/$FECHA"
+
+MAIL_TO="${MAIL_TO:-david.c@smartpyme.app}"     # mismo destinatario que las alertas del ETL
+LOG="${LOG:-/root/backups/drive/copia.log}"
+
+# Si cualquier paso falla, se manda un correo (igual que run-etl.sh) y no se borra
+# ninguna copia anterior de Drive.
+alerta() {
+  local linea="$1"
+  rm -f "$DIR"/*.part 2>/dev/null || true
+  {
+    echo "Falló la copia diaria de la base a Google Drive ($FECHA), en la línea $linea del script."
+    echo "Las copias anteriores en Drive no se tocaron."
+    echo
+    echo "Últimas líneas de $LOG:"
+    tail -n 25 "$LOG" 2>/dev/null
+  } | mail -s "ERROR copia BD a Drive SmartPyme" "$MAIL_TO"
+}
+trap 'alerta $LINENO' ERR
 
 exec 9>/run/smartpyme-copia-drive.lock
 flock -n 9 || { echo "$(date -u +%FT%TZ) ya hay una copia en curso"; exit 0; }
@@ -30,7 +48,7 @@ for db in $BASES; do
   mysqldump --single-transaction --quick --routines --triggers --events \
     --hex-blob --default-character-set=utf8mb4 "$db" | pigz -p 2 > "$f.part"
   gzip -t "$f.part"                                  # si el archivo está dañado, se detiene aquí
-  zcat "$f.part" | tail -1 | grep -q "Dump completed" || { echo "dump incompleto: $db"; exit 1; }
+  zcat "$f.part" | tail -1 | grep -q "Dump completed" || { echo "dump incompleto: $db"; false; }
   mv "$f.part" "$f"
   echo "$(date -u +%FT%TZ) $db $(du -h "$f" | cut -f1)"
 done
