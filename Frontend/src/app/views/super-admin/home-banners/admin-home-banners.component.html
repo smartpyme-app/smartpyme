@@ -189,11 +189,11 @@
         </div>
 
         <div class="form-group col-lg-12">
-          <div class="form-switch bg-light-info rounded mb-2 p-2">
-            <label for="banner-todos-paises">Mostrar en todos los países</label>
+          <div class="form-switch bg-light-info rounded mb-2 d-flex align-items-center justify-content-between gap-3 px-3 py-2">
+            <label for="banner-todos-paises" class="mb-0">Mostrar en todos los países</label>
             <input
               id="banner-todos-paises"
-              class="form-check-input float-end"
+              class="form-check-input flex-shrink-0 m-0"
               type="checkbox"
               role="switch"
               [(ngModel)]="todosPaises"
@@ -240,16 +240,16 @@
           <input id="banner-hasta" type="datetime-local" class="form-control" name="publicado_hasta" [(ngModel)]="banner.publicado_hasta" />
         </div>
 
-        <div class="form-group col-md-6">
-          <div class="form-switch bg-light-info rounded">
-            <label for="banner-nueva-pestana">Abrir enlace en nueva pestaña</label>
-            <input id="banner-nueva-pestana" class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="banner.abrir_nueva_pestana" name="abrir_nueva_pestana" />
+        <div class="form-group col-lg-6">
+          <div class="form-switch bg-light-info rounded d-flex align-items-center justify-content-between gap-3 px-3 py-2 h-100">
+            <label for="banner-nueva-pestana" class="mb-0">Abrir enlace en nueva pestaña</label>
+            <input id="banner-nueva-pestana" class="form-check-input flex-shrink-0 m-0" type="checkbox" role="switch" [(ngModel)]="banner.abrir_nueva_pestana" name="abrir_nueva_pestana" />
           </div>
         </div>
-        <div class="form-group col-md-6">
-          <div class="form-switch bg-light-info rounded">
-            <label for="banner-activo">Activo</label>
-            <input id="banner-activo" class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="banner.activo" name="activo" />
+        <div class="form-group col-lg-6">
+          <div class="form-switch bg-light-info rounded d-flex align-items-center justify-content-between gap-3 px-3 py-2 h-100">
+            <label for="banner-activo" class="mb-0">Activo</label>
+            <input id="banner-activo" class="form-check-input flex-shrink-0 m-0" type="checkbox" role="switch" [(ngModel)]="banner.activo" name="activo" />
           </div>
         </div>
       </div>

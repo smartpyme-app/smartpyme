@@ -8,6 +8,7 @@ use App\Http\Requests\CostaRica\EmitirFeCrCompraRequest;
 use App\Http\Requests\CostaRica\EmitirFeCrDevolucionRequest;
 use App\Http\Requests\CostaRica\EmitirFeCrGastoRequest;
 use App\Http\Requests\CostaRica\EmitirFeCrNotaDebitoRequest;
+use App\Http\Requests\CostaRica\EmitirFeCrReciboPagoRequest;
 use App\Http\Requests\CostaRica\EmitirFeCrVentaRequest;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeEmitService;
 use Illuminate\Http\JsonResponse;
@@ -112,6 +113,21 @@ class CostaRicaFeController extends Controller
                 (float) $request->monto_linea,
                 $request->boolean('error_material')
             );
+
+            return response()->json($resultado, 200);
+        } catch (CostaRicaFeEmisionFallidaException $e) {
+            return response()->json($this->payloadErrorEmisionFeCr($e), 422);
+        } catch (Throwable $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function emitirReciboPago(EmitirFeCrReciboPagoRequest $request, CostaRicaFeEmitService $emitService): JsonResponse
+    {
+        try {
+            $resultado = $emitService->emitirReciboPagoDesdeAbono((int) $request->id);
 
             return response()->json($resultado, 200);
         } catch (CostaRicaFeEmisionFallidaException $e) {

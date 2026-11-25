@@ -28,9 +28,13 @@ $input = json_decode(file_get_contents($inFile), true, 512, JSON_THROW_ON_ERROR)
 
 $backend = dirname(__DIR__, 3); // tests/Support/Restaurante → Backend
 require $backend . '/vendor/autoload.php';
+require_once $backend . '/tests/Support/GuardiaBaseDePruebas.php';
+Tests\Support\GuardiaBaseDePruebas::antesDeArrancar();
 $app = require $backend . '/bootstrap/app.php';
 $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
+// Nunca contra una base con datos reales (ver GuardiaBaseDePruebas).
+Tests\Support\GuardiaBaseDePruebas::proteger($app);
 
 // Conexión fresca de este proceso (no compartida con el padre).
 DB::purge('mysql');

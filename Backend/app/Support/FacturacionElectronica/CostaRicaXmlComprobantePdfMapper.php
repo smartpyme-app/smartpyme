@@ -20,6 +20,7 @@ final class CostaRicaXmlComprobantePdfMapper
         'NotaDebitoElectronica',
         'FacturaElectronicaCompra',
         'FacturaElectronicaExportacion',
+        'ReciboElectronicoPago',
     ];
 
     /**
@@ -329,6 +330,29 @@ final class CostaRicaXmlComprobantePdfMapper
     private static function parsePayments(DOMXPath $xp, ?DOMNode $resumenNode): array
     {
         $ctx = $resumenNode;
+        // v4.4: MedioPago es nodo con TipoMedioPago + TotalMedioPago (factura y REP).
+        $payments = [];
+        foreach (XmlLocalNameHelper::allNodes($xp, 'MedioPago', $ctx) as $pagoNode) {
+            $tipo = XmlLocalNameHelper::firstText($xp, 'TipoMedioPago', $pagoNode);
+            if ($tipo === null || $tipo === '') {
+                $tipo = trim((string) $pagoNode->textContent);
+            }
+            if ($tipo === '') {
+                continue;
+            }
+            $monto = XmlLocalNameHelper::floatValue(
+                XmlLocalNameHelper::firstText($xp, 'TotalMedioPago', $pagoNode)
+            );
+            $payments[] = [
+                'payment_method' => $tipo,
+                'amount' => $monto,
+            ];
+        }
+        if ($payments !== []) {
+            return $payments;
+        }
+
+        // Legado: MedioPago como texto plano bajo el resumen.
         $medio = XmlLocalNameHelper::firstText($xp, 'MedioPago', $ctx)
             ?? XmlLocalNameHelper::firstText($xp, 'MedioPago');
         if ($medio === null || $medio === '') {

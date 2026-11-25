@@ -4,10 +4,12 @@ namespace App\Services\FacturacionElectronica\CostaRica;
 
 use App\Models\Compras\Compra;
 use App\Models\Compras\Gastos\Gasto;
+use App\Models\Ventas\Abono;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Admin\Documento;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Venta;
+use App\Support\FacturacionElectronica\CostaRica\ReferenciaComprobanteCr;
 use App\Support\FacturacionElectronica\ClaveComprobanteCr;
 use App\Support\FacturacionElectronica\CostaRicaFeComprobantePdfAggregates;
 use App\Support\FacturacionElectronica\CostaRicaFeDteDocumento;
@@ -191,6 +193,23 @@ final class CostaRicaFeComprobantePdfService
             );
             $titulo = 'Factura electrónica de compra';
             $tipoDteRuta = '08';
+        } elseif ($tipo === ReferenciaComprobanteCr::TIPO_COMPROBANTE_REP && $queryTipo === 'abono') {
+            $registro = Abono::query()->with(['empresa', 'venta.cliente'])->findOrFail($id);
+            $this->assertMismoEmpresa((int) $registro->id_empresa, $idEmpresaUsuario);
+            $dte = $registro->dte;
+            if (! CostaRicaFeDteDocumento::tieneComprobanteCr($dte)) {
+                throw new RuntimeException('No hay recibo electrónico de pago para este abono.');
+            }
+            if ((string) ($registro->tipo_dte ?? '') !== ReferenciaComprobanteCr::TIPO_COMPROBANTE_REP) {
+                throw new RuntimeException('Este abono no tiene recibo electrónico de pago (tipo 10).');
+            }
+            $documento = CostaRicaFeDteDocumento::documentoParaPdf($dte);
+            $clave = CostaRicaFeDteDocumento::claveEmision(
+                $registro->codigo_generacion ?? null,
+                $registro->sello_mh ?? null
+            );
+            $titulo = 'Recibo electrónico de pago';
+            $tipoDteRuta = ReferenciaComprobanteCr::TIPO_COMPROBANTE_REP;
         } else {
             throw new RuntimeException('Tipo de documento no disponible para PDF en FE Costa Rica.');
         }

@@ -1,0 +1,264 @@
+diff --git a/src/Builders/BaseDocumentBuilder.php b/src/Builders/BaseDocumentBuilder.php
+index 666864072..a1b2c3d4e 100644
+--- a/src/Builders/BaseDocumentBuilder.php
++++ b/src/Builders/BaseDocumentBuilder.php
+@@ -8,6 +8,7 @@ use DazzaDev\DgtXmlGenerator\Models\Document;
+ use DazzaDev\DgtXmlGenerator\Models\Entities\Issuer;
+ use DazzaDev\DgtXmlGenerator\Models\Entities\Receiver;
+ use DazzaDev\DgtXmlGenerator\Models\ExportInvoice\ExportInvoice;
+ use DazzaDev\DgtXmlGenerator\Models\Invoice\Invoice;
++use DazzaDev\DgtXmlGenerator\Models\PaymentReceipt\PaymentReceipt;
+ use DazzaDev\DgtXmlGenerator\Models\PurchaseInvoice\PurchaseInvoice;
+ use DazzaDev\DgtXmlGenerator\Models\Ticket\Ticket;
+@@ -53,7 +54,7 @@ abstract class BaseDocumentBuilder
+     /**
+      * Create document instance (must be implemented by child classes)
+      */
+-    abstract protected function createDocument(): Invoice|CreditNote|DebitNote|Ticket|PurchaseInvoice|ExportInvoice;
++    abstract protected function createDocument(): Invoice|CreditNote|DebitNote|Ticket|PurchaseInvoice|ExportInvoice|PaymentReceipt;
+ 
+     /**
+      * Get document type for XML generation (must be implemented by child classes)
+diff --git a/src/Builders/PaymentReceiptBuilder.php b/src/Builders/PaymentReceiptBuilder.php
+new file mode 100644
+index 000000000..b2c3d4e5f
+--- /dev/null
++++ b/src/Builders/PaymentReceiptBuilder.php
+@@ -0,0 +1,28 @@
++<?php
++
++namespace DazzaDev\DgtXmlGenerator\Builders;
++
++use DazzaDev\DgtXmlGenerator\Models\PaymentReceipt\PaymentReceipt;
++use LogicException;
++
++class PaymentReceiptBuilder extends BaseDocumentBuilder
++{
++    protected function createDocument(): PaymentReceipt
++    {
++        return new PaymentReceipt($this->documentData);
++    }
++
++    protected function getDocumentType(): string
++    {
++        return 'payment-receipt';
++    }
++
++    public function getPaymentReceipt(): PaymentReceipt
++    {
++        if (! $this->document instanceof PaymentReceipt) {
++            throw new LogicException('Expected PaymentReceipt document.');
++        }
++
++        return $this->document;
++    }
++}
+diff --git a/src/Data/codigos-referencia.json b/src/Data/codigos-referencia.json
+index 6b38cf5..c17rep17 100644
+--- a/src/Data/codigos-referencia.json
++++ b/src/Data/codigos-referencia.json
+@@ -59,6 +59,10 @@
+     "name": "Sustituye comprobante electrónico rechazado",
+     "code": "16"
+   },
++  {
++    "name": "Pago a comprobante electrónico",
++    "code": "17"
++  },
+   {
+     "name": "Otros",
+     "code": "99"
+diff --git a/src/Data/tipos-documentos-referencia.json b/src/Data/tipos-documentos-referencia.json
+index c0864a8b8..t20rep20 100644
+--- a/src/Data/tipos-documentos-referencia.json
++++ b/src/Data/tipos-documentos-referencia.json
+@@ -75,6 +75,10 @@
+     "code": "19",
+     "name": "Factura Electrónica de Exportación"
+   },
++  {
++    "code": "20",
++    "name": "Recibo Electrónico de Pago"
++  },
+   {
+     "code": "99",
+     "name": "Otros"
+diff --git a/src/Factories/DocumentBuilderFactory.php b/src/Factories/DocumentBuilderFactory.php
+index e9d033d4f..f10rep10 100644
+--- a/src/Factories/DocumentBuilderFactory.php
++++ b/src/Factories/DocumentBuilderFactory.php
+@@ -7,6 +7,7 @@ use DazzaDev\DgtXmlGenerator\Builders\CreditNoteBuilder;
+ use DazzaDev\DgtXmlGenerator\Builders\DebitNoteBuilder;
+ use DazzaDev\DgtXmlGenerator\Builders\ExportInvoiceBuilder;
+ use DazzaDev\DgtXmlGenerator\Builders\InvoiceBuilder;
++use DazzaDev\DgtXmlGenerator\Builders\PaymentReceiptBuilder;
+ use DazzaDev\DgtXmlGenerator\Builders\PurchaseInvoiceBuilder;
+ use DazzaDev\DgtXmlGenerator\Builders\ReceiverMessageBuilder;
+@@ -27,6 +28,8 @@ class DocumentBuilderFactory
+ 
+     public const EXPORT_INVOICE = 'export-invoice';
+ 
++    public const PAYMENT_RECEIPT = 'payment-receipt';
++
+     /**
+      * Create a document builder based on document type name
+      */
+@@ -41,6 +44,7 @@ class DocumentBuilderFactory
+             self::RECEIVER_MESSAGE => new ReceiverMessageBuilder($documentData),
+             self::FEC => new PurchaseInvoiceBuilder($documentData),
+             self::EXPORT_INVOICE => new ExportInvoiceBuilder($documentData),
++            self::PAYMENT_RECEIPT => new PaymentReceiptBuilder($documentData),
+             default => throw new InvalidArgumentException("Unsupported document type: {$documentType}")
+         };
+     }
+@@ -99,4 +103,12 @@ class DocumentBuilderFactory
+     {
+         return new ExportInvoiceBuilder($documentData);
+     }
++
++    public static function createPaymentReceipt(array $documentData): PaymentReceiptBuilder
++    {
++        return new PaymentReceiptBuilder($documentData);
++    }
+ }
+diff --git a/src/Models/PaymentReceipt/PaymentReceipt.php b/src/Models/PaymentReceipt/PaymentReceipt.php
+new file mode 100644
+index 000000000..p10model1
+--- /dev/null
++++ b/src/Models/PaymentReceipt/PaymentReceipt.php
+@@ -0,0 +1,25 @@
++<?php
++
++namespace DazzaDev\DgtXmlGenerator\Models\PaymentReceipt;
++
++use DazzaDev\DgtXmlGenerator\Models\Document;
++
++/**
++ * Recibo electrónico de pago (tipo comprobante 10).
++ */
++class PaymentReceipt extends Document
++{
++    public function __construct(array $data = [])
++    {
++        $this->setDocumentType('10');
++
++        if (empty($data)) {
++            parent::__construct($data);
++        }
++    }
++
++    public function toArray(): array
++    {
++        return parent::toArray();
++    }
++}
+diff --git a/src/Views/Components/entity-payment-receipt.xml.twig b/src/Views/Components/entity-payment-receipt.xml.twig
+new file mode 100644
+index 000000000..e10repent
+--- /dev/null
++++ b/src/Views/Components/entity-payment-receipt.xml.twig
+@@ -0,0 +1,11 @@
++{# XSD reciboElectronicoPago v4.4: Ubicacion/Telefono/NombreComercial/Registrofiscal8707 son condición 4. Emisor exige CorreoElectronico. #}
++<{{ node }}>
++  <Nombre>{{ entity.name }}</Nombre>
++  <Identificacion>
++      <Tipo>{{ entity.identification_type.code }}</Tipo>
++      <Numero>{{ entity.identification_number }}</Numero>
++  </Identificacion>
++  {% for email in entity.email %}
++  <CorreoElectronico>{{ email }}</CorreoElectronico>
++  {% endfor %}
++</{{ node }}>
+diff --git a/src/Views/Components/info-payment-receipt.xml.twig b/src/Views/Components/info-payment-receipt.xml.twig
+new file mode 100644
+index 000000000..i10repinfo
+--- /dev/null
++++ b/src/Views/Components/info-payment-receipt.xml.twig
+@@ -0,0 +1,9 @@
++{# XSD reciboElectronicoPago v4.4: sin CodigoActividad*; sin PlazoCredito/CondicionVentaOtros (condición 4). #}
++<Clave>{{ document_key }}</Clave>
++<ProveedorSistemas>{{ issuer.identification_number }}</ProveedorSistemas>
++<NumeroConsecutivo>{{ sequential_number }}</NumeroConsecutivo>
++<FechaEmision>{{ date }}</FechaEmision>
++{% include 'Components/entity-payment-receipt.xml.twig' with { 'entity': issuer, node: 'Emisor'
++} %} {% include 'Components/entity-payment-receipt.xml.twig' with { 'entity': receiver, node:
++'Receptor' } %}
++<CondicionVenta>{{ sale_condition.code }}</CondicionVenta>
+diff --git a/src/Views/Components/items-payment-receipt.xml.twig b/src/Views/Components/items-payment-receipt.xml.twig
+new file mode 100644
+index 000000000..i10repitems
+--- /dev/null
++++ b/src/Views/Components/items-payment-receipt.xml.twig
+@@ -0,0 +1,8 @@
++<DetalleServicio>
++  {% for item in line_items %}
++  {% include 'Components/line-item-payment-receipt.xml.twig' with {
++    item: item,
++    line_number: loop.index
++  } only %}
++  {% endfor %}
++</DetalleServicio>
+diff --git a/src/Views/Components/line-item-payment-receipt.xml.twig b/src/Views/Components/line-item-payment-receipt.xml.twig
+new file mode 100644
+index 000000000..l10repline
+--- /dev/null
++++ b/src/Views/Components/line-item-payment-receipt.xml.twig
+@@ -0,0 +1,13 @@
++{# XSD reciboElectronicoPago v4.4: sin CABYS/Cantidad/Unidad/PrecioUnitario/BaseImponible (condición 4). Orden: NumeroLinea → Detalle → MontoTotal → SubTotal → [Impuesto] → ImpuestoNeto → MontoTotalLinea. #}
++<LineaDetalle>
++  <NumeroLinea>{{ line_number }}</NumeroLinea>
++  <Detalle>{{ item.description }}</Detalle>
++  <MontoTotal>{{ (item.total_amount|default(0))|number_format(5, '.', '') }}</MontoTotal>
++  <SubTotal>{{ (item.sub_total|default(0))|number_format(5, '.', '') }}</SubTotal>
++  {% if item.taxes and item.taxes|length > 0 %}
++  {% include 'Components/taxes.xml.twig' with { 'node': 'Impuesto',
++  'nodeAmount': 'Monto', 'taxes': item.taxes } only %}
++  {% endif %}
++  <ImpuestoNeto>{{ (item.total_tax|default(0))|number_format(5, '.', '') }}</ImpuestoNeto>
++  <MontoTotalLinea>{{ (item.total|default(0))|number_format(5, '.', '') }}</MontoTotalLinea>
++</LineaDetalle>
+diff --git a/src/Views/Components/summary-payment-receipt.xml.twig b/src/Views/Components/summary-payment-receipt.xml.twig
+new file mode 100644
+index 000000000..s10repsum
+--- /dev/null
++++ b/src/Views/Components/summary-payment-receipt.xml.twig
+@@ -0,0 +1,20 @@
++{# XSD reciboElectronicoPago v4.4: sin TotalServ*/TotalMerc*/TotalGravado/TotalDescuentos (condición 4). Tras moneda va TotalVenta. #}
++<ResumenFactura>
++  <CodigoTipoMoneda>
++    <CodigoMoneda>{{ currency.currency_code }}</CodigoMoneda>
++    <TipoCambio>{{ (currency.exchange_rate|default(1))|number_format(5, '.', '') }}</TipoCambio>
++  </CodigoTipoMoneda>
++  <TotalVenta>{{ (summary.total_sale|default(0))|number_format(2, '.', '') }}</TotalVenta>
++  <TotalVentaNeta>{{ (summary.total_net_sale|default(0))|number_format(2, '.', '') }}</TotalVentaNeta>
++  {% if summary.taxes and summary.taxes|length > 0 %}
++  {% include 'Components/taxes.xml.twig' with {
++    'node': 'TotalDesgloseImpuesto',
++    'nodeAmount': 'TotalMontoImpuesto',
++    'taxes': summary.taxes,
++    'fe_cr_es_total_desglose': true
++  } only %}
++  <TotalImpuesto>{{ (summary.total_tax|default(0))|number_format(2, '.', '') }}</TotalImpuesto>
++  {% endif %}
++  {% include 'Components/payments.xml.twig' %}
++  <TotalComprobante>{{ (summary.total_voucher|default(0))|number_format(2, '.', '') }}</TotalComprobante>
++</ResumenFactura>
+diff --git a/src/Views/payment-receipt.xml.twig b/src/Views/payment-receipt.xml.twig
+new file mode 100644
+index 000000000..v10twig01
+--- /dev/null
++++ b/src/Views/payment-receipt.xml.twig
+@@ -0,0 +1,13 @@
++{% apply spaceless %}<?xml version="1.0" encoding="UTF-8" ?>
++<ReciboElectronicoPago
++  xmlns="https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.4/reciboElectronicoPago"
++  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++  xsi:schemaLocation="https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.4/reciboElectronicoPago"
++>
++  {% include 'Components/info-payment-receipt.xml.twig' %} {% include
++  'Components/items-payment-receipt.xml.twig' %} {% include
++  'Components/summary-payment-receipt.xml.twig' %} {% include
++  'Components/referenced-document.xml.twig' %} {% include
++  'Components/additional-info.xml.twig' %}
++</ReciboElectronicoPago>
++{% endapply %}

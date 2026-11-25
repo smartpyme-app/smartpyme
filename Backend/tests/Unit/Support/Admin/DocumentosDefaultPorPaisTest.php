@@ -20,6 +20,7 @@ class DocumentosDefaultPorPaisTest extends TestCase
         $this->assertNotEquals($sv['nombres'], $cr['nombres']);
         $this->assertNotEquals($sv['nombres'], $hn['nombres']);
         $this->assertContains(DocumentosDefaultPorPais::CR_FACTURA, $cr['nombres']);
+        $this->assertContains(DocumentosDefaultPorPais::CR_RECIBO_ELECTRONICO, $cr['nombres']);
         $this->assertContains('Crédito fiscal', $sv['nombres']);
         $this->assertContains('Factura de remisión', $sv['nombres']);
         $this->assertContains('Factura sin RTN', $hn['nombres']);

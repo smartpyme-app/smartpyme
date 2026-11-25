@@ -1,4 +1,4 @@
-﻿import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { PipesModule } from '@pipes/pipes.module';
@@ -9,6 +9,7 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { CountryI18nService } from '@services/country-i18n.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
@@ -16,12 +17,38 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { EditarAbonoComponent } from '@shared/modals/editar-abono/editar-abono.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
+import {
+    FeCrErrorEmisionPayload,
+    mensajeErrorHttpFeCr,
+} from '@services/facturacion-electronica/fe-cr-http-error.util';
+import { AlertsHaciendaComponent } from '@shared/parts/alerts-hacienda/alerts-hacienda.component';
+import { FeCrEmisionAvanzadoComponent } from '@shared/parts/fe-cr-emision-avanzado/fe-cr-emision-avanzado.component';
+import { FeEnviarCorreoComponent } from '@shared/parts/fe-enviar-correo/fe-enviar-correo.component';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 
 @Component({
     selector: 'app-abonos-ventas',
     templateUrl: './abonos-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective, EditarAbonoComponent, CurrencyPipe],
+    imports: [
+        CommonModule,
+        PipesModule,
+        RouterModule,
+        FormsModule,
+        NgSelectModule,
+        PaginationComponent,
+        TruncatePipe,
+        PopoverModule,
+        TooltipModule,
+        LazyImageDirective,
+        EditarAbonoComponent,
+        CurrencyPipe,
+        AlertsHaciendaComponent,
+        FeCrEmisionAvanzadoComponent,
+        FeEnviarCorreoComponent,
+        NotificacionesContainerComponent,
+    ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
@@ -37,12 +64,18 @@ export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnI
     public documentos:any = [];
     public filtrado:boolean = false;
     public contabilidadHabilitada: boolean = false;
+    public sending = false;
+    public correoEnvioDte = '';
+    private readonly countryI18n = inject(CountryI18nService);
+
+    private static readonly TIPOS_REP = ['01', '04', '07', '08', '10', '20'];
 
     constructor(
         apiService: ApiService,
         alertService: AlertService,
         modalManager: ModalManagerService,
         private funcionalidadesService: FuncionalidadesService,
+        private facturacionElectronica: FacturacionElectronicaService,
         private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
@@ -246,6 +279,180 @@ export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnI
                     this.cdr.markForCheck();
                 }
             });
+    }
+
+    puedeEmitirRep(abono: any): boolean {
+        if (!this.facturacionElectronica.isCostaRicaFe() || !abono?.id) {
+            return false;
+        }
+        if (abono.sello_mh || abono.codigo_generacion) {
+            return false;
+        }
+        const venta = abono.venta;
+        if (!venta) {
+            return false;
+        }
+        // "Crédito" → crédito; sin normalizar, includes('cred') falla por la é.
+        const condicion = String(venta.condicion || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/\p{M}/gu, '');
+        if (!condicion.includes('cred')) {
+            return false;
+        }
+        const clave = String(venta.codigo_generacion || venta.sello_mh || '').trim();
+        if (clave.length < 50) {
+            return false;
+        }
+        const tipo = String(venta.tipo_dte || '').trim();
+        return AbonosVentasComponent.TIPOS_REP.includes(tipo);
+    }
+
+    puedeVerRep(abono: any): boolean {
+        return this.facturacionElectronica.isCostaRicaFe()
+            && !!abono?.id
+            && !!(abono.sello_mh || abono.codigo_generacion);
+    }
+
+    openDTE(template: TemplateRef<any>, abono: any): void {
+        this.correoEnvioDte = '';
+        this.abono = { ...abono, errores: null, fe_cr_intento_emision: abono?.fe_cr_intento_emision };
+        this.openModal(template, this.abono);
+        this.alertService.modal = true;
+        if (!this.abono.sello_mh && !this.abono.codigo_generacion) {
+            this.emitirDTE();
+        }
+        this.cdr.markForCheck();
+    }
+
+    imprimirDTEPDF(abono: any): void {
+        window.open(
+            this.apiService.baseUrl + '/api/reporte/dte/' + abono.id + '/10/?tipo=abono&token=' + this.apiService.auth_token(),
+            'hola',
+            'width=400'
+        );
+    }
+
+    imprimirDTEXML(abono: any): void {
+        window.open(
+            this.apiService.baseUrl + '/api/reporte/dte-xml/' + abono.id + '/10/?tipo=abono&token=' + this.apiService.auth_token(),
+            'hola',
+            'width=400'
+        );
+    }
+
+    /** Envío automático tras emitir: correo escrito o el del cliente de la venta. */
+    private tieneCorreoDestino(abono: any): boolean {
+        return !!((this.correoEnvioDte ?? '').trim() || (abono?.venta?.cliente?.correo ?? '').trim());
+    }
+
+    enviarDTE(abono: any): void {
+        const correo = (this.correoEnvioDte ?? '').trim();
+        if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+            this.alertService.error('Escriba un correo válido o déjelo vacío para usar el del cliente.');
+            return;
+        }
+        this.sending = true;
+        this.cdr.markForCheck();
+        const payload: Record<string, unknown> = {
+            id: abono.id,
+            tipo_dte: '10',
+            tipo: 'abono',
+        };
+        if (correo) {
+            payload['correo'] = correo;
+        }
+        this.apiService.store('enviarDTE', payload)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: () => {
+                    this.alertService.success(this.countryI18n.fe('sendSuccessTitle'), this.countryI18n.fe('sendSuccessBody'));
+                    this.sending = false;
+                    this.cdr.markForCheck();
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.sending = false;
+                    this.cdr.markForCheck();
+                },
+            });
+    }
+
+    private esPayloadErrorEmisionFeCr(e: unknown): e is FeCrErrorEmisionPayload {
+        return (
+            typeof e === 'object'
+            && e !== null
+            && 'message' in e
+            && 'documento' in e
+            && typeof (e as FeCrErrorEmisionPayload).message === 'string'
+        );
+    }
+
+    private sincronizarAbonoEnLista(abono: any): void {
+        if (!abono?.id || !this.abonos?.data) {
+            return;
+        }
+        const idx = this.abonos.data.findIndex((a: any) => a.id === abono.id);
+        if (idx !== -1) {
+            this.abonos.data[idx] = { ...this.abonos.data[idx], ...abono };
+        }
+    }
+
+    emitirDTE(): void {
+        if (!this.abono?.id || this.saving) {
+            return;
+        }
+        if (!this.puedeEmitirRep(this.abono) && !this.abono.errores && !this.abono.fe_cr_intento_emision) {
+            return;
+        }
+        this.saving = true;
+        this.cdr.markForCheck();
+        const ventaCtx = this.abono.venta;
+        const conCorreoDestino = this.tieneCorreoDestino(this.abono);
+        this.facturacionElectronica.emitirDTEReciboPagoAbono(this.abono).then((actualizado) => {
+            this.abono = {
+                ...actualizado,
+                venta: actualizado?.venta ?? ventaCtx,
+                errores: null,
+                fe_cr_intento_emision: undefined,
+            };
+            this.sincronizarAbonoEnLista(this.abono);
+            this.alertService.success('REP emitido', 'El recibo electrónico de pago fue aceptado por Hacienda.');
+            this.saving = false;
+            this.cdr.markForCheck();
+            if (conCorreoDestino) {
+                this.enviarDTE(this.abono);
+            }
+        }).catch((error: unknown) => {
+            this.saving = false;
+            if (error && typeof error === 'object' && 'abono' in error && (error as { abono?: unknown }).abono) {
+                const a = (error as { abono: any }).abono;
+                this.abono = { ...a, venta: a?.venta ?? ventaCtx };
+                this.sincronizarAbonoEnLista(this.abono);
+            }
+            let msg: string;
+            let feCrIntento: FeCrErrorEmisionPayload | undefined;
+            if (this.esPayloadErrorEmisionFeCr(error)) {
+                msg = error.message;
+                feCrIntento = error;
+            } else if (typeof error === 'string') {
+                msg = error;
+            } else {
+                msg = mensajeErrorHttpFeCr(error);
+            }
+            this.abono = {
+                ...this.abono,
+                venta: this.abono.venta ?? ventaCtx,
+                errores: msg,
+                ...(feCrIntento ? { fe_cr_intento_emision: feCrIntento } : {}),
+            };
+            this.sincronizarAbonoEnLista(this.abono);
+            this.alertService.info(
+                'Comprobante no emitido',
+                'Revise los problemas indicados en esta ventana.'
+            );
+            this.cdr.detectChanges();
+        });
     }
 
 }

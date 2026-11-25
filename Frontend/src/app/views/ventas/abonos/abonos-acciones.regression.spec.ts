@@ -19,6 +19,29 @@ describe('Abonos acciones menú', () => {
     expect(html).toContain("hasPermission('ventas.abonos.ver')");
     expect(html).toContain("canGenerarPartidaContable('cxc'");
     expect(html).toContain('generarPartidaContable(abono)');
+    expect(html).toContain('puedeEmitirRep(abono)');
+    expect(html).toContain('(click)="openDTE(mDTE, abono)"');
+    expect(html).toContain('puedeVerRep(abono)');
+    expect(html).toContain('#mDTE');
+    expect(html).toContain('imprimirDTEPDF(abono)');
+    expect(html).toContain('imprimirDTEXML(abono)');
+    expect(html).toContain('app-fe-enviar-correo');
+    const ts = read('views/ventas/abonos/abonos-ventas.component.ts');
+    expect(ts).toContain(".normalize('NFD')");
+    expect(ts).toContain('openDTE(');
+    expect(ts).toContain("tipo=abono");
+    expect(ts).toContain("tipo_dte: '10'");
+    expect(ts).toContain('tieneCorreoDestino');
+    expect(ts).toContain('conCorreoDestino');
+  });
+
+  it('Crédito con tilde habilita REP (no basta includes cred)', () => {
+    const cond = 'Crédito'
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{M}/gu, '');
+    expect(cond.includes('cred')).toBe(true);
+    expect('crédito'.includes('cred')).toBe(false);
   });
 
   it('gastos: partida solo con permiso granular', () => {

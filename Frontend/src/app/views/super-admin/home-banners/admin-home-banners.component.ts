@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -95,23 +95,31 @@ export class AdminHomeBannersComponent extends BaseCrudComponent<any> implements
     void this.persistBanner({ ...item, activo: !item.activo });
   }
 
-  public override openModal(template: any, item: any = {}): void {
-    const data = { ...item };
-    if (!data.id) {
-      this.todosPaises = true;
-      data.paises = [];
+  public override openModal(
+    template: TemplateRef<any>,
+    item?: any,
+    modalConfig?: Record<string, unknown>,
+  ): void {
+    let prepared: any | undefined;
+    if (item != null && item.id) {
+      prepared = { ...item };
+      this.todosPaises = !prepared.paises?.length;
+      prepared._imagen_desktop_file = null;
+      prepared._imagen_mobile_file = null;
+      if (prepared.publicado_desde) {
+        prepared.publicado_desde = this.toDatetimeLocal(prepared.publicado_desde);
+      }
+      if (prepared.publicado_hasta) {
+        prepared.publicado_hasta = this.toDatetimeLocal(prepared.publicado_hasta);
+      }
     } else {
-      this.todosPaises = !data.paises?.length;
+      this.todosPaises = true;
     }
-    data._imagen_desktop_file = null;
-    data._imagen_mobile_file = null;
-    if (data.publicado_desde) {
-      data.publicado_desde = this.toDatetimeLocal(data.publicado_desde);
-    }
-    if (data.publicado_hasta) {
-      data.publicado_hasta = this.toDatetimeLocal(data.publicado_hasta);
-    }
-    super.openModal(template, data);
+
+    super.openModal(template, prepared, {
+      class: 'modal-xl modal-dialog-scrollable',
+      ...modalConfig,
+    });
   }
 
   public override async onSubmit(item?: any): Promise<void> {

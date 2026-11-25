@@ -5,6 +5,7 @@ namespace App\Services\Contabilidad\CostaRica;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Devoluciones\Devolucion as DevolucionCompra;
 use App\Models\Compras\Gastos\Gasto;
+use App\Models\Ventas\Abono;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Ventas\Venta;
 use App\Support\FacturacionElectronica\ClaveComprobanteCr;
@@ -13,9 +14,15 @@ use Carbon\Carbon;
 /**
  * Formato libro fiscal CR alineado con plantillas Reporte_Detalle_IVA (ventas) y Reporte_Detalle_IVA_Compras.
  * Montos desde tablas del registro (ventas/venta_impuestos, compras, egresos/detalles); sin leer DTE.
+ *
+ * IVA diferido (art. 27 / servicios al Estado): facturas con condicion_venta_fe 08|10 no aportan débito
+ * en el mes de emisión; el débito entra con el REP (abono tipo 10) del mes del cobro.
  */
 final class ReporteDetalleIvaCrService
 {
+    /** Condiciones Nota 5 con IVA diferido al cobro (REP). */
+    private const CONDICIONES_IVA_DIFERIDO = ['08', '10'];
+
     /**
      * @return array{es_ventas: bool, titulo: string, filename: string}
      */
@@ -28,6 +35,21 @@ final class ReporteDetalleIvaCrService
             'titulo' => $esVentas ? 'REPORTE DETALLE IVA VENTAS' : 'REPORTE DETALLE IVA COMPRAS',
             'filename' => $esVentas ? 'Reporte_Detalle_IVA.pdf' : 'Reporte_Detalle_IVA_Compras.pdf',
         ];
+    }
+
+    public static function esCondicionIvaDiferido(?string $codigo): bool
+    {
+        return in_array(trim((string) $codigo), self::CONDICIONES_IVA_DIFERIDO, true);
+    }
+
+    /** Proporción del abono sobre el total de la venta (0..1) para prorratear bases/IVA. */
+    public static function proporcionAbonoSobreVenta(float $abonoTotal, float $ventaTotal): float
+    {
+        if ($ventaTotal <= 0.00001) {
+            return 0.0;
+        }
+
+        return min(1.0, max(0.0, $abonoTotal / $ventaTotal));
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -48,6 +70,10 @@ final class ReporteDetalleIvaCrService
 
         $rows = [];
         foreach ($q->lazy() as $venta) {
+            // Débito IVA de diferidas (08/10) se declara con el REP, no en el mes de la factura.
+            if (self::esCondicionIvaDiferido($venta->condicion_venta_fe ?? null)) {
+                continue;
+            }
             $row = $this->filaDesdeVenta($venta);
             if ($row !== null) {
                 $rows[] = $row;
@@ -67,6 +93,39 @@ final class ReporteDetalleIvaCrService
         }
         foreach ($qd->lazy() as $devolucion) {
             $row = $this->mapearDocumento($this->documentoDesdeDevolucionVenta($devolucion), $devolucion, -1, true, false);
+            if ($row !== null) {
+                $rows[] = $row;
+            }
+        }
+
+        $qa = Abono::query()
+            ->with([
+                'venta.cliente',
+                'venta.empresa',
+                'venta.impuestos.impuesto',
+                'venta.detalles',
+                'documento',
+                'empresa',
+            ])
+            ->where('tipo_dte', '10')
+            ->where(function ($q) {
+                $q->whereNotNull('codigo_generacion')->where('codigo_generacion', '!=', '')
+                    ->orWhere(function ($q2) {
+                        $q2->whereNotNull('sello_mh')->where('sello_mh', '!=', '');
+                    });
+            })
+            ->whereHas('venta', function ($v) {
+                $v->where('estado', '!=', 'Anulada')
+                    ->whereIn('condicion_venta_fe', self::CONDICIONES_IVA_DIFERIDO);
+            })
+            ->whereBetween('fecha', [$inicio, $fin])
+            ->orderBy('fecha')
+            ->orderBy('id');
+        if ($idSucursal) {
+            $qa->where('id_sucursal', $idSucursal);
+        }
+        foreach ($qa->lazy() as $abono) {
+            $row = $this->filaDesdeAbonoRep($abono);
             if ($row !== null) {
                 $rows[] = $row;
             }
@@ -171,6 +230,16 @@ final class ReporteDetalleIvaCrService
         return $this->mapearDocumento($this->documentoDesdeVenta($venta), $venta, 1, true, false);
     }
 
+    private function filaDesdeAbonoRep(Abono $abono): ?array
+    {
+        $venta = $abono->venta;
+        if (! $venta instanceof Venta) {
+            return null;
+        }
+
+        return $this->mapearDocumento($this->documentoDesdeAbonoRep($abono, $venta), $abono, 1, true, false);
+    }
+
     private function filaDesdeCompra(Compra $compra): ?array
     {
         return $this->mapearDocumento($this->documentoDesdeCompra($compra), $compra, 1, true, true);
@@ -206,6 +275,42 @@ final class ReporteDetalleIvaCrService
             ],
             'summary' => $this->resumenDesdeVenta($venta, $tasa),
             'line_items' => array_fill(0, max(0, $lineCount), []),
+            'currency' => [
+                'currency_code' => $this->codigoMonedaCr($venta),
+                'exchange_rate' => $tasa,
+            ],
+            'payments' => [],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function documentoDesdeAbonoRep(Abono $abono, Venta $venta): array
+    {
+        $empresa = $venta->empresa ?? $abono->empresa;
+        [$nombreReceptor, $idReceptor] = $this->datosTercero($venta->cliente, 'Consumidor final');
+        $tasa = $this->tasaCambioCr($venta);
+        $prop = self::proporcionAbonoSobreVenta((float) ($abono->total ?? 0), (float) ($venta->total ?? 0));
+        $summary = $this->resumenDesdeVenta($venta, $tasa);
+        foreach ($summary as $k => $v) {
+            if (is_float($v) || is_int($v)) {
+                $summary[$k] = round((float) $v * $prop, 5);
+            }
+        }
+
+        return [
+            'date' => $abono->fecha,
+            'sequential' => (string) ($abono->correlativo ?? ''),
+            'tipo_doc' => 'Recibo electrónico de pago',
+            'issuer' => [
+                'name' => (string) (optional($empresa)->nombre ?? ''),
+                'identification_number' => preg_replace('/\D/', '', (string) (optional($empresa)->nit ?? '')),
+            ],
+            'receiver' => [
+                'name' => $nombreReceptor,
+                'identification_number' => $idReceptor,
+            ],
+            'summary' => $summary,
+            'line_items' => [[]],
             'currency' => [
                 'currency_code' => $this->codigoMonedaCr($venta),
                 'exchange_rate' => $tasa,

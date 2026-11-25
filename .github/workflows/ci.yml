@@ -1,0 +1,132 @@
+# Integración continua: corre en cada pull request y en cada push a las ramas principales.
+# Si algo falla, el PR no debería fusionarse (activar "Require status checks" en la protección de ramas).
+#
+# SEGURIDAD: nada de esto toca producción. Las pruebas usan sqlite en memoria
+# (tests/Support/GuardiaBaseDePruebas.php bloquea cualquier otra base) y las migraciones
+# corren contra una MariaDB temporal del propio CI que se destruye al terminar.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop, bk-main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend-pruebas:
+    name: Backend · pruebas
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: Backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, gd, intl, mysqli, pdo_mysql, pdo_sqlite, sqlite3, pcntl, xsl, zip, soap, mbstring
+          coverage: none
+
+      - name: Caché de Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ hashFiles('Backend/composer.lock') }}
+
+      - run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Preparar .env de CI
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+
+      - name: Pruebas (excluye tests/cuarentena.txt)
+        run: ./tests/correr-pruebas.sh
+
+  backend-migraciones:
+    name: Backend · migraciones desde cero
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_DATABASE: smartpyme_testing
+          MARIADB_ROOT_PASSWORD: ci
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: smartpyme_testing
+      DB_USERNAME: root
+      DB_PASSWORD: ci
+    defaults:
+      run:
+        working-directory: Backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, gd, intl, mysqli, pdo_mysql, pcntl, xsl, zip, soap, mbstring
+          coverage: none
+
+      - name: Caché de Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ hashFiles('Backend/composer.lock') }}
+
+      - run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Preparar .env de CI
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+
+      # Carga database/schema/mysql-schema.sql (estructura de producción) y aplica las
+      # migraciones nuevas del PR. Si una migración falla, el PR no pasa.
+      - name: Migrar una base vacía
+        run: php artisan migrate --force --no-interaction
+
+      - name: Sin migraciones pendientes
+        run: |
+          php artisan migrate:status --no-ansi | tee /tmp/estado.txt
+          if grep -q "Pending" /tmp/estado.txt; then echo "Hay migraciones pendientes"; exit 1; fi
+
+  frontend-build:
+    name: Frontend · compilación de producción
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: Frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: Frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: Frontend/package-lock.json
+
+      - run: npm ci --no-audit --no-fund
+
+      # Los límites de tamaño (budgets de angular.json) hacen fallar la compilación si el paquete crece de más.
+      - name: Compilar
+        run: npm run build:production

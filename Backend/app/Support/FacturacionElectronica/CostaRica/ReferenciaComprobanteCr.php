@@ -31,10 +31,18 @@ final class ReferenciaComprobanteCr
 
     public const CODIGO_PAGO_REP = '17';
 
+    /** Nota 10: tipo de documento de referencia para comprobante rechazado por Hacienda. */
     public const TIPO_RECHAZADO = '10';
 
     public const TIPO_EXPORTACION = '19';
 
+    /**
+     * Nota 3: tipo de comprobante emitido = Recibo Electrónico de Pago.
+     * Coincide numéricamente con TIPO_RECHAZADO (catálogos distintos).
+     */
+    public const TIPO_COMPROBANTE_REP = '10';
+
+    /** Nota 10: tipo de documento de referencia cuando se referencia un REP. */
     public const TIPO_RECIBO_PAGO = '20';
 
     /**
