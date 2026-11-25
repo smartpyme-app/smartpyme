@@ -341,6 +341,11 @@ export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnI
         );
     }
 
+    /** Envío automático tras emitir: correo escrito o el del cliente de la venta. */
+    private tieneCorreoDestino(abono: any): boolean {
+        return !!((this.correoEnvioDte ?? '').trim() || (abono?.venta?.cliente?.correo ?? '').trim());
+    }
+
     enviarDTE(abono: any): void {
         const correo = (this.correoEnvioDte ?? '').trim();
         if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
@@ -403,6 +408,7 @@ export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnI
         this.saving = true;
         this.cdr.markForCheck();
         const ventaCtx = this.abono.venta;
+        const conCorreoDestino = this.tieneCorreoDestino(this.abono);
         this.facturacionElectronica.emitirDTEReciboPagoAbono(this.abono).then((actualizado) => {
             this.abono = {
                 ...actualizado,
@@ -414,6 +420,9 @@ export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnI
             this.alertService.success('REP emitido', 'El recibo electrónico de pago fue aceptado por Hacienda.');
             this.saving = false;
             this.cdr.markForCheck();
+            if (conCorreoDestino) {
+                this.enviarDTE(this.abono);
+            }
         }).catch((error: unknown) => {
             this.saving = false;
             if (error && typeof error === 'object' && 'abono' in error && (error as { abono?: unknown }).abono) {

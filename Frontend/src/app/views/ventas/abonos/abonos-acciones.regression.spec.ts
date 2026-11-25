@@ -31,6 +31,8 @@ describe('Abonos acciones menú', () => {
     expect(ts).toContain('openDTE(');
     expect(ts).toContain("tipo=abono");
     expect(ts).toContain("tipo_dte: '10'");
+    expect(ts).toContain('tieneCorreoDestino');
+    expect(ts).toContain('conCorreoDestino');
   });
 
   it('Crédito con tilde habilita REP (no basta includes cred)', () => {
