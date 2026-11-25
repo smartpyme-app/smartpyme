@@ -76,6 +76,22 @@ final class CostaRicaReciboPagoMapperTest extends TestCase
         self::assertSame('17', ReferenciaComprobanteCr::CODIGO_PAGO_REP);
     }
 
+    public function test_condicion_rep_09_si_factura_servicios_estado(): void
+    {
+        self::assertSame('09', $this->mapper->condicionVentaRep($this->venta([
+            'condicion' => 'Crédito',
+            'condicion_venta_fe' => '08',
+        ])));
+        self::assertSame('11', $this->mapper->condicionVentaRep($this->venta([
+            'condicion' => 'Crédito',
+            'condicion_venta_fe' => '10',
+        ])));
+        self::assertSame('11', $this->mapper->condicionVentaRep($this->venta([
+            'condicion' => 'Crédito',
+            'condicion_venta_fe' => '02',
+        ])));
+    }
+
     private function venta(array $attrs): Venta
     {
         $venta = (new \ReflectionClass(Venta::class))->newInstanceWithoutConstructor();

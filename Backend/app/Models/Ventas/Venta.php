@@ -48,6 +48,7 @@ class Venta extends AuditableModel {
         'num_orden',
         'num_orden_exento',
         'condicion',
+        'condicion_venta_fe',
         'referencia',
         'fecha_pago',
         'fecha_expiracion',

@@ -83,13 +83,18 @@ final class CostaRicaReciboPagoMapper
     }
 
     /**
-     * Condición de venta del REP: 11 (pago a crédito IVA 90 días) o 09 (pago servicios al Estado).
-     * ponytail: default 11; 09 solo si la factura original usó condición 08.
+     * Condición del REP (solo 09/11 en Nota 5): pago Estado o pago crédito IVA 90 días.
+     * 09 si la factura fue 08; si no, 11 (incl. factura 10 o crédito genérico).
      */
     public function condicionVentaRep(Venta $venta): string
     {
+        $fe = trim((string) ($venta->condicion_venta_fe ?? ''));
+        if ($fe === '08') {
+            return '09';
+        }
+
         $c = strtolower(trim((string) ($venta->condicion ?? '')));
-        if (str_contains($c, 'estado') || (string) ($venta->condicion_venta_fe ?? '') === '08') {
+        if (str_contains($c, 'estado')) {
             return '09';
         }
 

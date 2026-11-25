@@ -1717,6 +1717,9 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         if (this.venta.credito) {
             this.venta.estado = 'Pendiente';
             this.venta.condicion = 'Crédito';
+            if (this.esFeCostaRicaFacturacion() && !this.venta.condicion_venta_fe) {
+                this.venta.condicion_venta_fe = '02';
+            }
             // Si el cliente tiene tiempo_pago configurado, usarlo; si no, usar 1 mes por defecto
             if (this.venta.cliente?.tiempo_pago) {
                 const fechaBase = this.venta.fecha ? moment(this.venta.fecha) : moment();
@@ -1732,6 +1735,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             }
             this.venta.estado = 'Pagada';
             this.venta.condicion = 'Contado';
+            this.venta.condicion_venta_fe = null;
             this.venta.fecha_pago = moment().format('YYYY-MM-DD');
             // Limpiar mensaje de validación al cambiar a contado
             this.mensajeValidacionFecha = '';

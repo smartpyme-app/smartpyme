@@ -413,6 +413,18 @@
                   <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCredito()" [(ngModel)]="venta.credito" name="venta.credito">
                 </div>
             </div>
+            @if (venta.credito && esFeCostaRicaFacturacion()) {
+                <div class="form-group col-md-6 col-lg-3">
+                    <label for="condicion_venta_fe">Condición FE (CR)</label>
+                    <select class="form-select" id="condicion_venta_fe" name="condicion_venta_fe"
+                        [ngModel]="venta.condicion_venta_fe || '02'"
+                        (ngModelChange)="venta.condicion_venta_fe = $event">
+                        <option value="02">Crédito (IVA normal)</option>
+                        <option value="10">Crédito IVA hasta 90 días</option>
+                        <option value="08">Servicios al Estado</option>
+                    </select>
+                </div>
+            }
             @if (venta.credito && creditosClientesActivo && !venta.id_credito_cuota && !venta.id) {
                 <div class="form-group col-md-6 col-lg-3 without-label">
                     <button type="button" class="btn btn-default w-100" (click)="abrirPlanCuotas(mPlanCuotas)">
