@@ -105,7 +105,7 @@
                         <img appLazyImage="/assets/avatares/bot-avatar.png" alt="Bot" class="bot-avatar">
                     </div>
                 }
-                <div class="message-content p-3">
+                <div class="message-content">
                     <div class="message-text" [innerHTML]="message.text | safeHtml" (click)="onMessageContentClick($event)"></div>
                     
                     <!-- Sugerencias -->
@@ -125,14 +125,6 @@
                         {{ message.timestamp | date: 'HH:mm' }}
                     </div>
                 </div>
-                <!-- Avatar para mensajes del usuario (opcional) -->
-                @if (message.sender === 'user') {
-                    <div class="avatar-container user-avatar-container">
-                        <div class="user-avatar">
-                            <i class="fa fa-user"></i>
-                        </div>
-                    </div>
-                }
             </div>
         }
         
