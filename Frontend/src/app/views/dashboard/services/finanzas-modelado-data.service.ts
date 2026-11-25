@@ -1,0 +1,678 @@
+import { Injectable, inject } from '@angular/core';
+import { Observable, of } from 'rxjs';
+import { map, timeout } from 'rxjs/operators';
+import { ApiService } from '@services/api.service';
+import { DashboardAnalyticsApiService } from './dashboard-analytics-api.service';
+import {
+  ModeladoCalendarioCostoFila,
+  ModeladoCalendarioOrigen,
+  ModeladoCalendarioPendiente,
+  ModeladoGastoFila,
+  ModeladoGastoTipo,
+  ModeladoPresupuestoEntidad,
+  ModeladoPresupuestoReparto,
+  ModeladoPresupuestoSucursales,
+  ModeladoVista,
+} from '../sections/finanzas/modelado/modelado.model';
+
+const RUBRO: Record<string, string> = {
+  personal: 'Personal',
+  local: 'Local y servicios',
+  ventas_marketing: 'Ventas y marketing',
+  marketing: 'Ventas y marketing',
+  admin: 'Administrativos',
+  financieros: 'Financieros',
+  costo: 'Costo de ventas',
+  ventas: 'Ventas netas',
+  otros: 'Gastos varios',
+};
+
+const MES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+export const MODELADO_VACIA: ModeladoVista = {
+  anio: new Date().getFullYear(),
+  ejecutadoEtiqueta: '',
+  configuradoPct: 0,
+  configuradoDetalle: {
+    clasificacionPct: 0,
+    calendarioPct: 0,
+    presupuestoPct: 0,
+    efectivoDias: null,
+  },
+  gastoSinCalendarioMensual: 0,
+  perfilFiscal: {
+    pais: '',
+    moneda: '',
+    ivaPct: null,
+    pagoCuentaPct: null,
+    vencimiento: '',
+    aguinaldoRango: '',
+  },
+  modulosExternos: { tituloSeccion: 'Datos que vienen de otros módulos', planillas: null, prestamos: null },
+  paso1Titulo: 'Paso 1 · Gastos fijos y variables',
+  gastosFijosVariables: [],
+  ventasPromedio3Meses: 0,
+  paso2Titulo: 'Paso 2 · Calendario de costos fijos',
+  calendarioCostosFijos: [],
+  calendarioPendiente: null,
+  paso3Titulo: 'Paso 3 · Presupuesto',
+  presupuesto: {
+    mesColumnaLabel: '',
+    reparto: 'igual',
+    estacionalidadPesos: Array(12).fill(0),
+    estacionalidadMeses: [],
+    filas: [],
+    utilidadOperativa: { monto: 0, pctVentas: null },
+    metaVentas: {
+      anio: new Date().getFullYear(),
+      vsAnioAnteriorPct: null,
+      avancePct: null,
+      avanceEsperadoPct: null,
+      montoAnual: 0,
+    },
+    sucursales: null,
+    departamentos: null,
+    areas: null,
+  },
+  paso4Titulo: 'Paso 4 · Parámetros del pronóstico',
+  parametrosPronostico: {
+    efectivoHoy: null,
+    efectivoFecha: '',
+    colchonMinimo: null,
+    costoCapitalPctMes: null,
+    escenarioConservadorPct: -10,
+    escenarioOptimistaPct: 12,
+    historial: {
+      ventasContadoPct: null,
+      diasCobro: null,
+      diasPago: null,
+      ritmoVsPresupuesto3mPct: null,
+    },
+  },
+};
+
+interface ModeladoApi {
+  anio?: number;
+  configurado?: {
+    globalPct?: number;
+    clasificacionPct?: number;
+    calendarioPct?: number;
+    presupuestoPct?: number;
+    efectivoDias?: number | null;
+  };
+  gastoSinCalendarioMensual?: number;
+  perfilFiscal?: {
+    pais?: string;
+    moneda?: string;
+    ivaPct?: number | null;
+    pagoCuentaPct?: number | null;
+    vencimiento?: string;
+    aguinaldoRango?: string;
+  };
+  modulos?: {
+    planillas?: {
+      empleados?: number;
+      sucursales?: number;
+      ultima?: string;
+      filas?: {
+        concepto?: string;
+        detalle?: string;
+        monto?: number;
+        cuando?: string;
+        proximo?: string;
+        alAnio?: number;
+      }[];
+    } | null;
+    prestamos?: {
+      activos?: number;
+      filas?: {
+        nombre?: string;
+        saldo?: number;
+        tasaAnual?: number;
+        cuota?: number | null;
+        diaPago?: string;
+        cuotasRestantes?: number | null;
+        interesMes?: number | null;
+        capitalMes?: number | null;
+      }[];
+    } | null;
+  };
+  gastos?: {
+    id?: string;
+    nombre?: string;
+    rubro?: string;
+    montoMensual?: number;
+    tipo?: string | null;
+    pctVentas?: number | null;
+    nuevo?: boolean;
+    origen?: string;
+    proveedor?: string;
+    sucursal?: string;
+    diaPago?: string;
+    suspendido?: boolean;
+  }[];
+  ventasPromedio3Meses?: number;
+  calendario?: {
+    id?: number;
+    clave?: string;
+    nombre?: string;
+    detalle?: string;
+    monto?: number;
+    frecuencia?: string;
+    dia?: string;
+    proximo?: string;
+    origen?: string;
+    editable?: boolean;
+  }[];
+  calendarioPendiente?: { clave?: string; nombre?: string; monto?: number; diaPago?: string; nuevo?: boolean } | null;
+  presupuesto?: {
+    mesColumna?: string;
+    reparto?: string;
+    estacionalidad?: number[];
+    ejecutadoDesde?: string;
+    ejecutadoHasta?: string;
+    filas?: {
+      id?: string;
+      categoria?: string;
+      anual?: number;
+      mesProyectado?: number;
+      ejecutado?: number;
+      presupuestoAcumulado?: number;
+      vsPct?: number | null;
+    }[];
+    utilidadOperativa?: { monto?: number; pctVentas?: number | null };
+    metaVentas?: {
+      montoAnual?: number;
+      vsAnioAnteriorPct?: number | null;
+      avancePct?: number | null;
+      avanceEsperadoPct?: number | null;
+    };
+    sucursales?: {
+      sucursales?: { id?: number; nombre?: string }[];
+      filas?: {
+        id?: string;
+        categoria?: string;
+        porSucursal?: Record<string, number>;
+        suma?: number;
+        empresa?: number;
+      }[];
+      contribucion?: {
+        porSucursal?: Record<string, number>;
+        suma?: number;
+        empresa?: number;
+      };
+      comparacionMes?: {
+        titulo?: string;
+        filas?: {
+          idSucursal?: number;
+          nombre?: string;
+          ventasPresup?: number;
+          ventasReal?: number;
+          ventasVarPct?: number | null;
+          contribPresup?: number;
+          contribReal?: number;
+          contribVar?: number;
+          destacar?: boolean;
+        }[];
+      };
+    } | null;
+    departamentos?: {
+      departamentos?: { id?: number; nombre?: string }[];
+      filas?: {
+        id?: string;
+        categoria?: string;
+        porDepartamento?: Record<string, number>;
+        suma?: number;
+        empresa?: number;
+      }[];
+      contribucion?: {
+        porDepartamento?: Record<string, number>;
+        suma?: number;
+        empresa?: number;
+      };
+    } | null;
+    areas?: {
+      areas?: { id?: number; nombre?: string }[];
+      filas?: {
+        id?: string;
+        categoria?: string;
+        porArea?: Record<string, number>;
+        suma?: number;
+        empresa?: number;
+      }[];
+      contribucion?: {
+        porArea?: Record<string, number>;
+        suma?: number;
+        empresa?: number;
+      };
+    } | null;
+  };
+  pronostico?: {
+    efectivo?: number | null;
+    efectivoFecha?: string;
+    colchon?: number | null;
+    costoCapitalPctMes?: number | null;
+    escenarioConservadorPct?: number;
+    escenarioOptimistaPct?: number;
+    historial?: {
+      ventasContadoPct?: number | null;
+      diasCobro?: number | null;
+      diasPago?: number | null;
+      ritmoVsPresupuesto3mPct?: number | null;
+    };
+  };
+}
+
+@Injectable({ providedIn: 'root' })
+export class FinanzasModeladoDataService {
+  private readonly analytics = inject(DashboardAnalyticsApiService);
+  private readonly api = inject(ApiService);
+
+  obtener(anio: number): Observable<ModeladoVista | null> {
+    const empresa = this.analytics.idEmpresa;
+    if (!empresa) {
+      return of(null);
+    }
+    const url = `${this.analytics.baseUrl}/api/finanzas/modelado?empresa=${empresa}&anio=${anio}`;
+    return this.analytics.get<ModeladoApi>(url).pipe(
+      timeout(90_000),
+      map((raw) => (raw ? mapModelado(raw, anio) : null)),
+    );
+  }
+
+  guardarClasificacion(
+    gasto: ModeladoGastoFila,
+    extra?: { pctVentas?: number | null; diaPago?: string | null; proveedor?: string | null; sucursal?: string | null; suspendido?: boolean },
+  ): Observable<unknown> {
+    const suspendido = extra && Object.prototype.hasOwnProperty.call(extra, 'suspendido')
+      ? extra.suspendido
+      : gasto.suspendido;
+    return this.api.putToUrl('finanzas/modelado/clasificacion', {
+      clave: gasto.id,
+      nombre: gasto.nombre,
+      rubro: gasto.rubro || 'otros',
+      tipo: gasto.tipo,
+      monto: Number(gasto.montoMensual) || 0,
+      pctVentas: propio(extra, 'pctVentas', gasto.pctVentas),
+      diaPago: propio(extra, 'diaPago', gasto.diaPago),
+      proveedor: propio(extra, 'proveedor', gasto.proveedor),
+      sucursal: propio(extra, 'sucursal', gasto.sucursal),
+      ...(suspendido !== undefined ? { suspendido } : {}),
+    });
+  }
+
+  borrarClasificacion(clave: string): Observable<unknown> {
+    return this.api.store('finanzas/modelado/clasificacion/eliminar', { clave });
+  }
+
+  crearCalendario(body: {
+    clave?: string | null;
+    nombre: string;
+    monto: number;
+    frecuencia: string;
+    dia: string;
+  }): Observable<unknown> {
+    return this.api.store('finanzas/modelado/calendario', body);
+  }
+
+  actualizarCalendario(fila: ModeladoCalendarioCostoFila): Observable<unknown> {
+    return this.api.putToUrl(`finanzas/modelado/calendario/${fila.id}`, {
+      clave: fila.clave || null,
+      nombre: fila.nombre,
+      detalle: fila.detalle || null,
+      monto: fila.monto,
+      frecuencia: fila.frecuencia,
+      dia: String(fila.dia),
+    });
+  }
+
+  borrarCalendario(id: number): Observable<unknown> {
+    return this.api.delete('finanzas/modelado/calendario', id);
+  }
+
+  guardarPresupuesto(
+    anio: number,
+    reparto: ModeladoPresupuestoReparto,
+    filas: { id: string; anual: number }[],
+    pesos: number[],
+    sucursales?: {
+      idSucursal: number;
+      filas: { rubro: string; anual: number }[];
+    }[],
+    areas?: {
+      idArea: number;
+      filas: { rubro: string; anual: number }[];
+    }[],
+    departamentos?: {
+      idDepartamento: number;
+      filas: { rubro: string; anual: number }[];
+    }[],
+  ): Observable<unknown> {
+    const estacionalidad =
+      reparto === 'estacionalidad'
+        ? pesos.length === 12 && pesos.some((p) => p > 0)
+          ? pesos
+          : Array(12).fill(1)
+        : undefined;
+    return this.api.putToUrl('finanzas/modelado/presupuesto', {
+      anio,
+      reparto,
+      filas: filas.map((f) => ({ rubro: f.id, anual: Number(f.anual) || 0 })),
+      estacionalidad,
+      sucursales,
+      areas,
+      departamentos,
+    });
+  }
+
+  guardarPronostico(p: ModeladoVista['parametrosPronostico']): Observable<unknown> {
+    return this.api.putToUrl('finanzas/modelado/pronostico', {
+      efectivo: p.efectivoHoy,
+      efectivoFecha: p.efectivoFecha || null,
+      colchon: p.colchonMinimo,
+      costoCapitalPctMes: p.costoCapitalPctMes,
+      escenarioConservadorPct: p.escenarioConservadorPct,
+      escenarioOptimistaPct: p.escenarioOptimistaPct,
+    });
+  }
+}
+
+function mapModelado(raw: ModeladoApi, anio: number): ModeladoVista {
+  const year = raw.anio ?? anio;
+  const pesos = (raw.presupuesto?.estacionalidad ?? []).map((n) => Number(n) || 0);
+  while (pesos.length < 12) {
+    pesos.push(0);
+  }
+  const reparto: ModeladoPresupuestoReparto =
+    raw.presupuesto?.reparto === 'estacionalidad' ? 'estacionalidad' : 'igual';
+  const pron = raw.pronostico;
+  const hist = pron?.historial;
+  return {
+    anio: year,
+    ejecutadoEtiqueta: etiquetaRango(raw.presupuesto?.ejecutadoDesde, raw.presupuesto?.ejecutadoHasta),
+    configuradoPct: raw.configurado?.globalPct ?? 0,
+    configuradoDetalle: {
+      clasificacionPct: raw.configurado?.clasificacionPct ?? 0,
+      calendarioPct: raw.configurado?.calendarioPct ?? 0,
+      presupuestoPct: raw.configurado?.presupuestoPct ?? 0,
+      efectivoDias: raw.configurado?.efectivoDias ?? null,
+    },
+    gastoSinCalendarioMensual: raw.gastoSinCalendarioMensual ?? 0,
+    perfilFiscal: {
+      pais: raw.perfilFiscal?.pais || '—',
+      moneda: raw.perfilFiscal?.moneda || '—',
+      ivaPct: raw.perfilFiscal?.ivaPct ?? null,
+      pagoCuentaPct: raw.perfilFiscal?.pagoCuentaPct ?? null,
+      vencimiento: raw.perfilFiscal?.vencimiento ?? '',
+      aguinaldoRango: raw.perfilFiscal?.aguinaldoRango || '—',
+    },
+    modulosExternos: mapModulos(raw.modulos),
+    paso1Titulo: 'Paso 1 · Gastos fijos y variables',
+    gastosFijosVariables: (raw.gastos ?? []).map(mapGasto),
+    ventasPromedio3Meses: raw.ventasPromedio3Meses ?? 0,
+    paso2Titulo: 'Paso 2 · Calendario de costos fijos',
+    calendarioCostosFijos: (raw.calendario ?? []).map(mapCalendario),
+    calendarioPendiente: mapPendiente(raw.calendarioPendiente),
+    paso3Titulo: `Paso 3 · Presupuesto ${year}`,
+    presupuesto: {
+      mesColumnaLabel: raw.presupuesto?.mesColumna ?? '',
+      reparto,
+      estacionalidadPesos: pesos.slice(0, 12),
+      estacionalidadMeses: barras(pesos.slice(0, 12)),
+      filas: (raw.presupuesto?.filas ?? []).map((f) => ({
+        id: f.id ?? '',
+        categoria: f.categoria ?? '',
+        anual: f.anual ?? 0,
+        mesProyectado: f.mesProyectado ?? 0,
+        ejecutadoMonto: f.ejecutado ?? 0,
+        ejecutadoPresupuesto: f.presupuestoAcumulado ?? 0,
+        vsPresupuestoPct: f.vsPct ?? null,
+      })),
+      utilidadOperativa: {
+        monto: raw.presupuesto?.utilidadOperativa?.monto ?? 0,
+        pctVentas: raw.presupuesto?.utilidadOperativa?.pctVentas ?? null,
+      },
+      metaVentas: {
+        anio: year,
+        vsAnioAnteriorPct: raw.presupuesto?.metaVentas?.vsAnioAnteriorPct ?? null,
+        avancePct: raw.presupuesto?.metaVentas?.avancePct ?? null,
+        avanceEsperadoPct: raw.presupuesto?.metaVentas?.avanceEsperadoPct ?? null,
+        montoAnual: raw.presupuesto?.metaVentas?.montoAnual ?? 0,
+      },
+      sucursales: mapPresupuestoSucursales(raw.presupuesto?.sucursales),
+      departamentos: mapPresupuestoEntidad(
+        raw.presupuesto?.departamentos?.departamentos,
+        raw.presupuesto?.departamentos?.filas,
+        raw.presupuesto?.departamentos?.contribucion,
+        (x) => x?.porDepartamento,
+      ),
+      areas: mapPresupuestoEntidad(
+        raw.presupuesto?.areas?.areas,
+        raw.presupuesto?.areas?.filas,
+        raw.presupuesto?.areas?.contribucion,
+        (x) => x?.porArea,
+      ),
+    },
+    paso4Titulo: 'Paso 4 · Parámetros del pronóstico',
+    parametrosPronostico: {
+      efectivoHoy: pron?.efectivo ?? null,
+      efectivoFecha: pron?.efectivoFecha ?? '',
+      colchonMinimo: pron?.colchon ?? null,
+      costoCapitalPctMes: pron?.costoCapitalPctMes ?? null,
+      escenarioConservadorPct: pron?.escenarioConservadorPct ?? -10,
+      escenarioOptimistaPct: pron?.escenarioOptimistaPct ?? 12,
+      historial: {
+        ventasContadoPct: hist?.ventasContadoPct ?? null,
+        diasCobro: hist?.diasCobro ?? null,
+        diasPago: hist?.diasPago ?? null,
+        ritmoVsPresupuesto3mPct: hist?.ritmoVsPresupuesto3mPct ?? null,
+      },
+    },
+  };
+}
+
+function mapGasto(g: NonNullable<ModeladoApi['gastos']>[number]): ModeladoGastoFila {
+  const tipo = g.tipo === 'fijo' || g.tipo === 'variable' ? g.tipo : null;
+  const rubro = g.rubro ?? '';
+  const pctVentas = g.pctVentas != null ? Number(g.pctVentas) : null;
+  return {
+    id: g.id ?? '',
+    nombre: g.nombre || g.id || 'Gasto',
+    rubro,
+    categoria: RUBRO[rubro] || rubro || 'Sin rubro',
+    montoMensual: g.montoMensual ?? 0,
+    tipo,
+    pctVentas,
+    nuevo: g.nuevo === true,
+    origen: g.origen === 'planillas' || g.origen === 'prestamos' ? g.origen : undefined,
+    proveedor: g.proveedor || undefined,
+    sucursal: g.sucursal || undefined,
+    diaPago: g.diaPago || undefined,
+    suspendido: g.suspendido === true,
+  };
+}
+
+function propio<T>(extra: object | undefined, clave: string, valor: T | null | undefined): T | null {
+  if (extra && Object.prototype.hasOwnProperty.call(extra, clave)) {
+    const enviado = (extra as Record<string, T | null | undefined>)[clave];
+    return enviado ?? null;
+  }
+  return valor ?? null;
+}
+
+function mapPresupuestoSucursales(
+  raw: NonNullable<ModeladoApi['presupuesto']>['sucursales'],
+): ModeladoPresupuestoSucursales | null {
+  if (!raw?.sucursales?.length) {
+    return null;
+  }
+  return {
+    sucursales: (raw.sucursales ?? []).map((s) => ({
+      id: Number(s.id) || 0,
+      nombre: s.nombre ?? '',
+    })),
+    filas: (raw.filas ?? []).map((f) => ({
+      id: f.id ?? '',
+      categoria: f.categoria ?? '',
+      porSucursal: { ...(f.porSucursal ?? {}) },
+      suma: f.suma ?? 0,
+      empresa: f.empresa ?? 0,
+    })),
+    contribucion: {
+      porSucursal: { ...(raw.contribucion?.porSucursal ?? {}) },
+      suma: raw.contribucion?.suma ?? 0,
+      empresa: raw.contribucion?.empresa ?? 0,
+    },
+    comparacionMes: {
+      titulo: raw.comparacionMes?.titulo ?? '',
+      filas: (raw.comparacionMes?.filas ?? []).map((f) => ({
+        idSucursal: Number(f.idSucursal) || 0,
+        nombre: f.nombre ?? '',
+        ventasPresup: f.ventasPresup ?? 0,
+        ventasReal: f.ventasReal ?? 0,
+        ventasVarPct: f.ventasVarPct ?? null,
+        contribPresup: f.contribPresup ?? 0,
+        contribReal: f.contribReal ?? 0,
+        contribVar: f.contribVar ?? 0,
+        destacar: f.destacar === true,
+      })),
+    },
+  };
+}
+
+function mapPresupuestoEntidad<TF extends { id?: string; categoria?: string; suma?: number; empresa?: number }, TC extends { suma?: number; empresa?: number }>(
+  rawCols: { id?: number; nombre?: string }[] | undefined,
+  rawFilas: TF[] | undefined,
+  rawContrib: TC | undefined,
+  leerMapa: (item: TF | TC | undefined) => Record<string, number> | undefined,
+): ModeladoPresupuestoEntidad | null {
+  if (!rawCols?.length) {
+    return null;
+  }
+  return {
+    cols: rawCols.map((c) => ({
+      id: Number(c.id) || 0,
+      nombre: c.nombre ?? '',
+    })),
+    filas: (rawFilas ?? []).map((f) => ({
+      id: f.id ?? '',
+      categoria: f.categoria ?? '',
+      porCol: { ...(leerMapa(f) ?? {}) },
+      suma: f.suma ?? 0,
+      empresa: f.empresa ?? 0,
+    })),
+    contribucion: {
+      porCol: { ...(leerMapa(rawContrib) ?? {}) },
+      suma: rawContrib?.suma ?? 0,
+      empresa: rawContrib?.empresa ?? 0,
+    },
+  };
+}
+
+function mapCalendario(c: NonNullable<ModeladoApi['calendario']>[number]): ModeladoCalendarioCostoFila {
+  const origen = origenModulo(c.origen);
+  return {
+    id: c.id ?? 0,
+    clave: c.clave ?? '',
+    nombre: c.nombre ?? '',
+    detalle: c.detalle || undefined,
+    monto: c.monto ?? 0,
+    bloqueado: c.editable === false,
+    origenModulo: origen,
+    frecuencia: c.frecuencia || 'mensual',
+    dia: c.dia ?? '',
+    proximo: c.proximo || '—',
+    editableMonto: c.editable === true,
+    editableDia: c.editable === true,
+  };
+}
+
+function mapModulos(raw: ModeladoApi['modulos']): ModeladoVista['modulosExternos'] {
+  const tituloSeccion = 'Datos que vienen de otros módulos';
+  if (!raw || Array.isArray(raw)) {
+    return { tituloSeccion, planillas: null, prestamos: null };
+  }
+  const p = raw.planillas;
+  const r = raw.prestamos;
+  return {
+    tituloSeccion,
+    planillas: p?.filas?.length
+      ? {
+          empleados: p.empleados ?? 0,
+          sucursales: p.sucursales ?? 0,
+          ultima: p.ultima ?? '',
+          filas: p.filas.map((f) => ({
+            concepto: f.concepto ?? '',
+            detalle: f.detalle ?? '',
+            monto: f.monto ?? 0,
+            cuando: f.cuando ?? '',
+            proximo: f.proximo ?? '',
+            alAnio: f.alAnio ?? 0,
+          })),
+        }
+      : null,
+    prestamos: r?.filas?.length
+      ? {
+          activos: r.activos ?? r.filas.length,
+          filas: r.filas.map((f) => ({
+            nombre: f.nombre ?? '',
+            saldo: f.saldo ?? 0,
+            tasaAnual: f.tasaAnual ?? 0,
+            cuota: f.cuota ?? null,
+            diaPago: f.diaPago ?? '',
+            cuotasRestantes: f.cuotasRestantes ?? null,
+            interesMes: f.interesMes ?? null,
+            capitalMes: f.capitalMes ?? null,
+          })),
+        }
+      : null,
+  };
+}
+
+function origenModulo(origen?: string): ModeladoCalendarioOrigen | undefined {
+  if (origen === 'Planillas' || origen === 'planillas') {
+    return 'Planillas';
+  }
+  if (origen === 'Préstamos' || origen === 'prestamos') {
+    return 'Préstamos';
+  }
+  return undefined;
+}
+
+function mapPendiente(
+  raw: ModeladoApi['calendarioPendiente'],
+): ModeladoCalendarioPendiente | null {
+  if (!raw?.nombre && !raw?.clave) {
+    return null;
+  }
+  return {
+    clave: raw.clave ?? '',
+    nombre: raw.nombre || raw.clave || '',
+    monto: raw.monto ?? 0,
+    dia: raw.diaPago?.trim() || '1',
+    nuevo: raw.nuevo === true,
+  };
+}
+
+function barras(pesos: number[]): { peso: number; destacado?: boolean }[] {
+  const max = Math.max(...pesos, 0);
+  const mes = new Date().getMonth();
+  return pesos.map((p, i) => ({
+    peso: max > 0 ? Math.max(8, Math.round((p / max) * 100)) : 40,
+    destacado: i === mes,
+  }));
+}
+
+function etiquetaRango(desde?: string, hasta?: string): string {
+  const a = mesDeIso(desde);
+  const b = mesDeIso(hasta);
+  if (!a || !b) {
+    return 'Sin ejecutado';
+  }
+  return a === b ? a : `${a}–${b}`;
+}
+
+function mesDeIso(iso?: string): string {
+  const m = Number((iso ?? '').slice(5, 7));
+  return m >= 1 && m <= 12 ? MES[m - 1] : '';
+}

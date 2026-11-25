@@ -129,6 +129,12 @@ class FuncionalidadesSeeder extends Seeder
                 'descripcion' => 'Kardex de consignación separado, trazabilidad entrada proveedor y salida a clientes (SP-2344)',
                 'orden' => 25
             ],
+            [
+                'nombre' => 'Suite Financiera',
+                'slug' => 'suite-financiera',
+                'descripcion' => 'Acceso a la pestaña de Finanzas (Suite Financiera) en el dashboard y modelado financiero',
+                'orden' => 26
+            ],
             //Se pueden agregar mas funcionalidades con el mismo formato
         ];
 

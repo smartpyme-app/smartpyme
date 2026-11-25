@@ -1,0 +1,1674 @@
+<div class="rentabilidad-dashboard sf-stack">
+  @if (cargando && !contenidoListo) {
+    <div class="sf-card text-center py-5">
+      <div class="spinner-border text-primary" role="status" style="width: 2.5rem; height: 2.5rem;">
+        <span class="visually-hidden">Cargando rentabilidad…</span>
+      </div>
+      <p class="sf-note mt-3 mb-0">Cargando rentabilidad…</p>
+    </div>
+  } @else if (errorMensaje && !contenidoListo) {
+    <div class="alert alert-warning mb-0" role="alert">{{ errorMensaje }}</div>
+  } @else {
+    @if (errorMensaje) {
+      <div class="alert alert-warning mb-0" role="alert">{{ errorMensaje }}</div>
+    }
+
+    @if (kpiChartItems().length) {
+      <div class="sf-grid sf-grid--kpi">
+        @for (item of kpiChartItems(); track item.metric.title) {
+          <app-finanzas-kpi-card [data]="item.metric" [alerta]="!!item.alerta">
+            @if (item.linea) {
+              <p class="rent-kpi-linea sf-kpi__sub mb-0">{{ item.linea }}</p>
+            }
+            @if (item.sublinea) {
+              <p
+                class="rent-kpi-sublinea sf-kpi__sub mb-0"
+                [class.rent-text-neg]="item.sublineaTono === 'neg'"
+                [class.rent-text-pos]="item.sublineaTono === 'pos'">
+                {{ item.sublinea }}
+              </p>
+            }
+          </app-finanzas-kpi-card>
+        }
+      </div>
+    }
+
+    <div class="sf-seg rent-dimension-bar" role="tablist" aria-label="Dimensión de análisis">
+      @for (dim of dimensionOpciones; track dim.id) {
+        <button
+          type="button"
+          class="sf-seg__btn rent-dimension-tab"
+          role="tab"
+          [attr.aria-selected]="dimension === dim.id"
+          [class.is-active]="dimension === dim.id"
+          (click)="seleccionarDimension(dim.id)">
+          <span class="rent-dimension-icon" aria-hidden="true">
+            @switch (dim.id) {
+              @case ('sucursal') {
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18" /><path d="M5 21v-14l8 -4v18" /><path d="M19 21v-10l-6 -4" /><path d="M9 9v.01" /><path d="M9 12v.01" /><path d="M9 15v.01" /><path d="M9 18v.01" /></svg>
+              }
+              @case ('producto') {
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9l-8 4.5l-8 -4.5v-9l8 -4.5" /><path d="M12 12l8 -4.5" /><path d="M12 12v9" /><path d="M12 12l-8 -4.5" /></svg>
+              }
+              @case ('cliente') {
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>
+              }
+              @case ('proveedor') {
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M5 17h-2v-6l2 -5h9v11" /><path d="M14 17h1" /><path d="M14 6h5l3 5v6h-2" /></svg>
+              }
+              @case ('proyecto') {
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2" /></svg>
+              }
+            }
+          </span>
+          {{ dim.label }}
+        </button>
+      }
+    </div>
+
+    <section class="sf-card" aria-labelledby="rent-tabla-titulo">
+      <header class="sf-card-head">
+        <div class="sf-card-head__main">
+          <h2 id="rent-tabla-titulo" class="sf-card-head__title mb-0">
+            @if (dimension === 'proyecto') {
+              <span class="rent-tabla-titulo-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a8 8 0 0 1 16 0" /><path d="M4 14h16v2a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z" /><path d="M9 18v1a3 3 0 0 0 6 0v-1" /></svg>
+              </span>
+            }
+            {{ tituloTabla() }}
+          </h2>
+        </div>
+      </header>
+      @if (dimension === 'producto') {
+        <div class="rent-producto-filtro" (focusout)="cerrarBusquedaProducto($event)">
+          <span class="rent-producto-filtro__icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9l-8 4.5l-8 -4.5v-9l8 -4.5" /><path d="M12 12l8 -4.5" /><path d="M12 12v9" /><path d="M12 12l-8 -4.5" /></svg>
+          </span>
+          <span class="rent-producto-filtro__etiqueta">Producto</span>
+          <input
+            type="search"
+            [value]="productoTexto"
+            placeholder="Todos"
+            autocomplete="off"
+            role="combobox"
+            aria-label="Buscar producto por nombre o código"
+            [attr.aria-expanded]="productoListaAbierta"
+            aria-autocomplete="list"
+            (input)="escribirProducto($event)"
+            (focus)="abrirBusquedaProducto()" />
+          @if (productoTexto) {
+            <button type="button" class="rent-producto-filtro__clear" aria-label="Quitar producto" (mousedown)="$event.preventDefault(); limpiarProducto()">
+              ×
+            </button>
+          }
+          @if (productoListaAbierta) {
+            <ul class="rent-producto-sugerencias" (scroll)="masProductos($event)">
+              <li>
+                <button type="button" (mousedown)="$event.preventDefault(); limpiarProducto()">Todos</button>
+              </li>
+              @for (p of productoSugerencias; track p.id) {
+                <li>
+                  <button type="button" (mousedown)="$event.preventDefault(); elegirProducto(p)">
+                    <span>{{ p.nombre }}</span>
+                    @if (p.codigo) {
+                      <span class="rent-producto-sugerencias__codigo">{{ p.codigo }}</span>
+                    }
+                  </button>
+                </li>
+              }
+              @if (productoBuscando) {
+                <li class="rent-producto-sugerencias__nota">Buscando…</li>
+              } @else if (productoTexto.trim().length < 2) {
+                <li class="rent-producto-sugerencias__nota">Escribe al menos 2 caracteres</li>
+              } @else if (!productoSugerencias.length) {
+                <li class="rent-producto-sugerencias__nota">Sin coincidencias</li>
+              }
+            </ul>
+          }
+        </div>
+      }
+      @if (dimension === 'cliente') {
+        <div class="rent-producto-filtro" (focusout)="cerrarBusquedaCliente($event)">
+          <span class="rent-producto-filtro__icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>
+          </span>
+          <span class="rent-producto-filtro__etiqueta">Cliente</span>
+          <input
+            type="search"
+            [value]="clienteTexto"
+            placeholder="Todos"
+            autocomplete="off"
+            role="combobox"
+            aria-label="Buscar cliente"
+            [attr.aria-expanded]="clienteListaAbierta"
+            aria-autocomplete="list"
+            (input)="escribirCliente($event)"
+            (focus)="abrirBusquedaCliente()" />
+          @if (clienteTexto) {
+            <button type="button" class="rent-producto-filtro__clear" aria-label="Quitar cliente" (mousedown)="$event.preventDefault(); limpiarCliente()">
+              ×
+            </button>
+          }
+          @if (clienteListaAbierta) {
+            <ul class="rent-producto-sugerencias" (scroll)="masClientes($event)">
+              <li>
+                <button type="button" (mousedown)="$event.preventDefault(); limpiarCliente()">Todos</button>
+              </li>
+              @for (c of clienteSugerencias; track c.id) {
+                <li>
+                  <button type="button" (mousedown)="$event.preventDefault(); elegirCliente(c)">{{ c.nombre }}</button>
+                </li>
+              }
+              @if (clienteBuscando) {
+                <li class="rent-producto-sugerencias__nota">Buscando…</li>
+              } @else if (clienteTexto.trim().length < 2) {
+                <li class="rent-producto-sugerencias__nota">Escribe al menos 2 letras</li>
+              } @else if (!clienteSugerencias.length) {
+                <li class="rent-producto-sugerencias__nota">Sin coincidencias</li>
+              }
+            </ul>
+          }
+        </div>
+      }
+      @if (dimension === 'proveedor') {
+        <div class="rent-producto-filtro" (focusout)="cerrarBusquedaProveedor($event)">
+          <span class="rent-producto-filtro__icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M5 17h-2v-6l2 -5h9v11" /><path d="M14 17h1" /><path d="M14 6h5l3 5v6h-2" /></svg>
+          </span>
+          <span class="rent-producto-filtro__etiqueta">Proveedor</span>
+          <input
+            type="search"
+            [value]="proveedorTexto"
+            placeholder="Todos"
+            autocomplete="off"
+            role="combobox"
+            aria-label="Buscar proveedor"
+            [attr.aria-expanded]="proveedorListaAbierta"
+            aria-autocomplete="list"
+            (input)="escribirProveedor($event)"
+            (focus)="proveedorListaAbierta = true" />
+          @if (proveedorTexto) {
+            <button type="button" class="rent-producto-filtro__clear" aria-label="Quitar proveedor" (mousedown)="$event.preventDefault(); limpiarProveedor()">
+              ×
+            </button>
+          }
+          @if (proveedorListaAbierta) {
+            <ul class="rent-producto-sugerencias">
+              <li>
+                <button type="button" (mousedown)="$event.preventDefault(); limpiarProveedor()">Todos</button>
+              </li>
+              @for (p of proveedorSugerencias(); track p.nombre) {
+                <li>
+                  <button type="button" (mousedown)="$event.preventDefault(); elegirProveedor(p)">{{ p.nombre }}</button>
+                </li>
+              }
+              @if (proveedorTexto.trim().length >= 2 && !proveedorSugerencias().length) {
+                <li class="rent-producto-sugerencias__nota">Sin coincidencias</li>
+              }
+            </ul>
+          }
+        </div>
+      }
+      @if (dimension === 'proyecto') {
+        <div class="rent-producto-filtro" (focusout)="cerrarBusquedaProyecto($event)">
+          <span class="rent-producto-filtro__icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2" /></svg>
+          </span>
+          <span class="rent-producto-filtro__etiqueta">Proyecto</span>
+          <input
+            type="search"
+            [value]="proyectoTexto"
+            placeholder="Todos"
+            autocomplete="off"
+            role="combobox"
+            aria-label="Buscar proyecto"
+            [attr.aria-expanded]="proyectoListaAbierta"
+            aria-autocomplete="list"
+            (input)="escribirProyecto($event)"
+            (focus)="proyectoListaAbierta = true" />
+          @if (!proyectoTexto) {
+            <span class="rent-producto-filtro__chev" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6l6 -6" /></svg>
+            </span>
+          }
+          @if (proyectoTexto) {
+            <button type="button" class="rent-producto-filtro__clear" aria-label="Quitar proyecto" (mousedown)="$event.preventDefault(); limpiarProyecto()">
+              ×
+            </button>
+          }
+          @if (proyectoListaAbierta) {
+            <ul class="rent-producto-sugerencias">
+              <li>
+                <button type="button" (mousedown)="$event.preventDefault(); limpiarProyecto()">Todos</button>
+              </li>
+              @for (p of proyectoSugerencias(); track p.nombre) {
+                <li>
+                  <button type="button" (mousedown)="$event.preventDefault(); elegirProyecto(p)">{{ p.nombre }}</button>
+                </li>
+              }
+              @if (proyectoTexto.trim().length >= 2 && !proyectoSugerencias().length) {
+                <li class="rent-producto-sugerencias__nota">Sin coincidencias</li>
+              }
+            </ul>
+          }
+        </div>
+      }
+      @if (sinFilas()) {
+        <p class="sf-note text-center py-3 mb-2">Sin datos para este periodo.</p>
+      }
+      <ng-template #thSortBtn let-dim="dim" let-col="col" let-label="label">
+        <button
+          type="button"
+          class="sf-th-sort"
+          [class.sf-th-sort--activa]="ordenPorDimension[dim].col === col"
+          (click)="ordenarTabla(dim, col)">
+          <span>{{ label }}</span>
+          <span class="sf-th-sort-icon" aria-hidden="true">{{ iconoOrden(dim, col) }}</span>
+        </button>
+      </ng-template>
+      @if (dimension === 'sucursal') {
+        <div class="sf-table-wrap">
+          <table class="sf-table sf-table--compact rent-tabla mb-0">
+            <thead>
+              <tr>
+                <th scope="col" [attr.aria-sort]="ariaSortTabla('sucursal', 'nombre')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'sucursal', col: 'nombre', label: 'Sucursal' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('sucursal', 'ventas')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'sucursal', col: 'ventas', label: 'Ventas (sin IVA)' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('sucursal', 'gastos')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'sucursal', col: 'gastos', label: 'Gastos (sin IVA)' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('sucursal', 'utilidad')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'sucursal', col: 'utilidad', label: 'Utilidad' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('sucursal', 'margenPct')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'sucursal', col: 'margenPct', label: 'Margen' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-spark">Margen 6 meses</th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('sucursal', 'cxc')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'sucursal', col: 'cxc', label: 'CXC' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('sucursal', 'cxp')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'sucursal', col: 'cxp', label: 'CXP' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('sucursal', 'ventasVsAnioPct')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'sucursal', col: 'ventasVsAnioPct', label: 'Ventas vs. ' + etiquetaComparacion() }"></ng-container>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of filasSucursalVisibles(); track fila.nombre) {
+                <tr
+                  class="rent-fila"
+                  [class.rent-fila--activa]="sucursalAbierta?.nombre === fila.nombre"
+                  tabindex="0"
+                  (click)="abrirSucursal(fila)"
+                  (keydown.enter)="abrirSucursal(fila)">
+                  <td class="rent-col-nombre">{{ fila.nombre }}</td>
+                  <td class="rent-th-num">{{ formatMonto(fila.ventas) }}</td>
+                  <td class="rent-th-num">{{ formatMonto(fila.gastos) }}</td>
+                  <td
+                    class="rent-th-num rent-col-fuerte"
+                    [class.rent-text-pos]="fila.utilidad > 0"
+                    [class.rent-text-neg]="fila.utilidad < 0">
+                    {{ formatMonto(fila.utilidad) }}
+                  </td>
+                  <td
+                    class="rent-th-num"
+                    [class.rent-text-neg]="fila.margenPct < 0">
+                    {{ formatPct(fila.margenPct) }}
+                  </td>
+                  <td class="rent-th-spark">
+                    <svg class="rent-spark" viewBox="0 0 56 26" preserveAspectRatio="none" aria-hidden="true">
+                      <path
+                        [attr.d]="sparklinePath(fila.tendencia)"
+                        fill="none"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        [class.rent-spark-up]="fila.tendenciaAlcista"
+                        [class.rent-spark-down]="!fila.tendenciaAlcista" />
+                    </svg>
+                  </td>
+                  <td class="rent-th-num" [class.rent-text-neg]="fila.cxcAlerta">
+                    {{ formatMonto(fila.cxc) }}
+                  </td>
+                  <td class="rent-th-num">{{ formatMonto(fila.cxp) }}</td>
+                  <td
+                    class="rent-th-num"
+                    [class.rent-text-pos]="fila.ventasVsAnioPct > 0"
+                    [class.rent-text-neg]="fila.ventasVsAnioPct < 0">
+                    {{ fila.ventasVsAnioPct > 0 ? '↗' : '↘' }} {{ formatVs(fila.ventasVsAnioPct) }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (dimension === 'producto') {
+        @if (!sinFilas() && !filasProductoVisibles().length) {
+          <p class="sf-note text-center py-3 mb-2">Sin datos para este producto en este periodo.</p>
+        }
+        <div class="sf-table-wrap rent-productos-scroll">
+          <table class="sf-table sf-table--compact rent-tabla mb-0">
+            <thead>
+              <tr>
+                <th scope="col" [attr.aria-sort]="ariaSortTabla('producto', 'nombre')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'producto', col: 'nombre', label: 'Producto' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('producto', 'unidades')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'producto', col: 'unidades', label: 'Unidades' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('producto', 'ventas')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'producto', col: 'ventas', label: 'Ventas (sin IVA)' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('producto', 'ventasVsPct')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'producto', col: 'ventasVsPct', label: 'Vs. ' + etiquetaComparacion() }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('producto', 'utilidad')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'producto', col: 'utilidad', label: 'Utilidad' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('producto', 'margenPct')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'producto', col: 'margenPct', label: 'Margen' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('producto', 'margenAnioPct')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'producto', col: 'margenAnioPct', label: 'Margen ' + etiquetaComparacion() }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-spark">Margen 12 meses</th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('producto', 'inventario')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'producto', col: 'inventario', label: 'Inventario' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('producto', 'precioVsPct')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'producto', col: 'precioVsPct', label: 'Precio / costo vs. ' + etiquetaComparacion() }"></ng-container>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of filasProductoVisibles(); track fila.nombre) {
+                <tr
+                  class="rent-prod-fila rent-prod-fila--{{ fila.tono }}"
+                  [class.rent-prod-fila--activa]="productoAbierto?.nombre === fila.nombre"
+                  tabindex="0"
+                  (click)="abrirProducto(fila)"
+                  (keydown.enter)="abrirProducto(fila)">
+                  <td>
+                    <div class="rent-prod-nombre">{{ fila.nombre }}</div>
+                    <div class="rent-prod-meta">{{ fila.categoria }} · n.º {{ fila.puesto }} en ventas</div>
+                  </td>
+                  <td class="rent-th-num">{{ formatUnidades(unidadesHorizonte(fila.unidades)) }}</td>
+                  <td class="rent-th-num">{{ formatMonto(montoHorizonte(fila.ventas)) }}</td>
+                  <td
+                    class="rent-th-num"
+                    [class.rent-text-pos]="fila.ventasVsPct !== null && fila.ventasVsPct > 0"
+                    [class.rent-text-neg]="fila.ventasVsPct !== null && fila.ventasVsPct < 0">
+                    @if (fila.ventasVsPct === null) {
+                      —
+                    } @else {
+                      {{ fila.ventasVsPct > 0 ? '↗' : '↘' }} {{ formatVs(fila.ventasVsPct) }}
+                    }
+                  </td>
+                  <td
+                    class="rent-th-num rent-col-fuerte"
+                    [class.rent-text-pos]="fila.utilidad >= 0"
+                    [class.rent-text-neg]="fila.utilidad < 0">
+                    {{ formatMonto(montoHorizonte(fila.utilidad)) }}
+                  </td>
+                  <td
+                    class="rent-th-num"
+                    [class.rent-text-pos]="fila.margenPct !== null && !fila.margenBajo"
+                    [class.rent-text-neg]="fila.margenBajo">
+                    {{ fila.margenPct === null ? '—' : formatPct(fila.margenPct) }}
+                  </td>
+                  <td class="rent-th-num rent-text-muted">
+                    {{ fila.margenAnioPct === null ? '—' : formatPct(fila.margenAnioPct) }}
+                  </td>
+                  <td class="rent-th-spark">
+                    @if (fila.tendencia.length) {
+                      <svg class="rent-spark" viewBox="0 0 56 26" preserveAspectRatio="none" aria-hidden="true">
+                        <path
+                          [attr.d]="sparklinePath(fila.tendencia)"
+                          fill="none"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          [class.rent-spark-up]="fila.tendenciaAlcista"
+                          [class.rent-spark-down]="!fila.tendenciaAlcista" />
+                      </svg>
+                    } @else {
+                      —
+                    }
+                  </td>
+                  <td class="rent-th-num" [class.rent-text-neg]="fila.inventario.tipo !== 'dias'">
+                    {{ textoInventario(fila) }}
+                  </td>
+                  <td class="rent-th-num rent-precio-costo">
+                    @if (fila.precioVsPct === null || fila.costoVsPct === null) {
+                      —
+                    } @else {
+                      <span class="rent-text-pos">{{ formatVs(fila.precioVsPct) }}</span>
+                      <span class="rent-text-muted"> / </span>
+                      <span [class.rent-text-neg]="fila.costoAlerta" [class.rent-text-pos]="!fila.costoAlerta">
+                        {{ formatVs(fila.costoVsPct) }}
+                      </span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (dimension === 'cliente') {
+        @if (!sinFilas() && !filasClienteVisibles().length) {
+          <p class="sf-note text-center py-3 mb-2">Sin datos para este cliente en este periodo.</p>
+        }
+        <div class="sf-table-wrap rent-productos-scroll">
+          <table class="sf-table sf-table--compact rent-tabla rent-tabla-cliente mb-0">
+            <thead>
+              <tr>
+                <th scope="col" [attr.aria-sort]="ariaSortTabla('cliente', 'nombre')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'cliente', col: 'nombre', label: 'Cliente' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('cliente', 'compro')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'cliente', col: 'compro', label: 'Ventas totales' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('cliente', 'ganancia')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'cliente', col: 'ganancia', label: 'Ganancia' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('cliente', 'deCada100')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'cliente', col: 'deCada100', label: 'De cada $100' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-spark">Últimos 6 meses</th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('cliente', 'alFinalQuedan')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'cliente', col: 'alFinalQuedan', label: 'Al final le quedan' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('cliente', 'leDebe')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'cliente', col: 'leDebe', label: 'Le debe' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('cliente', 'pagoDias')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'cliente', col: 'pagoDias', label: 'Paga en (días)' }"></ng-container>
+                </th>
+                <th scope="col" class="sf-cell-left" [attr.aria-sort]="ariaSortTabla('cliente', 'ultimaCompra')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'cliente', col: 'ultimaCompra', label: 'Última compra' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('cliente', 'parteVentasPct')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'cliente', col: 'parteVentasPct', label: 'Parte de sus ventas' }"></ng-container>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of filasClienteVisibles(); track fila.nombre) {
+                <tr
+                  class="rent-cliente-fila rent-cliente-fila--{{ fila.tono }}"
+                  [class.rent-cliente-fila--activa]="clienteAbierto?.nombre === fila.nombre"
+                  tabindex="0"
+                  (click)="abrirCliente(fila)"
+                  (keydown.enter)="abrirCliente(fila)">
+                  <td>
+                    <div class="rent-cliente-celda">
+                      <span class="rent-cliente-nombre">{{ fila.nombre }}</span>
+                      @if (fila.etiqueta) {
+                        <span class="rent-cliente-badge rent-cliente-badge--{{ fila.etiquetaTono }}">{{ fila.etiqueta }}</span>
+                      }
+                    </div>
+                  </td>
+                  <td class="rent-th-num">{{ formatMonto(montoHorizonte(fila.compro)) }}</td>
+                  <td class="rent-th-num rent-col-fuerte">{{ formatMonto(montoHorizonte(fila.ganancia)) }}</td>
+                  <td class="rent-th-num" [class.rent-text-neg]="fila.deCada100Bajo">{{ formatDeCada100(fila.deCada100) }}</td>
+                  <td class="rent-th-spark">
+                    <svg class="rent-spark" viewBox="0 0 56 26" preserveAspectRatio="none" aria-hidden="true">
+                      <path
+                        [attr.d]="sparklinePath(fila.tendencia)"
+                        fill="none"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        [class.rent-spark-up]="fila.tendenciaAlcista"
+                        [class.rent-spark-down]="!fila.tendenciaAlcista" />
+                    </svg>
+                  </td>
+                  <td
+                    class="rent-th-num"
+                    [class.rent-text-neg]="fila.alFinalTono === 'rojo'"
+                    [class.rent-text-warn]="fila.alFinalTono === 'naranja'">
+                    {{ formatDeCada100(fila.alFinalQuedan) }}
+                  </td>
+                  <td class="rent-th-num">{{ fila.leDebe === null ? '—' : formatMonto(montoHorizonte(fila.leDebe)) }}</td>
+                  <td
+                    class="rent-th-num"
+                    [class.rent-text-pos]="tonoPago(fila) === 'pos'"
+                    [class.rent-text-warn]="tonoPago(fila) === 'warn'"
+                    [class.rent-text-neg]="tonoPago(fila) === 'neg'">
+                    {{ textoPago(fila) }}
+                  </td>
+                  <td [class.rent-text-neg]="fila.ultimaCompraAlerta">{{ fila.ultimaCompra }}</td>
+                  <td class="rent-th-num">{{ fila.parteVentasPct }}%</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (dimension === 'proveedor') {
+        @if (proveedorFiltroNombre && !filasProveedorVisibles().length) {
+          <p class="sf-note text-center py-3 mb-2">Sin datos para este proveedor en este periodo.</p>
+        }
+        <div class="sf-table-wrap rent-productos-scroll">
+          <table class="sf-table sf-table--compact rent-tabla rent-tabla-proveedor mb-0">
+            <thead>
+              <tr>
+                @for (c of proveedorColumnas; track c.col) {
+                  <th
+                    scope="col"
+                    [class.rent-th-num]="c.num"
+                    [attr.aria-sort]="ariaSortTabla('proveedor', c.col)">
+                    <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'proveedor', col: c.col, label: c.label }"></ng-container>
+                  </th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of filasProveedorVisibles(); track fila.nombre) {
+                <tr
+                  class="rent-proveedor-fila"
+                  [class.rent-proveedor-fila--activa]="proveedorAbierto?.nombre === fila.nombre"
+                  tabindex="0"
+                  (click)="abrirProveedor(fila)"
+                  (keydown.enter)="abrirProveedor(fila)">
+                  <td>
+                    <div class="rent-proveedor-nombre">{{ fila.nombre }}</div>
+                  </td>
+                  <td class="rent-th-num">{{ formatMonto(montoHorizonte(fila.compro)) }}</td>
+                  <td class="rent-th-num" [class.rent-text-warn]="fila.dependenciaAlta">
+                    {{ formatPct(fila.parteComprasPct, 0) }}
+                    @if (fila.dependenciaAlta) {
+                      <div class="rent-proveedor-meta">dependencia alta</div>
+                    }
+                  </td>
+                  <td class="rent-th-num rent-col-fuerte">{{ formatMonto(montoHorizonte(fila.ganoAlVender)) }}</td>
+                  <td class="rent-th-num" [ngClass]="tonoGananciaCompra(fila)">
+                    {{ formatPct(fila.ganaPorDolar * 100, 0) }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (dimension === 'proyecto') {
+        @if (proyectoFiltroNombre && !filasProyectoVisibles().length) {
+          <p class="sf-note text-center py-3 mb-2">Sin datos para este proyecto en este periodo.</p>
+        }
+        <div class="sf-table-wrap">
+          <table class="sf-table sf-table--compact rent-tabla rent-tabla-proyecto mb-0">
+            <thead>
+              <tr>
+                <th scope="col" [attr.aria-sort]="ariaSortTabla('proyecto', 'nombre')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'proyecto', col: 'nombre', label: 'Proyecto' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('proyecto', 'contrato')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'proyecto', col: 'contrato', label: 'Contrato' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-progreso sf-cell-left" [attr.aria-sort]="ariaSortTabla('proyecto', 'facturadoPct')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'proyecto', col: 'facturadoPct', label: 'Facturado' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-progreso sf-cell-left" [attr.aria-sort]="ariaSortTabla('proyecto', 'presupuestoGastadoPct')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'proyecto', col: 'presupuestoGastadoPct', label: 'Presupuesto gastado' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('proyecto', 'margenPlaneadoPct')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'proyecto', col: 'margenPlaneadoPct', label: 'Margen planeado' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('proyecto', 'margenFechaPct')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'proyecto', col: 'margenFechaPct', label: 'Margen a la fecha' }"></ng-container>
+                </th>
+                <th scope="col" class="rent-th-num" [attr.aria-sort]="ariaSortTabla('proyecto', 'porCobrar')">
+                  <ng-container *ngTemplateOutlet="thSortBtn; context: { dim: 'proyecto', col: 'porCobrar', label: 'Por cobrar' }"></ng-container>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of filasProyectoVisibles(); track fila.nombre) {
+                <tr
+                  class="rent-proyecto-fila rent-proyecto-fila--{{ fila.tono }}"
+                  [class.rent-proyecto-fila--seleccionada]="proyectoAbierto?.nombre === fila.nombre"
+                  tabindex="0"
+                  (click)="abrirProyecto(fila)"
+                  (keydown.enter)="abrirProyecto(fila)">
+                  <td>
+                    <div class="rent-proyecto-nombre">{{ fila.nombre }}</div>
+                    <div class="rent-proyecto-cliente">{{ fila.cliente }}</div>
+                  </td>
+                  <td class="rent-th-num">{{ formatMonto(fila.contrato) }}</td>
+                  <td class="rent-th-progreso">
+                    <div class="rent-tabla-progreso">
+                      <div class="rent-tabla-progreso-track" aria-hidden="true">
+                        <span class="rent-barra-fill rent-barra-fill--azul" [style.width.%]="anchoBarra(fila.facturadoPct)"></span>
+                      </div>
+                      <span class="rent-tabla-progreso-pct">{{ formatPct(fila.facturadoPct, 0) }}</span>
+                    </div>
+                  </td>
+                  <td class="rent-th-progreso">
+                    <div class="rent-tabla-progreso">
+                      <div class="rent-tabla-progreso-track" aria-hidden="true">
+                        <span class="rent-barra-fill" [ngClass]="claseBarraProyecto(fila.presupuestoBarTono)" [style.width.%]="anchoBarra(fila.presupuestoGastadoPct)"></span>
+                      </div>
+                      <span class="rent-tabla-progreso-pct">{{ formatPct(fila.presupuestoGastadoPct, 0) }}</span>
+                    </div>
+                  </td>
+                  <td class="rent-th-num">{{ formatPct(fila.margenPlaneadoPct) }}</td>
+                  <td
+                    class="rent-th-num rent-col-fuerte"
+                    [class.rent-text-neg]="fila.margenFechaBajo"
+                    [class.rent-text-pos]="!fila.margenFechaBajo && fila.facturadoPct > 0">
+                    {{ formatPct(fila.margenFechaPct) }}
+                  </td>
+                  <td class="rent-th-num">{{ formatMonto(montoHorizonte(fila.porCobrar)) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+  @if (dimension === 'proyecto' && proyectoAbierto; as proy) {
+    <section class="sf-card rent-detalle-ancla" #detalleProyecto>
+      <section class="rent-detalle rent-detalle--suite rent-proy-detalle" aria-labelledby="rent-proy-detalle-titulo">
+        <header class="rent-cli-top">
+          <span class="rent-detalle-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a8 8 0 0 1 16 0" /><path d="M4 14h16v2a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z" /><path d="M9 18v1a3 3 0 0 0 6 0v-1" /></svg>
+          </span>
+          <h2 id="rent-proy-detalle-titulo" class="rent-detalle-titulo">{{ proy.nombre }}</h2>
+          <p class="rent-prod-detalle-sub">
+            {{ proy.cliente }}@if (proy.descripcion) { · {{ proy.descripcion }} }
+          </p>
+        </header>
+
+        <div class="rent-proy-kpis">
+          <article class="rent-kpi-card">
+            <div class="rent-kpi-titulo">Contrato</div>
+            <div class="rent-kpi-valor">{{ formatMonto(proy.contrato) }}</div>
+            <div class="rent-kpi-sublinea">por facturar {{ formatMonto(proyectoDetalle(proy).porFacturar) }}</div>
+          </article>
+          <article class="rent-kpi-card">
+            <div class="rent-kpi-titulo">Facturado</div>
+            <div class="rent-kpi-valor">{{ formatMonto(proyectoDetalle(proy).facturado) }}</div>
+            <div class="rent-kpi-sublinea">{{ formatPct(proy.facturadoPct, 0) }} del contrato</div>
+          </article>
+          <article class="rent-kpi-card">
+            <div class="rent-kpi-titulo">Cobrado</div>
+            <div class="rent-kpi-valor rent-kpi-valor--ambar">{{ formatMonto(proyectoDetalle(proy).cobrado) }}</div>
+            <div class="rent-kpi-sublinea">por cobrar {{ formatMonto(montoHorizonte(proy.porCobrar)) }}</div>
+          </article>
+          <article class="rent-kpi-card">
+            <div class="rent-kpi-titulo">Gastado</div>
+            <div class="rent-kpi-valor" [class.rent-kpi-valor--rojo]="proy.presupuestoGastadoPct >= 80 || proy.margenFechaBajo">{{ formatMonto(proyectoDetalle(proy).gastado) }}</div>
+            <div class="rent-kpi-sublinea">{{ formatPct(proy.presupuestoGastadoPct, 0) }} del presupuesto</div>
+          </article>
+          <article class="rent-kpi-card">
+            <div class="rent-kpi-titulo">Utilidad a la fecha</div>
+            <div class="rent-kpi-valor" [class.rent-kpi-valor--rojo]="proy.margenFechaBajo">{{ formatMonto(proyectoDetalle(proy).utilidadFecha) }}</div>
+            <div class="rent-kpi-sublinea">
+              margen {{ formatPct(proy.margenFechaPct) }} · planeado {{ formatPct(proy.margenPlaneadoPct) }}
+            </div>
+          </article>
+        </div>
+
+        <div class="rent-proy-avances">
+          @for (av of proyectoDetalle(proy).avances; track av.etiqueta) {
+            <div class="rent-proy-avance-row">
+              <span class="rent-proy-avance-label">{{ av.etiqueta }}</span>
+              <div class="rent-proy-avance-track" aria-hidden="true">
+                <span class="rent-barra-fill" [ngClass]="claseBarraProyecto(av.barTono)" [style.width.%]="anchoBarra(av.pct)"></span>
+              </div>
+              <span class="rent-proy-avance-meta">
+                <span class="rent-proy-avance-pct">{{ formatPct(av.pct, 0) }}</span>
+                @if (av.monto != null && av.base != null) {
+                  <span class="rent-proy-avance-detalle">{{ formatMonto(av.monto) }} de {{ formatMonto(av.base) }}</span>
+                }
+              </span>
+            </div>
+          }
+        </div>
+
+        <div class="rent-proy-detalle-layout">
+          <div>
+            <h3 class="rent-bloque-titulo">Resultado del proyecto</h3>
+            <table class="rent-mini rent-proy-resultado">
+              <thead>
+                <tr>
+                  <th scope="col"></th>
+                  <th scope="col" class="rent-th-num">Planeado</th>
+                  <th scope="col" class="rent-th-num">A la fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (fila of proyectoDetalle(proy).resultado; track fila.concepto) {
+                  <tr [class.rent-proy-util]="fila.concepto === 'Utilidad'">
+                    <td>{{ fila.concepto }}</td>
+                    <td class="rent-th-num">{{ formatResultadoProyecto(fila, 'planeado') }}</td>
+                    <td
+                      class="rent-th-num"
+                      [class.rent-text-neg]="fila.fechaBajo">
+                      {{ formatResultadoProyecto(fila, 'fecha') }}
+                      @if (fila.nota) {
+                        <div class="rent-proy-mat-sub">{{ fila.nota }}</div>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <div class="rent-cli-seccion">
+              <h3 class="rent-bloque-titulo">Costo por categoría</h3>
+              <span class="rent-cli-seccion-extra">raya = % en el presupuesto</span>
+            </div>
+            <div class="rent-proy-cat rent-proy-cat-head">
+              <div>Categoría</div>
+              <div></div>
+              <div>% del gasto</div>
+              <div>Gastado</div>
+            </div>
+            @for (cat of proyectoDetalle(proy).costosCategoria; track cat.nombre) {
+              <div class="rent-proy-cat">
+                <div class="rent-proy-cat-nombre">{{ cat.nombre }}</div>
+                <div class="rent-proy-cat-track" aria-hidden="true">
+                  <span class="rent-barra-fill rent-barra-fill--azul" [style.width.%]="anchoBarra(cat.pctGasto)"></span>
+                  @if (cat.pctPresupuesto) {
+                    <span class="rent-proy-cat-raya" [style.left.%]="anchoBarra(cat.pctPresupuesto)"></span>
+                  }
+                </div>
+                <div class="rent-proy-cat-pct">{{ formatPct(cat.pctGasto, 0) }}</div>
+                <div class="rent-proy-cat-monto">{{ formatMonto(cat.monto) }}</div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <h3 class="rent-bloque-titulo">Presupuesto vs. gastado</h3>
+            <table class="rent-mini rent-tabla-proyecto-presup">
+              <thead>
+                <tr>
+                  <th scope="col">Categoría</th>
+                  <th scope="col" class="rent-th-num">Presupuesto</th>
+                  <th scope="col" class="rent-th-num">Gastado</th>
+                  <th scope="col" class="rent-th-num">Disponible</th>
+                  <th scope="col" class="rent-th-progreso">% usado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (fila of proyectoDetalle(proy).presupuesto; track fila.categoria) {
+                  <tr>
+                    <td>{{ fila.categoria }}</td>
+                    <td class="rent-th-num">{{ formatMonto(fila.presupuesto) }}</td>
+                    <td class="rent-th-num">{{ formatMonto(fila.gastado) }}</td>
+                    <td class="rent-th-num" [class.rent-text-pos]="fila.disponible >= 0" [class.rent-text-neg]="fila.disponible < 0">{{ formatMonto(fila.disponible) }}</td>
+                    <td class="rent-th-progreso">
+                      <div class="rent-tabla-progreso rent-tabla-progreso--presup">
+                        <div class="rent-tabla-progreso-track" aria-hidden="true">
+                          <span
+                            class="rent-barra-fill"
+                            [ngClass]="claseBarraPresupuestoUsado(fila.usadoBarTono)"
+                            [style.width.%]="anchoBarra(fila.usadoPct)">
+                          </span>
+                        </div>
+                        <span class="rent-tabla-progreso-pct">{{ fila.usadoPct }}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                }
+                <tr class="rent-proy-total-row">
+                  <td>Total</td>
+                  <td class="rent-th-num rent-col-fuerte">{{ formatMonto(proyectoDetalle(proy).presupuestoTotal.presupuesto) }}</td>
+                  <td class="rent-th-num rent-col-fuerte">{{ formatMonto(proyectoDetalle(proy).presupuestoTotal.gastado) }}</td>
+                  <td class="rent-th-num rent-col-fuerte" [class.rent-text-pos]="proyectoDetalle(proy).presupuestoTotal.disponible >= 0">{{ formatMonto(proyectoDetalle(proy).presupuestoTotal.disponible) }}</td>
+                  <td class="rent-th-progreso">
+                    <div class="rent-tabla-progreso rent-tabla-progreso--presup">
+                      <div class="rent-tabla-progreso-track" aria-hidden="true">
+                        <span
+                          class="rent-barra-fill"
+                          [ngClass]="claseBarraPresupuestoUsado(proyectoDetalle(proy).presupuestoTotal.usadoBarTono ?? 'naranja')"
+                          [style.width.%]="anchoBarra(proyectoDetalle(proy).presupuestoTotal.usadoPct)">
+                        </span>
+                      </div>
+                      <span class="rent-tabla-progreso-pct rent-col-fuerte">{{ proyectoDetalle(proy).presupuestoTotal.usadoPct }}%</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+      </section>
+    </section>
+  }
+  @if (dimension === 'proveedor' && proveedorAbierto; as prov) {
+    <section class="sf-card rent-detalle-ancla" #detalleProveedor>
+      <section class="rent-detalle rent-detalle--suite rent-prov-detalle" aria-labelledby="rent-prov-detalle-titulo">
+        <header class="rent-cli-top">
+          <span class="rent-detalle-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M5 17h-2v-6l2 -5h9v11" /><path d="M14 17h1" /><path d="M14 6h5l3 5v6h-2" /></svg>
+          </span>
+          <h2 id="rent-prov-detalle-titulo" class="rent-detalle-titulo">{{ prov.nombre }}</h2>
+          <p class="rent-prod-detalle-sub">{{ periodoTitulo }}</p>
+        </header>
+
+        @if (comboProveedor(proveedorDetalle(prov)); as graf) {
+          <h3 class="rent-bloque-titulo">Compras y ventas · enero a {{ mesNombre() }} {{ anio }}</h3>
+          <svg class="rent-prov-combo" viewBox="0 0 720 220" role="img" [attr.aria-label]="'Compras y ventas de ' + prov.nombre">
+            @for (tick of graf.left; track tick.text) {
+              <text class="rent-prov-eje" [attr.x]="40" [attr.y]="tick.y + 3" text-anchor="end">{{ tick.text }}</text>
+              <line class="rent-prov-grid" x1="46" x2="678" [attr.y1]="tick.y" [attr.y2]="tick.y" />
+            }
+            @for (tick of graf.right; track tick.text) {
+              <text class="rent-prov-eje" [attr.x]="684" [attr.y]="tick.y + 3">{{ tick.text }}</text>
+            }
+            @for (bar of graf.bars; track bar.label) {
+              <rect class="rent-prov-bar-compra" [attr.x]="bar.x - 9" [attr.y]="bar.compraY" width="7" [attr.height]="bar.compraH" rx="2" />
+              <rect class="rent-prov-bar-venta" [attr.x]="bar.x + 1" [attr.y]="bar.ventaY" width="7" [attr.height]="bar.ventaH" rx="2" />
+              <text class="rent-prov-mes" [attr.x]="bar.x" y="212" text-anchor="middle">{{ bar.label }}</text>
+            }
+            <path [attr.d]="graf.line" class="rent-prov-linea" fill="none" />
+          </svg>
+          <div class="rent-chart-legend">
+            <span><span class="rent-legend-dot rent-prov-dot-compra"></span> Compras al proveedor</span>
+            <span><span class="rent-legend-dot rent-prov-dot-venta"></span> Ventas de sus productos</span>
+            <span><span class="rent-legend-dot rent-legend-dot--indigo"></span> Margen</span>
+          </div>
+        }
+
+        <div class="rent-prov-kpis">
+          <article class="rent-kpi-card">
+            <div class="rent-kpi-titulo">Compras al proveedor</div>
+            <div class="rent-kpi-valor">{{ formatMonto(montoHorizonte(prov.compro)) }}</div>
+            <div class="rent-kpi-sublinea">{{ formatPct(prov.parteComprasPct, 0) }} de sus compras</div>
+          </article>
+          <article class="rent-kpi-card">
+            <div class="rent-kpi-titulo">Ventas generadas</div>
+            <div class="rent-kpi-valor">{{ formatMonto(proveedorDetalle(prov).ventasGeneradas) }}</div>
+            <div class="rent-kpi-sublinea">de sus productos</div>
+          </article>
+          <article class="rent-kpi-card">
+            <div class="rent-kpi-titulo">Rentabilidad</div>
+            <div class="rent-kpi-valor" [class.rent-kpi-valor--rojo]="proveedorDetalle(prov).rentabilidadPct < proveedorDetalle(prov).rentabilidadAnioPct">
+              {{ formatPct(proveedorDetalle(prov).rentabilidadPct) }}
+            </div>
+            <div class="rent-kpi-sublinea">promedio del año {{ formatPct(proveedorDetalle(prov).rentabilidadAnioPct) }}</div>
+          </article>
+          <article class="rent-kpi-card">
+            <div class="rent-kpi-titulo">Inventario almacenado</div>
+            <div class="rent-kpi-valor">{{ formatMonto(proveedorDetalle(prov).inventarioValor) }}</div>
+            @if (proveedorDetalle(prov).inventarioDias > 0) {
+              <div class="rent-kpi-sublinea">alcanza para {{ proveedorDetalle(prov).inventarioDias }} días</div>
+            }
+          </article>
+          <article class="rent-kpi-card">
+            <div class="rent-kpi-titulo">Por pagar al proveedor</div>
+            <div class="rent-kpi-valor">{{ formatMonto(proveedorDetalle(prov).porPagarTotal) }}</div>
+            @if (proveedorDetalle(prov).proximoPago) {
+              <div class="rent-kpi-sublinea">próximo pago {{ proveedorDetalle(prov).proximoPago }}</div>
+            }
+          </article>
+        </div>
+
+        <div class="rent-cli-seccion">
+          <h3 class="rent-bloque-titulo">Qué se compra</h3>
+          <span class="rent-cli-seccion-extra">
+            {{ proveedorDetalle(prov).productos.length }}
+            {{ proveedorDetalle(prov).productos.length === 1 ? 'producto' : 'productos' }}
+            · {{ formatMonto(montoHorizonte(prov.compro)) }} en {{ mesNombre() }}
+          </span>
+        </div>
+        <div class="rent-prov-prod-scroll">
+          <table class="rent-mini rent-cli-tabla rent-prov-prod-tabla">
+            <thead>
+              <tr>
+                <th scope="col">Producto</th>
+                <th scope="col" class="rent-cli-col-bar" aria-label="Proporción"></th>
+                <th scope="col" class="rent-th-num">Compras</th>
+                <th scope="col" class="rent-th-num">Unidades compradas</th>
+                <th scope="col" class="rent-th-num">Ventas</th>
+                <th scope="col" class="rent-th-num">Unidades vendidas</th>
+                <th scope="col" class="rent-th-num">Margen</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (prod of proveedorDetalle(prov).productos; track prod.nombre) {
+                <tr>
+                  <td>
+                    <div class="rent-prov-prod-nombre">{{ prod.nombre }}</div>
+                    <div class="rent-prov-prod-meta">{{ formatPct(prod.pct, 0) }} de lo que se compra</div>
+                  </td>
+                  <td class="rent-cli-col-bar">
+                    <div class="rent-barra-track rent-prov-prod-track" aria-hidden="true">
+                      <span class="rent-barra-fill rent-barra-fill--naranja" [style.width.%]="anchoRelativoMonto(prod.compras, proveedorDetalle(prov).productos)"></span>
+                    </div>
+                  </td>
+                  <td class="rent-th-num">{{ formatMonto(prod.compras) }}</td>
+                  <td class="rent-th-num">{{ formatUnidades(prod.unidades) }}</td>
+                  <td class="rent-th-num">{{ prod.ventas == null ? '—' : formatMonto(prod.ventas) }}</td>
+                  <td class="rent-th-num">{{ prod.unidadesVendidas == null ? '—' : formatUnidades(prod.unidadesVendidas) }}</td>
+                  <td class="rent-th-num">{{ formatPct(prod.margenPct) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="rent-prod-detalle-grid">
+          <div>
+            <h3 class="rent-bloque-titulo">Resumen del año</h3>
+            <table class="rent-mini rent-prov-resumen">
+              <thead>
+                <tr>
+                  <th scope="col"></th>
+                  <th scope="col" class="rent-th-num">Total del año</th>
+                  <th scope="col" class="rent-th-num">Promedio mensual</th>
+                  @if (horizonte !== 'anio') {
+                    <th scope="col" class="rent-th-num rent-prov-mes-col">{{ mesNombre() }}</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (fila of proveedorDetalle(prov).resumen; track fila.concepto) {
+                  <tr [class.rent-prov-util]="fila.concepto === 'Utilidad'">
+                    <td>{{ fila.concepto }}</td>
+                    <td class="rent-th-num" [ngClass]="claseValorTono(fila.anualTono ?? 'normal')">
+                      {{ formatResumenValor(fila, 'anual') }}
+                    </td>
+                    <td class="rent-th-num" [ngClass]="fila.concepto === 'Utilidad' ? claseValorTono(fila.anualTono ?? 'normal') : ''">
+                      {{ formatResumenValor(fila, 'promedio') }}
+                    </td>
+                    @if (horizonte !== 'anio') {
+                      <td class="rent-th-num" [ngClass]="claseValorTono(fila.mesTono ?? 'normal')">
+                        {{ formatResumenValor(fila, 'mes') }}
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <div class="rent-cli-seccion">
+              <h3 class="rent-bloque-titulo">Cuentas por pagar</h3>
+              @if (proveedorDetalle(prov).creditoDias > 0) {
+                <span class="rent-cli-seccion-extra">Crédito de {{ proveedorDetalle(prov).creditoDias }} días</span>
+              }
+            </div>
+            @if (proveedorDetalle(prov).facturas.length) {
+              <table class="rent-mini rent-cli-tabla rent-cli-facturas">
+                <thead>
+                  <tr>
+                    <th scope="col">Factura</th>
+                    <th scope="col">Vence</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col" class="rent-th-num">Monto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (fac of proveedorDetalle(prov).facturas; track fac.codigo) {
+                    @if (urlFacturaProveedor(fac); as facUrl) {
+                      <tr class="rent-cli-factura-tr rent-cli-factura-tr--link" (click)="facLink.click()">
+                        <td>
+                          <a
+                            #facLink
+                            class="rent-cli-factura-link"
+                            [href]="facUrl"
+                            target="_blank"
+                            rel="noopener"
+                            (click)="$event.stopPropagation()">
+                            {{ fac.codigo }}
+                            <span class="rent-cli-factura-tip">Ver detalles</span>
+                          </a>
+                        </td>
+                        <td class="rent-cli-vence">{{ fac.fecha }}</td>
+                        <td><span class="rent-prov-estado" [class.rent-prov-estado--alerta]="fac.notaAlerta">{{ fac.nota }}</span></td>
+                        <td class="rent-th-num rent-cli-facturas-num">{{ formatMonto(fac.monto) }}</td>
+                      </tr>
+                    } @else {
+                      <tr class="rent-cli-factura-tr">
+                        <td>{{ fac.codigo }}</td>
+                        <td class="rent-cli-vence">{{ fac.fecha }}</td>
+                        <td><span class="rent-prov-estado" [class.rent-prov-estado--alerta]="fac.notaAlerta">{{ fac.nota }}</span></td>
+                        <td class="rent-th-num rent-cli-facturas-num">{{ formatMonto(fac.monto) }}</td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+                <tfoot>
+                  <tr class="rent-prov-fact-total">
+                    <td colspan="3">Total</td>
+                    <td class="rent-th-num rent-cli-facturas-num">{{ formatMonto(proveedorDetalle(prov).porPagarTotal) }}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            } @else {
+              <p class="rent-vacio">Sin facturas pendientes.</p>
+            }
+          </div>
+        </div>
+
+        <h3 class="rent-bloque-titulo">Clientes de estos productos</h3>
+        @if (proveedorDetalle(prov).clientes.length) {
+          <table class="rent-mini rent-cli-tabla rent-prov-clientes-tabla">
+            <thead>
+              <tr>
+                <th scope="col">Cliente</th>
+                <th scope="col" class="rent-cli-col-bar" aria-label="Proporción"></th>
+                <th scope="col" class="rent-th-num">Ventas</th>
+                <th scope="col" class="rent-th-num">Unidades vendidas</th>
+                <th scope="col" class="rent-th-num">Margen</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (cli of proveedorDetalle(prov).clientes; track cli.nombre) {
+                <tr>
+                  <td class="rent-puente-label">{{ cli.nombre }}</td>
+                  <td class="rent-cli-col-bar">
+                    <div class="rent-barra-track rent-prov-prod-track" aria-hidden="true">
+                      <span class="rent-barra-fill rent-barra-fill--azul" [style.width.%]="anchoRelativoMonto(cli.ventas, proveedorDetalle(prov).clientes)"></span>
+                    </div>
+                  </td>
+                  <td class="rent-th-num rent-puente-monto">{{ formatMonto(cli.ventas) }}</td>
+                  <td class="rent-th-num">{{ cli.unidadesVendidas == null ? '—' : formatUnidades(cli.unidadesVendidas) }}</td>
+                  <td class="rent-th-num rent-puente-pct" [class.rent-text-neg]="cli.margenBajo" [class.rent-text-pos]="cli.margenAlto">
+                    {{ formatPct(cli.margenPct) }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <p class="rent-vacio">Sin clientes en el periodo.</p>
+        }
+      </section>
+    </section>
+  }
+  @if (dimension === 'cliente' && clienteAbierto; as cli) {
+    <section class="sf-card rent-detalle-ancla" #detalleCliente>
+      <section class="rent-detalle rent-detalle--suite rent-cli-detalle" aria-labelledby="rent-cli-detalle-titulo">
+        <header class="rent-cli-top">
+          <span class="rent-detalle-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>
+          </span>
+          <h2 id="rent-cli-detalle-titulo" class="rent-detalle-titulo">{{ cli.nombre }}</h2>
+          <p class="rent-prod-detalle-sub">
+            {{ periodoTitulo }}@if (clienteDetalle(cli).obra) { · obra: {{ clienteDetalle(cli).obra }} }
+          </p>
+        </header>
+
+        <div class="rent-cli-kpis">
+          <div class="rent-cli-kpis-grupo">
+            <article class="rent-kpi-card">
+              <div class="rent-kpi-titulo">Total ventas</div>
+              <div class="rent-kpi-valor">{{ formatMonto(montoHorizonte(cli.compro)) }}</div>
+              <div class="rent-kpi-sublinea">{{ cli.parteVentasPct }}% de sus ventas</div>
+            </article>
+            <article class="rent-kpi-card">
+              <div class="rent-kpi-titulo">Margen</div>
+              <div class="rent-kpi-valor" [class.rent-kpi-valor--rojo]="cli.deCada100Bajo">
+                {{ formatPct(cli.deCada100) }}
+              </div>
+              <div class="rent-kpi-sublinea">vs promedio clientes {{ formatPct(clienteDetalle(cli).deCada100Promedio) }}</div>
+            </article>
+            <article class="rent-kpi-card">
+              <div class="rent-kpi-titulo">Margen real</div>
+              <div class="rent-kpi-valor" [class.rent-kpi-valor--rojo]="cli.alFinalQuedan < clienteDetalle(cli).deCada100Promedio">
+                {{ formatPct(clienteDetalle(cli).alFinalQuedan) }}
+              </div>
+              <div class="rent-kpi-sublinea">tras esperar su pago</div>
+            </article>
+          </div>
+          <div class="rent-cli-kpis-grupo">
+            <article class="rent-kpi-card">
+              <div class="rent-kpi-titulo">Descuento</div>
+              <div class="rent-kpi-valor">{{ formatPct(clienteDetalle(cli).descuentoPct, 0) }}</div>
+              <div class="rent-kpi-sublinea">{{ formatMonto(clienteDetalle(cli).descuentoMonto) }}</div>
+            </article>
+            <article class="rent-kpi-card">
+              <div class="rent-kpi-titulo">Paga en</div>
+              @if (cli.pagoContado) {
+                <div class="rent-kpi-valor">Contado</div>
+                <div class="rent-kpi-sublinea">sin saldo pendiente</div>
+              } @else {
+                <div class="rent-kpi-valor" [class.rent-kpi-valor--rojo]="cli.pagoLento">{{ cli.pagoDias }} días</div>
+                @if (cli.pagoPactado !== null) {
+                  <div class="rent-kpi-sublinea">pactó {{ cli.pagoPactado }}</div>
+                }
+              }
+            </article>
+            <article class="rent-kpi-card">
+              <div class="rent-kpi-titulo">Le debe</div>
+              <div class="rent-kpi-valor" [class.rent-kpi-valor--rojo]="(cli.leDebe ?? 0) > 0">
+                {{ cli.leDebe === null ? '—' : formatMonto(montoHorizonte(cli.leDebe)) }}
+              </div>
+              <div class="rent-kpi-sublinea">vencido {{ formatMonto(clienteDetalle(cli).cxcVencido) }}</div>
+            </article>
+          </div>
+        </div>
+
+        <div class="rent-prod-detalle-grid">
+          <div class="rent-prod-detalle-col">
+            <div>
+              <div class="rent-cli-seccion">
+                <h3 class="rent-bloque-titulo">De precio de lista a la ganancia</h3>
+              </div>
+              <table class="rent-mini rent-cli-tabla rent-cli-tabla--bar">
+                <thead>
+                  <tr>
+                    <th scope="col">Concepto</th>
+                    <th scope="col" class="rent-cli-col-bar" aria-label="Proporción"></th>
+                    <th scope="col" class="rent-th-num">Monto</th>
+                    <th scope="col" class="rent-th-num">% ventas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (paso of clienteDetalle(cli).puente; track paso.etiqueta) {
+                    <tr>
+                      <td class="rent-puente-label">{{ paso.etiqueta }}</td>
+                      <td class="rent-cli-col-bar">
+                        <div class="rent-puente-track" aria-hidden="true">
+                          <span
+                            class="rent-puente-fill rent-puente-fill--{{ tonoPuenteCliente(paso.etiqueta) }}"
+                            [style.width.%]="anchoPuenteCliente(paso.pct, clienteDetalle(cli).puente)">
+                          </span>
+                        </div>
+                      </td>
+                      <td class="rent-th-num rent-puente-monto" [class.rent-text-neg]="paso.monto < 0">
+                        {{ formatMonto(paso.monto) }}
+                      </td>
+                      <td class="rent-th-num rent-puente-pct" [class.rent-text-neg]="paso.pct < 0">
+                        {{ formatPct(paso.pct) }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <div>
+              <div class="rent-cli-seccion">
+                <h3 class="rent-bloque-titulo">Facturas pendientes</h3>
+                @if (clienteDetalle(cli).cxcVencido) {
+                  <span class="rent-cli-seccion-extra">vencido {{ formatMonto(clienteDetalle(cli).cxcVencido) }}</span>
+                }
+              </div>
+              @if (clienteDetalle(cli).facturas.length) {
+                <table class="rent-mini rent-cli-tabla rent-cli-facturas">
+                  <thead>
+                    <tr>
+                      <th scope="col">Factura</th>
+                      <th scope="col">Vence</th>
+                      <th scope="col" class="rent-th-num">Total</th>
+                      <th scope="col" class="rent-th-num">Abonos</th>
+                      <th scope="col" class="rent-th-num">Restante</th>
+                      <th scope="col" class="rent-th-num">Días vencimiento</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (fac of clienteDetalle(cli).facturas; track fac.codigo) {
+                      @if (fac.id) {
+                        <tr class="rent-cli-factura-tr rent-cli-factura-tr--link" (click)="facLink.click()">
+                          <td>
+                            <a
+                              #facLink
+                              class="rent-cli-factura-link"
+                              [href]="'/venta/' + fac.id"
+                              target="_blank"
+                              rel="noopener"
+                              (click)="$event.stopPropagation()">
+                              {{ fac.codigo }}
+                              <span class="rent-cli-factura-tip">Ver detalles</span>
+                            </a>
+                          </td>
+                          <td class="rent-cli-vence">{{ fac.fecha }}</td>
+                          <td class="rent-th-num">{{ fac.total == null ? '—' : formatMonto(fac.total) }}</td>
+                          <td class="rent-th-num rent-text-muted">{{ fac.abonos == null ? '—' : formatMonto(fac.abonos) }}</td>
+                          <td class="rent-th-num rent-cli-facturas-num">{{ formatMonto(fac.monto) }}</td>
+                          <td class="rent-th-num rent-cli-facturas-num" [class.rent-text-neg]="fac.notaAlerta">{{ fac.nota }}</td>
+                        </tr>
+                      } @else {
+                        <tr class="rent-cli-factura-tr">
+                          <td>{{ fac.codigo }}</td>
+                          <td class="rent-cli-vence">{{ fac.fecha }}</td>
+                          <td class="rent-th-num">{{ fac.total == null ? '—' : formatMonto(fac.total) }}</td>
+                          <td class="rent-th-num rent-text-muted">{{ fac.abonos == null ? '—' : formatMonto(fac.abonos) }}</td>
+                          <td class="rent-th-num rent-cli-facturas-num">{{ formatMonto(fac.monto) }}</td>
+                          <td class="rent-th-num rent-cli-facturas-num" [class.rent-text-neg]="fac.notaAlerta">{{ fac.nota }}</td>
+                        </tr>
+                      }
+                    }
+                  </tbody>
+                </table>
+              } @else {
+                <p class="rent-placeholder text-muted mb-0">Sin facturas pendientes.</p>
+              }
+            </div>
+          </div>
+
+          <div class="rent-prod-detalle-col">
+            <div>
+              <div class="rent-cli-seccion">
+                <h3 class="rent-bloque-titulo">Qué compra</h3>
+              </div>
+              <table class="rent-mini rent-cli-tabla rent-cli-tabla--bar">
+                <thead>
+                  <tr>
+                    <th scope="col">Producto</th>
+                    <th scope="col" class="rent-cli-col-bar" aria-label="Proporción"></th>
+                    <th scope="col" class="rent-th-num">Ventas totales</th>
+                    <th scope="col" class="rent-th-num">Margen</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (prod of clienteDetalle(cli).productos; track prod.producto) {
+                    <tr>
+                      <td class="rent-puente-label">{{ prod.producto }}</td>
+                      <td class="rent-cli-col-bar">
+                        <div class="rent-barra-track" aria-hidden="true">
+                          <span class="rent-barra-fill rent-barra-fill--azul" [style.width.%]="anchoRelativoMonto(prod.compro, clienteDetalle(cli).productos)"></span>
+                        </div>
+                      </td>
+                      <td class="rent-th-num rent-puente-monto">{{ formatMonto(prod.compro) }}</td>
+                      <td class="rent-th-num rent-puente-pct" [class.rent-text-neg]="prod.deCada100Bajo">{{ formatPct(prod.deCada100) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <div>
+              <div class="rent-cli-seccion">
+                <h3 class="rent-bloque-titulo">Sucursales</h3>
+              </div>
+              <table class="rent-mini rent-cli-tabla rent-cli-tabla--bar">
+                <thead>
+                  <tr>
+                    <th scope="col">Sucursal</th>
+                    <th scope="col" class="rent-cli-col-bar" aria-label="Proporción"></th>
+                    <th scope="col" class="rent-th-num">Ventas</th>
+                    <th scope="col" class="rent-th-num">% ventas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (suc of clienteDetalle(cli).sucursales; track suc.etiqueta) {
+                    <tr>
+                      <td class="rent-puente-label">{{ suc.etiqueta }}</td>
+                      <td class="rent-cli-col-bar">
+                        <div class="rent-barra-track" aria-hidden="true">
+                          <span class="rent-barra-fill rent-barra-fill--azul" [style.width.%]="anchoRelativo(suc.pct, clienteDetalle(cli).sucursales)"></span>
+                        </div>
+                      </td>
+                      <td class="rent-th-num rent-puente-monto">{{ formatMonto(suc.monto) }}</td>
+                      <td class="rent-th-num rent-puente-pct">{{ formatPct(suc.pct, 0) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+  }
+  @if (dimension === 'producto' && productoAbierto; as prod) {
+    <section class="sf-card rent-detalle-ancla" #detalleProducto>
+      <section class="rent-detalle rent-detalle--suite" aria-labelledby="rent-prod-detalle-titulo">
+        <header class="rent-detalle-header rent-prod-detalle-header">
+          <span class="rent-detalle-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9l-8 4.5l-8 -4.5v-9l8 -4.5" /><path d="M12 12l8 -4.5" /><path d="M12 12v9" /><path d="M12 12l-8 -4.5" /></svg>
+          </span>
+          <div>
+            <h2 id="rent-prod-detalle-titulo" class="rent-detalle-titulo">{{ prod.nombre }}</h2>
+            <p class="rent-prod-detalle-sub">
+              {{ periodoTitulo }} · n.º {{ prod.puesto }} en ventas · {{ productoDetalle(prod).proveedor }}
+            </p>
+          </div>
+        </header>
+
+        <div class="rent-detalle-kpis rent-prod-detalle-kpis">
+          <article class="rent-kpi-card">
+            <div class="rent-kpi-titulo">Ventas (sin IVA)</div>
+            <div class="rent-kpi-valor rent-kpi-valor--verde">{{ formatMonto(montoHorizonte(prod.ventas)) }}</div>
+            @if (prod.ventasVsPct !== null) {
+              <div class="rent-kpi-sublinea rent-text-pos">{{ formatVs(prod.ventasVsPct) }} vs. {{ etiquetaComparacionCorta() }}</div>
+            }
+          </article>
+          <article class="rent-kpi-card">
+            <div class="rent-kpi-titulo">Utilidad</div>
+            <div class="rent-kpi-valor" [class.rent-kpi-valor--rojo]="prod.margenBajo" [class.rent-kpi-valor--azul]="!prod.margenBajo">
+              {{ formatMonto(montoHorizonte(prod.utilidad)) }}
+            </div>
+            <div class="rent-kpi-sublinea">{{ etiquetaComparacionCorta() }} {{ formatMonto(productoDetalle(prod).utilidadAnio) }}</div>
+          </article>
+          <article class="rent-kpi-card">
+            <div class="rent-kpi-titulo">Margen</div>
+            <div class="rent-kpi-valor" [class.rent-kpi-valor--rojo]="prod.margenBajo" [class.rent-kpi-valor--azul]="!prod.margenBajo">
+              {{ formatPct(prod.margenPct ?? 0) }}
+            </div>
+            <div class="rent-kpi-sublinea">{{ etiquetaComparacionCorta() }} {{ formatPct(prod.margenAnioPct ?? 0) }}</div>
+          </article>
+          <article class="rent-kpi-card">
+            <div class="rent-kpi-titulo">Costo por unidad</div>
+            <div class="rent-kpi-valor" [class.rent-kpi-valor--rojo]="prod.costoAlerta">
+              {{ formatPrecio(productoDetalle(prod).costoUnitario) }}
+            </div>
+            <div class="rent-kpi-sublinea rent-text-neg">{{ formatVs(productoDetalle(prod).costoUnitarioVsPct) }} vs. {{ etiquetaComparacionCorta() }}</div>
+          </article>
+          <article class="rent-kpi-card">
+            <div class="rent-kpi-titulo">Precio por unidad</div>
+            <div class="rent-kpi-valor rent-kpi-valor--azul">{{ formatPrecio(productoDetalle(prod).precioUnitario) }}</div>
+            <div class="rent-kpi-sublinea rent-text-pos">{{ formatVs(productoDetalle(prod).precioUnitarioVsPct) }} vs. {{ etiquetaComparacionCorta() }}</div>
+          </article>
+          <article class="rent-kpi-card">
+            <div class="rent-kpi-titulo">Inventario</div>
+            <div class="rent-kpi-valor rent-kpi-valor--verde">
+              @if (prod.inventario.tipo === 'dias') {
+                {{ prod.inventario.dias }} días
+              } @else {
+                {{ textoInventario(prod) }}
+              }
+            </div>
+            <div class="rent-kpi-sublinea">({{ formatMonto(productoDetalle(prod).inventarioValor) }})</div>
+          </article>
+        </div>
+
+        <div class="rent-prod-detalle-grid">
+          <div class="rent-prod-detalle-col">
+            <h3 class="rent-bloque-titulo">Precio y costo por unidad — {{ etiquetaComparacionCorta() }} a {{ periodoTitulo }}</h3>
+            <div class="rent-chart-wrap">
+              @if (precioCostoChart(productoDetalle(prod)); as graf) {
+              <div class="rent-chart-hover">
+              <svg class="rent-chart" viewBox="0 0 280 120" preserveAspectRatio="none" aria-hidden="true">
+                <path class="rent-chart-precio" [attr.d]="graf.precio" fill="none" stroke-width="2.5" stroke-linecap="round" />
+                <path class="rent-chart-costo" [attr.d]="graf.costo" fill="none" stroke-width="2.5" stroke-linecap="round" />
+              </svg>
+              @for (p of graf.puntos; track $index) {
+                <div class="rent-chart-hit" [style.left.%]="p.left" [style.width.%]="p.ancho">
+                  <div class="rent-chart-tip">
+                    <strong>{{ p.label }}</strong>
+                    <span>Precio {{ formatPrecio(p.precio) }}</span>
+                    <span>Costo {{ formatPrecio(p.costo) }}</span>
+                  </div>
+                </div>
+              }
+              </div>
+              }
+              <div class="rent-chart-legend">
+                <span><span class="rent-legend-dot rent-legend-dot--precio"></span> Precio</span>
+                <span><span class="rent-legend-dot rent-legend-dot--costo"></span> Costo</span>
+              </div>
+              <div class="rent-chart-labels">
+                @for (label of productoDetalle(prod).precioCostoLabels; track $index) {
+                  <span>{{ label }}</span>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="rent-prod-detalle-col">
+            <h3 class="rent-bloque-titulo">Sucursales</h3>
+            <div class="rent-barras">
+              @for (suc of productoDetalle(prod).sucursales; track suc.etiqueta) {
+                <div class="rent-barra-row">
+                  <div class="rent-barra-label">{{ suc.etiqueta }}</div>
+                  <div class="rent-barra-track" aria-hidden="true">
+                    <span class="rent-barra-fill rent-barra-fill--azul" [style.width.%]="anchoRelativo(suc.pct, productoDetalle(prod).sucursales)"></span>
+                  </div>
+                  <div class="rent-barra-monto">{{ formatMonto(suc.monto) }}</div>
+                  <div class="rent-barra-pct">{{ suc.pct }}%</div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="rent-prod-clientes-bloque">
+          <h3 class="rent-bloque-titulo">Clientes</h3>
+          @if (productoDetalle(prod).clientes.length) {
+          <table class="rent-mini rent-prod-clientes">
+            <thead>
+              <tr>
+                <th scope="col">Cliente</th>
+                <th scope="col" class="rent-th-num">Unidades</th>
+                <th scope="col" class="rent-th-num">Precio</th>
+                <th scope="col" class="rent-th-num">Descuento</th>
+                <th scope="col" class="rent-th-num">Margen</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (cli of productoDetalle(prod).clientes; track cli.nombre) {
+                <tr>
+                  <td>{{ cli.nombre }}</td>
+                  <td class="rent-th-num">{{ formatUnidades(cli.unidades) }}</td>
+                  <td class="rent-th-num">{{ formatPrecio(cli.precio) }}</td>
+                  <td class="rent-th-num" [class.rent-text-neg]="cli.descuentoPct !== null && cli.descuentoPct >= 8">
+                    {{ cli.descuentoPct === null ? '—' : formatPct(cli.descuentoPct, 0) }}
+                  </td>
+                  <td
+                    class="rent-th-num"
+                    [class.rent-text-neg]="cli.margenBajo"
+                    [class.rent-text-pos]="!cli.margenBajo">
+                    {{ formatPct(cli.margenPct) }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          } @else {
+            <p class="rent-placeholder text-muted mb-0">Sin ventas en el período.</p>
+          }
+        </div>
+      </section>
+    </section>
+  }
+  @if (dimension === 'sucursal' && sucursalAbierta; as sucursal) {
+    <section class="sf-card rent-detalle-ancla" #detalleSucursal>
+    <section class="rent-detalle rent-detalle--suite" aria-labelledby="rent-detalle-titulo">
+      <header class="rent-detalle-header">
+        <span class="rent-detalle-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18" /><path d="M3 7v1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1h-18l2 -4h14l2 4" /><path d="M5 21v-10.15" /><path d="M19 21v-10.15" /><path d="M9 21v-4a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v4" /></svg>
+        </span>
+        <h2 id="rent-detalle-titulo" class="rent-detalle-titulo">{{ sucursal.nombre }}</h2>
+        <span class="rent-detalle-periodo">{{ periodoTitulo }}</span>
+      </header>
+
+      <div class="rent-detalle-kpis">
+        <article class="rent-kpi-card">
+          <div class="rent-kpi-titulo">Ventas (sin IVA)</div>
+          <div class="rent-kpi-valor" [class.rent-kpi-valor--rojo]="sucursal.ventasVsAnioPct < 0">
+            {{ formatMonto(sucursal.ventas) }}
+          </div>
+          <div
+            class="rent-kpi-sublinea"
+            [class.rent-text-neg]="sucursal.ventasVsAnioPct < 0"
+            [class.rent-text-pos]="sucursal.ventasVsAnioPct > 0">
+            {{ formatVs(sucursal.ventasVsAnioPct) }} vs. {{ etiquetaComparacion().toLowerCase() }}
+          </div>
+        </article>
+        <article class="rent-kpi-card">
+          <div class="rent-kpi-titulo">Gastos (sin IVA)</div>
+          <div class="rent-kpi-valor">{{ formatMonto(sucursal.gastos) }}</div>
+          <div class="rent-kpi-sublinea">{{ gastosPctVentas(sucursal) }} de las ventas</div>
+        </article>
+        <article class="rent-kpi-card">
+          <div class="rent-kpi-titulo">Utilidad</div>
+          <div
+            class="rent-kpi-valor"
+            [class.rent-kpi-valor--rojo]="sucursal.utilidad < 0"
+            [class.rent-kpi-valor--verde]="sucursal.utilidad > 0">
+            {{ formatMonto(sucursal.utilidad) }}
+          </div>
+        </article>
+        <article class="rent-kpi-card">
+          <div class="rent-kpi-titulo">Margen</div>
+          <div
+            class="rent-kpi-valor"
+            [class.rent-kpi-valor--rojo]="sucursal.margenPct < 0"
+            [class.rent-kpi-valor--verde]="sucursal.margenPct > 0">
+            {{ formatPct(sucursal.margenPct) }}
+          </div>
+        </article>
+        <article class="rent-kpi-card">
+          <div class="rent-kpi-titulo">CXC</div>
+          <div class="rent-kpi-valor" [class.rent-kpi-valor--rojo]="sucursal.cxcAlerta">
+            {{ formatMonto(sucursal.cxc) }}
+          </div>
+          @if (sucursal.detalle.cxcVencido) {
+            <div class="rent-kpi-sublinea">vencido {{ formatMonto(sucursal.detalle.cxcVencido) }}</div>
+          }
+        </article>
+        <article class="rent-kpi-card">
+          <div class="rent-kpi-titulo">CXP</div>
+          <div class="rent-kpi-valor">{{ formatMonto(sucursal.cxp) }}</div>
+          @if (sucursal.detalle.cxpVencido) {
+            <div class="rent-kpi-sublinea">vencido {{ formatMonto(sucursal.detalle.cxpVencido) }}</div>
+          }
+        </article>
+      </div>
+
+      <div class="rent-detalle-grid">
+        <div>
+          <h3 class="rent-bloque-titulo">De ventas a utilidad</h3>
+          <table class="rent-mini rent-cli-tabla rent-cli-tabla--bar">
+            <thead>
+              <tr>
+                <th scope="col">Concepto</th>
+                <th scope="col" class="rent-cli-col-bar" aria-label="Proporción"></th>
+                <th scope="col" class="rent-th-num">Monto</th>
+                <th scope="col" class="rent-th-num">% ventas</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (paso of sucursal.detalle.puente; track paso.etiqueta; let i = $index) {
+                <tr [class.rent-puente-row--cierre]="paso.etiqueta === 'Utilidad'">
+                  <td class="rent-puente-label">{{ paso.etiqueta }}</td>
+                  <td class="rent-cli-col-bar">
+                    <div class="rent-puente-track" aria-hidden="true">
+                      <span
+                        class="rent-puente-fill rent-puente-fill--{{ tonoPuente(paso, i, sucursal.detalle.puente.length) }}"
+                        [style.width.%]="anchoBarra(paso.pct)">
+                      </span>
+                    </div>
+                  </td>
+                  <td
+                    class="rent-th-num rent-puente-monto"
+                    [class.rent-text-neg]="paso.monto < 0"
+                    [class.rent-text-pos]="paso.etiqueta === 'Utilidad' && paso.monto > 0">
+                    {{ formatMonto(paso.monto) }}
+                  </td>
+                  <td class="rent-th-num rent-puente-pct" [class.rent-text-neg]="paso.pct < 0">
+                    {{ formatPct(paso.pct) }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div>
+          <h3 class="rent-bloque-titulo">Ventas por categoría de productos</h3>
+          @if (sucursal.detalle.productos.length) {
+            <table class="rent-mini rent-cli-tabla rent-cli-tabla--bar">
+              <thead>
+                <tr>
+                  <th scope="col">Categoría de productos</th>
+                  <th scope="col" class="rent-cli-col-bar" aria-label="Proporción"></th>
+                  <th scope="col" class="rent-th-num">Ventas</th>
+                  <th scope="col" class="rent-th-num">Margen</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (prod of sucursal.detalle.productos; track prod.tipo) {
+                  <tr>
+                    <td class="rent-puente-label rent-col-fuerte">{{ prod.tipo }}</td>
+                    <td class="rent-cli-col-bar">
+                      <div class="rent-barra-track" aria-hidden="true">
+                        <span
+                          class="rent-barra-fill rent-barra-fill--azul"
+                          [style.width.%]="anchoRelativoMonto(prod.ventas, sucursal.detalle.productos)">
+                        </span>
+                      </div>
+                    </td>
+                    <td class="rent-th-num rent-barra-monto">{{ formatMonto(prod.ventas) }}</td>
+                    <td class="rent-th-num rent-barra-pct">{{ formatPct(prod.margenPct) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <p class="rent-vacio">Sin desglose en el periodo.</p>
+          }
+        </div>
+
+        <div>
+          <h3 class="rent-bloque-titulo">Clientes</h3>
+          @if (sucursal.detalle.clientes.length) {
+            <table class="rent-mini rent-cli-tabla rent-cli-tabla--bar">
+              <thead>
+                <tr>
+                  <th scope="col">Cliente</th>
+                  <th scope="col" class="rent-cli-col-bar" aria-label="Proporción"></th>
+                  <th scope="col" class="rent-th-num">Ventas</th>
+                  <th scope="col" class="rent-th-num">% ventas</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (cli of sucursal.detalle.clientes; track cli.etiqueta) {
+                  <tr>
+                    <td class="rent-puente-label">{{ cli.etiqueta }}</td>
+                    <td class="rent-cli-col-bar">
+                      <div class="rent-barra-track" aria-hidden="true">
+                        <span class="rent-barra-fill rent-barra-fill--azul" [style.width.%]="anchoRelativo(cli.pct, sucursal.detalle.clientes)"></span>
+                      </div>
+                    </td>
+                    <td class="rent-th-num rent-barra-monto">{{ formatMonto(cli.monto) }}</td>
+                    <td class="rent-th-num rent-barra-pct">{{ cli.pct }}%</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <p class="rent-vacio">Sin desglose en el periodo.</p>
+          }
+        </div>
+
+        <div>
+          <h3 class="rent-bloque-titulo">
+            Devoluciones por motivo
+            @if (sucursal.detalle.devolucionesTotal) {
+              <span class="rent-bloque-titulo-monto">· {{ formatMonto(sucursal.detalle.devolucionesTotal) }}</span>
+            }
+          </h3>
+          @if (sucursal.detalle.devoluciones.length) {
+            <table class="rent-mini rent-cli-tabla rent-cli-tabla--bar">
+              <thead>
+                <tr>
+                  <th scope="col">Motivo</th>
+                  <th scope="col" class="rent-cli-col-bar" aria-label="Proporción"></th>
+                  <th scope="col" class="rent-th-num">Monto</th>
+                  <th scope="col" class="rent-th-num">%</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (dev of sucursal.detalle.devoluciones; track dev.etiqueta) {
+                  <tr>
+                    <td class="rent-puente-label">{{ dev.etiqueta }}</td>
+                    <td class="rent-cli-col-bar">
+                      <div class="rent-barra-track" aria-hidden="true">
+                        <span class="rent-barra-fill rent-barra-fill--naranja" [style.width.%]="anchoRelativo(dev.pct, sucursal.detalle.devoluciones)"></span>
+                      </div>
+                    </td>
+                    <td class="rent-th-num rent-barra-monto">{{ formatMonto(dev.monto) }}</td>
+                    <td class="rent-th-num rent-barra-pct">{{ dev.pct }}%</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <p class="rent-vacio">Sin devoluciones en el periodo.</p>
+          }
+        </div>
+      </div>
+    </section>
+    </section>
+  }
+  }
+</div>

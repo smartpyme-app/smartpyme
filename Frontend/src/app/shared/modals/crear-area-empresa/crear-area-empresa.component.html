@@ -1,10 +1,14 @@
 
-<button type="button" class="btn btn-default tcla-F1" (click)="openModal(mArea)">
-    @if (!id_area) {
-        <i tooltip="Crear nueva área (F1)" class="fa fa-plus"></i>
-    }
-    @if (id_area) {
-        <i tooltip="Editar área (F1)" class="fa fa-pencil-alt"></i>
+<button type="button" [class]="btnClass" (click)="openModal(mArea)">
+    @if (label) {
+        <i class="fa fa-plus me-1" aria-hidden="true"></i> {{ label }}
+    } @else {
+        @if (!id_area) {
+            <i tooltip="Crear nueva área (F1)" class="fa fa-plus"></i>
+        }
+        @if (id_area) {
+            <i tooltip="Editar área (F1)" class="fa fa-pencil-alt"></i>
+        }
     }
 </button>
 

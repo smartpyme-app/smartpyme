@@ -38,6 +38,20 @@ export class DashboardAnalyticsApiService {
   /**
    * GET con log de error y emisión de `null` (no propaga error).
    */
+  post<T = any>(url: string, body: unknown = {}): Observable<T | null> {
+    return this.http
+      .post<T>(url, body, {
+        headers: this.headers,
+        params: { saltarJWT: 'true' },
+      })
+      .pipe(
+        catchError((err) => {
+          console.error('Analytics API error:', url, err);
+          return of(null);
+        }),
+      );
+  }
+
   get<T = any>(url: string): Observable<T | null> {
     return this.http
       .get<T>(url, {

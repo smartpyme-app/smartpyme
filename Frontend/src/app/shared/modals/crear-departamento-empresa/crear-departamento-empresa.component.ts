@@ -3,24 +3,28 @@ import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, inject  } 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 import { BaseModalComponent } from '../../base/base-modal.component';
 
 @Component({
     selector: 'app-crear-departamento',
     templateUrl: './crear-departamento-empresa.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, TooltipModule, NotificacionesContainerComponent],
     
 })
 export class CrearDepartamentoComponent extends BaseModalComponent implements OnInit {
 
     public departamento: any = {};
     @Input() id_departamento: any = null;
+    @Input() label = '';
+    @Input() btnClass = 'btn btn-default tcla-F1';
     @Output() update = new EventEmitter();
     public override loading = false;
     public override saving = false;

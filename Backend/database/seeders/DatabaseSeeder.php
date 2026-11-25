@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             MultimonedaFuncionalidadSeeder::class,
             MHTableSeeder::class,
             DteTipoMapeoSeeder::class,
+            NifMapeoSeeder::class,
             PaisConfiguracionDocumentosSeeder::class,
             PaisConfiguracionPlanillasSeeder::class,
             PaisConfiguracionImpuestosSeeder::class,

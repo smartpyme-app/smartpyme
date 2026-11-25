@@ -1,0 +1,143 @@
+/* Compartido: rentabilidad y utilidades de barras/tablas en Suite Financiera */
+
+.rent-kpi-linea,
+.rent-kpi-sublinea {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--sf-soft-text, #5e5e62);
+}
+
+.rent-dimension-bar {
+  margin-bottom: 4px;
+}
+
+.rent-dimension-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rent-dimension-icon {
+  display: inline-flex;
+  line-height: 0;
+}
+
+.rent-tabla-wrap {
+  margin: 0 -4px;
+}
+
+.rent-tabla {
+  font-variant-numeric: tabular-nums;
+}
+
+.rent-th-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rent-th-spark {
+  width: 72px;
+}
+
+.rent-col-nombre {
+  font-weight: 600;
+}
+
+.rent-col-fuerte {
+  font-weight: 600;
+}
+
+.rent-text-pos {
+  color: var(--sf-good, #16a34a);
+  font-weight: 600;
+}
+
+.rent-text-neg {
+  color: var(--sf-alert, #ba1a1a);
+  font-weight: 600;
+}
+
+.rent-text-muted {
+  color: var(--sf-soft-text, #5e5e62);
+}
+
+.rent-fila {
+  cursor: pointer;
+}
+
+.rent-fila--activa td {
+  background: var(--sf-bg, #f2f0f4) !important;
+}
+
+.rent-barra-row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 11rem) minmax(4rem, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.rent-barra-label {
+  font-size: 14px;
+  color: var(--sf-text, #1a1b1f);
+  font-weight: 600;
+}
+
+.rent-barra-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--sf-bg, #f2f0f4);
+  overflow: hidden;
+}
+
+.rent-barra-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  min-width: 4px;
+  opacity: 0.45;
+}
+
+.rent-barra-fill--azul {
+  background: var(--sf-blue, #005cb8);
+}
+
+.rent-barra-fill--naranja {
+  background: var(--sf-orange, #d17c2f);
+}
+
+.rent-barra-pct,
+.rent-barra-monto {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.rent-spark {
+  width: 56px;
+  height: 26px;
+}
+
+.rent-spark-up {
+  stroke: var(--sf-good, #16a34a);
+}
+
+.rent-spark-down {
+  stroke: var(--sf-alert, #ba1a1a);
+}
+
+.rent-placeholder {
+  padding: 12px 0;
+}
+
+@media (max-width: 1100px) {
+  .sf-grid.sf-grid--kpi {
+    grid-template-columns: repeat(3, minmax(8rem, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .sf-grid.sf-grid--kpi {
+    grid-template-columns: repeat(2, minmax(7rem, 1fr));
+  }
+}

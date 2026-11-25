@@ -1,0 +1,50 @@
+<article class="flujo-semana-desglose" aria-labelledby="flujo-semana-desglose-titulo">
+  <header class="flujo-semana-desglose-header">
+    <span class="flujo-semana-desglose-icon" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+        <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+        <path d="M9 17h6" />
+        <path d="M9 13h6" />
+      </svg>
+    </span>
+    <h3 id="flujo-semana-desglose-titulo" class="flujo-semana-desglose-titulo mb-0">
+      {{ desglose.id }} · {{ desglose.rango }}
+    </h3>
+  </header>
+
+  <div class="flujo-semana-desglose-grid">
+    <div class="flujo-semana-desglose-col">
+      <div class="flujo-semana-desglose-kicker">Entradas</div>
+      <ul class="flujo-semana-mov-list list-unstyled mb-0">
+        @for (item of desglose.entradas; track item.concepto) {
+          <li class="flujo-semana-mov-row">
+            <span class="flujo-semana-mov-concepto">{{ item.concepto }}</span>
+            <span class="flujo-semana-mov-monto flujo-text-blue">{{ formatMonto(item.monto) }}</span>
+          </li>
+        }
+      </ul>
+    </div>
+    <div class="flujo-semana-desglose-col">
+      <div class="flujo-semana-desglose-kicker">Salidas</div>
+      <ul class="flujo-semana-mov-list list-unstyled mb-0">
+        @for (item of desglose.salidas; track item.concepto) {
+          <li class="flujo-semana-mov-row">
+            <span class="flujo-semana-mov-concepto">{{ item.concepto }}</span>
+            <span class="flujo-semana-mov-monto">{{ formatMonto(item.monto) }}</span>
+          </li>
+        }
+      </ul>
+    </div>
+  </div>
+
+  <footer class="flujo-semana-desglose-neto">
+    <span class="flujo-semana-neto-label">Neto de la semana</span>
+    <span
+      class="flujo-semana-neto-valor"
+      [class.flujo-neto--pos]="desglose.neto >= 0"
+      [class.flujo-neto--neg]="desglose.neto < 0">
+      {{ formatMonto(desglose.neto) }}
+    </span>
+  </footer>
+</article>

@@ -49,6 +49,8 @@
                 [datosCompletos]="datosInventarioCompletos"
                 (filtrosCambiados)="onFiltrosInventarioCambiados($event)">
             </app-inventario>
+
+            <app-finanzas *ngSwitchCase="'Finanzas'"></app-finanzas>
         </ng-container>
     </div>
 

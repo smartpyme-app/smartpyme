@@ -1,0 +1,93 @@
+.flujo-semanal-card {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.flujo-semanal-table.sf-table thead th {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+}
+
+.flujo-semanal-row {
+  cursor: pointer;
+}
+
+.flujo-semanal-row:hover {
+  background: var(--sf-bg, #f2f0f4);
+}
+
+.flujo-semanal-row--selected td {
+  background: var(--sf-bg, #f2f0f4);
+}
+
+.flujo-col-semana {
+  min-width: 7.5rem;
+}
+
+.flujo-semana-id {
+  display: block;
+  font-weight: 700;
+  color: var(--sf-text, #1a1b1f);
+}
+
+.flujo-semana-rango {
+  display: block;
+  font-size: 12px;
+  color: var(--sf-soft-text, #5e5e62);
+}
+
+.flujo-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.flujo-col-ventas {
+  min-width: 5.5rem;
+}
+
+.flujo-ventas-input {
+  width: 4.75rem;
+  max-width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--sf-blue-soft, #d7e2ff);
+  border-radius: var(--sf-radius-sm, 6px);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sf-blue, #005cb8);
+  text-align: right;
+  background: var(--sf-card, #fff);
+}
+
+.flujo-text-blue {
+  color: var(--sf-blue, #005cb8);
+  font-weight: 600;
+}
+
+.flujo-text-muted {
+  color: var(--sf-soft-text, #5e5e62);
+}
+
+.flujo-neto--pos {
+  color: var(--sf-good, #16a34a);
+  font-weight: 700;
+}
+
+.flujo-neto--neg {
+  color: var(--sf-orange, #d17c2f);
+  font-weight: 700;
+}
+
+.flujo-final {
+  font-weight: 700;
+  color: var(--sf-text, #1a1b1f);
+}
+
+.flujo-semanal-nota {
+  margin-top: 12px;
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
