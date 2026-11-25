@@ -8,7 +8,9 @@ Qué cambia (solo el texto del dump, nunca datos):
   1. Columnas generadas (GENERATED ALWAYS AS ...): MariaDB vuelca su valor en los INSERT y MySQL
      lo rechaza (ERROR 3105). Se reescribe el INSERT con lista explícita de columnas sin la
      generada; MySQL la recalcula sola.
-  2. DEFINER de vistas/rutinas: los usuarios de producción no existen en local; se quita para
+  2. FK con ON DELETE/UPDATE CASCADE o SET NULL sobre una columna de la que depende una
+     columna generada STORED: MySQL la rechaza (ERROR 1215). Se quita esa acción (solo local).
+  3. DEFINER de vistas/rutinas: los usuarios de producción no existen en local; se quita para
      que el dueño sea quien importa.
 No hace falta corregir nada en producción: MariaDB acepta su propio dump.
 """
@@ -23,13 +25,14 @@ re_col = re.compile(r"^\s+`([^`]+)` ")
 re_insert = re.compile(r"^INSERT INTO `([^`]+)` VALUES")
 re_definer = re.compile(r"/\*!50013 DEFINER=`[^`]*`@`[^`]*` SQL SECURITY DEFINER \*/")
 re_definer2 = re.compile(r"DEFINER=`[^`]*`@`[^`]*`\s*")
+re_fk_accion = re.compile(r" ON (DELETE|UPDATE) (CASCADE|SET NULL|SET DEFAULT)")
 
 tablas = {}          # tabla -> (columnas, índices de columnas generadas)
 tabla_actual = None
 cols = []
 gen = []
 en_insert = None     # tabla cuyo INSERT multi-fila estamos reescribiendo
-cambios = {"insert": 0, "filas": 0, "definer": 0}
+cambios = {"insert": 0, "filas": 0, "definer": 0, "fk": 0}
 
 
 def quitar_generadas(fila, idx_gen, ncols):
@@ -72,13 +75,24 @@ with open(src, "r", encoding="utf-8", errors="surrogateescape", newline="") as f
 
         m = re_create.match(linea)
         if m:
-            tabla_actual, cols, gen = m.group(1), [], []
+            tabla_actual, cols, gen, base_gen = m.group(1), [], [], set()
         elif tabla_actual:
             mc = re_col.match(linea)
             if mc and not linea.lstrip().startswith(("PRIMARY", "UNIQUE", "KEY", "CONSTRAINT", "FULLTEXT", "INDEX")):
                 if " GENERATED ALWAYS AS " in linea:
                     gen.append(len(cols))
+                    expr = linea.split(" GENERATED ALWAYS AS ", 1)[1]
+                    base_gen.update(re.findall(r"`([^`]+)`", expr))
                 cols.append(mc.group(1))
+            elif base_gen and linea.lstrip().startswith("CONSTRAINT") and " FOREIGN KEY " in linea:
+                # MySQL (no MariaDB) prohíbe CASCADE/SET NULL en una FK sobre una columna de la que
+                # depende una columna generada STORED (ERROR 1215). Se quita solo esa acción.
+                fk_cols = set(re.findall(r"`([^`]+)`", linea.split("FOREIGN KEY", 1)[1].split("REFERENCES", 1)[0]))
+                if fk_cols & base_gen:
+                    nueva = re_fk_accion.sub("", linea)
+                    if nueva != linea:
+                        cambios["fk"] += 1
+                        linea = nueva
             elif linea.startswith(")"):
                 if gen:
                     tablas[tabla_actual] = (cols, set(gen))
@@ -108,4 +122,4 @@ with open(src, "r", encoding="utf-8", errors="surrogateescape", newline="") as f
 
 print(f"Listo: {dst}")
 print(f"Tablas con columnas generadas: {', '.join(tablas) or 'ninguna'}")
-print(f"INSERT reescritos: {cambios['insert']} ({cambios['filas']} filas) | DEFINER quitados: {cambios['definer']}")
+print(f"INSERT reescritos: {cambios['insert']} ({cambios['filas']} filas) | DEFINER quitados: {cambios['definer']} | FK sin CASCADE: {cambios['fk']}")

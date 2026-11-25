@@ -1,0 +1,267 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Banners inicio</h2>
+  <button (click)="openModal(mbanner, {})" tooltip="Crear banner" class="btn btn-default" type="button">
+    <i class="fa fa-plus"></i> Añadir banner
+  </button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <div class="row mb-3">
+    <div class="col">
+      @if (banners?.total) {
+        <span class="text-muted">
+          Mostrando {{ banners?.to }} de {{ banners?.total + ' registros' }}
+        </span>
+      }
+    </div>
+    <div class="col">
+      <form class="d-flex input-group" name="form" (ngSubmit)="buscar()" autocomplete="off">
+        <div class="input-group">
+          <div class="input-group-text bg-white border-end-0">
+            <i class="fa fa-search text-muted"></i>
+          </div>
+          <input
+            type="search"
+            name="buscador"
+            class="form-control pull-right border-start-0"
+            placeholder="Buscar por nombre"
+            [(ngModel)]="filtros.buscador"
+          />
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="d-flex mb-3">
+    <div class="col d-flex gap-2">
+      <button class="btn btn-primary" type="button" tooltip="Actualizar" (click)="loadAll()">Todos</button>
+    </div>
+    <div class="col d-flex gap-2 justify-content-end">
+      <select
+        name="estado"
+        (change)="buscar()"
+        [(ngModel)]="filtros.estado"
+        class="form-select bg-default w-auto"
+      >
+        <option value="">Estado</option>
+        <option value="1">Activo</option>
+        <option value="0">Inactivo</option>
+      </select>
+      <select
+        name="pais"
+        (change)="buscar()"
+        [(ngModel)]="filtros.pais"
+        class="form-select bg-default w-auto"
+      >
+        <option value="">País</option>
+        @for (p of paisesOpciones; track p.codigo) {
+          <option [value]="p.codigo">{{ p.etiqueta }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-borderless table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Vista</th>
+          <th>Nombre</th>
+          <th>Países</th>
+          <th>Orden</th>
+          <th>Segundos</th>
+          <th>Estado</th>
+          <th class="text-end align-middle text-nowrap" style="width: 1%">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading) {
+          <tr>
+            <td class="text-center" colspan="7">
+              <span class="badge bg-primary">Cargando...</span>
+            </td>
+          </tr>
+        }
+        @if (banners?.total < 1 && !loading) {
+          <tr>
+            <td class="text-center" colspan="7">
+              <span class="badge bg-primary">No hay banners registrados</span>
+            </td>
+          </tr>
+        }
+        @for (item of banners.data; track item.id) {
+          <tr>
+            <td>
+              @if (item.imagen_desktop) {
+                <img [src]="imgUrl(item.imagen_desktop)" alt="" class="rounded" style="max-height: 40px; max-width: 120px" />
+              }
+            </td>
+            <td>{{ item.nombre }}</td>
+            <td>{{ paisesLabel(item.paises) }}</td>
+            <td>{{ item.orden }}</td>
+            <td>{{ item.segundos_visualizacion }}</td>
+            <td>
+              @if (item.activo) {
+                <span class="badge bg-success">Activo</span>
+              } @else {
+                <span class="badge bg-secondary">Inactivo</span>
+              }
+            </td>
+            <td class="text-end align-middle" style="width: 1%; white-space: nowrap">
+              <button
+                type="button"
+                class="btn btn-link text-secondary text-decoration-none p-0 lh-1"
+                [popover]="accionesTemplate"
+                container="body"
+                placement="left"
+                triggers="click"
+                [outsideClick]="true"
+                tooltip="Acciones"
+              >
+                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+              </button>
+              <ng-template #accionesTemplate>
+                <div class="list-group border-0">
+                  <a (click)="openModal(mbanner, item)" class="list-group-item list-group-item-action border-0 click">
+                    <i class="fa fa-fw fa-edit"></i> Editar
+                  </a>
+                  <a (click)="toggleActivo(item)" class="list-group-item list-group-item-action border-0 click">
+                    @if (item.activo) {
+                      <i class="fa fa-fw fa-toggle-on"></i>
+                    } @else {
+                      <i class="fa fa-fw fa-toggle-off"></i>
+                    }
+                    {{ item.activo ? 'Desactivar' : 'Activar' }}
+                  </a>
+                  <a (click)="delete(item)" class="list-group-item list-group-item-action border-0 click text-danger">
+                    <i class="fa fa-fw fa-trash"></i> Eliminar
+                  </a>
+                </div>
+              </ng-template>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (banners?.last_page > 1) {
+    <app-pagination [items]="banners" (setPagination)="setPagination($event)"></app-pagination>
+  }
+</section>
+
+<ng-template #mbanner>
+  <div class="modal-header">
+    <div class="modal-title">
+      <h2 class="text-center">
+        @if (banner.id) {
+          <span>Editar </span>
+        } @else {
+          <span>Crear </span>
+        }
+        banner
+      </h2>
+    </div>
+    <button type="button" class="btn-close" (click)="closeModal()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form name="bannerForm" autocomplete="off" (ngSubmit)="onSubmit()">
+      <app-notificaciones-container></app-notificaciones-container>
+      <div class="row">
+        <div class="form-group col-lg-12">
+          <label for="banner-nombre">Nombre interno:</label>
+          <input id="banner-nombre" type="text" class="form-control" name="nombre" maxlength="255" [(ngModel)]="banner.nombre" required />
+        </div>
+
+        <div class="form-group col-lg-6">
+          <label for="banner-desktop">Imagen escritorio{{ banner.id ? ' (opcional al editar)' : '' }}:</label>
+          <input id="banner-desktop" type="file" class="form-control" accept="image/*" (change)="onDesktopFile($event)" />
+          @if (banner.imagen_desktop && !banner._imagen_desktop_file) {
+            <img [src]="imgUrl(banner.imagen_desktop)" alt="" class="mt-2 rounded" style="max-width: 100%" />
+          }
+        </div>
+        <div class="form-group col-lg-6">
+          <label for="banner-mobile">Imagen móvil (opcional):</label>
+          <input id="banner-mobile" type="file" class="form-control" accept="image/*" (change)="onMobileFile($event)" />
+          @if (banner.imagen_mobile && !banner._imagen_mobile_file) {
+            <img [src]="imgUrl(banner.imagen_mobile)" alt="" class="mt-2 rounded" style="max-width: 100%" />
+          }
+        </div>
+
+        <div class="form-group col-lg-12">
+          <div class="form-switch bg-light-info rounded mb-2 d-flex align-items-center justify-content-between gap-3 px-3 py-2">
+            <label for="banner-todos-paises" class="mb-0">Mostrar en todos los países</label>
+            <input
+              id="banner-todos-paises"
+              class="form-check-input flex-shrink-0 m-0"
+              type="checkbox"
+              role="switch"
+              [(ngModel)]="todosPaises"
+              name="todosPaises"
+              (change)="toggleTodosPaises()"
+            />
+          </div>
+          @if (!todosPaises) {
+            <div class="d-flex flex-wrap gap-3">
+              @for (p of paisesOpciones; track p.codigo) {
+                <label class="d-flex align-items-center gap-1">
+                  <input
+                    type="checkbox"
+                    [checked]="isPaisSelected(p.codigo)"
+                    (change)="onPaisChange(p.codigo, $any($event.target).checked)"
+                  />
+                  {{ p.etiqueta }}
+                </label>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="form-group col-lg-12">
+          <label for="banner-url">URL de destino (opcional):</label>
+          <input id="banner-url" type="url" class="form-control" name="url_destino" [(ngModel)]="banner.url_destino" placeholder="https://" />
+        </div>
+
+        <div class="form-group col-md-4">
+          <label for="banner-segundos">Segundos en carrusel:</label>
+          <input id="banner-segundos" type="number" class="form-control" name="segundos_visualizacion" min="2" max="120" [(ngModel)]="banner.segundos_visualizacion" />
+        </div>
+        <div class="form-group col-md-4">
+          <label for="banner-orden">Orden:</label>
+          <input id="banner-orden" type="number" class="form-control" name="orden" min="0" [(ngModel)]="banner.orden" />
+        </div>
+
+        <div class="form-group col-md-6">
+          <label for="banner-desde">Publicar desde:</label>
+          <input id="banner-desde" type="datetime-local" class="form-control" name="publicado_desde" [(ngModel)]="banner.publicado_desde" />
+        </div>
+        <div class="form-group col-md-6">
+          <label for="banner-hasta">Publicar hasta:</label>
+          <input id="banner-hasta" type="datetime-local" class="form-control" name="publicado_hasta" [(ngModel)]="banner.publicado_hasta" />
+        </div>
+
+        <div class="form-group col-lg-6">
+          <div class="form-switch bg-light-info rounded d-flex align-items-center justify-content-between gap-3 px-3 py-2 h-100">
+            <label for="banner-nueva-pestana" class="mb-0">Abrir enlace en nueva pestaña</label>
+            <input id="banner-nueva-pestana" class="form-check-input flex-shrink-0 m-0" type="checkbox" role="switch" [(ngModel)]="banner.abrir_nueva_pestana" name="abrir_nueva_pestana" />
+          </div>
+        </div>
+        <div class="form-group col-lg-6">
+          <div class="form-switch bg-light-info rounded d-flex align-items-center justify-content-between gap-3 px-3 py-2 h-100">
+            <label for="banner-activo" class="mb-0">Activo</label>
+            <input id="banner-activo" class="form-check-input flex-shrink-0 m-0" type="checkbox" role="switch" [(ngModel)]="banner.activo" name="activo" />
+          </div>
+        </div>
+      </div>
+      <div class="d-grid mt-4">
+        <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
+          @if (saving) {
+            <span>Guardando...</span>
+          } @else {
+            <span>Guardar</span>
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>

@@ -79,6 +79,11 @@ const routes: Routes = [
           title: 'Campañas'
         },
         {
+          path: 'banners-inicio',
+          loadComponent: () => import('./home-banners/admin-home-banners.component').then(m => m.AdminHomeBannersComponent),
+          title: 'Banners inicio'
+        },
+        {
           path: 'aliados',
           loadComponent: () => import('./aliados/admin-aliados.component').then(m => m.AdminAliadosComponent),
           title: 'Aliados'

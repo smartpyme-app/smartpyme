@@ -1,0 +1,36 @@
+.home-banner-carousel {
+  position: relative;
+  margin-bottom: 0;
+}
+
+.home-banner-carousel .home-launch-banner {
+  display: block;
+}
+
+.home-banner-carousel picture,
+.home-banner-carousel img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.home-banner-carousel__dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.home-banner-carousel__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #d7e2ff;
+  cursor: pointer;
+}
+
+.home-banner-carousel__dot--active {
+  background: #005cbb;
+}
