@@ -708,8 +708,13 @@ class PedidoRestauranteController extends Controller
         }
 
         $pedido = PedidoRestaurante::where('id_empresa', $user->id_empresa)->findOrFail($id);
+        $empresa = Empresa::findOrFail($user->id_empresa);
 
-        if ($pedido->estado !== 'borrador') {
+        if (! $this->puedeEditarPedidoCanal($pedido, $empresa)) {
+            if ($pedido->estado === 'pendiente_facturar' && $pedido->id_venta) {
+                return response()->json(['error' => 'El pedido ya está vinculado a una venta y no puede editarse'], 422);
+            }
+
             return response()->json(['error' => 'Solo se pueden editar pedidos en estado borrador'], 422);
         }
 
@@ -772,40 +777,77 @@ class PedidoRestauranteController extends Controller
             }
         }
 
-        DB::transaction(function () use ($validated, $pedido) {
-            if (isset($validated['fecha'])) {
-                $pedido->fecha = $validated['fecha'];
+        if ($pedido->estado === 'pendiente_facturar' && $pedido->inventario_descontado_at && array_key_exists('id_bodega', $validated)) {
+            $nuevaBodega = (int) ($validated['id_bodega'] ?? 0);
+            $bodegaInventario = (int) ($pedido->id_bodega_inventario ?? $pedido->id_bodega ?? 0);
+            if ($nuevaBodega !== $bodegaInventario) {
+                return response()->json(['error' => 'No puede cambiar la bodega de inventario en pedidos confirmados.'], 422);
             }
-            if (array_key_exists('canal', $validated)) {
-                $pedido->canal = $validated['canal'];
-            }
-            if (array_key_exists('referencia_externa', $validated)) {
-                $pedido->referencia_externa = $validated['referencia_externa'];
-            }
-            if (array_key_exists('cliente_id', $validated)) {
-                $pedido->cliente_id = $validated['cliente_id'];
-            }
-            if (array_key_exists('observaciones', $validated)) {
-                $pedido->observaciones = $validated['observaciones'];
-            }
-            if (array_key_exists('id_sucursal', $validated)) {
-                $pedido->id_sucursal = $validated['id_sucursal'];
-            }
-            if (array_key_exists('id_bodega', $validated)) {
-                $pedido->id_bodega = $validated['id_bodega'];
-            }
+        }
 
-            if (isset($validated['detalles'])) {
-                $pedido->detalles()->delete();
-                foreach ($validated['detalles'] as $row) {
-                    $this->crearDetalle($pedido, $row);
+        try {
+            DB::transaction(function () use ($validated, $pedido, $user) {
+                $pedido = PedidoRestaurante::where('id_empresa', $user->id_empresa)
+                    ->whereKey($pedido->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                $reaplicarInventario = false;
+                $idBodegaInventario = 0;
+
+                if ($pedido->estado === 'pendiente_facturar' && $pedido->inventario_descontado_at && isset($validated['detalles'])) {
+                    $idBodegaInventario = (int) ($pedido->id_bodega_inventario ?? $pedido->id_bodega);
+                    if ($idBodegaInventario <= 0) {
+                        throw new RuntimeException('Pedido sin bodega de inventario.');
+                    }
+                    $svc = new PedidoCanalInventarioService();
+                    $svc->revertirSalidasPedido($pedido->fresh(['detalles']), $idBodegaInventario);
+                    $pedido->refresh();
+                    $reaplicarInventario = true;
                 }
-            }
 
-            $pedido->save();
-            $this->recalcularTotales($pedido);
-        });
+                if (isset($validated['fecha'])) {
+                    $pedido->fecha = $validated['fecha'];
+                }
+                if (array_key_exists('canal', $validated)) {
+                    $pedido->canal = $validated['canal'];
+                }
+                if (array_key_exists('referencia_externa', $validated)) {
+                    $pedido->referencia_externa = $validated['referencia_externa'];
+                }
+                if (array_key_exists('cliente_id', $validated)) {
+                    $pedido->cliente_id = $validated['cliente_id'];
+                }
+                if (array_key_exists('observaciones', $validated)) {
+                    $pedido->observaciones = $validated['observaciones'];
+                }
+                if (array_key_exists('id_sucursal', $validated)) {
+                    $pedido->id_sucursal = $validated['id_sucursal'];
+                }
+                if (array_key_exists('id_bodega', $validated)) {
+                    $pedido->id_bodega = $validated['id_bodega'];
+                }
 
+                if (isset($validated['detalles'])) {
+                    $pedido->detalles()->delete();
+                    foreach ($validated['detalles'] as $row) {
+                        $this->crearDetalle($pedido, $row);
+                    }
+                }
+
+                $pedido->save();
+                $this->recalcularTotales($pedido);
+
+                if ($reaplicarInventario) {
+                    $svc = new PedidoCanalInventarioService();
+                    $svc->aplicarSalidasAlConfirmar($pedido->fresh(['detalles']), $idBodegaInventario);
+                }
+            });
+        } catch (RuntimeException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+
+        $pedido = PedidoRestaurante::where('id_empresa', $user->id_empresa)->findOrFail($id);
         $pedido->load(['detalles.producto', 'cliente', 'usuario', 'venta']);
 
         $response = $this->enrichDetallesWithPaquetes($pedido->toArray(), $user->id_empresa);
@@ -1097,5 +1139,16 @@ class PedidoRestauranteController extends Controller
         }
 
         return null;
+    }
+
+    private function puedeEditarPedidoCanal(PedidoRestaurante $pedido, Empresa $empresa): bool
+    {
+        if ($pedido->estado === 'borrador') {
+            return true;
+        }
+
+        return $pedido->estado === 'pendiente_facturar'
+            && $empresa->permitirEditarPedidosPendienteFacturar()
+            && ! $pedido->id_venta;
     }
 }

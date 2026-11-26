@@ -1149,6 +1149,12 @@ class Empresa extends Model
         return (bool) $this->getCustomConfigValue('configuraciones', 'bloquear_edicion_correlativo', false);
     }
 
+    /** SP-2391: editar pedidos canal en pendiente de facturar (solo si la empresa lo habilita). */
+    public function permitirEditarPedidosPendienteFacturar(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'permitir_editar_pedidos_pendiente_facturar', false);
+    }
+
     /**
      * Mostrar en el listado de inventario la suma de stock de todos los productos que coinciden con los filtros actuales.
      */

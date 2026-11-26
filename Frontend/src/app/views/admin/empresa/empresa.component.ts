@@ -2943,6 +2943,23 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
         this.onSubmit();
     }
 
+    public isPermitirEditarPedidosPendienteFacturar(): boolean {
+        return this.getCustomConfig('configuraciones', 'permitir_editar_pedidos_pendiente_facturar', false);
+    }
+
+    public togglePermitirEditarPedidosPendienteFacturar(): void {
+        const enabled = !this.isPermitirEditarPedidosPendienteFacturar();
+        this.addCustomConfig('configuraciones', 'permitir_editar_pedidos_pendiente_facturar', enabled);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                enabled
+                    ? 'Edición de pedidos pendientes de facturación habilitada'
+                    : 'Edición de pedidos pendientes de facturación deshabilitada'
+            );
+        });
+    }
+
     public limpiarCacheYLogout() {
         Swal.fire({
             title: '¿Estás seguro?',

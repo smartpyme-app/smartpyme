@@ -503,6 +503,23 @@
                                     <option value="ambos">Restaurante y Pedidos</option>
                                 </select>
                             </div>
+                            <div *ngIf="tieneAccesoModuloRestaurantePedidos" class="empresa-pref-row">
+                                <div class="empresa-pref-row-text">
+                                    <label class="empresa-pref-row-label" for="permitir_editar_pedidos_pendiente_facturar">
+                                        Permitir editar pedidos pendientes de facturación
+                                    </label>
+                                    <p class="empresa-pref-row-help text-muted small mb-0">
+                                        Si está activo, los pedidos confirmados (pendiente de facturar) se pueden modificar sin anularlos.
+                                    </p>
+                                </div>
+                                <div class="form-switch m-0">
+                                    <input class="form-check-input" type="checkbox" role="switch"
+                                        id="permitir_editar_pedidos_pendiente_facturar"
+                                        [checked]="isPermitirEditarPedidosPendienteFacturar()"
+                                        (change)="togglePermitirEditarPedidosPendienteFacturar()"
+                                        name="permitir_editar_pedidos_pendiente_facturar">
+                                </div>
+                            </div>
                             <div class="empresa-pref-row">
                                 <div class="empresa-pref-row-text">
                                     <label class="empresa-pref-row-label" for="columna_proyecto">
