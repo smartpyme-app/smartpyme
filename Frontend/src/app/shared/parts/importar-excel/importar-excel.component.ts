@@ -34,6 +34,7 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
     public modoProducto: 'nuevos' | 'actualizar' = 'nuevos';
     public resultadoActualizacion: { actualizados: number; errores: { fila: number; mensaje: string }[] } | null = null;
     public resultadoActivos: { creados: number; omitidos: number; errores: { fila: number; mensaje: string }[] } | null = null;
+    public resultadoClientes: { procesados: number; fallidos: number; message: string; errores: string[] } | null = null;
     public descargandoActualizacion = false;
     public importResult: any = null;
     public showResults: boolean = false;
@@ -45,11 +46,6 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     private readonly destroy$ = new Subject<void>();
-
-    /** URL de la plantilla con parámetro de versión para evitar caché del navegador */
-    get plantillaUrlConCache(): string {
-        return this.plantillaUrl ? `${this.plantillaUrl}?v=${Date.now()}` : '';
-    }
 
     modalRef!: BsModalRef;
 
@@ -190,6 +186,7 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
         this.modoProducto = 'nuevos';
         this.resultadoActualizacion = null;
         this.resultadoActivos = null;
+        this.resultadoClientes = null;
         this.file = {};
         this.alertService.modal = true;
         this.modalRef = this.modalService.show(template, { backdrop: 'static' });
@@ -216,6 +213,7 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
         this.ventasErrores = [];
         this.resultadoActualizacion = null;
         this.resultadoActivos = null;
+        this.resultadoClientes = null;
     }
 
     // onSubmit(event:any) {
@@ -256,6 +254,7 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
         console.log(formData);
         this.loading = true;
         this.ventasErrores = [];
+        this.resultadoClientes = null;
 
         this.apiService.store(this.importUrl(), formData).subscribe(
             (data: any) => {
@@ -301,21 +300,33 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
                     // Manejo específico para importación de clientes
                     if (this.nombre.toLowerCase().includes('clientes')) {
                         if (data && typeof data === 'object' && data.message) {
-                            // Cerrar el modal primero para mostrar la alerta fuera
-                            this.modalRef.hide();
-                            this.alertService.modal = false;
+                            const erroresLista = Array.isArray(data.errores)
+                                ? data.errores.filter((e: unknown) => typeof e === 'string' && e.trim() !== '')
+                                : [];
+                            const fallidos = data.fallidos ?? erroresLista.length;
 
-                            // Mostrar mensaje con detalles de procesados y fallidos
-                            let mensaje = data.message;
-                            if (data.procesados !== undefined && data.fallidos !== undefined) {
-                                mensaje += `\n\n📊 Resumen: ${data.procesados} procesados, ${data.fallidos} fallidos`;
+                            if (erroresLista.length > 0 || fallidos > 0) {
+                                // ponytail: detalle en el modal (el alert solo traía el resumen genérico)
+                                this.resultadoClientes = {
+                                    procesados: data.procesados ?? 0,
+                                    fallidos,
+                                    message: data.message,
+                                    errores: erroresLista,
+                                };
+                                this.alertService.modal = true;
+                                if ((data.procesados ?? 0) > 0) {
+                                    this.loadAll.emit();
+                                }
+                                return;
                             }
 
-                            // Mostrar alerta después de cerrar el modal
+                            this.modalRef.hide();
+                            this.alertService.modal = false;
                             setTimeout(() => {
-                                this.alertService.success('Importación de clientes', mensaje);
+                                this.alertService.success('Importación de clientes', data.message);
+                                this.loadAll.emit();
                             }, 300);
-
+                            return;
                         } else if (typeof data === 'number') {
                             this.alertService.success('Importación exitosa', data + ' ' + this.nombre.replace('-', ' ') + ' agregados');
                         } else {
@@ -327,19 +338,11 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
                     }
                 }
 
-                // Solo cerrar modal y recargar si no es importación de clientes con mensaje detallado
-                if (!(this.nombre.toLowerCase().includes('clientes') && data && typeof data === 'object' && data.message)) {
-                    setTimeout(() => {
-                        this.modalRef.hide();
-                        this.loadAll.emit();
-                        this.alertService.modal = false;
-                    }, 1000);
-                } else {
-                    // Para clientes con mensaje detallado, solo recargar datos
-                    setTimeout(() => {
-                        this.loadAll.emit();
-                    }, 500);
-                }
+                setTimeout(() => {
+                    this.modalRef.hide();
+                    this.loadAll.emit();
+                    this.alertService.modal = false;
+                }, 1000);
             },
             error => {
                 this.loading = false;
@@ -358,6 +361,23 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
                     return;
                 }
 
+                if (this.nombre.toLowerCase().includes('clientes')) {
+                    const body = error?.error;
+                    const erroresLista = Array.isArray(body?.errores)
+                        ? body.errores.filter((e: unknown) => typeof e === 'string' && e.trim() !== '')
+                        : [];
+                    if (erroresLista.length > 0) {
+                        this.resultadoClientes = {
+                            procesados: body?.procesados ?? 0,
+                            fallidos: body?.fallidos ?? erroresLista.length,
+                            message: body?.message || body?.error || 'No se pudo procesar ningún cliente.',
+                            errores: erroresLista,
+                        };
+                        this.alertService.modal = true;
+                        return;
+                    }
+                }
+
                 this.alertService.error(error);
                 this.alertService.modal = true;
             }
@@ -370,6 +390,7 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
     this.validationErrors = [];
     this.businessErrors = [];
     this.ventasErrores = [];
+    this.resultadoClientes = null;
   }
 
     public closeModal() {

@@ -4,6 +4,9 @@ namespace App\Imports;
 
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Admin\Empresa;
+use App\Models\MH\Departamento;
+use App\Models\MH\Distrito;
+use App\Models\MH\Municipio;
 use App\Imports\Concerns\NormalizesClienteExcelRow;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
@@ -79,6 +82,8 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
         $row = $this->applyExcelRowNormalization($row, $stringKeys, $this->esElSalvador);
 
         if ($this->esElSalvador) {
+            $row = $this->aplicarCodigosDesdeNombresUbicacion($row);
+
             $duiNorm = $this->normalizarDui($row['dui'] ?? '');
             if ($duiNorm === '') {
                 $row['dui'] = null;
@@ -98,6 +103,9 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
             return null;
         }
 
+        ++$this->numRows;
+        $fila = $this->numRows;
+
         $documentoIdentidad = null;
         if ($this->esElSalvador) {
             $duiValor = $row['dui'] ?? null;
@@ -106,7 +114,7 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
                 $duiClave = str_replace('-', '', $duiNormalizado);
 
                 if (isset($this->duiEnImportacion[$duiClave])) {
-                    $this->errores[] = "DUI duplicado en el archivo: {$duiNormalizado} (Fila: " . ($this->numRows + 1) . ')';
+                    $this->errores[] = "DUI duplicado en el archivo: {$duiNormalizado} (Fila: {$fila})";
                     Log::warning("DUI duplicado en importación: {$duiNormalizado}");
 
                     return null;
@@ -120,7 +128,7 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
                     })->exists();
 
                 if ($existeDui) {
-                    $this->errores[] = "Ya existe un cliente con el DUI: {$duiNormalizado} (Fila: " . ($this->numRows + 1) . ')';
+                    $this->errores[] = "Ya existe un cliente con el DUI: {$duiNormalizado} (Fila: {$fila})";
                     Log::warning("DUI duplicado encontrado: {$duiNormalizado}");
 
                     return null;
@@ -130,8 +138,6 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
         } else {
             $documentoIdentidad = $row['dui'] ?? $row['rtn'] ?? $row['documento_identidad'] ?? $row['n. de documento'] ?? $row['n_de_documento'] ?? null;
         }
-
-        ++$this->numRows;
 
         Log::info('Datos recibidos:', $row);
 
@@ -202,11 +208,11 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
                 'nit' => 'nullable|string|max:20',
                 'direccion' => 'nullable|string|max:500',
                 'departamento' => 'nullable|string|max:255',
-                'cod_departamento' => ['nullable', 'string', 'max:50', Rule::exists('departamentos', 'cod')],
+                'cod_departamento' => ['nullable', 'required_with:departamento', 'string', 'max:50', Rule::exists('departamentos', 'cod')],
                 'municipio' => 'nullable|string|max:255',
-                'cod_municipio' => ['nullable', 'string', 'max:50', Rule::exists('municipios', 'cod')],
+                'cod_municipio' => ['nullable', 'required_with:municipio', 'string', 'max:50', Rule::exists('municipios', 'cod')],
                 'distrito' => 'nullable|string|max:255',
-                'cod_distrito' => ['nullable', 'string', 'max:50', Rule::exists('distritos', 'cod')],
+                'cod_distrito' => ['nullable', 'required_with:distrito', 'string', 'max:50', Rule::exists('distritos', 'cod')],
                 'telefono' => 'nullable|string|max:20',
                 'correo' => 'nullable|email:filter|max:255',
                 'tipo_contribuyente' => 'nullable|string|max:100',
@@ -234,13 +240,98 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
     {
         return [
             'cod_departamento.exists' => 'El departamento seleccionado no es válido.',
+            'cod_departamento.required_with' => 'El departamento seleccionado no es válido.',
             'cod_municipio.exists' => 'El municipio seleccionado no es válido.',
+            'cod_municipio.required_with' => 'El municipio seleccionado no es válido.',
             'cod_distrito.exists' => 'El distrito seleccionado no es válido.',
+            'cod_distrito.required_with' => 'El distrito seleccionado no es válido.',
             'departamento.required' => 'Debe indicar el departamento.',
             'municipio.required' => 'Debe indicar el municipio.',
             'distrito.required' => 'Debe indicar el distrito.',
             'correo.email' => 'El correo debe tener un formato válido.',
         ];
+    }
+
+    /**
+     * Nombre visible del Excel manda sobre cod_* (fórmulas/columnas ocultas suelen desincronizarse).
+     * Si hay nombre y no hay match en catálogo MH, anula el cod_* para fallar required_with/exists.
+     *
+     * @param  array<string, mixed>  $row
+     * @return array<string, mixed>
+     */
+    private function aplicarCodigosDesdeNombresUbicacion(array $row): array
+    {
+        foreach (['departamento', 'municipio', 'distrito'] as $campo) {
+            if (!array_key_exists($campo, $row)) {
+                continue;
+            }
+            if ($row[$campo] === null || (is_string($row[$campo]) && trim($row[$campo]) === '')) {
+                $row[$campo] = null;
+            }
+        }
+
+        $depNombre = $row['departamento'] ?? null;
+        if ($depNombre !== null && $depNombre !== '') {
+            $dep = $this->buscarDepartamentoPorNombre($depNombre);
+            $row['cod_departamento'] = $dep ? (string) $dep->cod : null;
+        }
+
+        $codDep = $row['cod_departamento'] ?? null;
+        $munNombre = $row['municipio'] ?? null;
+        if ($munNombre !== null && $munNombre !== '') {
+            $mun = $this->buscarMunicipioPorNombre($munNombre, $codDep);
+            $row['cod_municipio'] = $mun ? (string) $mun->cod : null;
+        }
+
+        $codMun = $row['cod_municipio'] ?? null;
+        $disNombre = $row['distrito'] ?? null;
+        if ($disNombre !== null && $disNombre !== '') {
+            $dis = $this->buscarDistritoPorNombre($disNombre, $codDep, $codMun);
+            $row['cod_distrito'] = $dis ? (string) $dis->cod : null;
+        }
+
+        return $row;
+    }
+
+    private function buscarDepartamentoPorNombre($nombre): ?Departamento
+    {
+        if ($nombre === null || (is_string($nombre) && trim($nombre) === '')) {
+            return null;
+        }
+        $nombre = is_string($nombre) ? trim($nombre) : (string) $nombre;
+
+        return Departamento::whereRaw('LOWER(TRIM(nombre)) = ?', [strtolower($nombre)])->first();
+    }
+
+    private function buscarMunicipioPorNombre($nombre, $cod_departamento = null): ?Municipio
+    {
+        if ($nombre === null || (is_string($nombre) && trim($nombre) === '')) {
+            return null;
+        }
+        $nombre = is_string($nombre) ? trim($nombre) : (string) $nombre;
+        $query = Municipio::whereRaw('LOWER(TRIM(nombre)) = ?', [strtolower($nombre)]);
+        if ($cod_departamento !== null && $cod_departamento !== '') {
+            $query->where('cod_departamento', $cod_departamento);
+        }
+
+        return $query->first();
+    }
+
+    private function buscarDistritoPorNombre($nombre, $cod_departamento = null, $cod_municipio = null): ?Distrito
+    {
+        if ($nombre === null || (is_string($nombre) && trim($nombre) === '')) {
+            return null;
+        }
+        $nombre = is_string($nombre) ? trim($nombre) : (string) $nombre;
+        $query = Distrito::whereRaw('LOWER(TRIM(nombre)) = ?', [strtolower($nombre)]);
+        if ($cod_departamento !== null && $cod_departamento !== '') {
+            $query->where('cod_departamento', $cod_departamento);
+        }
+        if ($cod_municipio !== null && $cod_municipio !== '') {
+            $query->where('cod_municipio', $cod_municipio);
+        }
+
+        return $query->first();
     }
 
     public function getRowCount(): int
@@ -250,7 +341,69 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
 
     public function getErrores(): array
     {
-        return $this->errores;
+        return $this->compactarErroresDui($this->errores);
+    }
+
+    public function getFallidosCount(): int
+    {
+        return count($this->errores);
+    }
+
+    /**
+     * Agrupa DUI repetidos para que el UI muestre una lista corta.
+     *
+     * @param  array<int, string>  $errores
+     * @return array<int, string>
+     */
+    private function compactarErroresDui(array $errores): array
+    {
+        $porDuiExiste = [];
+        $porDuiArchivo = [];
+        $otros = [];
+
+        foreach ($errores as $error) {
+            if (!is_string($error)) {
+                continue;
+            }
+            if (preg_match('/^Ya existe un cliente con el DUI:\s+(\S+)\s+\(Fila:\s*(\d+)\)$/u', $error, $m)) {
+                $porDuiExiste[$m[1]][] = (int) $m[2];
+                continue;
+            }
+            if (preg_match('/^DUI duplicado en el archivo:\s+(\S+)\s+\(Fila:\s*(\d+)\)$/u', $error, $m)) {
+                $porDuiArchivo[$m[1]][] = (int) $m[2];
+                continue;
+            }
+            $otros[] = $error;
+        }
+
+        $compactos = [];
+        foreach ($porDuiExiste as $dui => $filas) {
+            $compactos[] = $this->formatoErrorDuiAgrupado('Ya existe un cliente con el DUI', $dui, $filas);
+        }
+        foreach ($porDuiArchivo as $dui => $filas) {
+            $compactos[] = $this->formatoErrorDuiAgrupado('DUI duplicado en el archivo', $dui, $filas);
+        }
+
+        return array_merge($compactos, $otros);
+    }
+
+    /**
+     * @param  array<int, int>  $filas
+     */
+    private function formatoErrorDuiAgrupado(string $prefijo, string $dui, array $filas): string
+    {
+        $filas = array_values(array_unique($filas));
+        sort($filas);
+        $n = count($filas);
+        if ($n === 1) {
+            return "{$prefijo}: {$dui} (Fila: {$filas[0]})";
+        }
+        $preview = implode(', ', array_slice($filas, 0, 5));
+        if ($n > 5) {
+            $preview .= ', …';
+        }
+
+        return "{$prefijo}: {$dui} ({$n} filas: {$preview})";
     }
 
     public function getClientesProcesados(): int
