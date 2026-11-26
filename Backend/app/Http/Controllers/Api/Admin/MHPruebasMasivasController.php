@@ -374,6 +374,58 @@ class MHPruebasMasivasController extends Controller
     }
 
     /**
+     * Historial de trabajos de pruebas masivas de la empresa.
+     */
+    public function trabajos()
+    {
+        try {
+            if (!Auth::user()) {
+                return response()->json(['error' => 'Usuario no autenticado'], 401);
+            }
+
+            $user = Auth::user();
+
+            $trabajos = TrabajosPendientes::where('tipo', 'pruebas_masivas')
+                ->where('id_empresa', $user->id_empresa)
+                ->orderByDesc('id')
+                ->limit(20)
+                ->get()
+                ->map(function (TrabajosPendientes $trabajo) {
+                    $parametros = is_array($trabajo->parametros)
+                        ? $trabajo->parametros
+                        : (json_decode($trabajo->parametros ?? '{}', true) ?: []);
+                    $resultado = is_array($trabajo->resultado)
+                        ? $trabajo->resultado
+                        : (json_decode($trabajo->resultado ?? 'null', true) ?: null);
+
+                    $tipoDte = (string) ($parametros['tipo_dte'] ?? '');
+
+                    return [
+                        'id' => $trabajo->id,
+                        'estado' => $trabajo->estado,
+                        'tipo_dte' => $tipoDte,
+                        'tipo_label' => $this->getTipoDTEDescripcion($tipoDte),
+                        'cantidad' => (int) ($parametros['cantidad'] ?? 0),
+                        'fecha_creacion' => $trabajo->fecha_creacion,
+                        'fecha_inicio' => $trabajo->fecha_inicio,
+                        'fecha_fin' => $trabajo->fecha_fin,
+                        'mensaje' => is_array($resultado)
+                            ? (string) ($resultado['message'] ?? $resultado['error'] ?? '')
+                            : '',
+                        'resultado' => $resultado,
+                    ];
+                });
+
+            return response()->json(['data' => $trabajos]);
+        } catch (\Exception $e) {
+            Log::error('Error al listar trabajos de pruebas masivas: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return response()->json([
+                'error' => 'Error al obtener trabajos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Obtener descripción del tipo de DTE
      */
     private function getTipoDTEDescripcion($tipoDTE)
@@ -384,7 +436,8 @@ class MHPruebasMasivasController extends Controller
             '05' => 'Nota de Crédito',
             '06' => 'Nota de Débito',
             '11' => 'Factura de Exportación',
-            '14' => 'Factura de Sujeto Excluido'
+            '14' => 'Factura de Sujeto Excluido',
+            '18' => 'Evento de Retorno',
         ];
 
         return $tipos[$tipoDTE] ?? 'Documento Tipo ' . $tipoDTE;

@@ -1475,6 +1475,68 @@
                 }
               </div>
             }
+
+            <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+              <h6 class="mb-0"><i class="fa fa-list me-2"></i> Historial de trabajos</h6>
+              <button type="button" class="btn btn-outline-primary btn-sm"
+                      [disabled]="cargandoTrabajosPruebas"
+                      (click)="cargarTrabajosPruebasMasivas()">
+                <i class="fa fa-sync me-1" [class.fa-spin]="cargandoTrabajosPruebas"></i>
+                Actualizar
+              </button>
+            </div>
+
+            @if (cargandoTrabajosPruebas && !trabajosPruebasMasivas.length) {
+              <div class="alert alert-secondary mb-0">
+                <i class="fa fa-spinner fa-spin me-2"></i> Cargando trabajos...
+              </div>
+            } @else if (!trabajosPruebasMasivas.length) {
+              <div class="alert alert-info mb-0">
+                <i class="fa fa-info-circle me-2"></i> No hay trabajos de pruebas masivas aún.
+              </div>
+            } @else {
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>ID</th>
+                      <th>Tipo</th>
+                      <th>Cantidad</th>
+                      <th>Estado</th>
+                      <th>Creado</th>
+                      <th>Fin</th>
+                      <th>Mensaje</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (trabajo of trabajosPruebasMasivas; track trabajo.id) {
+                      <tr>
+                        <td>{{ trabajo.id }}</td>
+                        <td>{{ trabajo.tipo_label }}</td>
+                        <td>{{ trabajo.cantidad }}</td>
+                        <td>
+                          <span class="badge" [ngClass]="badgeEstadoTrabajoPrueba(trabajo.estado)">
+                            {{ trabajo.estado }}
+                          </span>
+                        </td>
+                        <td>{{ trabajo.fecha_creacion | date:'short' }}</td>
+                        <td>{{ trabajo.fecha_fin ? (trabajo.fecha_fin | date:'short') : '—' }}</td>
+                        <td class="text-truncate" style="max-width: 240px;" [title]="trabajo.mensaje">
+                          {{ trabajo.mensaje || '—' }}
+                        </td>
+                        <td class="text-end">
+                          <button type="button" class="btn btn-outline-secondary btn-sm"
+                                  (click)="verDetalleTrabajoPrueba(mDetalleTrabajoPrueba, trabajo)">
+                            Ver
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
         </section>
          }
 
@@ -2513,6 +2575,21 @@
 
 </tabset>
 
+
+<ng-template #mDetalleTrabajoPrueba>
+    <div class="modal-header">
+        <div class="d-flex align-items-center justify-content-between w-100">
+            <h4 class="modal-title">Detalle del trabajo #{{ trabajoPruebaDetalle?.id }}</h4>
+            <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+        </div>
+    </div>
+    <div class="modal-body">
+        <pre class="bg-light border rounded p-3 mb-0" style="max-height: 60vh; overflow: auto; white-space: pre-wrap;">{{ resultadoTrabajoPruebaJson() }}</pre>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cerrar</button>
+    </div>
+</ng-template>
 
 <ng-template #mpruebasMasivas>
     <div class="modal-header">
