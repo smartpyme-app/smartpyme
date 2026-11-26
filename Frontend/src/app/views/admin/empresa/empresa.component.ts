@@ -85,6 +85,9 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
 
     public estadoPruebasCompletado: boolean = false;
     public fechaCompletadoPruebas: string = '';
+    public trabajosPruebasMasivas: any[] = [];
+    public cargandoTrabajosPruebas: boolean = false;
+    public trabajoPruebaDetalle: any = null;
 
     public showpassword: boolean = false;
     public showpassword2: boolean = false;
@@ -1075,6 +1078,52 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
                     this.cdr.markForCheck();
                 }
             );
+        this.cargarTrabajosPruebasMasivas();
+    }
+
+    cargarTrabajosPruebasMasivas() {
+        if (!this.esElSalvadorFe() || this.empresa?.fe_ambiente != '00') {
+            return;
+        }
+        this.cargandoTrabajosPruebas = true;
+        this.apiService.getAll('mh/pruebas-masivas/trabajos')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (res) => {
+                    this.trabajosPruebasMasivas = Array.isArray(res?.data) ? res.data : [];
+                    this.cargandoTrabajosPruebas = false;
+                    this.cdr.markForCheck();
+                },
+                error: (error) => {
+                    console.error('Error al cargar trabajos de pruebas masivas:', error);
+                    this.cargandoTrabajosPruebas = false;
+                    this.alertService.error('No se pudieron cargar los trabajos de pruebas masivas');
+                    this.cdr.markForCheck();
+                }
+            });
+    }
+
+    badgeEstadoTrabajoPrueba(estado: string): string {
+        const map: Record<string, string> = {
+            pendiente: 'bg-secondary',
+            procesando: 'bg-primary',
+            completado: 'bg-success',
+            fallido: 'bg-danger',
+        };
+        return map[estado] || 'bg-secondary';
+    }
+
+    verDetalleTrabajoPrueba(template: TemplateRef<any>, trabajo: any) {
+        this.trabajoPruebaDetalle = trabajo;
+        this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
+    }
+
+    resultadoTrabajoPruebaJson(): string {
+        try {
+            return JSON.stringify(this.trabajoPruebaDetalle?.resultado ?? null, null, 2);
+        } catch {
+            return String(this.trabajoPruebaDetalle?.resultado ?? '');
+        }
     }
 
     getKeysPruebas(): string[] {
@@ -1262,7 +1311,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
                         this.alertService.success('Proceso completado', response.message);
                     }
 
-                    // Refrescar las estadísticas después de un breve retraso
+                    // Refrescar estadísticas e historial de trabajos
                     setTimeout(() => {
                         this.cargarEstadisticasPruebas();
                     }, 2000);

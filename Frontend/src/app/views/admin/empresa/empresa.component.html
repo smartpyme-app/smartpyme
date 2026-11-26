@@ -1451,86 +1451,151 @@
          <!-- Pruebas masivas -->
 
          @if (empresa.fe_ambiente == '00' && esElSalvadorFe()) {
-           <section class="bg-white rounded p-4 mb-3">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="mb-0"><i class="fa fa-rocket me-2"></i> Pruebas Masivas de Documentos</h5>
-                <!-- <button class="btn btn-primary" routerLink="/configuracion/pruebas-masivas">
-                    <i class="fa fa-cogs me-1"></i> Administrar pruebas
-                </button> -->
+           <section class="bg-white rounded p-4 mb-3 pm-section">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                <div>
+                  <h5 class="mb-1"><i class="fa fa-rocket me-2 text-primary"></i> Pruebas Masivas de Documentos</h5>
+                  <p class="text-muted small mb-0">Emisión en segundo plano para cumplir los mínimos del Ministerio de Hacienda.</p>
+                </div>
+                @if (estadisticasPruebas) {
+                  <span class="badge rounded-pill pm-progress-pill">{{ getTotalProgress() }}% avance</span>
+                }
             </div>
 
-            <div class="alert alert-info">
-                <p><i class="fa fa-info-circle me-2"></i> El Ministerio de Hacienda requiere un mínimo de documentos
-                    para validar su sistema:</p>
-                <ul class="mb-0">
-                    <li>90 Facturas de Consumidor Final</li>
-                    <li>75 Comprobantes de Crédito Fiscal</li>
-                    <li><strong>50 Notas de Crédito</strong> (se generan automáticamente con los CCF)</li>
-                    <li><strong>50 Notas de Débito</strong> (se generan automáticamente con los CCF)</li>
-                    <li><strong>90 Facturas de Exportación</strong></li>
-                    <li><strong>5 Eventos de Retorno</strong> (cada uno emite una factura y su retorno)</li>
-                    <!-- <li><strong>Sujeto Excluido</strong></li> -->
+            <div class="pm-callout mb-3">
+                <div class="pm-callout-title"><i class="fa fa-info-circle me-2"></i> Mínimos requeridos</div>
+                <ul class="pm-callout-list mb-0">
+                    <li>90 Facturas · 75 CCF · 50 Notas crédito · 50 Notas débito</li>
+                    <li>90 Exportación · 5 Eventos de retorno · Notas se generan con los CCF</li>
                 </ul>
             </div>
 
             <app-alerta-pruebas></app-alerta-pruebas>
 
-            <!-- <h3 class="form-label mb-2">Progreso General</h3> -->
-            <!-- <div class="progress mb-2" style="height: 25px;">
-                <div *ngIf="estadisticasPruebas" class="progress-bar" role="progressbar"
-                     [style.width]="getTotalProgress() + '%'" [attr.aria-valuenow]="getTotalProgress()"
-                     aria-valuemin="0" aria-valuemax="100">
-                    {{getTotalProgress()}}% completado
-                </div>
-                <div *ngIf="!estadisticasPruebas" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
-                     style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
-                    Cargando...
-                </div>
-            </div> -->
-
             @if (estadisticasPruebas) {
-              <div class="row">
+              <div class="row g-3">
                 @for (tipo of getKeysPruebas(); track tipo) {
-                  <div class="col-md-6 mb-3">
-                    <div class="card h-100" [ngClass]="isPruebaCompleta(tipo) ? 'border-success' : ''">
-                      <div class="card-header d-flex justify-content-between">
-                        <span class="fs-5">{{ getLabelTipo(tipo) }}</span>
-                        <!-- <span class="badge" [ngClass]="isPruebaCompleta(tipo) ? 'bg-success' : 'bg-primary'">
-                            {{estadisticasPruebas[tipo].emitidas}}/{{estadisticasPruebas[tipo].requeridas}}
-                        </span> -->
+                  <div class="col-md-6">
+                    <div class="pm-tipo-card h-100"
+                         [class.pm-tipo-card--done]="isPruebaCompleta(tipo)"
+                         [class.pm-tipo-card--blocked]="(tipo === 'notasCredito' || tipo === 'notasDebito') && !puedeGenerarNotas(tipo)">
+                      <div class="pm-tipo-card__head">
+                        <div class="pm-tipo-card__title">{{ getLabelTipo(tipo) }}</div>
+                        <span class="badge rounded-pill"
+                              [class.text-bg-success]="isPruebaCompleta(tipo)"
+                              [class.text-bg-light]="!isPruebaCompleta(tipo)">
+                          {{ estadisticasPruebas[tipo].emitidas }}/{{ estadisticasPruebas[tipo].requeridas }}
+                        </span>
                       </div>
-                      <div class="card-body">
-                        <!-- NUEVO: Información especial para notas -->
+
+                      <div class="progress pm-tipo-card__progress" role="progressbar"
+                           [attr.aria-valuenow]="getProgresoTipo(tipo)" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar"
+                             [class.bg-success]="isPruebaCompleta(tipo)"
+                             [style.width.%]="getProgresoTipo(tipo)"></div>
+                      </div>
+
+                      <div class="pm-tipo-card__body">
                         @if ((tipo === 'notasCredito' || tipo === 'notasDebito') && !puedeGenerarNotas(tipo)) {
-                          <div class="alert alert-warning mb-3">
-                            <i class="fa fa-exclamation-triangle me-2"></i>
-                            Primero debe generar Comprobantes de Crédito Fiscal
-                          </div>
+                          <p class="pm-tipo-card__hint pm-tipo-card__hint--warn mb-3">
+                            <i class="fa fa-lock me-1"></i>
+                            Primero genere Comprobantes de Crédito Fiscal
+                          </p>
                         }
 
-                        <!-- NUEVO: Información de generación automática -->
                         @if (tipo === 'creditosFiscales') {
-                          <div class="alert alert-info mb-3">
-                            <i class="fa fa-magic me-2"></i>
-                            <small>Al generar CCF se crearán automáticamente las notas de crédito y débito</small>
-                          </div>
+                          <p class="pm-tipo-card__hint mb-3">
+                            <i class="fa fa-magic me-1"></i>
+                            Al generar CCF se crearán automáticamente las notas de crédito y débito
+                          </p>
                         }
 
-                            <div class="d-flex align-items-center justify-content-center">
-                                <button class="btn btn-md me-3"
-                                    [ngClass]="isPruebaCompleta(tipo) ? 'btn-outline-success' : 'btn-outline-primary'"
-                                    [disabled]="isPruebaCompleta(tipo) || !puedeGenerarNotas(tipo)"
-                                    (click)="ejecutarPruebasMasivas(mpruebasMasivas, tipo)" style="width: 150px;">
-                                    <i class="fa" [ngClass]="isPruebaCompleta(tipo) ? 'fa-check' : 'fa-play'"></i>
-                                    {{isPruebaCompleta(tipo) ? 'Completado' : 'Generar faltantes'}}
-                                </button>
-                            </div>
+                        <div class="pm-tipo-card__actions">
+                          @if (isPruebaCompleta(tipo)) {
+                            <span class="pm-status-done me-2">
+                              <i class="fa fa-check-circle me-1"></i> Completado
+                            </span>
+                          }
+                          <button type="button" class="btn btn-primary btn-sm px-3"
+                                  [disabled]="!puedeGenerarNotas(tipo)"
+                                  (click)="ejecutarPruebasMasivas(mpruebasMasivas, tipo)">
+                            <i class="fa fa-play me-1"></i>
+                            Generar
+                          </button>
                         </div>
+                      </div>
                     </div>
-                </div>
+                  </div>
                 }
               </div>
             }
+
+            <div class="pm-historial mt-4">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                  <h6 class="mb-0">Historial de trabajos</h6>
+                  <small class="text-muted">Últimos lotes encolados para esta empresa</small>
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm"
+                        [disabled]="cargandoTrabajosPruebas"
+                        (click)="cargarTrabajosPruebasMasivas()">
+                  <i class="fa fa-sync me-1" [class.fa-spin]="cargandoTrabajosPruebas"></i>
+                  Actualizar
+                </button>
+              </div>
+
+              @if (cargandoTrabajosPruebas && !trabajosPruebasMasivas.length) {
+                <div class="text-muted small py-3">
+                  <i class="fa fa-spinner fa-spin me-2"></i> Cargando trabajos...
+                </div>
+              } @else if (!trabajosPruebasMasivas.length) {
+                <div class="pm-historial-empty">
+                  <i class="fa fa-inbox me-2"></i> No hay trabajos de pruebas masivas aún.
+                </div>
+              } @else {
+                <div class="table-responsive">
+                  <table class="table table-hover align-middle mb-0 pm-historial-table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Tipo</th>
+                        <th>Cantidad</th>
+                        <th>Estado</th>
+                        <th>Inicio</th>
+                        <th>Fin</th>
+                        <th>Mensaje</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (trabajo of trabajosPruebasMasivas; track trabajo.id) {
+                        <tr>
+                          <td class="text-muted">#{{ trabajo.id }}</td>
+                          <td>{{ trabajo.tipo_label }}</td>
+                          <td>{{ trabajo.cantidad }}</td>
+                          <td>
+                            <span class="badge rounded-pill" [ngClass]="badgeEstadoTrabajoPrueba(trabajo.estado)">
+                              {{ trabajo.estado }}
+                            </span>
+                          </td>
+                          <td class="text-nowrap">{{ trabajo.fecha_inicio ? (trabajo.fecha_inicio | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
+                          <td class="text-nowrap">{{ trabajo.fecha_fin ? (trabajo.fecha_fin | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
+                          <td class="text-truncate pm-historial-msg" [title]="trabajo.mensaje">
+                            {{ trabajo.mensaje || '—' }}
+                          </td>
+                          <td class="text-end">
+                            <button type="button" class="btn btn-link btn-sm px-1"
+                                    (click)="verDetalleTrabajoPrueba(mDetalleTrabajoPrueba, trabajo)">
+                              Ver
+                            </button>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
         </section>
          }
 
@@ -2569,6 +2634,21 @@
 
 </tabset>
 
+
+<ng-template #mDetalleTrabajoPrueba>
+    <div class="modal-header">
+        <div class="d-flex align-items-center justify-content-between w-100">
+            <h4 class="modal-title">Detalle del trabajo #{{ trabajoPruebaDetalle?.id }}</h4>
+            <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+        </div>
+    </div>
+    <div class="modal-body">
+        <pre class="bg-light border rounded p-3 mb-0" style="max-height: 60vh; overflow: auto; white-space: pre-wrap;">{{ resultadoTrabajoPruebaJson() }}</pre>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cerrar</button>
+    </div>
+</ng-template>
 
 <ng-template #mpruebasMasivas>
     <div class="modal-header">

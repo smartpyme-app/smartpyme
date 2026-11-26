@@ -67,6 +67,7 @@ class StoreUsuarioRequest extends FormRequest
                     'regex:/[!@#$%^&*()_+{}\[\]:;<>,.?~\\-]/',
                 ]
             ),
+            'codigo_autorizacion' => 'sometimes|nullable|numeric|digits_between:3,10',
             'file' => 'sometimes|file|image|mimes:jpeg,png,jpg,gif,svg|max:5120',
         ];
     }
@@ -95,6 +96,8 @@ class StoreUsuarioRequest extends FormRequest
             'password.confirmed' => 'La confirmación de contraseña no coincide.',
             'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
             'password.regex' => 'La contraseña debe contener al menos una letra minúscula, una mayúscula, un número y un carácter especial.',
+            'codigo_autorizacion.numeric' => 'El código de autorización debe ser numérico.',
+            'codigo_autorizacion.digits_between' => 'El código de autorización debe tener entre 3 y 10 dígitos.',
             'file.file' => 'El archivo debe ser válido.',
             'file.image' => 'El archivo debe ser una imagen.',
             'file.mimes' => 'La imagen debe ser de tipo: jpeg, png, jpg, gif o svg.',
@@ -115,6 +118,7 @@ class StoreUsuarioRequest extends FormRequest
             'id_bodega' => 'bodega',
             'id_sucursal' => 'sucursal',
             'password' => 'contraseña',
+            'codigo_autorizacion' => 'código de autorización',
         ];
     }
 
