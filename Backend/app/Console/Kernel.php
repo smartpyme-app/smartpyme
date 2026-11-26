@@ -148,6 +148,11 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/ventas-recurrentes.log'));
 
+        $schedule->command('ventas:ejecutar-programadas')
+            ->everyFifteenMinutes()
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/ventas-programadas.log'));
+
         // ---------- Cliente360 / analítica ----------
         // Dos veces al día (antes en crontab: 0 9,12 * * * UTC)
         $schedule->command('cliente360:actualizar-agregados --masivo')
