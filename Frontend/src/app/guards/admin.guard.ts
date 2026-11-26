@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Router, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { Observable } from 'rxjs';
 import { ApiService } from '@services/api.service';
+import { adminGuardPermiteRutaOperativa } from './admin-guard-rutas-operativas';
 
 @Injectable()
 export class AdminGuard  {
@@ -96,6 +97,19 @@ export class AdminGuard  {
         this.apiService.hasPermission('admin.acceder')) {
       return true;
     }
+
+  // ponytail: Ventas/Citas/Cajero con permisos Spatie — menú extendido + lazy Compras/Gastos/…
+  if (
+    this.apiService.hasEffectivePermissions() &&
+    adminGuardPermiteRutaOperativa(
+      currentUrl,
+      (p) => this.apiService.hasPermission(p),
+      (ps) => this.apiService.hasAnyPermission(ps),
+      () => this.apiService.canAccederOperacionesInventario(),
+    )
+  ) {
+    return true;
+  }
 
     // Si no tiene permisos, redirigir al inicio
     this.router.navigate(['/']);

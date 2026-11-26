@@ -18,6 +18,12 @@ import {
     mostrarMenuLicenciasOrganizacion as evaluarMenuLicenciasOrganizacion,
     mostrarMenuSolicitudesCompra as evaluarMenuSolicitudesCompra,
 } from '@views/ventas/solicitudes-compra/solicitudes-compra-acceso';
+import {
+    mostrarMenuCompras as evaluarMostrarMenuCompras,
+    mostrarMenuGastos as evaluarMostrarMenuGastos,
+    puedeVerRegistrosCompras,
+    puedeVerRegistrosGastos,
+} from './sidebar-operativos-nav.shared';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
@@ -153,16 +159,23 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
 
     /** Compras: mostrar sección si tiene permiso de módulo o de algún submódulo (p. ej. solo OC). */
     public get mostrarMenuCompras(): boolean {
-        return this.apiService.hasAnyPermission([
-            'compras.ver',
-            'compras.ordenes_compra.ver',
-            'compras.proveedores.ver',
-            'compras.retaceo.ver',
-            'compras.consignas.ver',
-        ]) || (
-            this.apiService.canAccederOperacionesInventario()
-            && this.apiService.hasPermission('compras.consignas.ver')
+        return evaluarMostrarMenuCompras(
+            (p) => this.apiService.hasPermission(p),
+            (ps) => this.apiService.hasAnyPermission(ps),
+            () => this.apiService.canAccederOperacionesInventario(),
         );
+    }
+
+    public get mostrarMenuGastos(): boolean {
+        return evaluarMostrarMenuGastos((p) => this.apiService.hasPermission(p));
+    }
+
+    puedeVerRegistrosCompras(): boolean {
+        return puedeVerRegistrosCompras((p) => this.apiService.hasPermission(p));
+    }
+
+    puedeVerRegistrosGastos(): boolean {
+        return puedeVerRegistrosGastos((p) => this.apiService.hasPermission(p));
     }
 
     public modules: any = [];

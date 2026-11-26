@@ -57,8 +57,17 @@ assert.match(sidebarVentas, /solicitudes-compra/);
 assert.match(accesoOrg, /ventas\.solicitudes\.ver/);
 assert.doesNotMatch(accesoOrg, /isVentasLimitado/);
 assert.match(sidebar, /mostrarMenuCompras/);
-assert.match(sidebarVentas, /mostrarMenuOrdenesCompra/);
+assert.match(sidebarVentas, /mostrarMenuOrdenesCompraSuelta/);
 assert.match(sidebarVentas, /ordenes-de-compras/);
+assert.match(sidebarVentas, /app-sidebar-operativos-extend-nav/);
+assert.match(
+  fs.readFileSync(path.join(root, 'src/app/layout/sidebar/sidebar-operativos-extend-nav.component.html'), 'utf8'),
+  /mostrarMenuCompras/,
+);
+assert.match(
+  fs.readFileSync(path.join(root, 'src/app/layout/sidebar/sidebar-operativos-extend-nav.component.html'), 'utf8'),
+  /mostrarMenuGastos/,
+);
 assert.match(
   fs.readFileSync(path.join(root, 'src/app/views/ventas/ventas.routing.module.ts'), 'utf8'),
   /permission: 'ventas\.solicitudes\.ver'/,
