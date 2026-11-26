@@ -10,7 +10,6 @@ class VentaProgramada extends Model
 
     protected $fillable = [
         'id_empresa',
-        'nombre',
         'id_cliente',
         'id_documento',
         'id_sucursal',

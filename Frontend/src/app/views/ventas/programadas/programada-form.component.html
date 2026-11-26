@@ -1,135 +1,240 @@
-<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <h2 class="page-heading">{{ titulo }}</h2>
-    <a routerLink="/ventas/programadas" class="btn btn-default"><i class="fa fa-arrow-left"></i> Regresar</a>
-</section>
+<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+    <h3>{{ titulo }}</h3>
+    <a routerLink="/ventas/programadas" class="btn btn-light text-danger">
+        <i class="fa fa-arrow-left"></i> Regresar
+    </a>
+</div>
 
 @if (loading) {
-    <section class="bg-white p-4 rounded mb-3">
+    <section class="card border-0 p-3 mb-3">
         <span class="badge bg-primary">Cargando...</span>
     </section>
 }
 
-<section class="bg-white p-4 rounded mb-3">
-    <form (ngSubmit)="guardar()" autocomplete="off">
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Nombre</label>
-                <input class="form-control" type="text" name="nombre" [(ngModel)]="form.nombre" required />
-            </div>
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Cliente</label>
-                <ng-select
-                    name="id_cliente"
-                    [items]="clientes"
-                    bindValue="id"
-                    bindLabel="nombre_completo"
-                    [(ngModel)]="form.id_cliente"
-                    placeholder="Seleccionar cliente">
-                </ng-select>
-            </div>
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Tipo de documento</label>
-                <ng-select
-                    name="id_documento"
-                    [items]="documentos"
-                    bindValue="id"
-                    bindLabel="nombre"
-                    [(ngModel)]="form.id_documento"
-                    placeholder="Seleccionar documento">
-                </ng-select>
-            </div>
-        </div>
-
-        <h3 class="h5 mt-2 mb-3">Líneas</h3>
-        <div class="table-responsive mb-3">
-            <table class="table table-sm">
-                <thead>
-                    <tr>
-                        <th>Producto</th>
-                        <th class="text-end" style="width: 7rem">Cantidad</th>
-                        <th class="text-end" style="width: 8rem">Precio</th>
-                        <th class="text-end" style="width: 8rem">Total</th>
-                        <th style="width: 3rem"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @for (linea of form.detalles; track $index) {
-                        <tr>
-                            <td>
-                                <ng-select
-                                    [items]="productos"
-                                    bindValue="id"
-                                    bindLabel="nombre"
-                                    [(ngModel)]="linea.id_producto"
-                                    [name]="'id_producto_' + $index"
-                                    (ngModelChange)="onProductoChange(linea)"
-                                    placeholder="Producto">
-                                </ng-select>
-                            </td>
-                            <td>
-                                <input
-                                    class="form-control text-end"
-                                    type="number"
-                                    min="0.01"
-                                    step="0.01"
-                                    [name]="'cantidad_' + $index"
-                                    [(ngModel)]="linea.cantidad"
-                                    (ngModelChange)="actualizarLinea(linea)" />
-                            </td>
-                            <td>
-                                <input
-                                    class="form-control text-end"
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    [name]="'precio_' + $index"
-                                    [(ngModel)]="linea.precio"
-                                    (ngModelChange)="actualizarLinea(linea)" />
-                            </td>
-                            <td class="text-end align-middle">{{ linea.total | currency }}</td>
-                            <td class="align-middle">
-                                <button
-                                    type="button"
-                                    class="btn btn-sm btn-light text-danger"
-                                    (click)="quitarLinea($index)"
-                                    [disabled]="form.detalles.length < 2">
-                                    <i class="fa fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
+<form (ngSubmit)="guardar()" autocomplete="off">
+    <!-- 1. Cabecera tipo venta -->
+    <section class="card border-0 p-3 mb-3">
+        <div class="row flex-nowrap g-2 align-items-end overflow-auto">
+            <div class="form-group col" style="min-width: 8rem">
+                <label for="id_usuario">Usuario</label>
+                <select
+                    id="id_usuario"
+                    name="id_usuario"
+                    class="form-select"
+                    [(ngModel)]="venta.id_usuario">
+                    <option [ngValue]="null">Seleccione aquí</option>
+                    @for (u of usuariosFiltrados; track u.id) {
+                        <option [ngValue]="u.id">{{ u.name }}</option>
                     }
-                </tbody>
-            </table>
+                </select>
+            </div>
+            <div class="form-group col" style="min-width: 8rem">
+                <label for="id_bodega">Bodega</label>
+                <select
+                    id="id_bodega"
+                    name="id_bodega"
+                    class="form-select"
+                    [(ngModel)]="venta.id_bodega"
+                    (ngModelChange)="setBodega()">
+                    @for (bodega of bodegas; track bodega.id) {
+                        <option [ngValue]="bodega.id">{{ bodega.nombre }}</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group col" style="min-width: 8rem">
+                <label for="id_documento">Documento</label>
+                <select
+                    id="id_documento"
+                    name="id_documento"
+                    class="form-select"
+                    [(ngModel)]="form.id_documento"
+                    (ngModelChange)="onDocumentoChange()">
+                    <option [ngValue]="null">Seleccione</option>
+                    @for (documento of documentos; track documento.id) {
+                        <option [ngValue]="documento.id">{{ documento.nombre }}</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group col" style="min-width: 8rem">
+                <label for="forma_pago">Método de pago</label>
+                <select
+                    id="forma_pago"
+                    name="forma_pago"
+                    class="form-select"
+                    [(ngModel)]="form.forma_pago">
+                    @for (forma of formaPagos; track forma.id || forma.nombre) {
+                        <option [ngValue]="forma.nombre">{{ forma.nombre }}</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group col" style="min-width: 8rem">
+                <label for="condicion">Condición</label>
+                <select
+                    id="condicion"
+                    name="condicion"
+                    class="form-select"
+                    [(ngModel)]="form.condicion">
+                    <option value="Contado">Contado</option>
+                    <option value="Crédito">Crédito</option>
+                </select>
+            </div>
         </div>
-        <button type="button" class="btn btn-default mb-4" (click)="agregarLinea()">
-            <i class="fa fa-plus"></i> Agregar línea
-        </button>
 
         <div class="row">
-            <div class="col-md-3 mb-3">
-                <label class="form-label">Frecuencia</label>
-                <select class="form-select" name="frecuencia" [(ngModel)]="form.frecuencia">
+            <h6 class="mt-3">Detalles de la venta</h6>
+            <div class="form-group col-md-12 col-lg-4">
+                <label>Cliente</label>
+                <div class="input-group w-100">
+                    <div class="flex-grow-1">
+                        <app-buscador-clientes
+                            [cliente]="cliente"
+                            (selectCliente)="setCliente($event)">
+                        </app-buscador-clientes>
+                    </div>
+                    <app-crear-cliente
+                        [id_cliente]="venta.id_cliente"
+                        (update)="setCliente($event)">
+                    </app-crear-cliente>
+                </div>
+            </div>
+            <div class="form-group col-md-12 col-lg-5">
+                <div class="d-flex justify-content-between align-items-baseline gap-2 mb-1">
+                    <label for="observaciones" class="mb-0">Observaciones:</label>
+                    <small class="text-muted" style="font-size: 10px;">
+                        {{ ('' + (venta.observaciones ?? '')).length }}/150
+                    </small>
+                </div>
+                <input
+                    id="observaciones"
+                    type="text"
+                    class="form-control"
+                    placeholder="Escribe aquí"
+                    name="observaciones"
+                    maxlength="150"
+                    [(ngModel)]="venta.observaciones" />
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. Productos (diseño facturación) -->
+    <section class="card border-0 p-3 mb-3">
+        <h6 class="mt-1">Productos y servicios</h6>
+        <app-venta-detalles-v2
+            [venta]="venta"
+            [usuarios]="usuarios"
+            [ocultarAccesosExtra]="true"
+            (update)="onDetallesUpdate($event)"
+            (sumTotal)="onSumTotal()">
+        </app-venta-detalles-v2>
+
+        <div class="row">
+            <div class="col-md-12">
+                <table class="table table-sm table-borderless table-condensed mb-0">
+                    <tbody>
+                        <tr>
+                            <td class="text-end"><b>Sub Total</b></td>
+                            <td style="width: 150px;" class="text-end">{{ venta.sub_total | currency }}</td>
+                            <td style="width: 50px;"></td>
+                        </tr>
+                        @if ((venta.descuento | number) > 0) {
+                            <tr>
+                                <td class="text-end"><b>Descuento</b></td>
+                                <td style="width: 150px;" class="text-end">-{{ venta.descuento | currency }}</td>
+                                <td style="width: 50px;"></td>
+                            </tr>
+                        }
+                        @for (impuesto of venta.impuestos; track impuesto.id || impuesto.nombre) {
+                            <tr>
+                                <td class="text-end">
+                                    {{ impuesto.nombre | displayNombreImpuesto }}
+                                    <small class="text-muted">({{ impuesto.porcentaje | number:'1.0-2' }}%)</small>
+                                </td>
+                                <td style="width: 150px;" class="text-end">{{ (impuesto.monto ?? 0) | currency }}</td>
+                                <td style="width: 50px;"></td>
+                            </tr>
+                        }
+                        @if ((venta.exenta | number) > 0) {
+                            <tr>
+                                <td class="text-end"><b>Ventas Exentas</b></td>
+                                <td style="width: 150px;" class="text-end"><b>{{ venta.exenta | currency }}</b></td>
+                                <td style="width: 50px;"></td>
+                            </tr>
+                        }
+                        @if ((venta.no_sujeta | number) > 0) {
+                            <tr>
+                                <td class="text-end"><b>Ventas No Sujetas</b></td>
+                                <td style="width: 150px;" class="text-end"><b>{{ venta.no_sujeta | currency }}</b></td>
+                                <td style="width: 50px;"></td>
+                            </tr>
+                        }
+                        <tr>
+                            <td class="text-end"><b>Total</b></td>
+                            <td style="width: 150px;" class="text-end"><b>{{ venta.total | currency }}</b></td>
+                            <td style="width: 50px;"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. Programación / configuración -->
+    <section class="card border-0 p-3 mb-3">
+        <h6 class="mt-1 mb-3">Programación y configuración</h6>
+        <div class="row">
+            <div class="form-group col-md-3 mb-3">
+                <label class="form-label" for="frecuencia">Frecuencia</label>
+                <select id="frecuencia" class="form-select" name="frecuencia" [(ngModel)]="form.frecuencia">
                     <option value="mensual">Mensual</option>
                     <option value="anual">Anual</option>
                 </select>
             </div>
-            <div class="col-md-3 mb-3">
-                <label class="form-label">Día del mes</label>
+            <div class="form-group col-md-3 mb-3">
+                <label class="form-label" for="fecha_proxima">Próxima ejecución</label>
                 <input
+                    id="fecha_proxima"
                     class="form-control"
-                    type="number"
-                    min="1"
-                    max="31"
-                    name="dia_ejecucion"
-                    [(ngModel)]="form.dia_ejecucion" />
+                    type="date"
+                    name="fecha_proxima"
+                    [(ngModel)]="form.fecha_proxima"
+                    (ngModelChange)="onFechaProximaChange()" />
+                <small class="text-muted">Se repetirá el día {{ form.dia_ejecucion }} de cada {{ form.frecuencia === 'anual' ? 'año' : 'mes' }}.</small>
             </div>
-            <div class="col-md-3 mb-3">
+            <div class="form-group col-md-3 mb-3">
                 <label class="form-label">Hora</label>
-                <input class="form-control" type="time" name="hora_ejecucion" [(ngModel)]="form.hora_ejecucion" />
+                <div class="d-flex gap-1">
+                    <select
+                        class="form-select"
+                        name="hora12"
+                        [(ngModel)]="form.hora12"
+                        aria-label="Hora">
+                        @for (h of horas12; track h) {
+                            <option [ngValue]="h">{{ h }}</option>
+                        }
+                    </select>
+                    <select
+                        class="form-select"
+                        name="minuto"
+                        [(ngModel)]="form.minuto"
+                        aria-label="Minuto">
+                        @for (m of minutos; track m) {
+                            <option [ngValue]="m">{{ m | number: '2.0-0' }}</option>
+                        }
+                    </select>
+                    <select
+                        class="form-select"
+                        name="ampm"
+                        [(ngModel)]="form.ampm"
+                        aria-label="AM/PM">
+                        <option value="AM">AM</option>
+                        <option value="PM">PM</option>
+                    </select>
+                </div>
             </div>
-            <div class="col-md-3 mb-3">
-                <label class="form-label">Máx. ejecuciones (opcional)</label>
+            <div class="form-group col-md-3 mb-3">
+                <label class="form-label" for="max_ejecuciones">Máx. ejecuciones (opcional)</label>
                 <input
+                    id="max_ejecuciones"
                     class="form-control"
                     type="number"
                     min="1"
@@ -138,48 +243,60 @@
             </div>
         </div>
 
-        <div class="row mb-3">
+        <div class="row g-3 mb-2">
             <div class="col-md-4">
-                <div class="form-check">
+                <div class="form-switch bg-light-info rounded p-3">
+                    <label for="activo">Activa</label>
                     <input
-                        class="form-check-input"
-                        type="checkbox"
                         id="activo"
+                        class="form-check-input float-end"
+                        type="checkbox"
+                        role="switch"
                         name="activo"
                         [(ngModel)]="form.activo" />
-                    <label class="form-check-label" for="activo">Activa</label>
                 </div>
+                <p class="text-muted small mb-0 mt-2">
+                    Si está apagada, el cron no genera ventas hasta que la reactives.
+                </p>
             </div>
             <div class="col-md-4">
-                <div class="form-check">
+                <div class="form-switch bg-light-info rounded p-3">
+                    <label for="emitir_automatico">Emitir automáticamente</label>
                     <input
-                        class="form-check-input"
-                        type="checkbox"
                         id="emitir_automatico"
+                        class="form-check-input float-end"
+                        type="checkbox"
+                        role="switch"
                         name="emitir_automatico"
                         [(ngModel)]="form.emitir_automatico"
                         (ngModelChange)="onEmitirAutomaticoChange()" />
-                    <label class="form-check-label" for="emitir_automatico">Emitir factura automáticamente</label>
                 </div>
+                <p class="text-muted small mb-0 mt-2">
+                    Encendido: intenta emitir la factura (DTE si aplica). Apagado: solo crea la venta pendiente.
+                </p>
             </div>
             <div class="col-md-4">
-                <div class="form-check">
+                <div class="form-switch bg-light-info rounded p-3" [class.opacity-50]="!form.emitir_automatico">
+                    <label for="enviar_email">Enviar email al cliente</label>
                     <input
-                        class="form-check-input"
-                        type="checkbox"
                         id="enviar_email"
+                        class="form-check-input float-end"
+                        type="checkbox"
+                        role="switch"
                         name="enviar_email"
                         [(ngModel)]="form.enviar_email"
                         [disabled]="!form.emitir_automatico" />
-                    <label class="form-check-label" for="enviar_email">Enviar email al cliente</label>
                 </div>
+                <p class="text-muted small mb-0 mt-2">
+                    Solo aplica si se emite automáticamente: envía el comprobante al correo del cliente.
+                </p>
             </div>
         </div>
+    </section>
 
-        <p class="text-end text-muted mb-3">Total plantilla: <strong>{{ totalDocumento | currency }}</strong></p>
-
-        <button type="submit" class="btn btn-primary" [disabled]="saving">
+    <div class="mb-4 d-flex justify-content-end">
+        <button type="submit" class="btn btn-primary" [disabled]="saving || loading">
             {{ saving ? 'Guardando...' : 'Guardar' }}
         </button>
-    </form>
-</section>
+    </div>
+</form>

@@ -55,6 +55,94 @@ class EjecutarVentasProgramadasService
         return $ids->count();
     }
 
+    /**
+     * Reintento manual: actualiza la misma fila de historial (error → ok/error), no inserta otra.
+     * No crea venta si ya hay ejecución ok del mismo periodo.
+     */
+    public function reintentar(
+        VentaProgramada $programada,
+        VentaProgramadaEjecucion $ejecucion,
+        Carbon $now
+    ): VentaProgramadaEjecucion {
+        $now = $now->copy()->timezone(config('app.timezone'));
+
+        if ((int) $ejecucion->id_venta_programada !== (int) $programada->id) {
+            throw new \RuntimeException('La ejecución no pertenece a esta factura programada.');
+        }
+        if ($ejecucion->estado !== 'error') {
+            throw new \RuntimeException('Solo se pueden reintentar ejecuciones en error.');
+        }
+        if ($this->maximoAlcanzado($programada)) {
+            throw new \RuntimeException('Se alcanzó el máximo de ejecuciones de esta factura programada.');
+        }
+
+        $periodo = (string) $ejecucion->periodo;
+        if ($periodo !== '' && VentaProgramadaEjecucion::query()
+            ->where('id_venta_programada', $programada->id)
+            ->where('periodo', $periodo)
+            ->where('estado', 'ok')
+            ->exists()) {
+            throw new \RuntimeException('Ya existe una ejecución ok para el periodo '.$periodo.'.');
+        }
+
+        $programadaPara = $ejecucion->programada_para
+            ? Carbon::parse($ejecucion->programada_para)->timezone(config('app.timezone'))
+            : $now->copy();
+
+        $fresh = VentaProgramada::with(['detalles'])->findOrFail($programada->id);
+        $fresh->activo = true;
+
+        $estado = 'ok';
+        $modo = 'borrador';
+        $idVenta = null;
+        $mensaje = null;
+        try {
+            [$venta, $modo, $mensaje] = $this->crearVenta($fresh, $programadaPara, $periodo, $idVenta);
+        } catch (\Throwable $e) {
+            $estado = 'error';
+            $mensaje = $e->getMessage();
+            Log::channel('facturacion')->error('Ventas programadas: reintento fallido', [
+                'programada_id' => $fresh->id,
+                'ejecucion_id' => $ejecucion->id,
+                'error' => $mensaje,
+            ]);
+        }
+
+        $ejecucion->fill([
+            'id_venta' => $idVenta,
+            'ejecutada_en' => $now,
+            'estado' => $estado,
+            'modo' => $estado === 'ok' ? $modo : null,
+            'mensaje_error' => $mensaje,
+        ]);
+        $ejecucion->save();
+
+        if ($estado === 'ok') {
+            $fresh->ejecuciones_count = (int) $fresh->ejecuciones_count + 1;
+            // Si la próxima quedó atrás del slot reintentado, avanzar al siguiente ciclo.
+            if ($fresh->proxima_ejecucion->lessThanOrEqualTo($programadaPara)) {
+                $proxima = $programadaPara->copy();
+                do {
+                    $proxima = ProgramacionCalendario::siguienteTrasEjecucion(
+                        $fresh->frecuencia,
+                        (int) $fresh->dia_ejecucion,
+                        (string) $fresh->hora_ejecucion,
+                        $proxima
+                    );
+                } while ($proxima->lessThanOrEqualTo($now));
+                $fresh->proxima_ejecucion = $proxima;
+            }
+            if ($this->maximoAlcanzado($fresh)) {
+                $fresh->activo = false;
+            }
+            $fresh->save();
+        } else {
+            $fresh->save(); // activo=true
+        }
+
+        return $ejecucion->fresh(['venta']);
+    }
+
     private function procesar(VentaProgramada $programada, Carbon $now): void
     {
         if ($this->maximoAlcanzado($programada)) {
@@ -199,7 +287,8 @@ class EjecutarVentasProgramadasService
         return [
             'fecha' => $fecha,
             'fecha_pago' => $fecha,
-            'estado' => 'Pendiente', // ponytail: cobro posterior; no hay método de pago en la plantilla
+            // Contado → Pagada; Crédito → Pendiente (igual que facturación).
+            'estado' => (($p->condicion ?: 'Contado') === 'Crédito') ? 'Pendiente' : 'Pagada',
             'cotizacion' => 0,
             'recurrente' => '0',
             'id_venta_programada' => $p->id,
@@ -208,8 +297,8 @@ class EjecutarVentasProgramadasService
             'puntos_canjeados' => 0,
             'descuento_puntos' => 0,
             'id_documento' => $documento->id,
-            'forma_pago' => $p->forma_pago,
-            'condicion' => $p->condicion,
+            'forma_pago' => $p->forma_pago ?: 'Efectivo',
+            'condicion' => $p->condicion ?: 'Contado',
             'iva' => $p->iva ?? 0,
             'descuento' => $p->descuento ?? 0,
             'sub_total' => $p->sub_total ?? 0,

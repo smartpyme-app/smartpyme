@@ -19,18 +19,21 @@
 @if (programada && !loading) {
     <section class="bg-white p-4 rounded mb-3">
         <div class="row">
-            <div class="col-md-6 mb-2"><strong>Nombre:</strong> {{ programada.nombre }}</div>
             <div class="col-md-6 mb-2"><strong>Cliente:</strong> {{ nombreCliente() }}</div>
             <div class="col-md-6 mb-2">
                 <strong>Documento:</strong> {{ programada.documento?.nombre || '—' }}
             </div>
             <div class="col-md-6 mb-2">
+                <strong>Método de pago:</strong> {{ programada.forma_pago || '—' }} ·
+                <strong>Condición:</strong> {{ programada.condicion || '—' }}
+            </div>
+            <div class="col-md-6 mb-2">
                 <strong>Frecuencia:</strong> {{ etiquetaFrecuencia(programada.frecuencia) }}, día
-                {{ programada.dia_ejecucion }} a las {{ programada.hora_ejecucion }}
+                {{ programada.dia_ejecucion }} a las {{ formatoHora12(programada.hora_ejecucion) }}
             </div>
             <div class="col-md-6 mb-2">
                 <strong>Próxima ejecución:</strong>
-                {{ programada.proxima_ejecucion | date: 'dd/MM/yyyy HH:mm' }}
+                {{ programada.proxima_ejecucion | date: 'dd/MM/yyyy h:mm a' }}
             </div>
             <div class="col-md-6 mb-2">
                 <strong>Activa:</strong> {{ programada.activo ? 'Sí' : 'No' }} ·
@@ -46,7 +49,7 @@
 
         <h3 class="h5 mt-3">Líneas</h3>
         <div class="table-responsive">
-            <table class="table table-sm mb-0">
+            <table class="table table-borderless table-hover mb-0">
                 <thead>
                     <tr>
                         <th>Producto</th>
@@ -86,7 +89,7 @@
                         <th>Estado</th>
                         <th>Modo</th>
                         <th>Venta</th>
-                        <th>Error</th>
+                        <th class="text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -104,18 +107,50 @@
                     }
                     @for (e of ejecuciones?.data; track e.id) {
                         <tr>
-                            <td>{{ e.programada_para | date: 'dd/MM/yyyy HH:mm' }}</td>
-                            <td>{{ e.ejecutada_en ? (e.ejecutada_en | date: 'dd/MM/yyyy HH:mm') : '—' }}</td>
-                            <td>{{ e.estado || '—' }}</td>
+                            <td>{{ e.programada_para | date: 'dd/MM/yyyy h:mm a' }}</td>
+                            <td>{{ e.ejecutada_en ? (e.ejecutada_en | date: 'dd/MM/yyyy h:mm a') : '—' }}</td>
+                            <td>
+                                <span
+                                    class="badge"
+                                    [ngClass]="{
+                                        'bg-success': e.estado === 'ok',
+                                        'bg-danger': e.estado === 'error',
+                                        'bg-secondary': e.estado !== 'ok' && e.estado !== 'error'
+                                    }">
+                                    {{ e.estado || '—' }}
+                                </span>
+                            </td>
                             <td>{{ e.modo || '—' }}</td>
                             <td>
                                 @if (e.id_venta) {
-                                    <a routerLink="/venta/{{ e.id_venta }}">#{{ e.id_venta }}</a>
+                                    <a routerLink="/venta/{{ e.id_venta }}">
+                                        {{ etiquetaVentaEjecucion(e) }}
+                                    </a>
                                 } @else {
                                     —
                                 }
                             </td>
-                            <td class="text-danger small">{{ e.mensaje_error || '' }}</td>
+                            <td class="text-center">
+                                <div class="d-flex gap-1 justify-content-center flex-wrap">
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm btn-default"
+                                        (click)="abrirDetalleEjecucion(mejecucion, e)"
+                                        tooltip="Ver detalles">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    @if (puedeReintentar(e)) {
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-default"
+                                            [disabled]="reintentandoId === e.id"
+                                            (click)="reintentar(e)"
+                                            tooltip="Volver a ejecutar este ciclo">
+                                            {{ reintentandoId === e.id ? '...' : 'Reintentar' }}
+                                        </button>
+                                    }
+                                </div>
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -126,3 +161,59 @@
         }
     </section>
 }
+
+<ng-template #mejecucion>
+    <div class="modal-header">
+        <h4 class="modal-title">Detalle de ejecución</h4>
+        <button type="button" class="btn-close" (click)="modalRef?.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body" *ngIf="ejecucionDetalle">
+        <div class="mb-2">
+            <strong>Periodo:</strong> {{ ejecucionDetalle.periodo || '—' }}
+        </div>
+        <div class="mb-2">
+            <strong>Programada para:</strong>
+            {{ ejecucionDetalle.programada_para | date: 'dd/MM/yyyy h:mm a' }}
+        </div>
+        <div class="mb-2">
+            <strong>Ejecutada:</strong>
+            {{ ejecucionDetalle.ejecutada_en ? (ejecucionDetalle.ejecutada_en | date: 'dd/MM/yyyy h:mm a') : '—' }}
+        </div>
+        <div class="mb-2">
+            <strong>Estado:</strong> {{ ejecucionDetalle.estado || '—' }}
+            @if (ejecucionDetalle.modo) {
+                · <strong>Modo:</strong> {{ ejecucionDetalle.modo }}
+            }
+        </div>
+        <div class="mb-2">
+            <strong>Venta:</strong>
+            @if (ejecucionDetalle.id_venta) {
+                <a routerLink="/venta/{{ ejecucionDetalle.id_venta }}" (click)="modalRef?.hide()">
+                    {{ etiquetaVentaEjecucion(ejecucionDetalle) }}
+                </a>
+            } @else {
+                —
+            }
+        </div>
+        @if (ejecucionDetalle.mensaje_error) {
+            <div class="mt-3">
+                <strong [class.text-danger]="ejecucionDetalle.estado === 'error'">
+                    {{ ejecucionDetalle.estado === 'error' ? 'Error' : 'Detalle' }}:
+                </strong>
+                <pre class="bg-light border rounded p-3 mt-2 mb-0 small text-wrap" style="white-space: pre-wrap; word-break: break-word;">{{ ejecucionDetalle.mensaje_error }}</pre>
+            </div>
+        }
+    </div>
+    <div class="modal-footer">
+        @if (puedeReintentar(ejecucionDetalle)) {
+            <button
+                type="button"
+                class="btn btn-primary"
+                [disabled]="reintentandoId === ejecucionDetalle?.id"
+                (click)="reintentar(ejecucionDetalle); modalRef?.hide()">
+                Reintentar
+            </button>
+        }
+        <button type="button" class="btn btn-default" (click)="modalRef?.hide()">Cerrar</button>
+    </div>
+</ng-template>

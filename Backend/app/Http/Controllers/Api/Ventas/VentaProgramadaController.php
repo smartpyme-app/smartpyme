@@ -7,6 +7,8 @@ use App\Http\Requests\Ventas\StoreVentaProgramadaRequest;
 use App\Http\Requests\Ventas\UpdateVentaProgramadaRequest;
 use App\Models\Ventas\DetalleVentaProgramada;
 use App\Models\Ventas\VentaProgramada;
+use App\Models\Ventas\VentaProgramadaEjecucion;
+use App\Services\Ventas\EjecutarVentasProgramadasService;
 use App\Services\Ventas\ProgramacionCalendario;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -42,7 +44,7 @@ class VentaProgramadaController extends Controller
 
     /** Campos de cabecera que un PUT puede cambiar (solo si vienen en el request). */
     private const CABECERA_EDITABLE = [
-        'nombre', 'id_cliente', 'id_documento', 'id_sucursal', 'id_bodega', 'id_vendedor',
+        'id_cliente', 'id_documento', 'id_sucursal', 'id_bodega', 'id_vendedor',
         'forma_pago', 'condicion', 'observaciones', 'frecuencia', 'dia_ejecucion',
         'activo', 'emitir_automatico', 'enviar_email', 'max_ejecuciones',
     ];
@@ -56,13 +58,10 @@ class VentaProgramadaController extends Controller
             ->with(['cliente', 'documento'])
             ->when($q !== '', function ($query) use ($q) {
                 $like = '%' . $q . '%';
-                $query->where(function ($inner) use ($like) {
-                    $inner->where('nombre', 'like', $like)
-                        ->orWhereHas('cliente', function ($cliente) use ($like) {
-                            $cliente->where('nombre', 'like', $like)
-                                ->orWhere('apellido', 'like', $like)
-                                ->orWhere('nombre_empresa', 'like', $like);
-                        });
+                $query->whereHas('cliente', function ($cliente) use ($like) {
+                    $cliente->where('nombre', 'like', $like)
+                        ->orWhere('apellido', 'like', $like)
+                        ->orWhere('nombre_empresa', 'like', $like);
                 });
             })
             ->orderByDesc('id')
@@ -84,7 +83,7 @@ class VentaProgramadaController extends Controller
         );
 
         $programada = DB::transaction(function () use ($data, $hora, $proxima) {
-            $cabecera = $this->cabeceraAttributes($data, $hora, $proxima);
+            $cabecera = $this->cabeceraAttributes($data, $hora, $this->resolverProxima($data, $hora, $proxima));
             $programada = VentaProgramada::create($cabecera);
             $this->syncDetalles($programada, $data['detalles']);
 
@@ -107,14 +106,19 @@ class VentaProgramadaController extends Controller
         $data = $request->validated();
 
         $frecuencia = $data['frecuencia'] ?? $programada->frecuencia;
-        $dia = (int) ($data['dia_ejecucion'] ?? $programada->dia_ejecucion);
         $hora = isset($data['hora_ejecucion'])
             ? self::normalizarHora($data['hora_ejecucion'])
             : self::normalizarHora((string) $programada->hora_ejecucion);
+        $dia = (int) ($data['dia_ejecucion'] ?? $programada->dia_ejecucion);
+        if (! empty($data['proxima_ejecucion'])) {
+            $dia = Carbon::parse($data['proxima_ejecucion'])->day;
+            $data['dia_ejecucion'] = $dia;
+        }
 
         $recalcular = $programada->frecuencia !== $frecuencia
             || (int) $programada->dia_ejecucion !== $dia
-            || self::normalizarHora((string) $programada->hora_ejecucion) !== $hora;
+            || self::normalizarHora((string) $programada->hora_ejecucion) !== $hora
+            || array_key_exists('proxima_ejecucion', $data);
 
         DB::transaction(function () use ($programada, $data, $frecuencia, $dia, $hora, $recalcular) {
             // Solo se llenan las llaves presentes en el request (PUT parcial no resetea el resto).
@@ -129,17 +133,16 @@ class VentaProgramadaController extends Controller
                     $attrs[$k] = (bool) $attrs[$k];
                 }
             }
-            if (array_key_exists('dia_ejecucion', $attrs)) {
-                $attrs['dia_ejecucion'] = $dia;
-            }
+            $attrs['dia_ejecucion'] = $dia;
             if (isset($data['hora_ejecucion'])) {
                 $attrs['hora_ejecucion'] = $hora;
             }
 
             if ($recalcular) {
-                $attrs['proxima_ejecucion'] = ProgramacionCalendario::calcularProxima(
+                $fallback = ProgramacionCalendario::calcularProxima(
                     $frecuencia, $dia, $hora, Carbon::now()
                 );
+                $attrs['proxima_ejecucion'] = $this->resolverProxima($data, $hora, $fallback);
             }
 
             if (isset($data['detalles'])) {
@@ -182,10 +185,47 @@ class VentaProgramadaController extends Controller
         $programada = $this->findForEmpresa($id);
 
         $historial = $programada->ejecuciones()
+            ->with(['venta:id,correlativo,id_documento', 'venta.documento:id,nombre'])
             ->orderByDesc('id')
             ->paginate($request->input('paginate', 15));
 
         return response()->json($historial, 200);
+    }
+
+    /**
+     * Reintenta de inmediato una ejecución en error (actualiza esa fila; no inserta otra).
+     */
+    public function reintentar(Request $request, $id, EjecutarVentasProgramadasService $service)
+    {
+        $request->validate([
+            'id_ejecucion' => 'nullable|integer|min:1',
+        ]);
+
+        $programada = $this->findForEmpresa($id);
+        $ejecucionQuery = VentaProgramadaEjecucion::query()
+            ->where('id_venta_programada', $programada->id)
+            ->where('estado', 'error');
+
+        if ($request->filled('id_ejecucion')) {
+            $ejecucion = (clone $ejecucionQuery)->where('id', (int) $request->input('id_ejecucion'))->first();
+        } else {
+            $ejecucion = $ejecucionQuery->orderByDesc('id')->first();
+        }
+
+        if (!$ejecucion) {
+            return response()->json(['error' => 'No hay una ejecución en error para reintentar.'], 422);
+        }
+
+        try {
+            $ejecucion = $service->reintentar($programada, $ejecucion, Carbon::now());
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'programada' => $programada->fresh()->load(['detalles', 'cliente', 'documento']),
+            'ejecucion' => $ejecucion->load(['venta:id,correlativo,id_documento', 'venta.documento:id,nombre']),
+        ], 200);
     }
 
     private function findForEmpresa($id): VentaProgramada
@@ -196,25 +236,42 @@ class VentaProgramadaController extends Controller
             ->firstOrFail();
     }
 
+    /**
+     * Si el cliente manda fecha de próxima ejecución, se usa (con la hora); si no, el fallback del calendario.
+     * @param array<string, mixed> $data
+     */
+    private function resolverProxima(array $data, string $hora, Carbon $fallback): Carbon
+    {
+        if (empty($data['proxima_ejecucion'])) {
+            return $fallback;
+        }
+        $parts = array_pad(explode(':', $hora), 3, '0');
+
+        return Carbon::parse($data['proxima_ejecucion'])
+            ->setTime((int) $parts[0], (int) $parts[1], (int) $parts[2]);
+    }
+
     /** @param array<string, mixed> $data */
     private function cabeceraAttributes(array $data, string $hora, $proxima): array
     {
         $user = Auth::user();
+        $dia = ! empty($data['proxima_ejecucion'])
+            ? Carbon::parse($data['proxima_ejecucion'])->day
+            : (int) $data['dia_ejecucion'];
 
         return self::totalesDesdeDetalles($data['detalles']) + [
             'id_empresa' => $user->id_empresa,
-            'nombre' => $data['nombre'],
             'id_cliente' => $data['id_cliente'],
             'id_documento' => $data['id_documento'],
             // Si el form no los manda, se toman los defaults del usuario (sucursal/bodega activa).
             'id_sucursal' => $data['id_sucursal'] ?? $user->id_sucursal,
             'id_bodega' => $data['id_bodega'] ?? $user->id_bodega,
             'id_vendedor' => $data['id_vendedor'] ?? $user->id,
-            'forma_pago' => $data['forma_pago'] ?? null,
-            'condicion' => $data['condicion'] ?? null,
+            'forma_pago' => $data['forma_pago'] ?? 'Efectivo',
+            'condicion' => $data['condicion'] ?? 'Contado',
             'observaciones' => $data['observaciones'] ?? null,
             'frecuencia' => $data['frecuencia'],
-            'dia_ejecucion' => (int) $data['dia_ejecucion'],
+            'dia_ejecucion' => $dia,
             'hora_ejecucion' => $hora,
             'proxima_ejecucion' => $proxima,
             'activo' => array_key_exists('activo', $data) ? (bool) $data['activo'] : true,

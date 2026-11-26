@@ -81,13 +81,13 @@
     <div class="col-md-12 col-lg-8 justify-content-end d-flex gap-2">
         <app-tienda-venta-buscador-v2 class="w-100" [venta]="venta"
             (productoSelect)="productoSelect($event)"></app-tienda-venta-buscador-v2>
-        <app-tienda-venta-producto [venta]="venta"
+        <app-tienda-venta-producto *ngIf="!ocultarAccesosExtra" [venta]="venta"
             (productoSelect)="productoSelect($event)"></app-tienda-venta-producto>
-        <app-tienda-venta-paquetes-v2 *ngIf="usuario.empresa.modulo_paquetes && venta.cotizacion != 1" [venta]="venta"
+        <app-tienda-venta-paquetes-v2 *ngIf="!ocultarAccesosExtra && usuario.empresa.modulo_paquetes && venta.cotizacion != 1" [venta]="venta"
             (productoSelect)="productoSelect($event)"
             (alMenosUnPaqueteConCuentaTerceros)="onAlMenosUnPaqueteCuentaTercerosEnListado()"
             (selectCliente)="selectCliente.emit($event)"></app-tienda-venta-paquetes-v2>
-        <app-tienda-venta-citas *ngIf="usuario.empresa.modulo_citas && venta.cotizacion != 1" [venta]="venta"
+        <app-tienda-venta-citas *ngIf="!ocultarAccesosExtra && usuario.empresa.modulo_citas && venta.cotizacion != 1" [venta]="venta"
             (productoSelect)="productoSelect($event)"
             (selectCliente)="selectCliente.emit($event)"></app-tienda-venta-citas>
     </div>

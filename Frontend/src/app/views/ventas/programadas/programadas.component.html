@@ -20,7 +20,7 @@
                     type="text"
                     name="buscador"
                     class="form-control pull-right"
-                    placeholder="Buscar por nombre o cliente"
+                    placeholder="Buscar por cliente"
                     [(ngModel)]="filtros.buscador" />
             </form>
         </div>
@@ -49,7 +49,6 @@
             <table class="table table-borderless table-hover mb-0">
                 <thead>
                     <tr>
-                        <th>Nombre</th>
                         <th>Cliente</th>
                         <th class="d-none d-md-table-cell">Tipo documento</th>
                         <th>Frecuencia</th>
@@ -63,25 +62,24 @@
                 <tbody>
                     @if (programadas?.total < 1 && !loading) {
                         <tr>
-                            <td colspan="9" class="text-center">
+                            <td colspan="8" class="text-center">
                                 <span class="badge bg-primary">No hay facturas programadas</span>
                             </td>
                         </tr>
                     }
                     @if (loading) {
                         <tr>
-                            <td colspan="9" class="text-center">
+                            <td colspan="8" class="text-center">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
                         </tr>
                     }
                     @for (p of programadas?.data; track p.id) {
                         <tr>
-                            <td>{{ p.nombre | truncate: 40 }}</td>
-                            <td>{{ nombreCliente(p) | truncate: 30 }}</td>
+                            <td>{{ nombreCliente(p) | truncate: 40 }}</td>
                             <td class="d-none d-md-table-cell">{{ p.documento?.nombre || '—' }}</td>
                             <td>{{ etiquetaFrecuencia(p.frecuencia) }}</td>
-                            <td>{{ p.proxima_ejecucion | date: 'dd/MM/yyyy HH:mm' }}</td>
+                            <td>{{ p.proxima_ejecucion | date: 'dd/MM/yyyy h:mm a' }}</td>
                             <td class="text-center">
                                 <span
                                     class="badge py-2"
@@ -94,38 +92,30 @@
                                 {{ p.enviar_email ? 'Sí' : 'No' }}
                             </td>
                             <td class="text-center">{{ p.ejecuciones_count ?? 0 }}</td>
-                            <td>
-                                <div class="d-flex gap-2 justify-content-center">
-                                    <a
-                                        routerLink="/ventas/programadas/ver/{{ p.id }}"
-                                        tooltip="Ver"
-                                        class="btn btn-default">
-                                        <i class="fa fa-fw fa-eye"></i>
-                                    </a>
-                                    <a
-                                        routerLink="/ventas/programadas/editar/{{ p.id }}"
-                                        tooltip="Editar"
-                                        class="btn btn-default">
-                                        <i class="fa fa-fw fa-edit"></i>
-                                    </a>
-                                    <div class="dropdown">
-                                        <button
-                                            type="button"
-                                            class="btn btn-default dropdown-toggle"
-                                            data-bs-toggle="dropdown"
-                                            aria-expanded="false"
-                                            tooltip="Activo">
-                                            <i class="fa fa-fw fa-ellipsis-v"></i>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
-                                            <li>
-                                                <button type="button" class="dropdown-item" (click)="toggleActivo(p)">
-                                                    {{ p.activo ? 'Desactivar' : 'Activar' }}
-                                                </button>
-                                            </li>
-                                        </ul>
+                            <td class="text-center">
+                                <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                    <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                                </span>
+                                <ng-template #accionesTemplate>
+                                    <div class="list-group border-0">
+                                        <a
+                                            [routerLink]="['/ventas/programadas/ver', p.id]"
+                                            class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-magnifying-glass"></i> Ver detalles
+                                        </a>
+                                        <a
+                                            [routerLink]="['/ventas/programadas/editar', p.id]"
+                                            class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-edit"></i> Editar
+                                        </a>
+                                        <a
+                                            (click)="toggleActivo(p)"
+                                            class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw" [ngClass]="p.activo ? 'fa-ban' : 'fa-check'"></i>
+                                            {{ p.activo ? 'Desactivar' : 'Activar' }}
+                                        </a>
                                     </div>
-                                </div>
+                                </ng-template>
                             </td>
                         </tr>
                     }

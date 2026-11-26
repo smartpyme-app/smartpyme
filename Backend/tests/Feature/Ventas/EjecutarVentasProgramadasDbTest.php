@@ -22,7 +22,6 @@ class EjecutarVentasProgramadasDbTest extends TestCase
             foreach (['id_empresa', 'id_cliente', 'id_documento', 'ejecuciones_count'] as $c) {
                 $t->integer($c)->default(0);
             }
-            $t->string('nombre')->default('t');
             $t->string('frecuencia');
             $t->integer('dia_ejecucion');
             $t->time('hora_ejecucion');

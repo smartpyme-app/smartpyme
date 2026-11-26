@@ -27,16 +27,20 @@ class StoreVentaProgramadaRequest extends FormRequest
         $presentacion = Rule::exists('producto_presentaciones', 'id')->where(
             fn (Builder $q) => $q->whereIn('id_producto', DB::table('productos')->where('id_empresa', $empresa)->select('id'))
         );
-        $req = $this->isMethod('PUT') || $this->isMethod('PATCH') ? 'sometimes|required' : 'required';
+        // En array de reglas, "sometimes|required" como un solo string busca validateSometimes|required.
+        $req = $this->isMethod('PUT') || $this->isMethod('PATCH')
+            ? ['sometimes', 'required']
+            : ['required'];
 
         return [
-            'nombre' => $req.'|string|max:255',
-            'id_cliente' => [$req, 'integer', $this->existe('clientes')],
-            'id_documento' => [$req, 'integer', $this->existe('documentos')],
-            'frecuencia' => $req.'|in:mensual,anual',
-            'dia_ejecucion' => $req.'|integer|min:1|max:31',
-            'hora_ejecucion' => [$req, 'date_format:H:i'],
-            'detalles' => $req.'|array|min:1',
+            'id_cliente' => [...$req, 'integer', $this->existe('clientes')],
+            'id_documento' => [...$req, 'integer', $this->existe('documentos')],
+            'frecuencia' => [...$req, 'in:mensual,anual'],
+            'dia_ejecucion' => [...$req, 'integer', 'min:1', 'max:31'],
+            'hora_ejecucion' => [...$req, 'date_format:H:i'],
+            // Fecha de la próxima corrida (UI); el día del mes se deriva de esta fecha.
+            'proxima_ejecucion' => 'nullable|date',
+            'detalles' => [...$req, 'array', 'min:1'],
             'detalles.*.id_producto' => ['required', 'integer', $this->existe('productos')],
             'detalles.*.cantidad' => 'required|numeric|min:0.01',
             'detalles.*.precio' => 'required|numeric|min:0',

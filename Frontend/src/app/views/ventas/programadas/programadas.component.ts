@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -13,7 +14,15 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
     selector: 'app-programadas',
     templateUrl: './programadas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, TruncatePipe, TooltipModule],
+    imports: [
+        CommonModule,
+        RouterModule,
+        FormsModule,
+        PaginationComponent,
+        TruncatePipe,
+        PopoverModule,
+        TooltipModule,
+    ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProgramadasComponent extends BaseFilteredPaginatedComponent implements OnInit {

@@ -11,7 +11,6 @@ return new class extends Migration
         Schema::create('ventas_programadas', function (Blueprint $table) {
             $table->id();
             $table->unsignedInteger('id_empresa');
-            $table->string('nombre', 255);
             $table->integer('id_cliente');
             $table->unsignedInteger('id_documento');
             $table->integer('id_sucursal')->nullable();

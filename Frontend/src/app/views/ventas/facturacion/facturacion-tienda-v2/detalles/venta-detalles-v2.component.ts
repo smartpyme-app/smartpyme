@@ -85,6 +85,8 @@ export class VentaDetallesV2Component implements OnInit, OnDestroy {
     @Input() esFeCostaRica = false;
     /** POS: oculta buscador/tabla; mantiene modales (lote, supervisor). */
     @Input() ocultarEntradaProductos = false;
+    /** Facturas programadas: solo buscador + tabla (sin modal productos, paquetes ni citas). */
+    @Input() ocultarAccesosExtra = false;
     public usuario:any = {};
     public detalle:any = {};
     public composicion:any = {};

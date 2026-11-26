@@ -8,4 +8,5 @@ use Illuminate\Support\Facades\Route;
     Route::get('/ventas-programadas/{id}', [VentaProgramadaController::class, 'show']);
     Route::put('/ventas-programadas/{id}', [VentaProgramadaController::class, 'update']);
     Route::patch('/ventas-programadas/{id}/activo', [VentaProgramadaController::class, 'activo']);
+    Route::post('/ventas-programadas/{id}/reintentar', [VentaProgramadaController::class, 'reintentar']);
     Route::get('/ventas-programadas/{id}/ejecuciones', [VentaProgramadaController::class, 'ejecuciones']);
