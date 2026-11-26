@@ -1937,6 +1937,11 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
                 inventario_reporte_analisis_ventas_mensual: false, // Botón Excel: ventas ene→mes actual + inventario
                 cotizacion_mostrar_descripcion: true, // Mostrar descripción en PDF/vista de cotizaciones
                 cotizacion_mostrar_imagenes_productos: false, // Mostrar imágenes de productos en cotizaciones
+                cotizacion_formato_nuevo: false, // SP-2386: plantilla PDF rediseñada (rollout progresivo)
+                cotizacion_color_marca: '#0a2f7a',
+                cotizacion_carta: '',
+                cotizacion_terminos: '',
+                cotizacion_compromisos: '',
                 bloquear_cotizaciones_vendedores: false, // Restringir cotizaciones a usuarios Ventas / Ventas Limitado (solo propias, sin facturar/editar desde listado)
                 bloquear_edicion_correlativo: false, // Impide editar correlativo (ventas) / referencia (compras) en modales de edición
                 ventas_puede_cambiar_vendedor_facturacion: false, // Ventas/Limitado pueden elegir vendedor al facturar
@@ -2264,6 +2269,46 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
 
     public toggleCotizacionMostrarImagenesProductos() {
         this.updateCotizacionMostrarImagenesProductos(!this.isCotizacionMostrarImagenesProductosEnabled());
+    }
+
+    public isCotizacionFormatoNuevoEnabled(): boolean {
+        return this.getCustomConfig('configuraciones', 'cotizacion_formato_nuevo', false);
+    }
+
+    public updateCotizacionFormatoNuevo(enabled: boolean) {
+        this.addCustomConfig('configuraciones', 'cotizacion_formato_nuevo', enabled);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                enabled
+                    ? 'Nuevo formato de cotización activado. Al imprimir se usará la plantilla actualizada.'
+                    : 'Nuevo formato de cotización desactivado.'
+            );
+        });
+    }
+
+    public toggleCotizacionFormatoNuevo() {
+        this.updateCotizacionFormatoNuevo(!this.isCotizacionFormatoNuevoEnabled());
+    }
+
+    public getCotizacionColorMarca(): string {
+        const color = this.getCustomConfig('configuraciones', 'cotizacion_color_marca', '#0a2f7a');
+        return typeof color === 'string' && /^#[0-9A-Fa-f]{6}$/.test(color) ? color : '#0a2f7a';
+    }
+
+    public onCotizacionColorMarcaChange(color: string) {
+        const next = typeof color === 'string' && /^#[0-9A-Fa-f]{6}$/i.test(color) ? color : '#0a2f7a';
+        this.addCustomConfig('configuraciones', 'cotizacion_color_marca', next);
+    }
+
+    public persistirTextosCotizacionFormatoNuevo(): void {
+        const cfg = this.customConfig?.configuraciones ?? {};
+        this.addCustomConfig('configuraciones', 'cotizacion_carta', cfg.cotizacion_carta ?? '');
+        this.addCustomConfig('configuraciones', 'cotizacion_terminos', cfg.cotizacion_terminos ?? '');
+        this.addCustomConfig('configuraciones', 'cotizacion_compromisos', cfg.cotizacion_compromisos ?? '');
+        this.onSubmit().then(() => {
+            this.alertService.success('Configuración actualizada', 'Textos de cotización guardados.');
+        });
     }
 
     public isBloquearCotizacionesVendedoresEnabled(): boolean {

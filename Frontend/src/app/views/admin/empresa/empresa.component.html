@@ -710,6 +710,62 @@
                             </div>
                             <div class="empresa-pref-row">
                                 <div class="empresa-pref-row-text">
+                                    <label class="empresa-pref-row-label" for="cotizacion_formato_nuevo">
+                                        <strong>Nuevo formato de cotización (PDF)</strong>
+                                    </label>
+                                    <p class="empresa-pref-row-help text-muted small mb-0">
+                                        Activa la plantilla rediseñada al imprimir. Mientras esté apagado, se conserva el formato anterior.
+                                    </p>
+                                </div>
+                                <div class="form-switch m-0">
+                                    <input class="form-check-input" type="checkbox" role="switch"
+                                        id="cotizacion_formato_nuevo"
+                                        [checked]="isCotizacionFormatoNuevoEnabled()"
+                                        (change)="toggleCotizacionFormatoNuevo()"
+                                        name="cotizacion_formato_nuevo">
+                                </div>
+                            </div>
+                            @if (isCotizacionFormatoNuevoEnabled()) {
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label" for="cotizacion_color_marca"><strong>Color principal</strong></label>
+                                        <input id="cotizacion_color_marca" class="form-control form-control-color w-100"
+                                            type="color"
+                                            [ngModel]="getCotizacionColorMarca()"
+                                            (ngModelChange)="onCotizacionColorMarcaChange($event)"
+                                            (change)="onSubmit()"
+                                            name="cotizacion_color_marca">
+                                    </div>
+                                    <div class="col-12 mt-2">
+                                        <label class="form-label" for="cotizacion_carta"><strong>Texto de la carta</strong></label>
+                                        <textarea id="cotizacion_carta" class="form-control" rows="4"
+                                            [(ngModel)]="customConfig.configuraciones.cotizacion_carta"
+                                            name="cotizacion_carta"
+                                            placeholder="Vacío: se usa texto de referencia al imprimir."></textarea>
+                                    </div>
+                                    <div class="col-12 mt-2">
+                                        <label class="form-label" for="cotizacion_terminos"><strong>Términos y condiciones</strong></label>
+                                        <textarea id="cotizacion_terminos" class="form-control" rows="8"
+                                            [(ngModel)]="customConfig.configuraciones.cotizacion_terminos"
+                                            name="cotizacion_terminos"></textarea>
+                                    </div>
+                                    <div class="col-12 mt-2">
+                                        <label class="form-label" for="cotizacion_compromisos"><strong>Compromisos</strong></label>
+                                        <textarea id="cotizacion_compromisos" class="form-control" rows="5"
+                                            [(ngModel)]="customConfig.configuraciones.cotizacion_compromisos"
+                                            name="cotizacion_compromisos"
+                                            placeholder="Un compromiso por línea."></textarea>
+                                    </div>
+                                    <div class="col-12 mt-2">
+                                        <button type="button" class="btn btn-outline-primary btn-sm"
+                                            (click)="persistirTextosCotizacionFormatoNuevo()">
+                                            Guardar textos de cotización
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                            <div class="empresa-pref-row">
+                                <div class="empresa-pref-row-text">
                                     <label class="empresa-pref-row-label" for="impresion_en_facturacion">Imprimir en facturación</label>
                                     <p class="empresa-pref-row-help text-muted small mb-0">Se imprimirá el documento al momento
                                         de procesar la venta.</p>

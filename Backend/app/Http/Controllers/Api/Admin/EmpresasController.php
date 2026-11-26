@@ -882,6 +882,7 @@ class EmpresasController extends Controller
             'inventario_sumar_stock_busquedas',
             'cotizacion_mostrar_descripcion',
             'cotizacion_mostrar_imagenes_productos',
+            'cotizacion_formato_nuevo',
             'bloquear_cotizaciones_vendedores',
             'bloquear_edicion_correlativo',
             'ventas_puede_cambiar_vendedor_facturacion',
@@ -895,6 +896,21 @@ class EmpresasController extends Controller
         foreach ($booleanConfigs as $key) {
             if (array_key_exists($key, $configuraciones)) {
                 $configuraciones[$key] = (bool) $configuraciones[$key];
+            }
+        }
+
+        if (array_key_exists('cotizacion_color_marca', $configuraciones)) {
+            $configuraciones['cotizacion_color_marca'] = \App\Support\Ventas\CotizacionFormatoNuevoDefaults::normalizarColor(
+                (string) $configuraciones['cotizacion_color_marca']
+            );
+        }
+
+        foreach (['cotizacion_carta', 'cotizacion_terminos', 'cotizacion_compromisos'] as $textKey) {
+            if (array_key_exists($textKey, $configuraciones) && ! is_string($configuraciones[$textKey])) {
+                $configuraciones[$textKey] = (string) $configuraciones[$textKey];
+            }
+            if (array_key_exists($textKey, $configuraciones)) {
+                $configuraciones[$textKey] = mb_substr((string) $configuraciones[$textKey], 0, 20000);
             }
         }
 
