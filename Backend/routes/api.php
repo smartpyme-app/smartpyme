@@ -62,6 +62,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 
 	// Ventas
 	require base_path('routes/modulos/ventas/ventas.php');
+	require base_path('routes/modulos/ventas/ventas-programadas.php');
 	require base_path('routes/modulos/ventas/detalles.php');
 	require base_path('routes/modulos/ventas/devoluciones.php');
 	require base_path('routes/modulos/ventas/cotizaciones.php');
