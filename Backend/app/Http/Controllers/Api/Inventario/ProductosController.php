@@ -115,10 +115,24 @@ class ProductosController extends Controller
             );
         }
 
-        $productos = $query
-            ->orderBy('enable', 'desc')
-            ->orderBy($request->orden ? $request->orden : 'nombre', $request->direccion ? $request->direccion : 'desc')
-            ->paginate($request->paginate);
+        $direccion = strtolower((string) $request->direccion) === 'asc' ? 'asc' : 'desc';
+        $query->orderBy('enable', 'desc');
+        switch ($request->orden) {
+            // "categoria" no es columna de productos (es id_categoria): se ordena por el nombre de la categoría.
+            case 'categoria':
+                $query->orderBy(
+                    \App\Models\Inventario\Categorias\Categoria::select('nombre')->whereColumn('categorias.id', 'productos.id_categoria'),
+                    $direccion
+                );
+                break;
+            case 'id': case 'nombre': case 'codigo': case 'precio': case 'stock': case 'enable':
+            case 'costo': case 'marca': case 'barcode': case 'created_at': case 'updated_at':
+                $query->orderBy('productos.' . $request->orden, $direccion);
+                break;
+            default:
+                $query->orderBy('productos.nombre', $direccion);
+        }
+        $productos = $query->paginate($request->paginate);
 
         $this->asignarProductoLigeroALotes($productos->getCollection());
 

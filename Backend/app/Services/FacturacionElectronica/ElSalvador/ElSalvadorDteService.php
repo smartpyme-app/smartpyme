@@ -61,6 +61,10 @@ class ElSalvadorDteService
             return response()->json(['error' => 'La exportación de bienes requiere recinto fiscal y régimen de exportación. Si exporta servicios, seleccione Tipo de Ítem: Servicios.'], 400);
         }
 
+        if ($venta->nombre_documento == 'Crédito fiscal' && ! $venta->cliente) {
+            return response()->json(['error' => 'El crédito fiscal necesita un cliente con NIT o DUI y NRC. Edite la venta, seleccione el cliente y vuelva a emitir.'], 400);
+        }
+
         if ($error = $this->faltaDistrito($venta->empresa, $venta->cliente, $venta->nombre_documento == 'Crédito fiscal')) {
             return response()->json(['error' => $error], 400);
         }
