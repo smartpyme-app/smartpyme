@@ -42,6 +42,7 @@ import {
     puedeVerDteVenta,
 } from '@views/ventas/ventas-acciones-menu.util';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 @Component({
     selector: 'app-caja-ventas',
     templateUrl: './caja-ventas.component.html',
@@ -286,7 +287,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
     }
 
     public descargarVentas(){
-        const hoy = new Date().toISOString().split('T')[0];
+        const hoy = fechaLocal();
         const filtrosExport = {
             ...this.filtros,
             inicio: this.filtros.inicio || hoy,
@@ -320,7 +321,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
     }
 
     public descargarDetalles(){
-        const hoy = new Date().toISOString().split('T')[0];
+        const hoy = fechaLocal();
         const filtrosExport = {
             ...this.filtros,
             inicio: this.filtros.inicio || hoy,

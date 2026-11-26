@@ -25,6 +25,7 @@ import {
   FinanzasCierreMesDataService,
 } from '../../../services/finanzas-cierre-mes-data.service';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 const ACCION_CHECKLIST: Record<string, string> = {
   registrar_gasto: 'Registrar gasto →',
   revisar_dia: 'Revisar día →',
@@ -340,7 +341,7 @@ export class CierreMesComponent implements OnInit {
     const hoy = new Date();
     const fechaDef =
       hoy.getFullYear() === this.anio && hoy.getMonth() + 1 === mes
-        ? hoy.toISOString().slice(0, 10)
+        ? fechaLocal()
         : new Date(Date.UTC(this.anio, mes, 0)).toISOString().slice(0, 10);
     const tipoMatch = this.tiposGasto.find(
       (t) => t.toLowerCase() === (item?.tipoGasto ?? '').trim().toLowerCase(),

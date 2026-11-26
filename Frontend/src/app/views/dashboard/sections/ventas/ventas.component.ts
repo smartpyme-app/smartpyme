@@ -38,6 +38,7 @@ import { TreemapChartComponent } from '../../components/treemap-chart/treemap-ch
 import { ChartExpandableComponent } from '../../components/chart-expandable/chart-expandable.component';
 import { CountryI18nService } from '@services/country-i18n.service';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 @Component({
   selector: 'app-ventas',
   templateUrl: './ventas.component.html',
@@ -2020,7 +2021,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
 
   exportarVentasDetalladas(): void {
     if (this.ventasDetalladasRows.length > 0) {
-      const fecha = new Date().toISOString().split('T')[0];
+      const fecha = fechaLocal();
       this.exportarACSV(this.ventasDetalladasRows, this.ventasDetalladasColumns, `ventas-detalladas-${fecha}.csv`);
     } else {
       alert('No hay datos de ventas para exportar');
@@ -2145,7 +2146,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (page) => {
-          const fecha = new Date().toISOString().split('T')[0];
+          const fecha = fechaLocal();
           const cols = this.ventasPorProductoColumnDefs.filter((c) => c.field);
           const header = cols
             .map((c) => this.csvEscape(String(c.headerName || c.field)))
@@ -2210,7 +2211,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (page) => {
-          const fecha = new Date().toISOString().split('T')[0];
+          const fecha = fechaLocal();
           const cols = [
             { field: 'cliente', headerName: 'Cliente' },
             { field: 'ultimaVenta', headerName: 'Última venta' },

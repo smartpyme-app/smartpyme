@@ -12,6 +12,7 @@ import { FuncionalidadesService } from '@services/functionalities.service';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { CONSIGNA_MOVIMIENTO_TIPOS } from '../../../constants/consigna-movimiento-tipos';
 
+import { fechaLocalMasDias } from '@utils/fecha-local.util';
 @Component({
   selector: 'app-consigna-kardex',
   standalone: true,
@@ -81,9 +82,7 @@ export class ConsignaKardexComponent implements OnInit, OnDestroy {
     if (alcance === 'custodia') {
       this.filtros.alcance = 'custodia';
     }
-    const hace30 = new Date();
-    hace30.setDate(hace30.getDate() - 30);
-    this.filtros.fecha_ini = hace30.toISOString().slice(0, 10);
+    this.filtros.fecha_ini = fechaLocalMasDias(-30);
     this.filtros.fecha_fin = this.apiService.date();
     this.filtros.id_bodega = this.apiService.auth_user().id_bodega ?? '';
 

@@ -18,6 +18,7 @@ import {
   esDescuentoMontoPedido,
 } from './pedido-descuento.util';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 interface LineaLocal {
   producto_id: number;
   id_paquete?: number | null;
@@ -166,7 +167,7 @@ export class PedidoFormComponent implements OnInit {
     if (this.modoEdicion && this.pedidoId) {
       this.cargarPedido(this.pedidoId);
     } else {
-      this.fecha = new Date().toISOString().slice(0, 10);
+      this.fecha = fechaLocal();
       this.idBodega = this.apiService.auth_user().id_bodega ?? null;
     }
   }

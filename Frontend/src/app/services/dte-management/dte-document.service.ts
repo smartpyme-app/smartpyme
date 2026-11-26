@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '@services/api.service';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 export interface DteLineItem {
   numero: number;
   codigo?: string;
@@ -130,7 +131,7 @@ export class DteDocumentService {
 
   /** Evita mostrar la alerta de revisión durante la sesión y el día actual. */
   dismissReviewAlert(userId: number): void {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = fechaLocal();
     sessionStorage.setItem(`dte_review_dismiss_session_${userId}`, '1');
     localStorage.setItem(`dte_review_dismiss_day_${userId}`, today);
   }
@@ -139,7 +140,7 @@ export class DteDocumentService {
     if (sessionStorage.getItem(`dte_review_dismiss_session_${userId}`)) {
       return true;
     }
-    const today = new Date().toISOString().slice(0, 10);
+    const today = fechaLocal();
     return localStorage.getItem(`dte_review_dismiss_day_${userId}`) === today;
   }
 }

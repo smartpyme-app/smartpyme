@@ -10,6 +10,7 @@ import { ChartCardComponent } from '../../dashboard/components/chart-card/chart-
 import { MetricCard } from '../../dashboard/models/chart-config.model';
 import { getEmpresaCurrencySymbol } from '@helpers/currency-format.helper';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 @Component({
   selector: 'app-prestamo-detalle',
   standalone: true,
@@ -111,7 +112,7 @@ export class PrestamoDetalleComponent implements OnInit {
 
   abrirPago(template: TemplateRef<any>): void {
     this.pago = {
-      fecha: this.pago.fecha || new Date().toISOString().slice(0, 10),
+      fecha: this.pago.fecha || fechaLocal(),
       metodo: this.pago.metodo || '',
       referencia: '',
       detalle_banco: '',

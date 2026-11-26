@@ -22,6 +22,7 @@ import {
 } from './empleado-form-por-pais';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 @Component({
     selector: 'app-administrar-empleado',
     styles: [
@@ -241,7 +242,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
   public openModalDocumento(template: TemplateRef<any>) {
     this.nuevoDocumento = {
       tipo_documento: '',
-      fecha_documento: new Date().toISOString().split('T')[0],
+      fecha_documento: fechaLocal(),
       fecha_vencimiento: null,
     };
     this.archivoSeleccionado = null;

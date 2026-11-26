@@ -43,6 +43,7 @@ import {
 } from '@utils/identificacion-tipos.util';
 import { EmpresaDespachoContadorComponent } from './empresa-despacho-contador.component';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 @Component({
     selector: 'app-empresa',
     templateUrl: './empresa.component.html',
@@ -1688,7 +1689,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
 
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'productos_woocommerce_' + new Date().toISOString().split('T')[0] + '.csv';
+                a.download = 'productos_woocommerce_' + fechaLocal() + '.csv';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -1738,7 +1739,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
 
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'productos_shopify_' + new Date().toISOString().split('T')[0] + '.csv';
+                a.download = 'productos_shopify_' + fechaLocal() + '.csv';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);

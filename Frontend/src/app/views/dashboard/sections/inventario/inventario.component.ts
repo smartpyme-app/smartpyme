@@ -31,6 +31,7 @@ import { ChartCardComponent } from '../../components/chart-card/chart-card.compo
 import { BarChartComponent } from '../../components/bar-chart/bar-chart.component';
 import { ChartExpandableComponent } from '../../components/chart-expandable/chart-expandable.component';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 @Component({
   selector: 'app-inventario',
   templateUrl: './inventario.component.html',
@@ -1231,7 +1232,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (page) => {
-          const fecha = new Date().toISOString().split('T')[0];
+          const fecha = fechaLocal();
           const cols = this.inventarioProductosColumnDefs.filter((c) => c.field);
           const header = cols
             .map((c) => this.csvEscape(String(c.headerName || c.field)))
@@ -1584,7 +1585,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (page) => {
-          const fecha = new Date().toISOString().split('T')[0];
+          const fecha = fechaLocal();
           const cols = this.entradasSalidasColumnDefs.filter((c) => c.field);
           const header = cols
             .map((c) => this.csvEscape(String(c.headerName || c.field)))
@@ -2083,7 +2084,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (page) => {
-          const fecha = new Date().toISOString().split('T')[0];
+          const fecha = fechaLocal();
           const cols = this.ajustesColumnDefs.filter((c) => c.field);
           const header = cols
             .map((c) => this.csvEscape(String(c.headerName || c.field)))

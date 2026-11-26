@@ -33,6 +33,7 @@ import { PieChartComponent } from '../../components/pie-chart/pie-chart.componen
 import { AccountsListComponent } from '../../components/accounts-list/accounts-list.component';
 import { ChartExpandableComponent } from '../../components/chart-expandable/chart-expandable.component';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 @Component({
   selector: 'app-control-cuentas',
   templateUrl: './control-cuentas.component.html',
@@ -1411,7 +1412,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
           })
           .join(','),
     );
-    const fecha = new Date().toISOString().split('T')[0];
+    const fecha = fechaLocal();
     const blob = new Blob(['\uFEFF' + [header, ...lines].join('\n')], {
       type: 'text/csv;charset=utf-8;',
     });
@@ -1959,7 +1960,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (page) => {
-          const fecha = new Date().toISOString().split('T')[0];
+          const fecha = fechaLocal();
           const cols = this.resumenCuentasPagarColumnDefs.filter((c) => c.field);
           const header = cols
             .map((c) => this.csvEscape(String(c.headerName || c.field)))
@@ -2305,7 +2306,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (page) => {
-          const fecha = new Date().toISOString().split('T')[0];
+          const fecha = fechaLocal();
           const cols = this.detalleCuentasColumnDefs.filter((c) => c.field);
           const header = cols
             .map((c) => this.csvEscape(String(c.headerName || c.field)))
