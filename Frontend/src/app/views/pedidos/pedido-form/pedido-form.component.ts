@@ -175,8 +175,13 @@ export class PedidoFormComponent implements OnInit {
     this.cargando = true;
     this.restauranteService.getPedido(id).subscribe({
       next: (p: PedidoCanal) => {
-        if (p.estado !== 'borrador') {
-          this.alertService.warning('No editable', 'Solo se pueden editar pedidos en borrador.');
+        if (!this.pedidoEsEditable(p)) {
+          this.alertService.warning(
+            'No editable',
+            p.estado === 'pendiente_facturar' && p.id_venta
+              ? 'El pedido ya está vinculado a una venta.'
+              : 'Solo se pueden editar pedidos en borrador o, si la empresa lo permite, pendientes de facturación.'
+          );
           this.router.navigate(['/pedidos']);
           return;
         }
@@ -580,5 +585,15 @@ export class PedidoFormComponent implements OnInit {
       }
     }
     return null;
+  }
+
+  private pedidoEsEditable(p: PedidoCanal): boolean {
+    if (p.estado === 'borrador') {
+      return true;
+    }
+    return p.estado === 'pendiente_facturar'
+      && !!this.apiService.auth_user()?.empresa?.custom_empresa?.configuraciones
+        ?.permitir_editar_pedidos_pendiente_facturar
+      && !p.id_venta;
   }
 }

@@ -8,7 +8,8 @@
 <section class="bg-white p-4 rounded mb-3">
   <p class="text-muted small mb-3">
     Nuevo pedido queda en <strong>Borrador</strong>. Use <strong>Confirmar</strong> para pasarlo a pendiente de facturar
-    (deja de ser editable).
+    <span *ngIf="!permitirEditarPedidosPendienteFacturar">(deja de ser editable)</span><span
+      *ngIf="permitirEditarPedidosPendienteFacturar">(sigue siendo editable si su empresa lo permite)</span>.
     En <strong>Pendiente de facturar</strong> use <strong>Facturar</strong> para abrir la pantalla de venta con los
     productos del pedido; al guardar la venta el pedido pasa a facturado.
     También puede <strong>Imprimir ticket</strong>. <strong>Anular</strong> aplica a borrador o pendiente de facturar.
@@ -138,7 +139,7 @@
                     class="list-group-item list-group-item-action border-0 click" (click)="editar(p)">
                     <i class="fa fa-fw fa-edit"></i> Editar
                   </a>
-                  <a *ngIf="puedeEditarPedido(p) && apiService.canEditTest('pedidos.editar')"
+                  <a *ngIf="puedeGestionarPedidoBorrador(p) && apiService.canEditTest('pedidos.editar')"
                     class="list-group-item list-group-item-action border-0 click" (click)="confirmar(p)">
                     <i class="fa fa-fw fa-check"></i> Confirmar pedido
                   </a>
@@ -146,7 +147,7 @@
                     class="list-group-item list-group-item-action border-0 click" (click)="irAFacturar(p)">
                     <i class="fa fa-fw fa-file-invoice-dollar"></i> Facturar
                   </a>
-                  <a *ngIf="puedeEditarPedido(p) && apiService.canDeleteTest('pedidos.eliminar')"
+                  <a *ngIf="puedeGestionarPedidoBorrador(p) && apiService.canDeleteTest('pedidos.eliminar')"
                     class="list-group-item list-group-item-action border-0 click" (click)="eliminar(p)">
                     <i class="fa fa-fw fa-trash"></i> Eliminar
                   </a>

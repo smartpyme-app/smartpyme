@@ -63,6 +63,29 @@ class PedidoRestauranteControllerPrepararFacturaTest extends TestCase
         }
     }
 
+    public function test_update_respeta_preferencia_y_reaplica_inventario_en_pendiente(): void
+    {
+        $update = $this->methodSource(PedidoRestauranteController::class, 'update');
+
+        $this->assertNotFalse(
+            strpos($update, 'puedeEditarPedidoCanal'),
+            'update debe validar edición según estado y preferencia SP-2391'
+        );
+        $helper = $this->methodSource(PedidoRestauranteController::class, 'puedeEditarPedidoCanal');
+        $this->assertNotFalse(
+            strpos($helper, 'permitirEditarPedidosPendienteFacturar'),
+            'La preferencia por empresa controla edición en pendiente de facturar'
+        );
+        $this->assertNotFalse(
+            strpos($update, 'revertirSalidasPedido'),
+            'Al cambiar líneas en pendiente debe revertir inventario antes de guardar'
+        );
+        $this->assertNotFalse(
+            strpos($update, 'aplicarSalidasAlConfirmar'),
+            'Tras guardar líneas en pendiente debe volver a descontar inventario'
+        );
+    }
+
     private function methodSource(string $class, string $method): string
     {
         $ref = new ReflectionMethod($class, $method);

@@ -271,7 +271,7 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
   }
 
   editar(p: PedidoCanal): void {
-    if (p.estado !== 'borrador') {
+    if (!this.puedeEditarPedido(p)) {
       return;
     }
     this.router.navigate(['/pedidos/editar', p.id]);
@@ -649,11 +649,34 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
     return !!(match && match[1]);
   }
 
-  /** Borrador sin guía Boxful ya creada → se puede editar/confirmar/eliminar. */
-  puedeEditarPedido(p: any): boolean {
-    if (p.estado !== 'borrador') return false;
-    if (p.canal === 'Boxful' && this.tieneBoxfulShipmentValido(p)) return false;
+  /** Borrador sin guía Boxful ya creada → confirmar / eliminar. */
+  puedeGestionarPedidoBorrador(p: any): boolean {
+    if (p.estado !== 'borrador') {
+      return false;
+    }
+    if (p.canal === 'Boxful' && this.tieneBoxfulShipmentValido(p)) {
+      return false;
+    }
     return true;
+  }
+
+  /** Editar: borrador o pendiente de facturar si la empresa lo permite (SP-2391). */
+  puedeEditarPedido(p: any): boolean {
+    if (p.estado === 'pendiente_facturar') {
+      if (!this.permitirEditarPedidosPendienteFacturar || p.id_venta) {
+        return false;
+      }
+      if (p.canal === 'Boxful' && this.tieneBoxfulShipmentValido(p)) {
+        return false;
+      }
+      return true;
+    }
+    return this.puedeGestionarPedidoBorrador(p);
+  }
+
+  get permitirEditarPedidosPendienteFacturar(): boolean {
+    return !!this.apiService.auth_user()?.empresa?.custom_empresa?.configuraciones
+      ?.permitir_editar_pedidos_pendiente_facturar;
   }
 
   puedeGenerarGuiaBoxful(p: any): boolean {
