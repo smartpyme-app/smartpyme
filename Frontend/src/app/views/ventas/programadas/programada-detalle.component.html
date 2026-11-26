@@ -1,0 +1,128 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Factura programada</h2>
+    <div class="d-flex gap-2">
+        @if (programada?.id) {
+            <a class="btn btn-default" routerLink="/ventas/programadas/editar/{{ programada.id }}">
+                <i class="fa fa-edit"></i> Editar
+            </a>
+        }
+        <a class="btn btn-default" routerLink="/ventas/programadas"><i class="fa fa-arrow-left"></i> Regresar</a>
+    </div>
+</section>
+
+@if (loading) {
+    <section class="bg-white p-4 rounded mb-3">
+        <span class="badge bg-primary">Cargando...</span>
+    </section>
+}
+
+@if (programada && !loading) {
+    <section class="bg-white p-4 rounded mb-3">
+        <div class="row">
+            <div class="col-md-6 mb-2"><strong>Nombre:</strong> {{ programada.nombre }}</div>
+            <div class="col-md-6 mb-2"><strong>Cliente:</strong> {{ nombreCliente() }}</div>
+            <div class="col-md-6 mb-2">
+                <strong>Documento:</strong> {{ programada.documento?.nombre || '—' }}
+            </div>
+            <div class="col-md-6 mb-2">
+                <strong>Frecuencia:</strong> {{ etiquetaFrecuencia(programada.frecuencia) }}, día
+                {{ programada.dia_ejecucion }} a las {{ programada.hora_ejecucion }}
+            </div>
+            <div class="col-md-6 mb-2">
+                <strong>Próxima ejecución:</strong>
+                {{ programada.proxima_ejecucion | date: 'dd/MM/yyyy HH:mm' }}
+            </div>
+            <div class="col-md-6 mb-2">
+                <strong>Activa:</strong> {{ programada.activo ? 'Sí' : 'No' }} ·
+                <strong>Emitir auto:</strong> {{ programada.emitir_automatico ? 'Sí' : 'No' }} ·
+                <strong>Email:</strong> {{ programada.enviar_email ? 'Sí' : 'No' }}
+            </div>
+            @if (programada.max_ejecuciones) {
+                <div class="col-md-6 mb-2">
+                    <strong>Máx. ejecuciones:</strong> {{ programada.max_ejecuciones }}
+                </div>
+            }
+        </div>
+
+        <h3 class="h5 mt-3">Líneas</h3>
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th class="text-end">Cantidad</th>
+                        <th class="text-end">Precio</th>
+                        <th class="text-end">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (d of programada.detalles; track d.id) {
+                        <tr>
+                            <td>{{ d.descripcion || d.producto?.nombre || 'Producto #' + d.id_producto }}</td>
+                            <td class="text-end">{{ d.cantidad }}</td>
+                            <td class="text-end">{{ d.precio | currency }}</td>
+                            <td class="text-end">{{ d.total | currency }}</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="3" class="text-end">Total</th>
+                        <th class="text-end">{{ programada.total | currency }}</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
+
+    <section class="bg-white p-4 rounded mb-3">
+        <h3 class="h5 mb-3">Historial de ejecuciones</h3>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Programada para</th>
+                        <th>Ejecutada</th>
+                        <th>Estado</th>
+                        <th>Modo</th>
+                        <th>Venta</th>
+                        <th>Error</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (loadingEjecuciones) {
+                        <tr>
+                            <td colspan="6" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (!loadingEjecuciones && ejecuciones?.total < 1) {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">Sin ejecuciones registradas</td>
+                        </tr>
+                    }
+                    @for (e of ejecuciones?.data; track e.id) {
+                        <tr>
+                            <td>{{ e.programada_para | date: 'dd/MM/yyyy HH:mm' }}</td>
+                            <td>{{ e.ejecutada_en ? (e.ejecutada_en | date: 'dd/MM/yyyy HH:mm') : '—' }}</td>
+                            <td>{{ e.estado || '—' }}</td>
+                            <td>{{ e.modo || '—' }}</td>
+                            <td>
+                                @if (e.id_venta) {
+                                    <a routerLink="/venta/{{ e.id_venta }}">#{{ e.id_venta }}</a>
+                                } @else {
+                                    —
+                                }
+                            </td>
+                            <td class="text-danger small">{{ e.mensaje_error || '' }}</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (ejecuciones?.last_page > 1) {
+            <app-pagination [items]="ejecuciones" (setPagination)="setPagination($event)"></app-pagination>
+        }
+    </section>
+}

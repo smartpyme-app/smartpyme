@@ -1,0 +1,185 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">{{ titulo }}</h2>
+    <a routerLink="/ventas/programadas" class="btn btn-default"><i class="fa fa-arrow-left"></i> Regresar</a>
+</section>
+
+@if (loading) {
+    <section class="bg-white p-4 rounded mb-3">
+        <span class="badge bg-primary">Cargando...</span>
+    </section>
+}
+
+<section class="bg-white p-4 rounded mb-3">
+    <form (ngSubmit)="guardar()" autocomplete="off">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Nombre</label>
+                <input class="form-control" type="text" name="nombre" [(ngModel)]="form.nombre" required />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Cliente</label>
+                <ng-select
+                    name="id_cliente"
+                    [items]="clientes"
+                    bindValue="id"
+                    bindLabel="nombre_completo"
+                    [(ngModel)]="form.id_cliente"
+                    placeholder="Seleccionar cliente">
+                </ng-select>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Tipo de documento</label>
+                <ng-select
+                    name="id_documento"
+                    [items]="documentos"
+                    bindValue="id"
+                    bindLabel="nombre"
+                    [(ngModel)]="form.id_documento"
+                    placeholder="Seleccionar documento">
+                </ng-select>
+            </div>
+        </div>
+
+        <h3 class="h5 mt-2 mb-3">Líneas</h3>
+        <div class="table-responsive mb-3">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th class="text-end" style="width: 7rem">Cantidad</th>
+                        <th class="text-end" style="width: 8rem">Precio</th>
+                        <th class="text-end" style="width: 8rem">Total</th>
+                        <th style="width: 3rem"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (linea of form.detalles; track $index) {
+                        <tr>
+                            <td>
+                                <ng-select
+                                    [items]="productos"
+                                    bindValue="id"
+                                    bindLabel="nombre"
+                                    [(ngModel)]="linea.id_producto"
+                                    [name]="'id_producto_' + $index"
+                                    (ngModelChange)="onProductoChange(linea)"
+                                    placeholder="Producto">
+                                </ng-select>
+                            </td>
+                            <td>
+                                <input
+                                    class="form-control text-end"
+                                    type="number"
+                                    min="0.01"
+                                    step="0.01"
+                                    [name]="'cantidad_' + $index"
+                                    [(ngModel)]="linea.cantidad"
+                                    (ngModelChange)="actualizarLinea(linea)" />
+                            </td>
+                            <td>
+                                <input
+                                    class="form-control text-end"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    [name]="'precio_' + $index"
+                                    [(ngModel)]="linea.precio"
+                                    (ngModelChange)="actualizarLinea(linea)" />
+                            </td>
+                            <td class="text-end align-middle">{{ linea.total | currency }}</td>
+                            <td class="align-middle">
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-light text-danger"
+                                    (click)="quitarLinea($index)"
+                                    [disabled]="form.detalles.length < 2">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <button type="button" class="btn btn-default mb-4" (click)="agregarLinea()">
+            <i class="fa fa-plus"></i> Agregar línea
+        </button>
+
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Frecuencia</label>
+                <select class="form-select" name="frecuencia" [(ngModel)]="form.frecuencia">
+                    <option value="mensual">Mensual</option>
+                    <option value="anual">Anual</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Día del mes</label>
+                <input
+                    class="form-control"
+                    type="number"
+                    min="1"
+                    max="31"
+                    name="dia_ejecucion"
+                    [(ngModel)]="form.dia_ejecucion" />
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Hora</label>
+                <input class="form-control" type="time" name="hora_ejecucion" [(ngModel)]="form.hora_ejecucion" />
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Máx. ejecuciones (opcional)</label>
+                <input
+                    class="form-control"
+                    type="number"
+                    min="1"
+                    name="max_ejecuciones"
+                    [(ngModel)]="form.max_ejecuciones" />
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="form-check">
+                    <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="activo"
+                        name="activo"
+                        [(ngModel)]="form.activo" />
+                    <label class="form-check-label" for="activo">Activa</label>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-check">
+                    <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="emitir_automatico"
+                        name="emitir_automatico"
+                        [(ngModel)]="form.emitir_automatico"
+                        (ngModelChange)="onEmitirAutomaticoChange()" />
+                    <label class="form-check-label" for="emitir_automatico">Emitir factura automáticamente</label>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-check">
+                    <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="enviar_email"
+                        name="enviar_email"
+                        [(ngModel)]="form.enviar_email"
+                        [disabled]="!form.emitir_automatico" />
+                    <label class="form-check-label" for="enviar_email">Enviar email al cliente</label>
+                </div>
+            </div>
+        </div>
+
+        <p class="text-end text-muted mb-3">Total plantilla: <strong>{{ totalDocumento | currency }}</strong></p>
+
+        <button type="submit" class="btn btn-primary" [disabled]="saving">
+            {{ saving ? 'Guardando...' : 'Guardar' }}
+        </button>
+    </form>
+</section>

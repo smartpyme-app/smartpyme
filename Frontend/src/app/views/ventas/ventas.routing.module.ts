@@ -10,7 +10,8 @@ import { VentaComponent } from '@views/ventas/venta/venta.component';
 
 import { RecurrentesComponent } from '@views/ventas/recurrentes/recurrentes.component';
 import { ProgramadasComponent } from '@views/ventas/programadas/programadas.component';
-import { ProgramadaStubComponent } from '@views/ventas/programadas/programada-stub.component';
+import { ProgramadaFormComponent } from '@views/ventas/programadas/programada-form.component';
+import { ProgramadaDetalleComponent } from '@views/ventas/programadas/programada-detalle.component';
 import { CreditosComponent } from '@views/ventas/creditos/creditos.component';
 import { CreditoFormComponent } from '@views/ventas/creditos/credito-form.component';
 import { CreditoDetalleComponent } from '@views/ventas/creditos/credito-detalle.component';
@@ -62,9 +63,9 @@ const routes: Routes = [
 
         { path: 'ventas/recurrentes', canActivate: [AdminGuard], component: RecurrentesComponent, title: 'Abonos de ventas'},
         { path: 'ventas/programadas', canActivate: [AdminGuard], component: ProgramadasComponent, title: 'Facturas Programadas' },
-        { path: 'ventas/programadas/crear', canActivate: [AdminGuard], component: ProgramadaStubComponent, title: 'Crear factura programada' },
-        { path: 'ventas/programadas/ver/:id', canActivate: [AdminGuard], component: ProgramadaStubComponent, title: 'Factura programada' },
-        { path: 'ventas/programadas/editar/:id', canActivate: [AdminGuard], component: ProgramadaStubComponent, title: 'Editar factura programada' },
+        { path: 'ventas/programadas/crear', canActivate: [AdminGuard], component: ProgramadaFormComponent, title: 'Crear factura programada' },
+        { path: 'ventas/programadas/ver/:id', canActivate: [AdminGuard], component: ProgramadaDetalleComponent, title: 'Factura programada' },
+        { path: 'ventas/programadas/editar/:id', canActivate: [AdminGuard], component: ProgramadaFormComponent, title: 'Editar factura programada' },
         { path: 'ventas/creditos/nuevo', redirectTo: '/clientes/creditos/nuevo' },
         { path: 'ventas/creditos/:id', redirectTo: '/clientes/creditos/:id' },
         { path: 'ventas/creditos', redirectTo: '/clientes/creditos' },
