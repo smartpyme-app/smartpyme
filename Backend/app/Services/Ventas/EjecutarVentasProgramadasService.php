@@ -13,11 +13,10 @@ use App\Services\FacturacionElectronica\FacturacionElectronicaCountryGate;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use ReflectionMethod;
 
 /**
- * Cron de facturas programadas. No toca GenerarVentasRecurrentesService: crea la venta con
- * FacturacionService::procesar (igual que recurrentes) y reutiliza su emisión DTE SV.
+ * Cron de facturas programadas. Crea la venta con FacturacionService::procesar (igual que recurrentes)
+ * y reutiliza la API pública de GenerarVentasRecurrentesService (emitir, enviarFacturaAlCliente, ejecutarComoUsuario).
  */
 class EjecutarVentasProgramadasService
 {
@@ -38,7 +37,6 @@ class EjecutarVentasProgramadasService
             ->orderBy('proxima_ejecucion')
             ->pluck('id');
 
-        // ponytail: sin lock de fila; la exclusión la da withoutOverlapping() del schedule.
         foreach ($ids as $id) {
             $programada = VentaProgramada::with(['detalles'])->find($id);
             if (!$programada || !$programada->activo || $programada->proxima_ejecucion->greaterThan($now)) {
@@ -67,6 +65,13 @@ class EjecutarVentasProgramadasService
 
         $programadaPara = $programada->proxima_ejecucion->copy();
         $periodo = ProgramacionCalendario::periodo($programada->frecuencia, $programadaPara);
+
+        // Claim atómico: avanza proxima_ejecucion ANTES de crear la venta. Si otro proceso ya la tomó (0 filas), se omite.
+        // Tras el claim, cualquier fallo deja historial y no reprocesa el slot cada 15 min.
+        if (!$this->reclamar($programada, $programadaPara, $now)) {
+            return;
+        }
+        $programada->refresh();
         $estado = 'ok';
         $modo = 'borrador';
         $idVenta = null;
@@ -78,8 +83,7 @@ class EjecutarVentasProgramadasService
             $mensaje = 'Ya existe una ejecución ok para el periodo '.$periodo.'.';
         } else {
             try {
-                [$venta, $modo, $mensaje] = $this->crearVenta($programada, $programadaPara, $periodo);
-                $idVenta = $venta->id;
+                [$venta, $modo, $mensaje] = $this->crearVenta($programada, $programadaPara, $periodo, $idVenta);
             } catch (\Throwable $e) {
                 $estado = 'error';
                 $mensaje = $e->getMessage();
@@ -101,8 +105,20 @@ class EjecutarVentasProgramadasService
             'mensaje_error' => $mensaje,
         ]);
 
-        // Siempre avanza (también en error): sin reintentos de 15 min. Salta periodos ya vencidos (sin backfill).
-        $proxima = $programadaPara;
+        $programada->ejecuciones_count += $estado === 'ok' ? 1 : 0;
+        if ($estado === 'ok' && $this->maximoAlcanzado($programada)) {
+            $programada->activo = false;
+        }
+        $programada->save();
+    }
+
+    /**
+     * UPDATE condicional: avanza proxima_ejecucion (siempre, también si luego falla; sin backfill de periodos vencidos)
+     * solo si sigue igual al valor leído. @return bool true si este proceso ganó el slot.
+     */
+    public function reclamar(VentaProgramada $programada, Carbon $programadaPara, Carbon $now): bool
+    {
+        $proxima = $programadaPara->copy();
         do {
             $proxima = ProgramacionCalendario::siguienteTrasEjecucion(
                 $programada->frecuencia,
@@ -112,12 +128,11 @@ class EjecutarVentasProgramadasService
             );
         } while ($proxima->lessThanOrEqualTo($now));
 
-        $programada->ejecuciones_count += $estado === 'ok' ? 1 : 0;
-        $programada->proxima_ejecucion = $proxima;
-        if ($estado === 'ok' && $this->maximoAlcanzado($programada)) {
-            $programada->activo = false;
-        }
-        $programada->save();
+        return VentaProgramada::query()
+            ->where('id', $programada->id)
+            ->where('activo', true)
+            ->where('proxima_ejecucion', $programada->getRawOriginal('proxima_ejecucion'))
+            ->update(['proxima_ejecucion' => $proxima]) === 1;
     }
 
     private function maximoAlcanzado(VentaProgramada $p): bool
@@ -126,7 +141,7 @@ class EjecutarVentasProgramadasService
     }
 
     /** @return array{0: Venta, 1: string, 2: ?string} venta, modo (emitida|borrador), aviso */
-    private function crearVenta(VentaProgramada $p, Carbon $programadaPara, string $periodo): array
+    private function crearVenta(VentaProgramada $p, Carbon $programadaPara, string $periodo, ?int &$idVenta): array
     {
         $empresa = Empresa::findOrFail($p->id_empresa);
         $usuario = User::withoutGlobalScopes()
@@ -140,7 +155,7 @@ class EjecutarVentasProgramadasService
             throw new \RuntimeException('No hay documento fiscal válido en la factura programada.');
         }
 
-        return $this->comoUsuario($usuario, function () use ($p, $empresa, $usuario, $documento, $programadaPara, $periodo) {
+        return $this->comoUsuario($usuario, function () use ($p, $empresa, $usuario, $documento, $programadaPara, $periodo, &$idVenta) {
             $request = Request::create('/internal/ventas-programadas', 'POST',
                 $this->payload($p, $documento, $programadaPara, $periodo));
             $request->setUserResolver(static fn () => $usuario);
@@ -148,6 +163,7 @@ class EjecutarVentasProgramadasService
 
             $this->facturacion->assertReglasNegocio($usuario, $request);
             $venta = $this->facturacion->procesar($usuario, $request);
+            $idVenta = $venta->id; // queda en historial aunque falle la emisión
 
             if (!$p->emitir_automatico) {
                 return [$venta, 'borrador', null];
@@ -160,13 +176,13 @@ class EjecutarVentasProgramadasService
             }
 
             // Si emitir falla, la excepción sube y queda estado=error (la venta queda creada como Pendiente).
-            $this->llamarRecurrentes('emitir', $venta, $empresa);
+            $this->recurrentes->emitir($venta, $empresa);
             $venta->refresh();
 
             $aviso = null;
             if ($p->enviar_email) { // correo al cliente SOLO si emitió y enviar_email
                 try {
-                    $this->llamarRecurrentes('enviarFacturaAlCliente', $venta);
+                    $this->recurrentes->enviarFacturaAlCliente($venta);
                 } catch (\Throwable $e) {
                     $aviso = 'DTE emitido pero no se envió al cliente: '.$e->getMessage();
                 }
@@ -232,22 +248,8 @@ class EjecutarVentasProgramadasService
         ];
     }
 
-    /**
-     * ponytail: reflexión sobre métodos privados de recurrentes para no modificar ese servicio
-     * (cero cambio de comportamiento). Techo: si renombran emitir/enviarFacturaAlCliente falla aquí;
-     * upgrade: extraer a un servicio compartido de emisión DTE SV.
-     */
-    private function llamarRecurrentes(string $metodo, mixed ...$args): mixed
-    {
-        $m = new ReflectionMethod($this->recurrentes, $metodo);
-        $m->setAccessible(true);
-
-        return $m->invoke($this->recurrentes, ...$args);
-    }
-
-    /** Impersona al usuario (Auth web/api) como recurrentes; ver GenerarVentasRecurrentesService::ejecutarComoUsuario. */
     private function comoUsuario(User $usuario, callable $callback): mixed
     {
-        return $this->llamarRecurrentes('ejecutarComoUsuario', $usuario, $callback);
+        return $this->recurrentes->ejecutarComoUsuario($usuario, $callback);
     }
 }

@@ -284,7 +284,8 @@ class GenerarVentasRecurrentesService
     /**
      * Impersona al usuario de la plantilla (setUser, no Login) en web y api — solo cron recurrentes / facturación interna.
      */
-    private function ejecutarComoUsuario(User $usuario, callable $callback): mixed
+    /** API pública también usada por EjecutarVentasProgramadasService. */
+    public function ejecutarComoUsuario(User $usuario, callable $callback): mixed
     {
         $web = Auth::guard('web');
         $api = Auth::guard('api');
@@ -541,7 +542,8 @@ class GenerarVentasRecurrentesService
         return $data;
     }
 
-    private function emitir(Venta $venta, Empresa $empresa): void
+    /** API pública también usada por EjecutarVentasProgramadasService. */
+    public function emitir(Venta $venta, Empresa $empresa): void
     {
         $this->validarRequisitosEmisionFe($empresa, $venta);
 
@@ -755,7 +757,8 @@ class GenerarVentasRecurrentesService
     }
 
     /** Mismo criterio que facturas:generar-suscripciones (sin HTTP ni scopes Auth en consola). */
-    private function enviarFacturaAlCliente(Venta $venta): void
+    /** API pública también usada por EjecutarVentasProgramadasService. */
+    public function enviarFacturaAlCliente(Venta $venta): void
     {
         $venta = Venta::withoutGlobalScopes()
             ->with(['cliente' => fn ($q) => $q->withoutGlobalScope('empresa')])
