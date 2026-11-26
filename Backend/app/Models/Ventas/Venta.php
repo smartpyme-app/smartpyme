@@ -75,6 +75,7 @@ class Venta extends AuditableModel {
         'dia_generacion_recurrencia',
         'id_venta_plantilla',
         'periodo_recurrencia',
+        'id_venta_programada',
         'cotizacion',
         'descripcion_personalizada',
         'descripcion_impresion',
@@ -416,6 +417,11 @@ class Venta extends AuditableModel {
 
     public function detalles(){
         return $this->hasMany('App\Models\Ventas\Detalle','id_venta');
+    }
+
+    public function ventaProgramada()
+    {
+        return $this->belongsTo(VentaProgramada::class, 'id_venta_programada');
     }
 
     public function giftCardsEmitidas()
