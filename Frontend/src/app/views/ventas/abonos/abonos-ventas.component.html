@@ -39,6 +39,7 @@
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/devoluciones/ventas">Devoluciones</button>
             <button class="btn tcla-F5 " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ventas/abonos" (click)="loadAll()" >Abonos</button>
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ventas/recurrentes">Recurrentes</button>
+            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ventas/programadas">Programadas</button>
         </div>
         <div class="ms-auto d-flex gap-2">
             <select name="estado" (change)="filtrarAbonos()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">

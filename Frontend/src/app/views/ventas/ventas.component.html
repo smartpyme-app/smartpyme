@@ -54,6 +54,9 @@
             <button class="btn " routerLinkActive="btn-primary"
                 [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored' }"
                 routerLink="/ventas/recurrentes">Recurrentes</button>
+            <button class="btn " routerLinkActive="btn-primary"
+                [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored' }"
+                routerLink="/ventas/programadas">Programadas</button>
         </div>
         <div class="ms-auto d-flex gap-2">
             <select name="estado" (change)="filtrarVentas()" [(ngModel)]="filtros.estado"
