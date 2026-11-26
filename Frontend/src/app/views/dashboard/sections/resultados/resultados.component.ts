@@ -44,6 +44,7 @@ import { ChartCardComponent } from '../../components/chart-card/chart-card.compo
 import { BudgetCardComponent } from '../../components/budget-card/budget-card.component';
 import { ChartExpandableComponent } from '../../components/chart-expandable/chart-expandable.component';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 @Component({
   selector: 'app-resultados',
   templateUrl: './resultados.component.html',
@@ -1518,7 +1519,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
   exportarVentasCSV(): void {
     if (this.ventasGridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
+      const fecha = fechaLocal();
       this.ventasGridApi.exportDataAsCsv({ fileName: `ventas-mes-${fecha}.csv` });
     } else {
       alert('No hay datos de ventas para exportar');
@@ -1527,7 +1528,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
   exportarGastosCSV(): void {
     if (this.gastosGridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
+      const fecha = fechaLocal();
       this.gastosGridApi.exportDataAsCsv({ fileName: `gastos-mes-${fecha}.csv` });
     } else {
       alert('No hay datos de gastos para exportar');
@@ -1536,7 +1537,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
   exportarCobrar30CSV(): void {
     if (this.cobrar30GridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
+      const fecha = fechaLocal();
       this.cobrar30GridApi.exportDataAsCsv({ fileName: `cxc-30-dias-${fecha}.csv` });
     } else {
       alert('No hay datos de CXC para exportar');
@@ -1545,7 +1546,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
   exportarPagar30CSV(): void {
     if (this.pagar30GridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
+      const fecha = fechaLocal();
       this.pagar30GridApi.exportDataAsCsv({ fileName: `cxp-30-dias-${fecha}.csv` });
     } else {
       alert('No hay datos de CXP para exportar');
@@ -1569,7 +1570,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (page) => {
-          const fecha = new Date().toISOString().split('T')[0];
+          const fecha = fechaLocal();
           const cols = this.ventasColumnDefs.filter((c) => c.field);
           const header = cols
             .map((c) => this.csvEscape(String(c.headerName || c.field)))
@@ -1613,7 +1614,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (page) => {
-          const fecha = new Date().toISOString().split('T')[0];
+          const fecha = fechaLocal();
           const cols = this.gastosColumnDefs.filter((c) => c.field);
           const header = cols
             .map((c) => this.csvEscape(String(c.headerName || c.field)))
@@ -1647,12 +1648,12 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   exportarCobrar30Excel(): void {
-    const fecha = new Date().toISOString().split('T')[0];
+    const fecha = fechaLocal();
     this.exportarComoExcel(this.cobrar30GridApi, `cxc-30-dias-${fecha}.xlsx`);
   }
 
   exportarPagar30Excel(): void {
-    const fecha = new Date().toISOString().split('T')[0];
+    const fecha = fechaLocal();
     this.exportarComoExcel(this.pagar30GridApi, `cxp-30-dias-${fecha}.xlsx`);
   }
 
@@ -1667,7 +1668,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (page) => {
-          const fecha = new Date().toISOString().split('T')[0];
+          const fecha = fechaLocal();
           const cols = this.abonosCxcColumnDefs.filter((c) => c.field);
           const header = cols
             .map((c) => this.csvEscape(String(c.headerName || c.field)))
@@ -1711,7 +1712,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (page) => {
-          const fecha = new Date().toISOString().split('T')[0];
+          const fecha = fechaLocal();
           const cols = this.abonosCxpColumnDefs.filter((c) => c.field);
           const header = cols
             .map((c) => this.csvEscape(String(c.headerName || c.field)))
@@ -1774,7 +1775,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
   exportarVentasPivot(): void {
     if (this._ventasPivotInstance) {
-      this._ventasPivotInstance.exportTo('csv', { filename: `ventas-mes-${new Date().toISOString().split('T')[0]}` });
+      this._ventasPivotInstance.exportTo('csv', { filename: `ventas-mes-${fechaLocal()}` });
     } else {
       alert('No hay datos de ventas para exportar');
     }
@@ -1808,7 +1809,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
   exportarGastosPivot(): void {
     if (this._gastosPivotInstance) {
-      this._gastosPivotInstance.exportTo('csv', { filename: `gastos-mes-${new Date().toISOString().split('T')[0]}` });
+      this._gastosPivotInstance.exportTo('csv', { filename: `gastos-mes-${fechaLocal()}` });
     } else {
       alert('No hay datos de gastos para exportar');
     }
@@ -1844,7 +1845,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
   exportarCobrar30Pivot(): void {
     if (this._cobrar30PivotInstance) {
-      this._cobrar30PivotInstance.exportTo('csv', { filename: `cxc-30-dias-${new Date().toISOString().split('T')[0]}` });
+      this._cobrar30PivotInstance.exportTo('csv', { filename: `cxc-30-dias-${fechaLocal()}` });
     } else {
       alert('No hay datos de CXC para exportar');
     }
@@ -1880,7 +1881,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
   exportarPagar30Pivot(): void {
     if (this._pagar30PivotInstance) {
-      this._pagar30PivotInstance.exportTo('csv', { filename: `cxp-30-dias-${new Date().toISOString().split('T')[0]}` });
+      this._pagar30PivotInstance.exportTo('csv', { filename: `cxp-30-dias-${fechaLocal()}` });
     } else {
       alert('No hay datos de CXP para exportar');
     }
@@ -1888,12 +1889,12 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
   exportarVentas(): void {
     if (this.ventasGridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
+      const fecha = fechaLocal();
       this.ventasGridApi.exportDataAsCsv({
         fileName: `ventas-mes-${fecha}.csv`
       });
     } else if (this.ventasRows.length > 0) {
-      const fecha = new Date().toISOString().split('T')[0];
+      const fecha = fechaLocal();
       this.exportarACSV(this.ventasRows, this.ventasColumns, `ventas-mes-${fecha}.csv`);
     } else {
       alert('No hay datos de ventas para exportar');
@@ -1902,12 +1903,12 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
   exportarGastos(): void {
     if (this.gastosGridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
+      const fecha = fechaLocal();
       this.gastosGridApi.exportDataAsCsv({
         fileName: `gastos-mes-${fecha}.csv`
       });
     } else if (this.gastosRows.length > 0) {
-      const fecha = new Date().toISOString().split('T')[0];
+      const fecha = fechaLocal();
       this.exportarACSV(this.gastosRows, this.gastosColumns, `gastos-mes-${fecha}.csv`);
     } else {
       alert('No hay datos de gastos para exportar');
@@ -2049,10 +2050,10 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
   exportarCobrar30(): void {
     if (this.cobrar30GridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
+      const fecha = fechaLocal();
       this.cobrar30GridApi.exportDataAsCsv({ fileName: `cuentas-por-cobrar-30-dias-${fecha}.csv` });
     } else if (this.cobrar30Rows.length > 0) {
-      const fecha = new Date().toISOString().split('T')[0];
+      const fecha = fechaLocal();
       this.exportarACSV(this.cobrar30Rows, this.cobrar30Columns, `cuentas-por-cobrar-30-dias-${fecha}.csv`);
     } else {
       alert('No hay datos para exportar');
@@ -2061,10 +2062,10 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
   exportarPagar30(): void {
     if (this.pagar30GridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
+      const fecha = fechaLocal();
       this.pagar30GridApi.exportDataAsCsv({ fileName: `cuentas-por-pagar-30-dias-${fecha}.csv` });
     } else if (this.pagar30Rows.length > 0) {
-      const fecha = new Date().toISOString().split('T')[0];
+      const fecha = fechaLocal();
       this.exportarACSV(this.pagar30Rows, this.pagar30Columns, `cuentas-por-pagar-30-dias-${fecha}.csv`);
     } else {
       alert('No hay datos para exportar');

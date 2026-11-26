@@ -24,6 +24,7 @@ import {
   validarCodigoSupervisor,
 } from './restaurante-cerrar-mesa.util';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 @Component({
   standalone: false,
   selector: 'app-restaurante',
@@ -285,7 +286,7 @@ export class RestauranteComponent implements OnInit {
   abrirReservarDesdeAccion(): void {
     this.modalAccionLibreRef?.hide();
     if (!this.mesaSeleccionada) return;
-    const hoy = new Date().toISOString().slice(0, 10);
+    const hoy = fechaLocal();
     this.reservaForm = {
       mesa_id: this.mesaSeleccionada.id,
       fecha_reserva: hoy,

@@ -33,6 +33,7 @@ import { AccountsListComponent } from '../../components/accounts-list/accounts-l
 import { ChartExpandableComponent } from '../../components/chart-expandable/chart-expandable.component';
 import { CountryI18nService } from '@services/country-i18n.service';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 @Component({
   selector: 'app-gastos',
   templateUrl: './gastos.component.html',
@@ -937,7 +938,7 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (page) => {
-          const fecha = new Date().toISOString().split('T')[0];
+          const fecha = fechaLocal();
           const cols = this.detalleGastosColumnDefs.filter((c) => c.field);
           const header = cols
             .map((c) => this.csvEscape(String(c.headerName || c.field)))

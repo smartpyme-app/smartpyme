@@ -5,6 +5,7 @@ import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 @Component({
   selector: 'app-cliente-nota-modal',
   standalone: true,
@@ -50,7 +51,7 @@ export class ClienteNotaModalComponent {
 
     this.noteForm.reset({
       tipo: '',
-      fecha: new Date().toISOString().split('T')[0],
+      fecha: fechaLocal(),
       hora: new Date().toTimeString().slice(0, 5),
       titulo: '',
       responsable: '',
@@ -229,7 +230,7 @@ export class ClienteNotaModalComponent {
   private initializeNoteForm(): void {
     this.noteForm = this.formBuilder.group({
       tipo: ['', Validators.required],
-      fecha: [new Date().toISOString().split('T')[0], Validators.required],
+      fecha: [fechaLocal(), Validators.required],
       hora: ['14:30', Validators.required],
       titulo: ['', [Validators.required, Validators.minLength(5)]],
       responsable: ['', Validators.required],

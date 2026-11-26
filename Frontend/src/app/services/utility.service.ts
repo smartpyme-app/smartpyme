@@ -4,6 +4,7 @@ import { HttpService } from '@services/http.service';
 import { AlertService } from '@services/alert.service';
 import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { dedupePorCod } from '@utils/ubicacion-catalogo.util';
+import { fechaLocal, fechaHoraLocal } from '@utils/fecha-local.util';
 
 declare let $: any;
 
@@ -27,57 +28,14 @@ export class UtilityService {
     }
   }
 
+  /** Hoy (YYYY-MM-DD) en la zona horaria del país de la empresa, no la del equipo. */
   date(): string {
-    let today = new Date();
-    let dd = today.getDate();
-    let mm = today.getMonth() + 1;
-    let d: string;
-    let m: string;
-    var yyyy = today.getFullYear();
-    if (dd < 10) {
-      d = '0' + dd;
-    } else {
-      d = dd.toString();
-    }
-    if (mm < 10) {
-      m = '0' + mm;
-    } else {
-      m = mm.toString();
-    }
-    let date: string = yyyy + '-' + m + '-' + d;
-    return date;
+    return fechaLocal();
   }
 
+  /** Ahora (YYYY-MM-DD HH:mm:ss) en la zona horaria del país de la empresa. */
   datetime(): string {
-    let today = new Date();
-    let dd = today.getDate();
-    let mm = today.getMonth() + 1;
-    let hh = today.getHours();
-    let min = today.getMinutes();
-    let sec = today.getSeconds();
-    let d: string;
-    let m: string;
-    let h: string;
-    let se: string;
-    var yyyy = today.getFullYear();
-    if (dd < 10) {
-      d = '0' + dd;
-    } else {
-      d = dd.toString();
-    }
-    if (mm < 10) {
-      m = '0' + mm;
-    } else {
-      m = mm.toString();
-    }
-    if (sec < 10) {
-      se = '0' + sec;
-    } else {
-      se = sec.toString();
-    }
-    let datetime: string =
-      yyyy + '-' + m + '-' + d + ' ' + hh + ':' + min + ':' + se;
-    return datetime;
+    return fechaHoraLocal();
   }
 
   dataURItoBlob(dataURI: any): Blob {

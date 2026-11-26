@@ -9,6 +9,7 @@ import { ApiService } from '@services/api.service';
 import { FileService } from '@services/file.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 @Component({
     selector: 'app-crear-orden-produccion',
     templateUrl: './crear-orden-produccion.component.html',
@@ -18,7 +19,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 })
 export class CrearOrdenProduccionComponent implements OnInit {
   public orden: any = {
-    fecha: new Date().toISOString().split('T')[0],
+    fecha: fechaLocal(),
     estado: 'creada',
     detalles: [],
     // estado: 'pendiente',
@@ -83,7 +84,7 @@ export class CrearOrdenProduccionComponent implements OnInit {
 
         this.orden = {
           id: response.id,
-          fecha: new Date().toISOString().split('T')[0],
+          fecha: fechaLocal(),
           fecha_entrega: new Date(this.cotizacion.fecha_entrega)
             .toISOString()
             .split('T')[0],
@@ -154,8 +155,8 @@ export class CrearOrdenProduccionComponent implements OnInit {
         }
 
         this.orden = {
-          fecha: new Date().toISOString().split('T')[0],
-          fecha_entrega: new Date().toISOString().split('T')[0],
+          fecha: fechaLocal(),
+          fecha_entrega: fechaLocal(),
           // estado: 'pendiente',
           estado: 'creada',
           id_cotizacion: this.cotizacion.id,

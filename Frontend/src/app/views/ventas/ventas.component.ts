@@ -69,6 +69,7 @@ import {
   textoAjusteListado,
 } from '@shared/utils/documento-ajuste-badges.util';
 
+import { fechaLocal, fechaLocalMasDias } from '@utils/fecha-local.util';
 export type VentasExportPeriodoTipo = 'detalles' | 'ventas' | 'general';
 
 @Component({
@@ -1400,9 +1401,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       }
       // Si no hay fecha de pago, establecer una fecha por defecto (30 días desde hoy)
       if (!this.venta.fecha_pago) {
-        const fecha = new Date();
-        fecha.setDate(fecha.getDate() + 30);
-        this.venta.fecha_pago = fecha.toISOString().split('T')[0];
+        this.venta.fecha_pago = fechaLocalMasDias(30);
       }
     } else if (this.venta.condicion === 'Contado') {
       // Si se cambia a Contado, establecer estado como Pagada si no está anulada
@@ -1410,8 +1409,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
         this.venta.estado = 'Pagada';
       }
       // Establecer fecha de pago como la fecha actual
-      const fecha = new Date();
-      this.venta.fecha_pago = fecha.toISOString().split('T')[0];
+      this.venta.fecha_pago = fechaLocal();
     }
   }
 

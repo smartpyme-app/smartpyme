@@ -4,6 +4,7 @@ import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 @Component({
   selector: 'app-diagnostico-form',
   standalone: false,
@@ -122,7 +123,7 @@ export class DiagnosticoFormComponent implements OnInit {
 
   private vacio(): any {
     return {
-      fecha: new Date().toISOString().slice(0, 10),
+      fecha: fechaLocal(),
       descripcion: '',
       codigo: '',
       rol: 'secundario',

@@ -16,6 +16,7 @@ import { SharedModule } from '@shared/shared.module';
 import { DistribucionLotesModalComponent } from '@shared/modals/distribucion-lotes/distribucion-lotes-modal.component';
 import { textoResumenLotesDetalle } from '@utils/lotes-venta.util';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 @Component({
   selector: 'app-traslados',
   templateUrl: './traslados.component.html',
@@ -504,7 +505,7 @@ export class TrasladosComponent implements OnInit {
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `traslados-${new Date().toISOString().split('T')[0]}.pdf`;
+                a.download = `traslados-${fechaLocal()}.pdf`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
