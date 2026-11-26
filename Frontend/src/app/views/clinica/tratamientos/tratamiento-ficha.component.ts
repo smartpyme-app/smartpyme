@@ -4,6 +4,7 @@ import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 @Component({
   selector: 'app-tratamiento-ficha',
   standalone: false,
@@ -34,7 +35,7 @@ export class TratamientoFichaComponent implements OnInit {
     }
     this.idPaciente = Number(this.route.snapshot.paramMap.get('id'));
     this.idTratamiento = Number(this.route.snapshot.paramMap.get('idTratamiento'));
-    this.avance.fecha = new Date().toISOString().slice(0, 10);
+    this.avance.fecha = fechaLocal();
     this.terapia.fecha = this.avance.fecha;
     this.cargar();
   }
@@ -85,7 +86,7 @@ export class TratamientoFichaComponent implements OnInit {
       .subscribe({
         next: (respuesta) => {
           this.tratamiento = respuesta?.data ?? this.tratamiento;
-          this.avance = { fecha: new Date().toISOString().slice(0, 10), nota: '', incumplimiento: false };
+          this.avance = { fecha: fechaLocal(), nota: '', incumplimiento: false };
           this.alertService.success('Listo', 'Avance registrado.');
         },
         error: (error) => this.alertService.error(error),
@@ -98,7 +99,7 @@ export class TratamientoFichaComponent implements OnInit {
       .subscribe({
         next: (respuesta) => {
           this.tratamiento = respuesta?.data ?? this.tratamiento;
-          this.terapia = { fecha: new Date().toISOString().slice(0, 10), tipo: '', descripcion: '', notas_resultado: '' };
+          this.terapia = { fecha: fechaLocal(), tipo: '', descripcion: '', notas_resultado: '' };
           this.alertService.success('Listo', 'Terapia registrada.');
         },
         error: (error) => this.alertService.error(error),

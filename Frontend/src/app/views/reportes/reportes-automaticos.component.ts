@@ -25,6 +25,7 @@ import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/n
 import { TranslatePipe } from '@ngx-translate/core';
 import { ConsolidadoEstilosSalonComponent } from '@shared/parts/consolidado-estilos-salon/consolidado-estilos-salon.component';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 @Pipe({
     name: 'replace',
     standalone: true
@@ -134,7 +135,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
   public modalRefFechas!: BsModalRef;
   public fechaInicio: string = '';
   public fechaFin: string = '';
-  public fechaHoy: string = new Date().toISOString().split('T')[0];
+  public fechaHoy: string = fechaLocal();
   public sucursales: any[] = [];
   public sucursalesDescarga: any[] = [];
   public tipoReporte: string = '';

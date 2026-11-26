@@ -17,6 +17,7 @@ import {
   validarExoneracionForm,
 } from './fe-cr-exoneracion-detalle.util';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 @Component({
   selector: 'app-fe-cr-exoneracion-detalle-modal',
   standalone: true,
@@ -49,7 +50,7 @@ export class FeCrExoneracionDetalleModalComponent {
     this.form.nombre_institucion = normalizarCodigoInstitucionEx(this.form.nombre_institucion || '');
     this.detalleTeniaExoneracion = !!(detalle.fe_cr_exoneracion?.aplica);
     if (!this.form.fecha_emision) {
-      this.form.fecha_emision = new Date().toISOString().slice(0, 10);
+      this.form.fecha_emision = fechaLocal();
     }
     this.modalRef = this.modalService.show(this.tpl, { class: 'modal-lg', backdrop: 'static' });
   }

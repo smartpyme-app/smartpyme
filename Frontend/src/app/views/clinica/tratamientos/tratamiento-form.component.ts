@@ -4,6 +4,7 @@ import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 @Component({
   selector: 'app-tratamiento-form',
   standalone: false,
@@ -107,7 +108,7 @@ export class TratamientoFormComponent implements OnInit {
   }
 
   private vacio(): any {
-    const hoy = new Date().toISOString().slice(0, 10);
+    const hoy = fechaLocal();
     return {
       nombre: '',
       descripcion: '',

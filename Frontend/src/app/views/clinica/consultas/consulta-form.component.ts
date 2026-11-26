@@ -4,6 +4,7 @@ import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 @Component({
   selector: 'app-consulta-form',
   standalone: false,
@@ -110,7 +111,7 @@ export class ConsultaFormComponent implements OnInit {
   }
 
   private vacio(): any {
-    const hoy = new Date().toISOString().slice(0, 10);
+    const hoy = fechaLocal();
     return {
       fecha: hoy,
       hora: '',

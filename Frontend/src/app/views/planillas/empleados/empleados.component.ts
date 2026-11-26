@@ -18,6 +18,7 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 import { PlanillaNavComponent } from '../planilla-nav/planilla-nav.component';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 @Component({
     selector: 'app-empleados',
     templateUrl: './empleados.component.html',
@@ -245,7 +246,7 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
   }
 
   public openModalDarBaja(template: TemplateRef<any>, empleado: any) {
-    const hoy = new Date().toISOString().split('T')[0];
+    const hoy = fechaLocal();
     // Pasar el empleado: openModal() sin item reemplaza this.empleado por uno nuevo y pierde el id.
     super.openModal(template, {
       ...empleado,

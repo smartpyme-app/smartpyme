@@ -10,6 +10,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 
+import { fechaLocal } from '@utils/fecha-local.util';
 @Component({
   selector: 'app-prestamos',
   standalone: true,
@@ -37,7 +38,7 @@ export class PrestamosComponent implements OnInit {
     id_empleado: null,
     monto_inicial: null,
     descripcion: 'Préstamo personal autorizado',
-    fecha_desembolso: new Date().toISOString().slice(0, 10),
+    fecha_desembolso: fechaLocal(),
   };
   savingPrestamo = false;
   empleadosParaSelect: any[] = [];
@@ -48,7 +49,7 @@ export class PrestamosComponent implements OnInit {
     monto: null,
     tipo: 'abono_efectivo',
     descripcion: 'Abono según recibo efectivo',
-    fecha: new Date().toISOString().slice(0, 10),
+    fecha: fechaLocal(),
   };
   prestamosParaAbono: any[] = [];
   empleadoParaAbono: any = null;
@@ -95,7 +96,7 @@ export class PrestamosComponent implements OnInit {
         monto: null,
         tipo: 'abono_efectivo',
         descripcion: 'Abono según recibo efectivo',
-        fecha: new Date().toISOString().slice(0, 10),
+        fecha: fechaLocal(),
       };
     }
   }
@@ -187,7 +188,7 @@ export class PrestamosComponent implements OnInit {
           id_empleado: null,
           monto_inicial: null,
           descripcion: 'Préstamo personal autorizado',
-          fecha_desembolso: new Date().toISOString().slice(0, 10),
+          fecha_desembolso: fechaLocal(),
         };
         this.setTab('listado');
         this.cargarPrestamos();
@@ -232,7 +233,7 @@ export class PrestamosComponent implements OnInit {
           monto: null,
           tipo: 'abono_efectivo',
           descripcion: 'Abono según recibo efectivo',
-          fecha: new Date().toISOString().slice(0, 10),
+          fecha: fechaLocal(),
         };
         this.prestamosParaAbono = [];
         this.empleadoParaAbono = null;
