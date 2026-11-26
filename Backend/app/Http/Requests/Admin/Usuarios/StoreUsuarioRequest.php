@@ -78,6 +78,7 @@ class StoreUsuarioRequest extends FormRequest
                 ]
             ),
             'rol_id'        => 'nullable|integer|exists:roles,id',
+            'codigo_autorizacion' => 'sometimes|nullable|numeric|digits_between:3,10',
             'whatsapp_verified' => 'sometimes|boolean',
             'file'          => 'sometimes|file|image|mimes:jpeg,png,jpg,gif,svg|max:5120',
         ];
@@ -108,6 +109,8 @@ class StoreUsuarioRequest extends FormRequest
             'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
             'password.regex' => 'La contraseña debe contener al menos una letra minúscula, una mayúscula, un número y un carácter especial.',
             'rol_id.exists' => 'El rol seleccionado no existe.',
+            'codigo_autorizacion.numeric' => 'El código de autorización debe ser numérico.',
+            'codigo_autorizacion.digits_between' => 'El código de autorización debe tener entre 3 y 10 dígitos.',
             'whatsapp_verified.boolean' => 'El estado de verificación de WhatsApp debe ser verdadero o falso.',
             'file.file' => 'El archivo debe ser válido.',
             'file.image' => 'El archivo debe ser una imagen.',
@@ -132,6 +135,7 @@ class StoreUsuarioRequest extends FormRequest
             'telefono' => 'teléfono',
             'password' => 'contraseña',
             'rol_id' => 'rol',
+            'codigo_autorizacion' => 'código de autorización',
             'file' => 'foto de perfil',
         ];
     }

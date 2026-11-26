@@ -102,6 +102,24 @@ class StoreUsuarioRequestTest extends TestCase
         $this->assertTrue($this->reglaTelefonoEsUnica($request));
     }
 
+    public function test_reglas_incluyen_codigo_autorizacion_numerico(): void
+    {
+        $request = StoreUsuarioRequest::createFrom(
+            Request::create('/api/usuario', 'POST', [
+                'id' => 1,
+                'name' => 'Test',
+                'email' => 'test@example.com',
+                'id_empresa' => 1,
+                'id_sucursal' => 1,
+                'id_bodega' => 1,
+            ])
+        );
+
+        $this->assertArrayHasKey('codigo_autorizacion', $request->rules());
+        $this->assertStringContainsString('numeric', $request->rules()['codigo_autorizacion']);
+        $this->assertStringContainsString('digits_between:3,10', $request->rules()['codigo_autorizacion']);
+    }
+
     private function reglaTelefonoEsUnica(StoreUsuarioRequest $request): bool
     {
         foreach ($request->rules()['telefono'] as $rule) {
