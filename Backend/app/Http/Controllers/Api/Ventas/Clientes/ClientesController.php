@@ -675,10 +675,11 @@ class ClientesController extends Controller
 
             $errores = $import->getErrores();
             $clientesProcesados = $import->getClientesProcesados();
+            $fallidos = $import->getFallidosCount();
 
-            if ($clientesProcesados > 0 && count($errores) > 0) {
+            if ($clientesProcesados > 0 && $fallidos > 0) {
                 $mensajeExito = "✅ Se procesaron correctamente {$clientesProcesados} clientes.";
-                $mensajeFalla = "❌ No se pudieron procesar " . count($errores) . " clientes debido a errores.";
+                $mensajeFalla = "❌ No se pudieron procesar {$fallidos} clientes debido a errores.";
 
                 // Separar errores por tipo para mejor análisis
                 $erroresDuiDuplicado = array_filter($errores, function($error) {
@@ -691,7 +692,7 @@ class ClientesController extends Controller
                 return response()->json([
                     'message' => $mensajeExito . " " . $mensajeFalla,
                     'procesados' => $clientesProcesados,
-                    'fallidos' => count($errores),
+                    'fallidos' => $fallidos,
                     'resumen_errores' => [
                         'dui_duplicados' => count($erroresDuiDuplicado),
                         'formato_invalido' => count($erroresFormato)
@@ -704,11 +705,15 @@ class ClientesController extends Controller
                     'procesados' => $clientesProcesados,
                     'fallidos' => 0
                 ], 200);
-            } else {
-                return response()->json([
-                    'error' => 'No se pudo procesar ningún cliente. ' . implode("\n", $errores)
-                ], 400);
             }
+
+            return response()->json([
+                'message' => 'No se pudo procesar ningún cliente.',
+                'procesados' => 0,
+                'fallidos' => $fallidos,
+                'errores' => $errores,
+                'error' => 'No se pudo procesar ningún cliente.',
+            ], 400);
         } catch (ValidationException $e) {
             return response()->json([
                 'error' => 'Los datos del archivo no son válidos.',
