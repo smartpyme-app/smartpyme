@@ -8,12 +8,22 @@ import { ApiService } from '@services/api.service';
 import { BaseComponent } from '@shared/base/base.component';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 
+import {
+    calcularMontosLineaDetalle,
+    normalizarPorcentajeImpuestoDetalle,
+    redondearMoneda,
+} from '@utils/impuestos-venta.util';
+
+// Los montos fiscales (gravada, exenta, iva, sub_total, precio_*) los escribe calcularMontosLineaDetalle.
 type LineaDetalle = {
     id_producto: number | null;
     cantidad: number;
     precio: number;
     total: number;
     tipo_gravado: string;
+    porcentaje_impuesto?: number | null;
+    costo?: number;
+    [campo: string]: any;
 };
 
 @Component({
@@ -103,7 +113,11 @@ export class ProgramadaFormComponent extends BaseComponent implements OnInit {
     }
 
     public get totalDocumento(): number {
-        return this.form.detalles.reduce((s, d) => s + (Number(d.total) || 0), 0);
+        // Total con IVA, igual que el total de una venta.
+        return this.form.detalles.reduce(
+            (s, d) => s + (Number(d['total_iva']) || Number(d.total) || 0),
+            0,
+        );
     }
 
     public onEmitirAutomaticoChange(): void {
@@ -124,15 +138,22 @@ export class ProgramadaFormComponent extends BaseComponent implements OnInit {
     }
 
     public actualizarLinea(linea: LineaDetalle): void {
-        const cant = Number(linea.cantidad) || 0;
-        const precio = Number(linea.precio) || 0;
-        linea.total = Math.round(cant * precio * 100) / 100;
+        // Misma lógica fiscal que facturación (precio = sin IVA; total = neto de la línea).
+        const empresa = this.apiService.auth_user()?.empresa;
+        calcularMontosLineaDetalle(linea, true, empresa?.iva, { paisEmpresa: empresa?.pais });
+        linea.total = Number(linea.total) || 0;
     }
 
     public onProductoChange(linea: LineaDetalle): void {
         const prod = this.productos.find((p) => p.id === linea.id_producto);
-        if (prod?.precio != null && linea.precio === 0) {
-            linea.precio = Number(prod.precio) || 0;
+        if (prod) {
+            const iva = this.apiService.auth_user()?.empresa?.iva;
+            linea.porcentaje_impuesto = normalizarPorcentajeImpuestoDetalle(prod.porcentaje_impuesto, iva);
+            linea.tipo_gravado = 'gravada';
+            linea.costo = Number(prod.costo) || 0;
+            if (prod.precio != null && Number(linea.precio) === 0) {
+                linea.precio = Number(prod.precio) || 0;
+            }
         }
         this.actualizarLinea(linea);
         this.cdr.markForCheck();
@@ -191,7 +212,12 @@ export class ProgramadaFormComponent extends BaseComponent implements OnInit {
                         precio: Number(d.precio) || 0,
                         total: Number(d.total) || 0,
                         tipo_gravado: d.tipo_gravado || 'gravada',
+                        porcentaje_impuesto: d.porcentaje_impuesto != null ? Number(d.porcentaje_impuesto) : null,
+                        costo: Number(d.costo) || 0,
+                        id_presentacion: d.id_presentacion ?? null,
+                        descripcion: d.descripcion ?? null,
                     }));
+                    this.form.detalles.forEach((l) => this.actualizarLinea(l));
                     if (this.form.detalles.length < 1) {
                         this.form.detalles = [this.nuevaLinea()];
                     }
@@ -220,12 +246,26 @@ export class ProgramadaFormComponent extends BaseComponent implements OnInit {
             .filter((d) => d.id_producto)
             .map((d) => {
                 this.actualizarLinea(d);
+                const n = (v: unknown) => Number(v) || 0;
                 return {
                     id_producto: d.id_producto,
-                    cantidad: Number(d.cantidad),
-                    precio: Number(d.precio),
-                    total: Number(d.total),
+                    id_presentacion: d['id_presentacion'] ?? null,
+                    descripcion: d['descripcion'] ?? null,
+                    cantidad: n(d.cantidad),
+                    precio: n(d.precio),
+                    precio_sin_iva: n(d['precio_sin_iva']),
+                    precio_con_iva: n(d['precio_con_iva']),
+                    costo: n(d.costo),
+                    total_costo: redondearMoneda(n(d.costo) * n(d.cantidad)),
+                    descuento: n(d['descuento']),
+                    sub_total: n(d['sub_total']),
+                    total: n(d.total),
                     tipo_gravado: d.tipo_gravado || 'gravada',
+                    gravada: n(d['gravada']),
+                    exenta: n(d['exenta']),
+                    no_sujeta: n(d['no_sujeta']),
+                    iva: redondearMoneda(n(d['iva'])),
+                    porcentaje_impuesto: d.porcentaje_impuesto ?? null,
                 };
             });
 
@@ -234,7 +274,9 @@ export class ProgramadaFormComponent extends BaseComponent implements OnInit {
             return null;
         }
 
-        const total = detalles.reduce((s, d) => s + d.total, 0);
+        const suma = (k: 'sub_total' | 'gravada' | 'exenta' | 'no_sujeta' | 'iva' | 'total' | 'descuento') =>
+            redondearMoneda(detalles.reduce((s, d) => s + d[k], 0));
+        const user = this.apiService.auth_user();
         const emitir = !!this.form.emitir_automatico;
 
         return {
@@ -249,8 +291,21 @@ export class ProgramadaFormComponent extends BaseComponent implements OnInit {
             enviar_email: emitir ? !!this.form.enviar_email : false,
             max_ejecuciones: this.form.max_ejecuciones ? Number(this.form.max_ejecuciones) : null,
             detalles,
-            sub_total: total,
-            total,
+            // Solo al crear: en edición el backend conserva sucursal/bodega/vendedor originales.
+            ...(this.editId
+                ? {}
+                : {
+                      id_sucursal: user?.id_sucursal ?? null,
+                      id_bodega: user?.id_bodega ?? null,
+                      id_vendedor: user?.id ?? null,
+                  }),
+            sub_total: suma('sub_total'),
+            descuento: suma('descuento'),
+            gravada: suma('gravada'),
+            exenta: suma('exenta'),
+            no_sujeta: suma('no_sujeta'),
+            iva: suma('iva'),
+            total: redondearMoneda(suma('total') + suma('iva')),
         };
     }
 

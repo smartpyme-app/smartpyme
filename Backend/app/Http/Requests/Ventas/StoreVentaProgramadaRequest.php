@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests\Ventas;
 
+use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class StoreVentaProgramadaRequest extends FormRequest
 {
@@ -11,21 +14,34 @@ class StoreVentaProgramadaRequest extends FormRequest
         return true;
     }
 
+    /** exists restringido a la empresa del usuario autenticado (multi-tenant). */
+    private function existe(string $tabla): \Illuminate\Validation\Rules\Exists
+    {
+        return Rule::exists($tabla, 'id')->where('id_empresa', $this->user()->id_empresa);
+    }
+
     public function rules(): array
     {
+        $empresa = $this->user()->id_empresa;
+        // Las presentaciones no tienen id_empresa: pertenecen a un producto de la empresa.
+        $presentacion = Rule::exists('producto_presentaciones', 'id')->where(
+            fn (Builder $q) => $q->whereIn('id_producto', DB::table('productos')->where('id_empresa', $empresa)->select('id'))
+        );
+        $req = $this->isMethod('PUT') || $this->isMethod('PATCH') ? 'sometimes|required' : 'required';
+
         return [
-            'nombre' => 'required|string|max:255',
-            'id_cliente' => 'required|integer|exists:clientes,id',
-            'id_documento' => 'required|integer|exists:documentos,id',
-            'frecuencia' => 'required|in:mensual,anual',
-            'dia_ejecucion' => 'required|integer|min:1|max:31',
-            'hora_ejecucion' => ['required', 'string', 'regex:/^\d{1,2}:\d{2}(:\d{2})?$/'],
-            'detalles' => 'required|array|min:1',
-            'detalles.*.id_producto' => 'required|integer|exists:productos,id',
+            'nombre' => $req.'|string|max:255',
+            'id_cliente' => [$req, 'integer', $this->existe('clientes')],
+            'id_documento' => [$req, 'integer', $this->existe('documentos')],
+            'frecuencia' => $req.'|in:mensual,anual',
+            'dia_ejecucion' => $req.'|integer|min:1|max:31',
+            'hora_ejecucion' => [$req, 'date_format:H:i'],
+            'detalles' => $req.'|array|min:1',
+            'detalles.*.id_producto' => ['required', 'integer', $this->existe('productos')],
             'detalles.*.cantidad' => 'required|numeric|min:0.01',
             'detalles.*.precio' => 'required|numeric|min:0',
             'detalles.*.total' => 'required|numeric|min:0',
-            'detalles.*.id_presentacion' => 'nullable|integer|exists:producto_presentaciones,id',
+            'detalles.*.id_presentacion' => ['nullable', 'integer', $presentacion],
             'detalles.*.descripcion' => 'nullable|string',
             'detalles.*.precio_sin_iva' => 'nullable|numeric|min:0',
             'detalles.*.precio_con_iva' => 'nullable|numeric|min:0',
@@ -38,13 +54,13 @@ class StoreVentaProgramadaRequest extends FormRequest
             'detalles.*.gravada' => 'nullable|numeric|min:0',
             'detalles.*.cuenta_a_terceros' => 'nullable|numeric|min:0',
             'detalles.*.total_costo' => 'nullable|numeric|min:0',
-            'detalles.*.id_vendedor' => 'nullable|integer|exists:users,id',
+            'detalles.*.id_vendedor' => ['nullable', 'integer', $this->existe('users')],
             'detalles.*.iva' => 'nullable|numeric|min:0',
             'detalles.*.porcentaje_impuesto' => 'nullable|numeric|min:0',
             'detalles.*.fe_cr_exoneracion' => 'nullable|array',
-            'id_sucursal' => 'nullable|integer|exists:sucursales,id',
-            'id_bodega' => 'nullable|integer|exists:sucursal_bodegas,id',
-            'id_vendedor' => 'nullable|integer|exists:users,id',
+            'id_sucursal' => ['nullable', 'integer', $this->existe('sucursales')],
+            'id_bodega' => ['nullable', 'integer', $this->existe('sucursal_bodegas')],
+            'id_vendedor' => ['nullable', 'integer', $this->existe('users')],
             'forma_pago' => 'nullable|string|max:255',
             'condicion' => 'nullable|string|max:255',
             'sub_total' => 'nullable|numeric|min:0',

@@ -10,6 +10,7 @@ use App\Models\Ventas\VentaProgramada;
 use App\Services\Ventas\ProgramacionCalendario;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -39,6 +40,13 @@ class VentaProgramadaController extends Controller
         'fe_cr_exoneracion',
     ];
 
+    /** Campos de cabecera que un PUT puede cambiar (solo si vienen en el request). */
+    private const CABECERA_EDITABLE = [
+        'nombre', 'id_cliente', 'id_documento', 'id_sucursal', 'id_bodega', 'id_vendedor',
+        'forma_pago', 'condicion', 'observaciones', 'frecuencia', 'dia_ejecucion',
+        'activo', 'emitir_automatico', 'enviar_email', 'max_ejecuciones',
+    ];
+
     public function index(Request $request)
     {
         $q = trim((string) $request->input('q', ''));
@@ -66,6 +74,7 @@ class VentaProgramadaController extends Controller
     public function store(StoreVentaProgramadaRequest $request)
     {
         $data = $request->validated();
+        $data['detalles'] = array_map([self::class, 'normalizarLinea'], $data['detalles']);
         $hora = self::normalizarHora($data['hora_ejecucion']);
         $proxima = ProgramacionCalendario::calcularProxima(
             $data['frecuencia'],
@@ -96,29 +105,53 @@ class VentaProgramadaController extends Controller
     {
         $programada = $this->findForEmpresa($id);
         $data = $request->validated();
-        $hora = self::normalizarHora($data['hora_ejecucion']);
 
-        $recalcular = $programada->frecuencia !== $data['frecuencia']
-            || (int) $programada->dia_ejecucion !== (int) $data['dia_ejecucion']
+        $frecuencia = $data['frecuencia'] ?? $programada->frecuencia;
+        $dia = (int) ($data['dia_ejecucion'] ?? $programada->dia_ejecucion);
+        $hora = isset($data['hora_ejecucion'])
+            ? self::normalizarHora($data['hora_ejecucion'])
+            : self::normalizarHora((string) $programada->hora_ejecucion);
+
+        $recalcular = $programada->frecuencia !== $frecuencia
+            || (int) $programada->dia_ejecucion !== $dia
             || self::normalizarHora((string) $programada->hora_ejecucion) !== $hora;
 
-        DB::transaction(function () use ($programada, $data, $hora, $recalcular) {
-            $attrs = $this->cabeceraAttributes($data, $hora, $programada->proxima_ejecucion);
-            unset($attrs['id_empresa'], $attrs['id_usuario'], $attrs['ejecuciones_count']);
+        DB::transaction(function () use ($programada, $data, $frecuencia, $dia, $hora, $recalcular) {
+            // Solo se llenan las llaves presentes en el request (PUT parcial no resetea el resto).
+            $attrs = Arr::only($data, self::CABECERA_EDITABLE);
+            foreach (['id_sucursal', 'id_bodega', 'id_vendedor'] as $k) {
+                if (array_key_exists($k, $attrs) && $attrs[$k] === null) {
+                    unset($attrs[$k]); // no se borran con null
+                }
+            }
+            foreach (['activo', 'emitir_automatico', 'enviar_email'] as $k) {
+                if (array_key_exists($k, $attrs)) {
+                    $attrs[$k] = (bool) $attrs[$k];
+                }
+            }
+            if (array_key_exists('dia_ejecucion', $attrs)) {
+                $attrs['dia_ejecucion'] = $dia;
+            }
+            if (isset($data['hora_ejecucion'])) {
+                $attrs['hora_ejecucion'] = $hora;
+            }
 
             if ($recalcular) {
                 $attrs['proxima_ejecucion'] = ProgramacionCalendario::calcularProxima(
-                    $data['frecuencia'],
-                    (int) $data['dia_ejecucion'],
-                    $hora,
-                    Carbon::now()
+                    $frecuencia, $dia, $hora, Carbon::now()
                 );
+            }
+
+            if (isset($data['detalles'])) {
+                $antiguos = $programada->detalles()->get()->values();
+                $detalles = $this->mergeDetalles($antiguos->all(), $data['detalles']);
+                $attrs = array_merge($attrs, self::totalesDesdeDetalles($detalles));
+                $programada->detalles()->delete();
+                $this->syncDetalles($programada, $detalles);
             }
 
             $programada->fill($attrs);
             $programada->save();
-            $programada->detalles()->delete();
-            $this->syncDetalles($programada, $data['detalles']);
         });
 
         return response()->json($programada->fresh()->load(['detalles', 'cliente', 'documento']), 200);
@@ -130,6 +163,15 @@ class VentaProgramadaController extends Controller
 
         $programada = $this->findForEmpresa($id);
         $programada->activo = $request->boolean('activo');
+        // Al reactivar, no dejar un slot vencido: el cron dispararía una factura inmediata.
+        if ($programada->activo && $programada->proxima_ejecucion->lessThanOrEqualTo(Carbon::now())) {
+            $programada->proxima_ejecucion = ProgramacionCalendario::calcularProxima(
+                $programada->frecuencia,
+                (int) $programada->dia_ejecucion,
+                (string) $programada->hora_ejecucion,
+                Carbon::now()
+            );
+        }
         $programada->save();
 
         return response()->json($programada, 200);
@@ -157,25 +199,19 @@ class VentaProgramadaController extends Controller
     /** @param array<string, mixed> $data */
     private function cabeceraAttributes(array $data, string $hora, $proxima): array
     {
-        $lineTotal = array_sum(array_map(fn ($d) => (float) ($d['total'] ?? 0), $data['detalles']));
+        $user = Auth::user();
 
-        return [
-            'id_empresa' => Auth::user()->id_empresa,
+        return self::totalesDesdeDetalles($data['detalles']) + [
+            'id_empresa' => $user->id_empresa,
             'nombre' => $data['nombre'],
             'id_cliente' => $data['id_cliente'],
             'id_documento' => $data['id_documento'],
-            'id_sucursal' => $data['id_sucursal'] ?? null,
-            'id_bodega' => $data['id_bodega'] ?? null,
-            'id_vendedor' => $data['id_vendedor'] ?? null,
+            // Si el form no los manda, se toman los defaults del usuario (sucursal/bodega activa).
+            'id_sucursal' => $data['id_sucursal'] ?? $user->id_sucursal,
+            'id_bodega' => $data['id_bodega'] ?? $user->id_bodega,
+            'id_vendedor' => $data['id_vendedor'] ?? $user->id,
             'forma_pago' => $data['forma_pago'] ?? null,
             'condicion' => $data['condicion'] ?? null,
-            'sub_total' => $data['sub_total'] ?? $lineTotal,
-            'descuento' => $data['descuento'] ?? 0,
-            'iva' => $data['iva'] ?? 0,
-            'total' => $data['total'] ?? $lineTotal,
-            'gravada' => $data['gravada'] ?? null,
-            'exenta' => $data['exenta'] ?? null,
-            'no_sujeta' => $data['no_sujeta'] ?? null,
             'observaciones' => $data['observaciones'] ?? null,
             'frecuencia' => $data['frecuencia'],
             'dia_ejecucion' => (int) $data['dia_ejecucion'],
@@ -190,6 +226,69 @@ class VentaProgramadaController extends Controller
             'ejecuciones_count' => 0,
             'id_usuario' => Auth::id(),
         ];
+    }
+
+    /**
+     * Desglose fiscal de la línea: si el cliente no lo manda, se deriva de tipo_gravado/total.
+     * @param array<string, mixed> $l @return array<string, mixed>
+     */
+    private static function normalizarLinea(array $l): array
+    {
+        $l['tipo_gravado'] = $l['tipo_gravado'] ?? 'gravada';
+        if (! isset($l['gravada']) && ! isset($l['exenta']) && ! isset($l['no_sujeta'])) {
+            $campo = ['exenta' => 'exenta', 'no_sujeta' => 'no_sujeta'][$l['tipo_gravado']] ?? 'gravada';
+            $l[$campo] = $l['total'];
+        }
+        $l['sub_total'] = $l['sub_total'] ?? $l['total'];
+
+        return $l;
+    }
+
+    /**
+     * Cabecera coherente con las líneas: total = suma de netos + IVA.
+     * @param list<array<string, mixed>> $detalles @return array<string, float>
+     */
+    private static function totalesDesdeDetalles(array $detalles): array
+    {
+        $sum = fn (string $k) => round(array_sum(array_map(fn ($d) => (float) ($d[$k] ?? 0), $detalles)), 2);
+        $neto = $sum('total');
+        $iva = $sum('iva');
+
+        return [
+            'sub_total' => $sum('sub_total') ?: $neto,
+            'descuento' => $sum('descuento'),
+            'iva' => $iva,
+            'gravada' => $sum('gravada'),
+            'exenta' => $sum('exenta'),
+            'no_sujeta' => $sum('no_sujeta'),
+            'total' => round($neto + $iva, 2),
+        ];
+    }
+
+    /**
+     * Completa lo que el form no envía con la línea anterior (misma posición y producto).
+     * Montos calculados solo se heredan si cantidad y precio no cambiaron.
+     * @param list<DetalleVentaProgramada> $antiguos @param list<array<string, mixed>> $nuevos
+     * @return list<array<string, mixed>>
+     */
+    private function mergeDetalles(array $antiguos, array $nuevos): array
+    {
+        $calculados = ['sub_total', 'gravada', 'exenta', 'no_sujeta', 'iva', 'precio_sin_iva', 'precio_con_iva', 'total_costo'];
+        $out = [];
+        foreach ($nuevos as $i => $linea) {
+            $old = $antiguos[$i] ?? null;
+            if ($old && (int) $old->id_producto === (int) $linea['id_producto']) {
+                $base = array_filter($old->only(self::DETALLE_KEYS), fn ($v) => $v !== null);
+                $igual = (float) $old->cantidad === (float) $linea['cantidad'] && (float) $old->precio === (float) $linea['precio'];
+                if (! $igual) {
+                    $base = array_diff_key($base, array_flip($calculados));
+                }
+                $linea += $base;
+            }
+            $out[] = self::normalizarLinea($linea);
+        }
+
+        return $out;
     }
 
     /** @param list<array<string, mixed>> $detalles */
