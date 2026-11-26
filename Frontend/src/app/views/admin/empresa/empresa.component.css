@@ -184,3 +184,145 @@
   opacity: 1;
 }
 
+
+/* Pruebas masivas SV */
+.pm-progress-pill {
+  background: rgba(var(--bs-primary-rgb), 0.1);
+  color: var(--bs-primary);
+  font-weight: 600;
+  padding: 0.45rem 0.85rem;
+}
+
+.pm-callout {
+  border: 1px solid rgba(var(--bs-primary-rgb), 0.18);
+  background: rgba(var(--bs-primary-rgb), 0.04);
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
+}
+
+.pm-callout-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.35rem;
+  color: #345;
+}
+
+.pm-callout-list {
+  padding-left: 1.1rem;
+  margin: 0;
+  color: #5c6b7a;
+  font-size: 0.875rem;
+}
+
+.pm-tipo-card {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0.85rem;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  overflow: hidden;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.pm-tipo-card:hover {
+  box-shadow: 0 6px 16px rgba(16, 24, 40, 0.08);
+}
+
+.pm-tipo-card--done {
+  border-color: rgba(25, 135, 84, 0.35);
+  background: linear-gradient(180deg, rgba(25, 135, 84, 0.04), #fff 42%);
+}
+
+.pm-tipo-card--blocked {
+  opacity: 0.92;
+}
+
+.pm-tipo-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem 0.35rem;
+}
+
+.pm-tipo-card__title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #1f2937;
+}
+
+.pm-tipo-card__progress {
+  height: 4px;
+  margin: 0 1rem;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.pm-tipo-card__progress .progress-bar {
+  border-radius: 999px;
+}
+
+.pm-tipo-card__body {
+  padding: 0.85rem 1rem 1rem;
+}
+
+.pm-tipo-card__hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #5c6b7a;
+  line-height: 1.35;
+}
+
+.pm-tipo-card__hint--warn {
+  color: #9a6700;
+}
+
+.pm-tipo-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 2rem;
+}
+
+.pm-status-done {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #198754;
+  background: rgba(25, 135, 84, 0.1);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+}
+
+.pm-historial {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0.85rem;
+  padding: 1rem 1.1rem;
+  background: #fafbfc;
+}
+
+.pm-historial-empty {
+  color: #6c757d;
+  font-size: 0.9rem;
+  padding: 1rem 0.25rem;
+}
+
+.pm-historial-table thead th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #6c757d;
+  font-weight: 600;
+  border-bottom-width: 1px;
+  background: transparent;
+}
+
+.pm-historial-table tbody td {
+  font-size: 0.875rem;
+  vertical-align: middle;
+}
+
+.pm-historial-msg {
+  max-width: 240px;
+}

@@ -387,8 +387,9 @@ class MHPruebasMasivasController extends Controller
 
             $trabajos = TrabajosPendientes::where('tipo', 'pruebas_masivas')
                 ->where('id_empresa', $user->id_empresa)
+                ->orderByDesc('fecha_creacion')
                 ->orderByDesc('id')
-                ->limit(20)
+                ->limit(10)
                 ->get()
                 ->map(function (TrabajosPendientes $trabajo) {
                     $parametros = is_array($trabajo->parametros)
@@ -442,4 +443,5 @@ class MHPruebasMasivasController extends Controller
 
         return $tipos[$tipoDTE] ?? 'Documento Tipo ' . $tipoDTE;
     }
+
 }
