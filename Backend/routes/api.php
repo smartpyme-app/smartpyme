@@ -22,6 +22,8 @@ use App\Http\Controllers\n1co\EstadoController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\n1co\N1coChargeController;
 
+Route::get('/salud', App\Http\Controllers\Api\SaludController::class);
+
 Route::get('/prueba', function () {
 	return Response()->json(['message' => 'Success'], 200);
 });
