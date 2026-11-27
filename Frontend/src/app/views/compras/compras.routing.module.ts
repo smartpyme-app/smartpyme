@@ -33,11 +33,12 @@ import { AbonosGastosComponent } from './gastos/abonos/abonos-gastos.component';
 import { DepartamentoEmpresaComponent } from './gastos/departamento-empresa/departamento-empresa.component';
 import { AreaEmpresaComponent } from './gastos/area-empresa/area-empresa.component';
 import { GastosSupervisorRestriccionGuard } from '@guards/gastos-supervisor-restriccion.guard';
-
-const gastosSupervisorRestriccion = [GastosSupervisorRestriccionGuard];
-import { RoleGuard } from '../../guards/role.guard';
 import { PermissionGuard } from '../../guards/permission.guard';
 import { FuncionalidadGuard } from '@guards/funcionalidad.guard';
+import { PERM_VER_COMPRAS, PERM_VER_GASTOS } from './compras-routing-access';
+
+const gastosSupervisorRestriccion = [GastosSupervisorRestriccionGuard];
+const gastosGuards = [PermissionGuard, ...gastosSupervisorRestriccion] as const;
 
 const retaceoGuards = [PermissionGuard, FuncionalidadGuard];
 
@@ -51,7 +52,7 @@ const routes: Routes = [
         loadComponent: () => import('../compras/compras.component').then(m => m.ComprasComponent),
         canActivate: [PermissionGuard],
         data: {
-          permission: 'compras.ver',
+          permissions: [...PERM_VER_COMPRAS],
         },
         title: 'Compras',
       },
@@ -76,22 +77,34 @@ const routes: Routes = [
       {
         path: 'compra/consigna/revisar/:id',
         loadComponent: () => import('../compras/facturacion/facturacion-consigna/facturacion-compra-consigna.component').then(m => m.FacturacionCompraConsignaComponent),
+        canActivate: [PermissionGuard],
+        data: {
+          permissions: ['compras.consignas.ver', 'compras.editar', ...PERM_VER_COMPRAS],
+        },
         title: 'Compra consigna',
       },
       {
         path: 'compra/:id',
         loadComponent: () => import('../compras/compra/compra.component').then(m => m.CompraComponent),
-        title: 'Compra'
+        canActivate: [PermissionGuard],
+        data: {
+          permissions: [...PERM_VER_COMPRAS, 'compras.editar'],
+        },
+        title: 'Compra',
       },
 
       {
         path: 'compras/recurrentes',
         loadComponent: () => import('./recurrentes/compras-recurrentes.component').then(m => m.ComprasRecurrentesComponent),
+        canActivate: [PermissionGuard],
+        data: { permissions: [...PERM_VER_COMPRAS] },
         title: 'Compras recurrentes',
       },
       {
         path: 'compras/abonos',
         loadComponent: () => import('./abonos/abonos-compras.component').then(m => m.AbonosComprasComponent),
+        canActivate: [PermissionGuard],
+        data: { permissions: [...PERM_VER_COMPRAS] },
         title: 'Abonos de compra',
       },
       {
@@ -125,16 +138,22 @@ const routes: Routes = [
       {
         path: 'devoluciones/compras',
         loadComponent: () => import('../compras/devoluciones/devoluciones-compras.component').then(m => m.DevolucionesComprasComponent),
+        canActivate: [PermissionGuard],
+        data: { permission: 'compras.devoluciones.ver' },
         title: 'Devoluciones de compras',
       },
       {
         path: 'devolucion/compra/:id',
         loadComponent: () => import('../compras/devoluciones/devolucion/devolucion-compra.component').then(m => m.DevolucionCompraComponent),
+        canActivate: [PermissionGuard],
+        data: { permission: 'compras.devoluciones.ver' },
         title: 'Devolución de compra',
       },
       {
         path: 'devolucion-compra/nueva',
         loadComponent: () => import('../compras/devoluciones/devolucion-nueva/devolucion-compra-nueva.component').then(m => m.DevolucionCompraNuevaComponent),
+        canActivate: [PermissionGuard],
+        data: { permission: 'compras.devoluciones.crear' },
         title: 'Devolución de compra',
       },
       {
@@ -176,61 +195,84 @@ const routes: Routes = [
       {
         path: 'proveedores/cuentas-pagar',
         loadComponent: () => import('../compras/proveedores/cuentas-pagar/cuentas-pagar.component').then(m => m.CuentasPagarComponent),
+        canActivate: [PermissionGuard],
+        data: { permission: 'compras.proveedores.ver' },
         title: 'Cuentas por pagar',
       },
 
       {
         path: 'reporte/compras/historial',
         loadComponent: () => import('../reportes/compras/historial/historial-compras.component').then(m => m.HistorialComprasComponent),
+        canActivate: [PermissionGuard],
+        data: { permissions: [...PERM_VER_COMPRAS] },
       },
       {
         path: 'reporte/compras/detalle',
-        loadComponent: () => import('../reportes/compras/detalle/detalle-compras.component').then(m => m.DetalleComprasComponent)
+        loadComponent: () => import('../reportes/compras/detalle/detalle-compras.component').then(m => m.DetalleComprasComponent),
+        canActivate: [PermissionGuard],
+        data: { permissions: [...PERM_VER_COMPRAS] },
       },
       {
         path: 'reporte/compras/categorias',
         loadComponent: () => import('../reportes/compras/categorias/categorias-compras.component').then(m => m.CategoriasComprasComponent),
+        canActivate: [PermissionGuard],
+        data: { permissions: [...PERM_VER_COMPRAS] },
       },
       {
         path: 'gastos',
         loadComponent: () => import('./gastos/gastos.component').then(m => m.GastosComponent),
         canActivate: [PermissionGuard],
         data: {
-          permission: 'gastos.ver',
+          permissions: [...PERM_VER_GASTOS],
         },
         title: 'Gastos',
       },
       {
         path: 'gastos/recurrentes',
         loadComponent: () => import('./gastos/recurrentes/gastos-recurrentes.component').then(m => m.GastosRecurrentesComponent),
+        canActivate: [...gastosGuards],
+        data: { permissions: [...PERM_VER_GASTOS] },
         title: 'Gastos recurrentes',
       },
       {
         path: 'gastos/abonos',
         loadComponent: () => import('./gastos/abonos/abonos-gastos.component').then(m => m.AbonosGastosComponent),
+        canActivate: [...gastosGuards],
+        data: { permissions: [...PERM_VER_GASTOS] },
         title: 'Abonos de gastos',
+      },
+      {
+        path: 'gasto/crear',
+        loadComponent: () => import('./gastos/gasto/gasto.component').then(m => m.GastoComponent),
+        canActivate: [...gastosGuards],
+        data: {
+          permissions: ['gastos.crear', ...PERM_VER_GASTOS],
+        },
+        title: 'Crear gasto',
       },
       {
         path: 'gasto/detalles/:id',
         loadComponent: () => import('./gastos/gasto-detalles/gasto-detalles.component').then(m => m.GastoDetallesComponent),
-        canActivate: [PermissionGuard],
+        canActivate: [...gastosGuards],
         data: {
-          permission: 'gastos.ver',
+          permissions: [...PERM_VER_GASTOS],
         },
         title: 'Gasto',
       },
       {
         path: 'gasto/:id',
         loadComponent: () => import('./gastos/gasto/gasto.component').then(m => m.GastoComponent),
-        canActivate: [PermissionGuard],
+        canActivate: [...gastosGuards],
         data: {
-          permission: 'gastos.ver',
+          permissions: [...PERM_VER_GASTOS, 'gastos.editar', 'gastos.crear'],
         },
         title: 'Gasto',
       },
       {
         path: 'gastos/dash',
-        loadComponent: () => import('./gastos/dash/gastos-dash.component').then(m => m.GastosDashComponent)
+        loadComponent: () => import('./gastos/dash/gastos-dash.component').then(m => m.GastosDashComponent),
+        canActivate: [...gastosGuards],
+        data: { permissions: [...PERM_VER_GASTOS] },
       },
       {
         path: 'gastos/categorias',
@@ -286,15 +328,20 @@ const routes: Routes = [
         data: { permission: 'administracion.areas.ver' },
         title:'Áreas de empresa'
       },
-        { path: 'gastos', component: GastosComponent, title:'Gastos', canActivate: gastosSupervisorRestriccion },
-        { path: 'gastos/abonos', component: AbonosGastosComponent, title:'Abonos de gastos', canActivate: gastosSupervisorRestriccion },
-        { path: 'gastos/recurrentes', component: GastosRecurrentesComponent, title:'Gastos recurrentes', canActivate: gastosSupervisorRestriccion },
-        { path: 'gasto/detalles/:id', component: GastoDetallesComponent, title:'Gasto', canActivate: gastosSupervisorRestriccion },
-        { path: 'gasto/:id', component: GastoComponent, title:'Gasto', canActivate: gastosSupervisorRestriccion },
-        { path: 'gastos/dash', component: GastosDashComponent, canActivate: gastosSupervisorRestriccion },
-        { path: 'gastos/categorias', component: GastosCategoriasComponent, canActivate: gastosSupervisorRestriccion },
-        { path: 'gastos/departamentos-empresa', component: DepartamentoEmpresaComponent, title: 'Departamentos de empresa', canActivate: [PermissionGuard, ...gastosSupervisorRestriccion], data: { permission: 'administracion.departamentos.ver' } },
-        { path: 'gastos/areas-empresa', component: AreaEmpresaComponent, title: 'Áreas de empresa', canActivate: [PermissionGuard, ...gastosSupervisorRestriccion], data: { permission: 'administracion.areas.ver' } },
+      {
+        path: 'gastos/departamentos-empresa',
+        loadComponent: () => import('./gastos/departamento-empresa/departamento-empresa.component').then(m => m.DepartamentoEmpresaComponent),
+        canActivate: [...gastosGuards],
+        data: { permission: 'administracion.departamentos.ver' },
+        title: 'Departamentos de empresa',
+      },
+      {
+        path: 'gastos/areas-empresa',
+        loadComponent: () => import('./gastos/area-empresa/area-empresa.component').then(m => m.AreaEmpresaComponent),
+        canActivate: [...gastosGuards],
+        data: { permission: 'administracion.areas.ver' },
+        title: 'Áreas de empresa',
+      },
 
     ]
   }

@@ -6,12 +6,13 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { CollapseModule } from 'ngx-bootstrap/collapse';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { SidebarOperativosExtendNavComponent } from '../sidebar-operativos-extend-nav.component';
 
 @Component({
     selector: 'app-sidebar-servicios',
     templateUrl: './sidebar-servicios.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, TooltipModule, CollapseModule],
+    imports: [CommonModule, RouterModule, TooltipModule, CollapseModule, SidebarOperativosExtendNavComponent],
     
 })
 
@@ -165,6 +166,13 @@ export class SidebarServiciosComponent implements OnInit {
 
     canShowOption(permission: string): boolean {
         return this.apiService.hasPermission(permission);
+    }
+
+    get mostrarCierreCajaSuelto(): boolean {
+        return (
+            this.apiService.hasPermission('finanzas.cierre_caja.ver') &&
+            !this.apiService.hasPermission('finanzas.ver')
+        );
     }
 
     loadModules() {

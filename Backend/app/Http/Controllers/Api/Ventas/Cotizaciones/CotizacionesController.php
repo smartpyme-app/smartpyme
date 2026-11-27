@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Constants\CotizacionConstants;
+use App\Support\Ventas\CotizacionFormatoNuevoDefaults;
 use App\Http\Requests\Ventas\Cotizaciones\StoreCotizacionRequest;
 use App\Http\Requests\Ventas\Cotizaciones\FacturacionCotizacionRequest;
 
@@ -39,12 +40,27 @@ class CotizacionesController extends Controller
             ? $custom['configuraciones']
             : [];
 
+        $texto = static function (string $key, callable $default) use ($cfg): string {
+            $raw = isset($cfg[$key]) ? trim((string) $cfg[$key]) : '';
+
+            return $raw !== '' ? $raw : (string) $default();
+        };
+
         return [
             'cotizacion_mostrar_descripcion' => array_key_exists('cotizacion_mostrar_descripcion', $cfg)
                 ? (bool) $cfg['cotizacion_mostrar_descripcion']
                 : true,
             'cotizacion_mostrar_imagenes_productos' => !empty($cfg['cotizacion_mostrar_imagenes_productos']),
+            'cotizacion_carta' => $texto('cotizacion_carta', [CotizacionFormatoNuevoDefaults::class, 'carta']),
+            'cotizacion_terminos' => $texto('cotizacion_terminos', [CotizacionFormatoNuevoDefaults::class, 'terminos']),
+            'cotizacion_compromisos' => $texto('cotizacion_compromisos', [CotizacionFormatoNuevoDefaults::class, 'compromisos']),
+            'cotizacion_color_marca' => CotizacionFormatoNuevoDefaults::normalizarColor($cfg['cotizacion_color_marca'] ?? null),
         ];
+    }
+
+    private function empresaUsaCotizacionFormatoNuevo(Empresa $empresa): bool
+    {
+        return (bool) $empresa->getCustomConfigValue('configuraciones', 'cotizacion_formato_nuevo', false);
     }
 
     /**
@@ -358,6 +374,9 @@ class CotizacionesController extends Controller
                 $pdf->setPaper('US Letter', 'portrait');
             }elseif(Auth::user()->id_empresa == 2){ //2 Super Admin
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.cotizacion-smartpyme', $pdfData);
+                $pdf->setPaper('US Letter', 'portrait');
+            }elseif($this->empresaUsaCotizacionFormatoNuevo($venta->empresa)){
+                $pdf = PDF::loadView('reportes.facturacion.cotizacion-formato-nuevo', $pdfData);
                 $pdf->setPaper('US Letter', 'portrait');
             }else{
                 $pdf = PDF::loadView('reportes.facturacion.cotizacion', $pdfData);

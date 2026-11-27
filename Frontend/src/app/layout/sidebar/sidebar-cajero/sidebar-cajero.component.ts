@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ApiService } from '@services/api.service';
+import { SidebarOperativosExtendNavComponent } from '../sidebar-operativos-extend-nav.component';
 
 @Component({
   selector: 'app-sidebar-cajero',
   templateUrl: './sidebar-cajero.component.html',
   standalone: true,
-  imports: [CommonModule, RouterModule, TooltipModule],
+  imports: [CommonModule, RouterModule, TooltipModule, SidebarOperativosExtendNavComponent],
 })
 export class SidebarCajeroComponent implements OnInit {
   public sidebarCollapsed = false;

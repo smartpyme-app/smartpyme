@@ -173,7 +173,7 @@
                     </button>
                     <div [collapse]="comprasIsCollapsed" [isAnimated]="true">
                         <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                            @if (apiService.hasPermission('compras.ver')) {
+                            @if (puedeVerRegistrosCompras()) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/compras']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
                             }
                             @if (apiService.hasPermission('compras.ordenes_compra.ver')) {
@@ -195,14 +195,14 @@
                     </div>
                 </li>
             }
-            @if (apiService.hasPermission('gastos.ver')) {
+            @if (mostrarMenuGastos) {
                 <li class="mb-1">
                     <button (click)="toggleGastos()" tooltip="Gastos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!gastosIsCollapsed" aria-controls="collapseBasic">
                         <img appLazyImage="/assets/icons/log-out.png" class="icon me-2">Gastos
                     </button>
                     <div [collapse]="gastosIsCollapsed" [isAnimated]="true">
                         <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                            @if (apiService.hasPermission('gastos.ver')) {
+                            @if (puedeVerRegistrosGastos()) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gastos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
                             }
                             @if (apiService.mostrarMenuConfigGastos(contabilidadHabilitada) && apiService.hasPermission('gastos.categorias.ver')) {
