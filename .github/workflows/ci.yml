@@ -52,6 +52,30 @@ jobs:
       - name: Pruebas (excluye tests/cuarentena.txt)
         run: ./tests/correr-pruebas.sh
 
+  migraciones-seguras:
+    # Bloquea migraciones nuevas que borran datos o son pesadas en tablas grandes, salvo que
+    # estén marcadas a propósito (// @migracion-destructiva: motivo  |  // @migracion-pesada: motivo).
+    name: Backend · migraciones seguras
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Revisar migraciones nuevas o modificadas
+        env:
+          BASE_PR: ${{ github.event.pull_request.base.sha }}
+          ANTES: ${{ github.event.before }}
+        run: |
+          base="${BASE_PR:-$ANTES}"
+          if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            echo "Sin commit base para comparar (rama nueva o ejecución manual): se omite."; exit 0
+          fi
+          mapfile -t archivos < <(git diff --name-only --diff-filter=AM "$(git merge-base "$base" HEAD)" HEAD -- 'Backend/database/migrations/*.php')
+          printf '%s\n' "${archivos[@]}"
+          php Backend/scripts/revisar-migraciones.php "${archivos[@]}"
+
   backend-migraciones:
     name: Backend · migraciones desde cero
     runs-on: ubuntu-24.04

@@ -54,4 +54,26 @@ final class PublicPathResolverTest extends TestCase
 
         $this->assertNull($resuelto);
     }
+
+    public function test_una_version_de_produccion_usa_el_docroot_de_produccion(): void
+    {
+        $resuelto = PublicPathResolver::resolve(
+            [],
+            '/home/smartpyme/prod/releases/27.11.26b-22988d6/Backend',
+            static fn (string $ruta): bool => $ruta === self::DOCROOT
+        );
+
+        $this->assertSame(self::DOCROOT, $resuelto);
+    }
+
+    public function test_otra_carpeta_dentro_de_releases_no_toma_el_docroot(): void
+    {
+        $resuelto = PublicPathResolver::resolve(
+            [],
+            '/home/smartpyme/prod/releases/27.11.26/Backend/otra',
+            static fn (string $ruta): bool => true
+        );
+
+        $this->assertNull($resuelto);
+    }
 }

@@ -24,6 +24,14 @@ final class PublicPathResolver
     ];
 
     /**
+     * Carpeta de versiones de producción => DocumentRoot. Cada despliegue vive en
+     * /home/smartpyme/prod/releases/<versión>/Backend (ver ops/prod/README.md).
+     */
+    public const PREFIJOS = [
+        '/home/smartpyme/prod/releases/' => '/home/smartpyme/public_html/apiunificado',
+    ];
+
+    /**
      * Devuelve la ruta pública a usar, o null para conservar `base_path('public')`.
      *
      * @param  array<string, mixed>  $vars
@@ -38,7 +46,16 @@ final class PublicPathResolver
             return self::normalizar($configurado);
         }
 
-        $docroot = self::DOCROOTS[self::normalizar((string) $basePath)] ?? null;
+        $base = self::normalizar((string) $basePath);
+        $docroot = self::DOCROOTS[$base] ?? null;
+        if ($docroot === null) {
+            foreach (self::PREFIJOS as $prefijo => $destino) {
+                if (str_starts_with($base, $prefijo) && str_ends_with($base, '/Backend')) {
+                    $docroot = $destino;
+                    break;
+                }
+            }
+        }
 
         return $docroot !== null && $existe($docroot) ? $docroot : null;
     }

@@ -1,14 +1,18 @@
-# Despliegue a QA y DEMO (nunca a producción).
+# Despliegues: QA, DEMO y PRODUCCIÓN.
 #
-# - CI verde en un push a `develop`  -> QA   (apitest / test.smartpyme.site): backend + frontend.
-# - CI verde en un push a `main`     -> DEMO (demo.smartpyme.site): frontend. El backend de la demo
-#                                       es el mismo código de producción.
-# - Manual (Actions > "Deploy QA y DEMO" > Run workflow): desplegar-qa, desplegar-demo o reiniciar-demo.
+# - CI verde en un push a `develop` -> QA (apitest / test.smartpyme.site): backend + frontend.
+# - CI verde en un push a `main`    -> PRODUCCIÓN, con APROBACIÓN MANUAL (ambiente `produccion` de GitHub).
+#                                      Al aprobar se instala producción y el frontend de la DEMO
+#                                      (la demo usa el código de producción).
+# - Manual (Actions > "Deploy QA, DEMO y PRODUCCIÓN" > Run workflow):
+#     desplegar-qa (desde develop), desplegar-demo (desde main), desplegar-prod (desde main), reiniciar-demo.
 #
-# La llave DEPLOY_SSH_KEY solo puede ESCRIBIR en una carpeta de entrada del servidor (rrsync -wo):
-# no puede leer, ni ejecutar comandos, ni tocar producción. En el servidor,
-# /root/ambientes/instalar-despliegues.sh instala cada paquete (ver ops/ambientes/README.md).
-name: Deploy QA y DEMO
+# Seguridad:
+# - Las llaves solo pueden ESCRIBIR en una carpeta de entrada del servidor (rrsync -wo): no leen,
+#   no ejecutan comandos. Cada paquete lo instala un script de root en el servidor.
+# - DEPLOY_SSH_KEY (QA/DEMO) no sirve para producción. PROD_SSH_KEY es un secreto del ambiente
+#   `produccion`: GitHub solo lo entrega después de la aprobación.
+name: Deploy QA, DEMO y PRODUCCIÓN
 
 on:
   workflow_run:
@@ -20,7 +24,7 @@ on:
       accion:
         description: Qué hacer
         type: choice
-        options: [desplegar-qa, desplegar-demo, reiniciar-demo]
+        options: [desplegar-qa, desplegar-demo, desplegar-prod, reiniciar-demo]
         default: desplegar-qa
 
 permissions:
@@ -28,7 +32,6 @@ permissions:
 
 env:
   SERVIDOR: 187.77.24.248
-  USUARIO: spdeploy
 
 jobs:
   decidir:
@@ -50,18 +53,20 @@ jobs:
           accion=ninguna; sha="$GITHUB_SHA"
           if [ "$EVENTO" = workflow_dispatch ]; then
             accion="$ACCION"
-            # QA sale de develop y DEMO de main, aunque se lance desde otra rama.
             [ "$accion" = desplegar-qa ] && [ "$RAMA" != develop ] && { echo "::error::desplegar-qa se lanza desde develop"; exit 1; }
-            [ "$accion" = desplegar-demo ] && [ "$RAMA" != main ] && { echo "::error::desplegar-demo se lanza desde main"; exit 1; }
+            case "$accion" in desplegar-demo|desplegar-prod)
+              [ "$RAMA" != main ] && { echo "::error::$accion se lanza desde main"; exit 1; } ;;
+            esac
           elif [ "$CONCLUSION" = success ] && [ "$EVENTO_CI" = push ]; then
             sha="$SHA_CI"
             [ "$RAMA_CI" = develop ] && accion=desplegar-qa
-            [ "$RAMA_CI" = main ] && accion=desplegar-demo
+            [ "$RAMA_CI" = main ] && accion=desplegar-prod
           fi
           echo "accion=$accion" >> "$GITHUB_OUTPUT"
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
           echo "Acción: $accion ($sha)" >> "$GITHUB_STEP_SUMMARY"
 
+  # ---------------- QA y DEMO (sin aprobación) ----------------
   construir:
     needs: decidir
     if: needs.decidir.outputs.accion == 'desplegar-qa' || needs.decidir.outputs.accion == 'desplegar-demo'
@@ -100,7 +105,6 @@ jobs:
             git archive --format=tar HEAD:Backend | gzip > "paquete/$SHA/backend.tgz"
           fi
           (cd "paquete/$SHA" && sha256sum *.tgz > SHA256SUMS)
-          ls -la "paquete/$SHA"
 
       - name: Subir al servidor
         env:
@@ -113,9 +117,9 @@ jobs:
           printf '%s\n' "$LLAVE" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
           printf '%s\n' "$HOSTS" > ~/.ssh/known_hosts
           SSH="ssh -i $HOME/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
-          rsync -a -e "$SSH" "paquete/$SHA" "$USUARIO@$SERVIDOR:$DESTINO/"
+          rsync -a -e "$SSH" "paquete/$SHA" "spdeploy@$SERVIDOR:$DESTINO/"
           touch LISTO   # va al final: el servidor solo instala paquetes completos
-          rsync -a -e "$SSH" LISTO "$USUARIO@$SERVIDOR:$DESTINO/$SHA/"
+          rsync -a -e "$SSH" LISTO "spdeploy@$SERVIDOR:$DESTINO/$SHA/"
           echo "Paquete subido a $DESTINO. El servidor lo instala en menos de 2 minutos." >> "$GITHUB_STEP_SUMMARY"
 
   reiniciar-demo:
@@ -133,5 +137,134 @@ jobs:
           printf '%s\n' "$HOSTS" > ~/.ssh/known_hosts
           mkdir -p "pedido/${GITHUB_RUN_ID}" && touch "pedido/${GITHUB_RUN_ID}/LISTO"
           rsync -a -e "ssh -i $HOME/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" \
-            "pedido/${GITHUB_RUN_ID}" "$USUARIO@$SERVIDOR:demo-reiniciar/"
+            "pedido/${GITHUB_RUN_ID}" "spdeploy@$SERVIDOR:demo-reiniciar/"
           echo "Reinicio pedido por ${GITHUB_ACTOR}. La demo vuelve a su base en unos 2 minutos." >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------- PRODUCCIÓN (con aprobación) ----------------
+  construir-prod:
+    needs: decidir
+    if: needs.decidir.outputs.accion == 'desplegar-prod'
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: deploy-prod-construir
+      cancel-in-progress: false
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      release: ${{ steps.v.outputs.release }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.decidir.outputs.sha }}
+          fetch-depth: 0
+
+      - name: Número de versión (DD.MM.AA y letra si ya hubo otra hoy)
+        id: v
+        env:
+          SHA: ${{ needs.decidir.outputs.sha }}
+        run: |
+          git fetch --tags --quiet
+          hoy=$(TZ=America/El_Salvador date +%d.%m.%y)
+          n=$(git tag -l "v$hoy" "v$hoy[a-z]" | wc -l)
+          letras=(""  b c d e f g h i j k l m n o p)
+          version="$hoy${letras[$n]}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "release=$version-${SHA:0:7}" >> "$GITHUB_OUTPUT"
+          echo "Versión: **$version** ($SHA)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Poner la versión en el frontend
+        working-directory: Frontend
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          sed -i -E "s/(appVersion: ')[^']*'/\1$VERSION'/; s/(release: ')[^']*'/\1$VERSION'/" src/environments/environment.prod.ts
+          sed -i -E "s/(\"version\": \")[^\"]*\"/\1$VERSION\"/" src/manifest.webmanifest
+          grep -n "appVersion\|release:" src/environments/environment.prod.ts
+          grep -n '"version"' src/manifest.webmanifest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: Frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: Frontend/package-lock.json
+
+      - name: Compilar frontend de producción y de la demo
+        working-directory: Frontend
+        run: |
+          npm ci --no-audit --no-fund
+          export NODE_OPTIONS=--max-old-space-size=6144
+          npx ng build --configuration production --output-path ../dist-prod
+          npx ng build --configuration production,demo --output-path ../dist-demo
+          grep -q "apidemo.smartpyme.site" ../dist-demo/main*.js
+
+      - name: Empaquetar
+        env:
+          RELEASE: ${{ steps.v.outputs.release }}
+        run: |
+          mkdir -p "prod/$RELEASE" demo
+          git archive --format=tar HEAD:Backend | gzip > "prod/$RELEASE/backend.tgz"
+          tar --exclude='*.map' -czf "prod/$RELEASE/frontend.tgz" -C dist-prod .
+          echo "$RELEASE" > "prod/$RELEASE/VERSION"
+          (cd "prod/$RELEASE" && sha256sum backend.tgz frontend.tgz VERSION > SHA256SUMS)
+          tar --exclude='*.map' -czf demo/frontend.tgz -C dist-demo .
+          (cd demo && sha256sum frontend.tgz > SHA256SUMS)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: paquete-prod
+          path: |
+            prod
+            demo
+          retention-days: 7
+
+  publicar-prod:
+    needs: [decidir, construir-prod]
+    runs-on: ubuntu-24.04
+    environment:
+      name: produccion
+      url: https://app.smartpyme.site
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: false
+    permissions:
+      contents: write   # solo para crear la etiqueta de la versión
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: paquete-prod
+
+      - name: Subir producción y frontend de la demo
+        env:
+          LLAVE_PROD: ${{ secrets.PROD_SSH_KEY }}
+          LLAVE_DEMO: ${{ secrets.DEPLOY_SSH_KEY }}
+          HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          RELEASE: ${{ needs.construir-prod.outputs.release }}
+          SHA: ${{ needs.decidir.outputs.sha }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$LLAVE_PROD" > ~/.ssh/prod && chmod 600 ~/.ssh/prod
+          printf '%s\n' "$LLAVE_DEMO" > ~/.ssh/demo && chmod 600 ~/.ssh/demo
+          printf '%s\n' "$HOSTS" > ~/.ssh/known_hosts
+          touch LISTO
+          SSH_PROD="ssh -i $HOME/.ssh/prod -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
+          rsync -a -e "$SSH_PROD" "prod/$RELEASE" "spdeployprod@$SERVIDOR:prod/"
+          rsync -a -e "$SSH_PROD" LISTO "spdeployprod@$SERVIDOR:prod/$RELEASE/"
+          SSH_DEMO="ssh -i $HOME/.ssh/demo -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
+          mv demo "$SHA"
+          rsync -a -e "$SSH_DEMO" "$SHA" "spdeploy@$SERVIDOR:demo/"
+          rsync -a -e "$SSH_DEMO" LISTO "spdeploy@$SERVIDOR:demo/$SHA/"
+          {
+            echo "Versión **$RELEASE** subida. El servidor la instala en unos minutos:"
+            echo "respaldo de la base si hay migraciones, migraciones, cambio de versión y revisión de /api/salud."
+            echo "Si /api/salud falla, vuelve solo a la versión anterior y avisa por correo."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.decidir.outputs.sha }}
+
+      - name: Etiquetar la versión
+        env:
+          VERSION: ${{ needs.construir-prod.outputs.version }}
+        run: |
+          git tag "v$VERSION"
+          git push origin "v$VERSION"
