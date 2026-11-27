@@ -56,3 +56,30 @@ y pide agregarla a `GLOBALES`, `VACIAS`, `POR_EMPRESA` o `HIJAS`.
   13 Demo SmartPyme (inventario grande), 8/142/437/380 empresas de pruebas.
 - **DEMO** (conserva las contraseñas, ventas entra como siempre): 2 y las empresas demo activas
   13, 56, 389, 487, 528, 553, 590, 650, 660, 695, 786, 835, 867.
+
+## Despliegue automático (`.github/workflows/deploy-ambientes.yml`)
+
+| Cuándo | Qué se despliega |
+|---|---|
+| CI verde en un push a `develop` | QA: backend (`repositories/qa`) + frontend (`public_html/test`), migraciones de `smartpyme_qa` |
+| CI verde en un push a `main` | DEMO: frontend (`public_html/demo`). El backend de la demo es el de producción |
+| Manual: Actions → *Deploy QA y DEMO* → *Run workflow* | `desplegar-qa` (desde develop), `desplegar-demo` (desde main) o `reiniciar-demo` |
+
+Cómo llega al servidor sin poder tocar producción:
+
+1. El workflow compila y sube un paquete con la llave `DEPLOY_SSH_KEY` al usuario `spdeploy`.
+   Esa llave solo puede **escribir** en `/var/lib/spdeploy/entrada` (`rrsync -wo`): no puede leer,
+   ni abrir una consola, ni ejecutar comandos.
+2. `instalar-despliegues.sh` (cron de root, cada minuto) verifica el SHA256 e instala solo en QA o DEMO.
+   Si algo falla, se detiene en ese paso y manda un correo (no deshace los pasos anteriores).
+   Registro: `/root/ambientes/despliegues.log`.
+
+Secretos del repositorio: `DEPLOY_SSH_KEY` (llave privada) y `DEPLOY_KNOWN_HOSTS` (huella del servidor).
+
+## Demo: reinicio y base
+
+- **Cada domingo 2:00 am** (El Salvador) la demo vuelve a su base (`/root/ambientes/demo-base.sql.gz`).
+- **A pedido**: Actions → *Deploy QA y DEMO* → `reiniciar-demo` (tarda ~1 minuto), o `/root/ambientes/reiniciar-demo.sh`.
+- **Guardar la demo como está** (para que los reinicios vuelvan a ese punto): `/root/ambientes/guardar-base-demo.sh`.
+  La base anterior queda en `demo-base.anterior.sql.gz`.
+- Cada 10 minutos se aplican a `smartpyme_demo` las migraciones nuevas del código de producción.

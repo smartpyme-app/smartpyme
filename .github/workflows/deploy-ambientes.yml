@@ -1,0 +1,137 @@
+# Despliegue a QA y DEMO (nunca a producción).
+#
+# - CI verde en un push a `develop`  -> QA   (apitest / test.smartpyme.site): backend + frontend.
+# - CI verde en un push a `main`     -> DEMO (demo.smartpyme.site): frontend. El backend de la demo
+#                                       es el mismo código de producción.
+# - Manual (Actions > "Deploy QA y DEMO" > Run workflow): desplegar-qa, desplegar-demo o reiniciar-demo.
+#
+# La llave DEPLOY_SSH_KEY solo puede ESCRIBIR en una carpeta de entrada del servidor (rrsync -wo):
+# no puede leer, ni ejecutar comandos, ni tocar producción. En el servidor,
+# /root/ambientes/instalar-despliegues.sh instala cada paquete (ver ops/ambientes/README.md).
+name: Deploy QA y DEMO
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [develop, main]
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: Qué hacer
+        type: choice
+        options: [desplegar-qa, desplegar-demo, reiniciar-demo]
+        default: desplegar-qa
+
+permissions:
+  contents: read
+
+env:
+  SERVIDOR: 187.77.24.248
+  USUARIO: spdeploy
+
+jobs:
+  decidir:
+    runs-on: ubuntu-24.04
+    outputs:
+      accion: ${{ steps.d.outputs.accion }}
+      sha: ${{ steps.d.outputs.sha }}
+    steps:
+      - id: d
+        env:
+          EVENTO: ${{ github.event_name }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          EVENTO_CI: ${{ github.event.workflow_run.event }}
+          RAMA_CI: ${{ github.event.workflow_run.head_branch }}
+          SHA_CI: ${{ github.event.workflow_run.head_sha }}
+          ACCION: ${{ inputs.accion }}
+          RAMA: ${{ github.ref_name }}
+        run: |
+          accion=ninguna; sha="$GITHUB_SHA"
+          if [ "$EVENTO" = workflow_dispatch ]; then
+            accion="$ACCION"
+            # QA sale de develop y DEMO de main, aunque se lance desde otra rama.
+            [ "$accion" = desplegar-qa ] && [ "$RAMA" != develop ] && { echo "::error::desplegar-qa se lanza desde develop"; exit 1; }
+            [ "$accion" = desplegar-demo ] && [ "$RAMA" != main ] && { echo "::error::desplegar-demo se lanza desde main"; exit 1; }
+          elif [ "$CONCLUSION" = success ] && [ "$EVENTO_CI" = push ]; then
+            sha="$SHA_CI"
+            [ "$RAMA_CI" = develop ] && accion=desplegar-qa
+            [ "$RAMA_CI" = main ] && accion=desplegar-demo
+          fi
+          echo "accion=$accion" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Acción: $accion ($sha)" >> "$GITHUB_STEP_SUMMARY"
+
+  construir:
+    needs: decidir
+    if: needs.decidir.outputs.accion == 'desplegar-qa' || needs.decidir.outputs.accion == 'desplegar-demo'
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: deploy-${{ needs.decidir.outputs.accion }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.decidir.outputs.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: Frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: Frontend/package-lock.json
+
+      - name: Compilar frontend
+        working-directory: Frontend
+        env:
+          CONFIG: ${{ needs.decidir.outputs.accion == 'desplegar-qa' && 'qa' || 'demo' }}
+        run: |
+          npm ci --no-audit --no-fund
+          NODE_OPTIONS=--max-old-space-size=6144 npx ng build --configuration "production,$CONFIG" --output-path ../dist
+          grep -q "api$( [ "$CONFIG" = qa ] && echo test || echo demo ).smartpyme.site" ../dist/main*.js
+
+      - name: Empaquetar
+        env:
+          ACCION: ${{ needs.decidir.outputs.accion }}
+          SHA: ${{ needs.decidir.outputs.sha }}
+        run: |
+          mkdir -p "paquete/$SHA"
+          tar --exclude='*.map' -czf "paquete/$SHA/frontend.tgz" -C dist .
+          if [ "$ACCION" = desplegar-qa ]; then
+            git archive --format=tar HEAD:Backend | gzip > "paquete/$SHA/backend.tgz"
+          fi
+          (cd "paquete/$SHA" && sha256sum *.tgz > SHA256SUMS)
+          ls -la "paquete/$SHA"
+
+      - name: Subir al servidor
+        env:
+          LLAVE: ${{ secrets.DEPLOY_SSH_KEY }}
+          HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DESTINO: ${{ needs.decidir.outputs.accion == 'desplegar-qa' && 'qa' || 'demo' }}
+          SHA: ${{ needs.decidir.outputs.sha }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$LLAVE" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$HOSTS" > ~/.ssh/known_hosts
+          SSH="ssh -i $HOME/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
+          rsync -a -e "$SSH" "paquete/$SHA" "$USUARIO@$SERVIDOR:$DESTINO/"
+          touch LISTO   # va al final: el servidor solo instala paquetes completos
+          rsync -a -e "$SSH" LISTO "$USUARIO@$SERVIDOR:$DESTINO/$SHA/"
+          echo "Paquete subido a $DESTINO. El servidor lo instala en menos de 2 minutos." >> "$GITHUB_STEP_SUMMARY"
+
+  reiniciar-demo:
+    needs: decidir
+    if: needs.decidir.outputs.accion == 'reiniciar-demo'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Pedir reinicio de la demo
+        env:
+          LLAVE: ${{ secrets.DEPLOY_SSH_KEY }}
+          HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$LLAVE" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$HOSTS" > ~/.ssh/known_hosts
+          mkdir -p "pedido/${GITHUB_RUN_ID}" && touch "pedido/${GITHUB_RUN_ID}/LISTO"
+          rsync -a -e "ssh -i $HOME/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" \
+            "pedido/${GITHUB_RUN_ID}" "$USUARIO@$SERVIDOR:demo-reiniciar/"
+          echo "Reinicio pedido por ${GITHUB_ACTOR}. La demo vuelve a su base en unos 2 minutos." >> "$GITHUB_STEP_SUMMARY"
