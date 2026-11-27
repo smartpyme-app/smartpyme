@@ -1,0 +1,16 @@
+#!/usr/bin/env php
+<?php
+// artisan del ambiente __AMBIENTE__: usa su .env, storage y caché (ver arranque.php).
+define('LARAVEL_START', microtime(true));
+// Estos comandos arman la config con una instancia nueva que lee el .env del REPOSITORIO
+// (en DEMO, el de producción). Usar `php cachear-config.php` de esta carpeta.
+$prohibidos = ['optimize', 'config:cache', 'route:cache', 'event:cache', 'optimize:clear', 'config:clear'];
+if (isset($argv[1]) && in_array($argv[1], $prohibidos, true)) {
+    fwrite(STDERR, "'{$argv[1]}' no se usa en este ambiente: ejecutar php cachear-config.php\n");
+    exit(1);
+}
+$app = require __DIR__ . '/arranque.php';
+$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$status = $kernel->handle($input = new Symfony\Component\Console\Input\ArgvInput, new Symfony\Component\Console\Output\ConsoleOutput);
+$kernel->terminate($input, $status);
+exit($status);
