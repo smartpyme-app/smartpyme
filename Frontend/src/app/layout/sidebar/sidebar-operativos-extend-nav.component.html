@@ -1,0 +1,244 @@
+@if (apiService.puedeVerInteligenciaNegociosMenu()) {
+  <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+    <a [routerLink]="['/reportes']" tooltip="Inteligencia de negocios" class="btn d-inline-flex align-items-center text-decoration-none py-1 fw-bold">
+      <img appLazyImage="/assets/icons/pie-chart.png" class="icon me-2">Inteligencia de Negocios
+    </a>
+  </li>
+}
+@if (apiService.esPortalContador()) {
+  <li class="mb-1">
+    <button (click)="toggleDespacho()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!despachoIsCollapsed">
+      <img appLazyImage="/assets/icons/file-text.png" class="icon me-2">Despacho
+    </button>
+    <div [collapse]="despachoIsCollapsed" [isAnimated]="true">
+      <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+        <li routerLinkActive="active"><a [routerLink]="['/despacho/cartera']" class="link-body-emphasis d-inline-flex text-decoration-none">Cartera de clientes</a></li>
+        <li routerLinkActive="active"><a [routerLink]="['/despacho/cumplimiento']" class="link-body-emphasis d-inline-flex text-decoration-none">Cumplimiento</a></li>
+        <li routerLinkActive="active"><a [routerLink]="['/despacho/libros-iva']" class="link-body-emphasis d-inline-flex text-decoration-none">Libros de IVA</a></li>
+      </ul>
+    </div>
+  </li>
+}
+@if (mostrarProductosExpandido) {
+  <li class="mb-1">
+    <button (click)="toggleProductos()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!productosIsCollapsed">
+      <img appLazyImage="/assets/icons/briefcase.png" class="icon me-2">Inventario completo
+    </button>
+    <div [collapse]="productosIsCollapsed" [isAnimated]="true">
+      <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+        @if (apiService.hasPermission('productos.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/productos']" class="link-body-emphasis d-inline-flex text-decoration-none">Inventario</a></li>
+        }
+        @if (isLotesActivo()) {
+          <li routerLinkActive="active"><a [routerLink]="['/lotes']" class="link-body-emphasis d-inline-flex text-decoration-none">Lotes</a></li>
+        }
+        @if (apiService.hasPermission('productos.bodegas.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/bodegas']" class="link-body-emphasis d-inline-flex text-decoration-none">Bodegas</a></li>
+        }
+        @if (apiService.hasPermission('productos.kardex.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/kardex']" class="link-body-emphasis d-inline-flex text-decoration-none">Kardex</a></li>
+        }
+        @if (apiService.hasPermission('productos.categorias.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/categorias']" class="link-body-emphasis d-inline-flex text-decoration-none">Categorías</a></li>
+        }
+      </ul>
+    </div>
+  </li>
+}
+@if (mostrarMenuCompras) {
+  <li class="mb-1">
+    <button (click)="toggleCompras()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!comprasIsCollapsed">
+      <img appLazyImage="/assets/icons/log-in.png" class="icon me-2">Compras
+    </button>
+    <div [collapse]="comprasIsCollapsed" [isAnimated]="true">
+      <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+        @if (puedeVerRegistrosCompras()) {
+          <li routerLinkActive="active"><a [routerLink]="['/compras']" class="link-body-emphasis d-inline-flex text-decoration-none">Registros</a></li>
+        }
+        @if (apiService.hasPermission('compras.ordenes_compra.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/ordenes-de-compras']" class="link-body-emphasis d-inline-flex text-decoration-none">Órdenes de compra</a></li>
+        }
+        @if (apiService.hasPermission('compras.proveedores.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/proveedores']" class="link-body-emphasis d-inline-flex text-decoration-none">Proveedores</a></li>
+        }
+        @if (contabilidadHabilitada && apiService.hasPermission('compras.retaceo.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/retaceos']" class="link-body-emphasis d-inline-flex text-decoration-none">Retaceo</a></li>
+        }
+        @if (apiService.canAccederOperacionesInventario() && apiService.hasPermission('compras.consignas.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/consignas']" class="link-body-emphasis d-inline-flex text-decoration-none">Consignas</a></li>
+        }
+        @if (apiService.canAccederOperacionesInventario() && apiService.hasPermission('inventario.consigna_kardex.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/consigna-kardex']" class="link-body-emphasis d-inline-flex text-decoration-none">Kardex consigna</a></li>
+        }
+        @if (apiService.hasPermission('compras.devoluciones.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/devoluciones/compras']" class="link-body-emphasis d-inline-flex text-decoration-none">Devoluciones</a></li>
+        }
+      </ul>
+    </div>
+  </li>
+}
+@if (mostrarMenuGastos) {
+  <li class="mb-1">
+    <button (click)="toggleGastos()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!gastosIsCollapsed">
+      <img appLazyImage="/assets/icons/log-out.png" class="icon me-2">Gastos
+    </button>
+    <div [collapse]="gastosIsCollapsed" [isAnimated]="true">
+      <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+        @if (puedeVerRegistrosGastos()) {
+          <li routerLinkActive="active"><a [routerLink]="['/gastos']" class="link-body-emphasis d-inline-flex text-decoration-none">Registros</a></li>
+        }
+        @if (apiService.mostrarMenuConfigGastos(contabilidadHabilitada) && apiService.hasPermission('gastos.categorias.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/gastos/categorias']" class="link-body-emphasis d-inline-flex text-decoration-none">Categorías</a></li>
+        }
+      </ul>
+    </div>
+  </li>
+}
+@if (apiService.hasPermission('finanzas.ver')) {
+  <li class="mb-1">
+    <button (click)="toggleFinanzas()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!finanzasIsCollapsed">
+      <img appLazyImage="/assets/icons/bank-account.png" class="icon me-2">Finanzas
+    </button>
+    <div [collapse]="finanzasIsCollapsed" [isAnimated]="true">
+      <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+        @if (apiService.hasPermission('finanzas.libro_iva.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="libroIvaRoute" class="link-body-emphasis d-inline-flex text-decoration-none">{{ libroIvaMenuLabel }}</a></li>
+        }
+        @if (apiService.hasPermission('finanzas.presupuestos.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/presupuestos']" class="link-body-emphasis d-inline-flex text-decoration-none">Presupuestos</a></li>
+        }
+        @if (apiService.hasPermission('finanzas.documentos.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/documentos']" class="link-body-emphasis d-inline-flex text-decoration-none">Documentos</a></li>
+        }
+        @if (apiService.hasPermission('finanzas.impuestos.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/impuestos']" class="link-body-emphasis d-inline-flex text-decoration-none">Impuestos</a></li>
+        }
+        @if (apiService.hasPermission('finanzas.cierre_caja.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/cierre-de-caja']" class="link-body-emphasis d-inline-flex text-decoration-none">Cierre de caja</a></li>
+        }
+        @if (tieneDescargaDtesHabilitada) {
+          <li routerLinkActive="active"><a [routerLink]="['/dte-management/cuentas']" class="link-body-emphasis d-inline-flex text-decoration-none">{{ feDownloadSidebarLabel }}</a></li>
+        }
+        @if (apiService.hasPermission('ventas.formas_pago.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/formas-de-pago']" class="link-body-emphasis d-inline-flex text-decoration-none">Métodos de pago</a></li>
+        }
+        @if (apiService.mostrarBancosEnFinanzas(contabilidadHabilitada) && apiService.hasPermission('finanzas.bancos.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/bancos/cuentas']" class="link-body-emphasis d-inline-flex text-decoration-none">Bancos</a></li>
+        }
+        @if (mostrarMenuPrestamos) {
+          <li routerLinkActive="active"><a [routerLink]="['/finanzas/prestamos']" class="link-body-emphasis d-inline-flex text-decoration-none">Préstamos</a></li>
+        }
+        @if (apiService.hasPermission('finanzas.reporteria.ver') || apiService.hasPermission('finanzas.libro_iva.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/finanzas/reportes']" class="link-body-emphasis d-inline-flex text-decoration-none">Reportes</a></li>
+        }
+      </ul>
+    </div>
+  </li>
+}
+@if (mostrarMenuPlanilla) {
+  <li class="mb-1">
+    <button (click)="togglePlanilla()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!planillaIsCollapsed">
+      <img appLazyImage="/assets/icons/clipboard.png" class="icon me-2">Planilla
+    </button>
+    <div [collapse]="planillaIsCollapsed" [isAnimated]="true">
+      <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+        <li routerLinkActive="active"><a [routerLink]="[enlacePlanillas]" class="link-body-emphasis d-inline-flex text-decoration-none">Planillas</a></li>
+        @if (apiService.hasPermission('planilla.registros.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/planilla/aguinaldos']" class="link-body-emphasis d-inline-flex text-decoration-none">Aguinaldos</a></li>
+          <li routerLinkActive="active"><a [routerLink]="['/planilla/prestamos']" class="link-body-emphasis d-inline-flex text-decoration-none">Préstamos</a></li>
+        }
+        @if (tieneComisionesHabilitada && (apiService.hasPermission('planilla.comisiones.ver') || apiService.hasPermission('planilla.ver'))) {
+          <li routerLinkActive="active"><a [routerLink]="['/comisiones/configuracion']" class="link-body-emphasis d-inline-flex text-decoration-none">Comisiones</a></li>
+        }
+        @if (tieneBonosHabilitada && (apiService.hasPermission('planilla.bonos.ver') || apiService.hasPermission('planilla.ver'))) {
+          <li routerLinkActive="active"><a [routerLink]="['/bonos/reglas']" class="link-body-emphasis d-inline-flex text-decoration-none">Bonos</a></li>
+        }
+        @if (tieneIncentivosHabilitada && (apiService.hasPermission('planilla.incentivos.ver') || apiService.hasPermission('planilla.ver'))) {
+          <li routerLinkActive="active"><a [routerLink]="['/incentivos/vendedores']" class="link-body-emphasis d-inline-flex text-decoration-none">Incentivos</a></li>
+        }
+      </ul>
+    </div>
+  </li>
+}
+@if (contabilidadHabilitada && apiService.hasPermission('contabilidad.ver')) {
+  <li class="mb-1">
+    <button (click)="toggleContabilidad()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!contabilidadIsCollapsed">
+      <img appLazyImage="/assets/icons/edit.png" class="icon me-2">Contabilidad
+    </button>
+    <div [collapse]="contabilidadIsCollapsed" [isAnimated]="true">
+      <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+        @if (apiService.hasPermission('contabilidad.activos.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/contabilidad/activos']" class="link-body-emphasis d-inline-flex text-decoration-none">Activos fijos</a></li>
+        }
+        @if (apiService.hasPermission('finanzas.bancos.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/bancos/cuentas']" class="link-body-emphasis d-inline-flex text-decoration-none">Bancos</a></li>
+        }
+        @if (apiService.hasPermission('contabilidad.partidas.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/contabilidad/partidas']" class="link-body-emphasis d-inline-flex text-decoration-none">Partidas</a></li>
+        }
+        @if (apiService.hasPermission('contabilidad.catalogo_cuentas.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/catalogo/cuentas']" class="link-body-emphasis d-inline-flex text-decoration-none">Catálogo de cuentas</a></li>
+        }
+        @if (apiService.hasPermission('contabilidad.configuracion.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/contabilidad/configuracion']" class="link-body-emphasis d-inline-flex text-decoration-none">Configuraciones</a></li>
+        }
+      </ul>
+    </div>
+  </li>
+}
+@if (tieneFidelizacionHabilitada) {
+  <li class="mb-1">
+    <button (click)="toggleLealtadClientes()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!lealtadClientesIsCollapsed">
+      <img src="/assets/icons/star.png" class="icon me-2">Lealtad Clientes
+    </button>
+    <div [collapse]="lealtadClientesIsCollapsed" [isAnimated]="true">
+      <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+        <li routerLinkActive="active"><a [routerLink]="['/fidelizacion/clientes']" class="link-body-emphasis d-inline-flex text-decoration-none">Clientes</a></li>
+        <li routerLinkActive="active"><a [routerLink]="['/fidelizacion/configuracion-cliente']" class="link-body-emphasis d-inline-flex text-decoration-none">Configuración Cliente</a></li>
+      </ul>
+    </div>
+  </li>
+}
+@if (mostrarMenuLicenciasOrganizacion) {
+  <li class="mb-1">
+    <button (click)="toggleLicencias()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!licenciasIsCollapsed">
+      <img src="/assets/icons/pennant.png" class="icon me-2">Licencias
+    </button>
+    <div [collapse]="licenciasIsCollapsed" [isAnimated]="true">
+      <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+        @if (apiService.hasPermission('organizacion.empresas.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/organizacion/empresas']" class="link-body-emphasis d-inline-flex text-decoration-none">Empresas</a></li>
+        }
+        @if (apiService.hasPermission('organizacion.usuarios.ver')) {
+          <li routerLinkActive="active"><a [routerLink]="['/organizacion/empresas/usuarios']" class="link-body-emphasis d-inline-flex text-decoration-none">Usuarios</a></li>
+        }
+      </ul>
+    </div>
+  </li>
+}
+@if (!enSidebarVentas && mostrarMenuRestaurante && apiService.hasPermission('restaurante.ver')) {
+  <li class="mb-1">
+    <button (click)="toggleRestaurante()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!restauranteIsCollapsed">
+      <img src="/assets/icons/layout.png" class="icon me-2">Restaurante
+    </button>
+    <div [collapse]="restauranteIsCollapsed" [isAnimated]="true">
+      <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+        <li routerLinkActive="active"><a [routerLink]="['/restaurante']" class="link-body-emphasis d-inline-flex text-decoration-none">Mapa de Mesas</a></li>
+        <li routerLinkActive="active"><a [routerLink]="['/restaurante/zonas']" class="link-body-emphasis d-inline-flex text-decoration-none">Zonas</a></li>
+        <app-restaurante-sidebar-links></app-restaurante-sidebar-links>
+      </ul>
+    </div>
+  </li>
+}
+@if (!enSidebarVentas && mostrarMenuPedidos && apiService.hasPermission('pedidos.ver')) {
+  <li class="mb-1">
+    <button (click)="togglePedidos()" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!pedidosIsCollapsed">
+      <img src="/assets/icons/shopping-cart.png" class="icon me-2">Pedidos
+    </button>
+    <div [collapse]="pedidosIsCollapsed" [isAnimated]="true">
+      <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+        <li routerLinkActive="active"><a [routerLink]="['/pedidos']" class="link-body-emphasis d-inline-flex text-decoration-none">Pedidos</a></li>
+      </ul>
+    </div>
+  </li>
+}

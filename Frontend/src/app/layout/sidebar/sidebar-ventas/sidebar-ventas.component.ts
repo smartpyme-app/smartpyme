@@ -12,12 +12,22 @@ import { RestauranteSidebarLinksComponent } from '../restaurante-sidebar-links.c
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 import { syncLayoutSidebarInset } from '../../layout-sidebar-inset';
 import { mostrarMenuSolicitudesCompra } from '@views/ventas/solicitudes-compra/solicitudes-compra-acceso';
+import { mostrarMenuCompras } from '../sidebar-operativos-nav.shared';
+import { SidebarOperativosExtendNavComponent } from '../sidebar-operativos-extend-nav.component';
 
 @Component({
     selector: 'app-sidebar-ventas',
     templateUrl: './sidebar-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, TooltipModule, CollapseModule, RestauranteSidebarLinksComponent, LazyImageDirective],
+    imports: [
+        CommonModule,
+        RouterModule,
+        TooltipModule,
+        CollapseModule,
+        RestauranteSidebarLinksComponent,
+        LazyImageDirective,
+        SidebarOperativosExtendNavComponent,
+    ],
 })
 export class SidebarVentasComponent implements OnInit {
     public sidebarCollapsed:boolean = false;
@@ -50,9 +60,28 @@ export class SidebarVentasComponent implements OnInit {
         );
     }
 
-    public get mostrarMenuOrdenesCompra(): boolean {
-        return this.apiService.hasPermission('compras.ordenes_compra.ver');
-    }
+  /** Atajo OC cuando no hay menú compras completo (evita duplicar con extend-nav). */
+  public get mostrarMenuOrdenesCompraSuelta(): boolean {
+    return (
+      this.apiService.hasPermission('compras.ordenes_compra.ver') && !this.mostrarMenuComprasOperativo
+    );
+  }
+
+  public get mostrarMenuComprasOperativo(): boolean {
+    return mostrarMenuCompras(
+      (p) => this.apiService.hasPermission(p),
+      (ps) => this.apiService.hasAnyPermission(ps),
+      () => this.apiService.canAccederOperacionesInventario(),
+    );
+  }
+
+  /** Cierre suelto solo si no tiene menú Finanzas completo. */
+  public get mostrarCierreCajaSuelto(): boolean {
+    return (
+      this.apiService.hasPermission('finanzas.cierre_caja.ver') &&
+      !this.apiService.hasPermission('finanzas.ver')
+    );
+  }
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
