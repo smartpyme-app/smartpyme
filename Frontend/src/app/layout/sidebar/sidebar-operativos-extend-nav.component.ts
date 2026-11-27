@@ -39,7 +39,7 @@ import {
     templateUrl: './sidebar-operativos-extend-nav.component.html',
 })
 export class SidebarOperativosExtendNavComponent implements OnInit {
-    @Input() usuario: Record<string, unknown> = {};
+    @Input() usuario: { empresa?: { licencia?: unknown; es_empresa_padre?: boolean } } = {};
     /** true dentro de app-sidebar-ventas (u otros sidebars acotados). */
     @Input() enSidebarVentas = false;
 
@@ -123,7 +123,7 @@ export class SidebarOperativosExtendNavComponent implements OnInit {
         for (const [field, storageKey] of keys) {
             const raw = localStorage.getItem(storageKey);
             if (raw) {
-                (this as Record<string, boolean>)[field] = JSON.parse(raw);
+                this[field] = JSON.parse(raw) as boolean;
             }
         }
     }
@@ -235,7 +235,7 @@ export class SidebarOperativosExtendNavComponent implements OnInit {
     }
 
     get mostrarMenuLicenciasOrganizacion(): boolean {
-        return evaluarMenuLicenciasOrganizacion(this.usuario?.['empresa'], (perm) =>
+        return evaluarMenuLicenciasOrganizacion(this.usuario?.empresa, (perm) =>
             this.apiService.hasPermission(perm),
         );
     }
