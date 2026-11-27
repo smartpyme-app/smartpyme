@@ -20,8 +20,8 @@ class VentaProgramadaEjecucion extends Model
     ];
 
     protected $casts = [
-        'programada_para' => 'datetime',
-        'ejecutada_en' => 'datetime',
+        'programada_para' => 'datetime:Y-m-d H:i:s',
+        'ejecutada_en' => 'datetime:Y-m-d H:i:s',
     ];
 
     public function ventaProgramada()

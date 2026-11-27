@@ -8,10 +8,10 @@ use PHPUnit\Framework\TestCase;
 
 class ProgramacionCalendarioTest extends TestCase
 {
-    public function test_periodo_mensual_y_anual(): void
+    public function test_periodo_es_diario(): void
     {
-        $this->assertSame('2026-03', ProgramacionCalendario::periodo('mensual', '2026-03-11 08:00:00'));
-        $this->assertSame('2026', ProgramacionCalendario::periodo('anual', '2026-03-11 08:00:00'));
+        $this->assertSame('2026-03-11', ProgramacionCalendario::periodo('mensual', '2026-03-11 08:00:00'));
+        $this->assertSame('2026-03-11', ProgramacionCalendario::periodo('anual', '2026-03-11 08:00:00'));
     }
 
     public function test_dia_31_en_febrero_usa_ultimo_dia(): void

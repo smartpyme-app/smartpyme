@@ -291,9 +291,8 @@ export class ProgramadaFormComponent extends BaseComponent implements OnInit {
     }
 
     public onEmitirAutomaticoChange(): void {
-        if (!this.form.emitir_automatico) {
-            this.form.enviar_email = false;
-        }
+        // Al emitir, email va activo por defecto; al apagar emisión, se apaga el email.
+        this.form.enviar_email = !!this.form.emitir_automatico;
     }
 
     public guardar(): void {
@@ -657,19 +656,21 @@ export class ProgramadaFormComponent extends BaseComponent implements OnInit {
     }
 
     private aplicarProximaDesdeApi(proxima: unknown, horaFallback: string): void {
-        const raw = String(proxima ?? '');
+        // Fecha: solo YYYY-MM-DD del string (sin Date/UTC).
+        const raw = String(proxima ?? '').trim();
         const fechaMatch = raw.match(/^(\d{4}-\d{2}-\d{2})/);
         this.form.fecha_proxima = fechaMatch?.[1] ?? this.fechaHoyLocal();
         this.onFechaProximaChange();
 
-        let hh = 8;
-        let mm = 0;
-        const horaSrc = raw.includes('T') || raw.includes(' ')
-            ? raw.replace('T', ' ').split(' ')[1] ?? horaFallback
-            : horaFallback;
-        const parts = String(horaSrc || '08:00').split(':');
-        hh = Number(parts[0]) || 0;
-        mm = Number(parts[1]) || 0;
+        // Hora: siempre desde hora_ejecucion (TIME), no desde proxima_ejecucion
+        // (el datetime JSON puede venir en UTC y desplaza AM/PM).
+        this.aplicarHora12DesdeString(horaFallback || '08:00');
+    }
+
+    private aplicarHora12DesdeString(hora: string): void {
+        const parts = String(hora || '08:00').split(':');
+        const hh = Number(parts[0]) || 0;
+        const mm = Number(String(parts[1] ?? '0').replace(/\D.*/, '')) || 0;
         this.form.minuto = Math.min(59, Math.max(0, mm));
         if (hh === 0) {
             this.form.hora12 = 12;

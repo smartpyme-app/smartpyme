@@ -41,7 +41,8 @@ class VentaProgramada extends Model
         'activo' => 'boolean',
         'emitir_automatico' => 'boolean',
         'enviar_email' => 'boolean',
-        'proxima_ejecucion' => 'datetime',
+        // Sin Z/UTC en JSON: la hora de pared debe coincidir con hora_ejecucion.
+        'proxima_ejecucion' => 'datetime:Y-m-d H:i:s',
         'dia_ejecucion' => 'integer',
         'max_ejecuciones' => 'integer',
         'ejecuciones_count' => 'integer',

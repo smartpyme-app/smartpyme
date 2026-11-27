@@ -6,14 +6,15 @@ use Carbon\Carbon;
 
 class ProgramacionCalendario
 {
+    /**
+     * Clave de idempotencia: un ok por día calendario (Y-m-d).
+     * La frecuencia (mensual/anual) solo define cuándo avanza proxima_ejecucion.
+     */
     public static function periodo(string $frecuencia, Carbon|string $cuando): string
     {
         $fecha = $cuando instanceof Carbon ? $cuando : Carbon::parse($cuando);
 
-        return match ($frecuencia) {
-            'mensual' => $fecha->format('Y-m'),
-            'anual' => $fecha->format('Y'),
-        };
+        return $fecha->format('Y-m-d');
     }
 
     public static function calcularProxima(string $frecuencia, int $dia, string $hora, Carbon $desde): Carbon
